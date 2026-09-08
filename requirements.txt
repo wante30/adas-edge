@@ -1,0 +1,6 @@
+numpy>=1.23
+opencv-python>=4.7
+psutil>=5.9
+ultralytics>=8.3,<9
+pytest>=8,<9
+scipy>=1.10

@@ -1,0 +1,28 @@
+model: yolo11n.pt
+input_size: 640
+confidence: 0.25
+device: cpu
+classes:
+  - person
+  - car
+  - bus
+  - truck
+  - motorcycle
+  - bicycle
+  - traffic light
+  - stop sign
+*** Add File: C:\Users\JingyuWang\adas-edge\training\README.md
+# Training boundary (deferred)
+
+Phase 1 does not download BDD100K or train. The later fine-tuning workflow is:
+
+1. Select only the required BDD100K detection/lane subsets and record source/version.
+2. Convert BDD JSON labels to YOLO labels with a class map frozen in the repository.
+3. Create reproducible train/validation manifests and `dataset.yaml`.
+4. Fine-tune an official nano pretrained checkpoint; do not train from scratch.
+5. Evaluate traffic-light alternatives without changing YOLO internals:
+   - detector classes `traffic_light_red/yellow/green`; or
+   - generic detector plus a small ROI classifier.
+
+The selector/converter and training configs are a Phase 2 deliverable so no
+dataset files or unverified split are created here.
