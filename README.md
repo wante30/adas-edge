@@ -1,40 +1,46 @@
-# ADAS Edge — 2026 FPGA Competition Software
+# ADAS Edge
 
-Software-side implementation for the 2026 National Undergraduate Embedded Chip and System Design Competition, FPGA Innovation Design track, Topic 3. The intended system connects FPGA video capture and OSD with an RK3566 detector through PCIe metadata transport.
+PC baseline and Rockchip deployment path for the 2026 FPGA ADAS contest entry.
 
-## What is included
+## Competition software closeout scope
 
-- RK3566-oriented YOLO11n INT8 conversion, split-output decoding, and benchmark helpers.
-- `CompetitionDetector`: preprocessing, RKNN output decoding, NMS, source-coordinate restoration, and stream/frame/timestamp propagation.
-- A versioned FPGA ↔ RK3566 frame/result descriptor contract and software mock transport.
-- Deterministic ADAS rules for pedestrians, traffic lights, lane-change restrictions, and warnings.
-- Competition-focused tests, model-build records, external BDD100K image validation notes, and the project handover document.
+The canonical competition path is `adas_edge.competition`: a frozen v1 frame
+descriptor is validated, decoded from BGR/RGB/NV12/RGB565, passed through an
+injectable detector and deterministic ADAS policy, then encoded as a result
+descriptor. This is a software closure and mock-E2E boundary, not a claim of
+physical FPGA/PCIe completion.
 
-## What is deliberately excluded
-
-Weights, RKNN binaries, calibration images, raw datasets, road videos, rendered videos, local outputs, and benchmark artifacts are excluded because of file size, licensing, or reproducibility constraints. The public repository contains code and documentation only.
-
-The current BDD100K result is a PC FP32 image-level pre-acceptance check; it is not an RK3566 INT8 accuracy result or an FPGA/PCIe end-to-end claim. See [the project handover](docs/competition_project_handover.md) for evidence, known gaps, and the execution order.
+PCIe DMA, BDD100K download/training, and custom network changes are deliberately
+out of scope for this phase.
 
 ## Quick start
 
-Use Python 3.10–3.12:
+Use a clean Python 3.10--3.12 environment. The host Python detected during
+development was 3.11; RKNN conversion is **not** supported from Windows.
 
 ```powershell
+cd C:\Users\JingyuWang\adas-edge
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m pip install -e .
-.\.venv\Scripts\python.exe -m pytest -q
 ```
 
-RKNN conversion needs a Rockchip-supported Toolkit2 environment. The original COCO `yolo11n.pt` checkpoint and legal calibration data must be supplied locally; no model artifact is bundled.
+Run an image, video, or an image directory. `yolo11n.pt` may be a local COCO
+weight path or an Ultralytics model name.
 
-## Current status
+```powershell
+.\.venv\Scripts\python.exe -m adas_edge.cli --source C:\data\road.mp4 --model yolo11n.pt --show --output-video outputs\road.mp4 --output-jsonl outputs\road.jsonl --benchmark-csv outputs\benchmark.csv
+.\.venv\Scripts\python.exe -m adas_edge.cli --camera 0 --camera-id front --model yolo11n.pt --show
+```
 
-- 320 and 416 INT8 split-output candidates have completed RK3566 single-image load/inference/decode smoke tests.
-- Competition detector, scene policy, and PCIe software-mock tests pass.
-- Real FPGA capture, PCIe endpoint/DMA, OSD return, continuous video validation, four-stream testing, and final demonstration remain pending.
+Press `q` in the preview window to stop. Per-frame JSON is written to stdout
+and, when requested, to JSON Lines. The rendered frame contains boxes, action,
+latency, and stream FPS.
 
-## License
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe tools\check_environment.py
+```
 
-No project-wide license has been selected. Do not assume permission to reuse code or data beyond GitHub's normal viewing rights. Third-party datasets, model weights, and toolkits retain their own terms.
+See [architecture](docs/architecture.md), [competition software closeout](docs/competition_software_closeout.md),
+and the [RKNN deployment boundary](deployment/rknn/README.md).

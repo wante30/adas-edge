@@ -1,9 +1,7 @@
 # Competition remaining risks
 
-- FPGA bitstream, four physical inputs, PCIe endpoint/driver and HDMI OSD are absent from this checkout.
-- The supplied Host reference is a frozen-frame BAR0 PIO/DMA bring-up tool, not a continuous-stream driver; continuous metadata transport still needs endpoint integration.
-- No official现场 U-disk clips or legal road-video acceptance set is present; 320 vs 416 quality is unresolved.
-- COCO YOLO11n has no dedicated cone/road-obstacle/zebra classes and no traffic-light color state.
-- HSV traffic-light classification is conservative and requires road-video validation, especially for tiny/night signals.
-- Historical RKNN metrics are not end-to-end FPGA→RK3566→FPGA measurements.
-- Final demo recording and submission package remain pending hardware integration.
+- Real FPGA bitstream, video capture, PCIe endpoint/DMA, FPGA OSD/HDMI output, and four physical inputs are not present.
+- The vendor Host reference remains a frozen-frame bring-up ABI, not continuous metadata transport.
+- No approved road-video acceptance set or final 1080P demonstration is in the repo.
+- COCO YOLO11n has no dedicated road-obstacle/zebra semantics and traffic-light color still needs road-video validation.
+- Replay and mock tests prove software behavior only; they do not replace `RK3566 BOARD TEST` or `FPGA/PCIe HARDWARE TEST`.

@@ -1,13 +1,38 @@
-# Competition PCIe protocol (software freeze)
+# ADAS PCIe metadata protocol v1
 
-This is a host-side metadata contract pending FPGA endpoint confirmation; it is not the BAR0 capture ABI used by the supplied Host tool. The supplied Host reference is authoritative for bring-up: PCI ID `0755:0755`, BAR0 >= 8 KiB, little-endian registers, 1280x720 RGB565, 1,843,200-byte frozen-frame PIO snapshot, 128-byte blocks, and commands `1=采集`, `2=读取块`, `3=整帧 DMA`. Its documented mode is host-triggered frozen-frame capture and does not promise continuous 30 FPS. The Python mock below models frame/result metadata above that capture boundary.
+This document freezes the software metadata ABI used between the FPGA-side application and RK3566. It is an ADAS metadata ABI, not the supplied vendor Host reference ABI.
 
-## FPGA → RK3566 frame descriptor
+## ABI boundary
 
-Little-endian packed header: `magic[4]="ADSF"`, `version u16`, `header_len u16`, `stream_id u32`, `frame_id u64`, `timestamp_ns u64`, `width u16`, `height u16`, `pixel_format u8` (`BGR888=1`, `RGB888=2`, `NV12=3`), `stride u32`, `payload_size u32`, `flags u32`, followed by payload and optional CRC32. DMA rings own buffers; producer publishes descriptor only after payload is complete.
+The Host reference ABI remains a separate bring-up contract: PCI ID `0755:0755`, BAR0 at least 8 KiB, 1280x720 little-endian RGB565, 1,843,200-byte frozen frame, 128-byte blocks, and commands `1=采集`, `2=读取块`, `3=整帧 DMA`. It is not a continuous metadata stream.
 
-## RK3566 → FPGA result descriptor
+## Wire rules
 
-Header: `magic[4]="ADSR"`, `version u16`, `header_len u16`, `stream_id u32`, `frame_id u64`, `timestamp_ns u64`, `num_objects u16`, `traffic_light_state u8` (`unknown/red/yellow/green`), `lane_state u8` (`unknown/solid/dashed`), `adas_action u8` (`stop/forward/left/right`), `warning_flags u32`, `payload_size u32`. Each detection is `class_id u16`, `confidence_q15 u16`, `x1/y1/x2/y2 u16` in source-pixel coordinates.
+- Little-endian, packed, no native alignment.
+- `version=1`; header lengths are fixed and included in the header.
+- Zero `crc32` disables CRC. When `flags & 1`, CRC32 covers payload.
+- Frame payload length is `payload_size`; pixel adapters perform format-specific stride/size checks.
 
-Results are metadata only; FPGA keeps the original frame for OSD. Unknown or stale results fail safe to no permission indication and may raise an alarm. A result must echo stream/frame IDs; host rejects mismatches and applies a timeout.
+| Structure | Size | Python format |
+|---|---:|---|
+| FrameDescriptor | 50 bytes | `<4sHHIQQHHBBIIII` |
+| ResultDescriptor | 46 bytes | `<4sHHIQQHBBBBIII` |
+| DetectionRecord | 12 bytes | `<HHHHHH` |
+
+Frame offsets are `magic=0`, `version=4`, `header_len=6`, `stream_id=8`, `frame_id=12`, `timestamp_ns=20`, `width=28`, `height=30`, `pixel_format=32`, `reserved=33`, `stride=34`, `payload_size=38`, `flags=42`, `crc32=46`. Generated constants are in `docs/generated/adas_pcie_v1.h` and `.vh`.
+
+Result fields are `magic`, `version`, `header_len`, `stream_id`, `frame_id`, `timestamp_ns`, `num_objects`, `traffic_light_state`, `lane_state`, `adas_action`, `reserved`, `warning_flags`, `payload_size`, and `crc32` in that order. Payload is `num_objects` consecutive DetectionRecords.
+
+## Pixel format enum
+
+`UNKNOWN=0`, `BGR888=1`, `RGB888=2`, `NV12=3`, `RGB565=4`. RGB565 is little-endian `R5:G6:B5`; stride is bytes per row and payload is `stride*height` (NV12 uses `stride*height*3/2`).
+
+## Semantic enums
+
+`TrafficLightState`: `UNKNOWN=0`, `RED=1`, `YELLOW=2`, `GREEN=3`.
+`LaneState`: `UNKNOWN=0`, `SOLID=1`, `DASHED=2`.
+`AdasAction`: `STOP=0`, `FORWARD=1`, `LEFT=2`, `RIGHT=3`.
+
+Warning bits: `RED_LIGHT=0x001`, `YELLOW_LIGHT=0x002`, `TRAFFIC_LIGHT_UNKNOWN=0x004`, `PEDESTRIAN_DANGER=0x008`, `COLLISION_WARNING=0x010`, `SOLID_LANE_CHANGE_FORBIDDEN=0x020`, `LANE_CHANGE_UNSAFE=0x040`, `OVERSPEED=0x080`, `TURN_SIGNAL_REQUIRED=0x100`, `NAVIGATION_CONFLICT=0x200`.
+
+Python-only names `GO`, `BRAKE`, and `WARNING` are not wire actions: `GO -> FORWARD`; `BRAKE -> STOP + warning`; `WARNING -> FORWARD/STOP + warning` according to policy.

@@ -1,54 +1,24 @@
-from __future__ import annotations
-import struct
-from dataclasses import dataclass
-from typing import ClassVar
+"""Deprecated compatibility facade for the canonical ABI."""
+from adas_edge.competition.protocol import (
+    DETECTION, FRAME_HEADER, FRAME_MAGIC, RESULT_HEADER, RESULT_MAGIC, VERSION,
+    DetectionRecord as _DetectionRecord, FrameDescriptor, ProtocolError,
+    ResultDescriptor as _ResultDescriptor,
+)
 
-FRAME_MAGIC=b"ADSF"; RESULT_MAGIC=b"ADSR"; VERSION=1
-FRAME_HEADER=struct.Struct("<4sHHIQQII BBH III")
-RESULT_HEADER=struct.Struct("<4sHHIQQHBBBBII")
-DETECTION=struct.Struct("<HHHHHH")
 
-class ProtocolError(ValueError): pass
-def _check_version(v: int) -> None:
-    if v != VERSION: raise ProtocolError(f"unsupported version: {v}")
+class DetectionRecord(_DetectionRecord):
+    def __init__(self, class_id, confidence, x1, y1, x2, y2):
+        value = round(float(confidence) * 32767) if isinstance(confidence, float) else int(confidence)
+        super().__init__(int(class_id), value, int(x1), int(y1), int(x2), int(y2))
 
-@dataclass(frozen=True)
-class FrameDescriptor:
-    stream_id:int; frame_id:int; timestamp_ns:int; width:int; height:int; pixel_format:int; stride:int; payload:bytes; flags:int=0
-    magic: ClassVar[bytes]=FRAME_MAGIC
-    def serialize(self)->bytes:
-        header=FRAME_HEADER.pack(self.magic,VERSION,FRAME_HEADER.size,self.stream_id,self.frame_id,self.timestamp_ns,self.width,self.height,self.pixel_format,0,self.stride,len(self.payload),self.flags,0)
-        return header+self.payload
+
+class ResultDescriptor(_ResultDescriptor):
+    """Accept the former positional constructor while serializing canonical bytes."""
+    def __init__(self, stream_id, frame_id, timestamp_ns, detections=(), traffic_light_state=0, lane_state=0, adas_action=0, warning_flags=0):
+        super().__init__(stream_id, frame_id, timestamp_ns, len(detections), traffic_light_state, lane_state, adas_action, warning_flags, tuple(detections))
+
     @classmethod
-    def deserialize(cls,data:bytes):
-        if len(data)<FRAME_HEADER.size: raise ProtocolError("truncated frame header")
-        m,v,hlen,sid,fid,ts,w,h,pf,_r,stride,size,flags,_crc=FRAME_HEADER.unpack_from(data)
-        if m!=FRAME_MAGIC: raise ProtocolError("bad frame magic")
-        _check_version(v)
-        if hlen!=FRAME_HEADER.size or size != len(data)-hlen: raise ProtocolError("invalid frame payload size")
-        return cls(sid,fid,ts,w,h,pf,stride,data[hlen:],flags)
-
-@dataclass(frozen=True)
-class DetectionRecord:
-    class_id:int; confidence:float; x1:int; y1:int; x2:int; y2:int
-    def pack(self)->bytes: return DETECTION.pack(self.class_id,max(0,min(65535,round(self.confidence*32767))),self.x1,self.y1,self.x2,self.y2)
-    @classmethod
-    def unpack(cls,data:bytes):
-        cid,conf,x1,y1,x2,y2=DETECTION.unpack(data); return cls(cid,conf/32767.0,x1,y1,x2,y2)
-
-@dataclass(frozen=True)
-class ResultDescriptor:
-    stream_id:int; frame_id:int; timestamp_ns:int; detections:tuple[DetectionRecord,...]=(); traffic_light_state:int=0; lane_state:int=0; adas_action:int=0; warning_flags:int=0
-    magic: ClassVar[bytes]=RESULT_MAGIC
-    def serialize(self)->bytes:
-        payload=b"".join(d.pack() for d in self.detections)
-        return RESULT_HEADER.pack(self.magic,VERSION,RESULT_HEADER.size,self.stream_id,self.frame_id,self.timestamp_ns,len(self.detections),self.traffic_light_state,self.lane_state,self.adas_action,0,self.warning_flags,len(payload))+payload
-    @classmethod
-    def deserialize(cls,data:bytes):
-        if len(data)<RESULT_HEADER.size: raise ProtocolError("truncated result header")
-        m,v,hlen,sid,fid,ts,n,tls,lan,act,_r,warn,size=RESULT_HEADER.unpack_from(data)
-        if m!=RESULT_MAGIC: raise ProtocolError("bad result magic")
-        _check_version(v)
-        if hlen!=RESULT_HEADER.size or size!=len(data)-hlen or size != n*DETECTION.size: raise ProtocolError("invalid result payload size")
-        ds=tuple(DetectionRecord.unpack(data[hlen+i*DETECTION.size:hlen+(i+1)*DETECTION.size]) for i in range(n))
-        return cls(sid,fid,ts,ds,tls,lan,act,warn)
+    def deserialize(cls, packet):
+        result = _ResultDescriptor.deserialize(packet)
+        detections = tuple(DetectionRecord(item.class_id, item.confidence_q15, item.x1, item.y1, item.x2, item.y2) for item in result.detections)
+        return cls(result.stream_id, result.frame_id, result.timestamp_ns, detections, result.traffic_light_state, result.lane_state, result.adas_action, result.warning_flags)

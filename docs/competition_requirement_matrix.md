@@ -15,3 +15,11 @@
 | P1-3 | 轻量AI实时多路识别 | 现场视频实时框与状态 | 帧预处理/OSD | RKNN NPU | PARTIAL | 最终道路数据、四路端到端实测 | P1 | RK3566 model build/smoke docs |
 | P2-1 | 工程规范、时序约束、完整文档 | 检查源码/报告 | RTL规范/约束 | 软件日志/接口 | PARTIAL | FPGA工程源码与时序报告 | P2 | existing docs and tests |
 | P2-2 | 提交1080P三分钟演示视频和源码 | 材料审查 | 录制完整链路 | 录制 AI/ADAS | BLOCKED | 最终实机演示 | P2 | no final recording in repo |
+
+## Software closeout status (2026-09-08)
+
+The canonical software loop is now implemented under `src/adas_edge/competition`
+and covered by `SOFTWARE UNIT TEST` and `SOFTWARE E2E MOCK` evidence. This does
+not change any `PARTIAL` or `BLOCKED` hardware status above: FPGA capture,
+physical PCIe/DMA, OSD/HDMI, four physical inputs and road-video acceptance
+remain pending.

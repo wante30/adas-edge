@@ -123,3 +123,12 @@ FPGA 单路 PCIe/OSD 闭环 → 连续单路 → 四路压力测试
 | 320/416 640 历史性能口径 | `docs/competition_640_benchmark_note.md`、`docs/competition_multistream_budget.md` |
 | 系统架构与风险 | `docs/competition_system_architecture.md`、`docs/competition_remaining_risks.md` |
 | 带框视觉结果 | `outputs/bdd100k_external/`、`outputs/user_video_preacceptance/` |
+
+## 8. 软件收口结果
+
+`adas_edge.competition` is now the canonical competition package. PCIe metadata
+v1 is frozen in Python/C/Verilog with golden vectors; the descriptor-to-result
+path is validated as `SOFTWARE E2E MOCK`. The latest local verification is
+`python -m pytest -q`: 78 passed. This number is a fresh run, not a carried-over
+historical claim. Physical FPGA/PCIe and continuous RK3566 road-video tests
+remain unresolved as listed above.

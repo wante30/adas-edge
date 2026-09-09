@@ -1,5 +1,9 @@
 # Competition multistream budget
 
-Measured RK3566 NPU-only service rates from existing reports: 320 ≈43.72 FPS, 416 ≈28.80 FPS, 640 ≈12.65 FPS. A stable four-stream starting point is round-robin at 6 FPS per stream (24 FPS aggregate), leaving margin for decode/postprocess; 8 FPS per stream (32 aggregate) is a stress target. 4×10 FPS is above the measured 320 service capacity and must not be promised. Display FPS and AI inference FPS are separate.
+Historical NPU-only measurement: 320 input about 43.72 FPS; historical full pipeline 320 about 27.715 FPS. These are not FPGA E2E measurements.
 
-These are NPU/service measurements, not four-camera PCIe end-to-end benchmarks. Final rates require the actual FPGA transport and road clips.
+- 4x6 = 24 aggregate FPS: conservative target.
+- 4x8 = 32 aggregate FPS: stress target.
+- 4x10 = 40 aggregate FPS: planning target only, not a demonstrated rate.
+
+The 32/40 aggregate figures exceed the historical full-pipeline number, but neither may be compared directly with isolated 43.72 FPS NPU-only service. Physical four-camera, PCIe and OSD measurements are `FPGA/PCIe HARDWARE TEST`.

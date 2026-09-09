@@ -1,5 +1,11 @@
 # Competition system architecture
 
-`OV5640/HDMI IN/Ethernet → FPGA capture, buffer and preprocessing → PCIe DMA frame descriptors → RK3566 CompetitionDetector + scene adapters + ADAS state machine → PCIe metadata descriptors → FPGA OSD/mosaic → HDMI OUT`.
+```text
+FPGA frame descriptor -> validate v1 header/payload -> payload_to_bgr
+-> CompetitionDetector -> scene adapters -> CompetitionPolicy
+-> ResultDescriptor metadata
+```
 
-The software boundary is `FrameSource → CompetitionDetector → scene adapter → RuleBasedDecisionEngine → ControlTransport`. The detector never owns PCIe or display state. FPGA responsibilities and unresolved hardware gates are tracked in `competition_requirement_matrix.md`.
+`CompetitionPipeline.process_descriptor()` preserves `stream_id`, `frame_id`, and `timestamp_ns`, and emits clipped source-pixel unsigned-16-bit boxes. `RoundRobinTransport` is the software-only multi-stream boundary.
+
+Evidence labels are strict: `SOFTWARE UNIT TEST`, `SOFTWARE E2E MOCK`, `RK3566 BOARD TEST`, and `FPGA/PCIe HARDWARE TEST` are never interchangeable. Real FPGA capture, endpoint/DMA, OSD/HDMI, and physical cameras remain outside this checkout.
