@@ -51,16 +51,61 @@ def summarize(values: Sequence[float]) -> dict[str, float]:
     }
 
 
-def letterbox_bgr(image: np.ndarray, size: int) -> tuple[np.ndarray, float, int, int]:
-    """Resize BGR input to a square RGB NHWC model input without cropping."""
+def normalize_input_shape(size: int | tuple[int, int] | list[int]) -> tuple[int, int]:
+    """Return a model input as ``(width, height)``.
+
+    This is the pure half of the contract shared by the preprocessor and the raw
+    head decoder: a square ``int`` or an explicit ``(width, height)``. The RKNN
+    graph constraints (>=32 and divisible by 32) are policy and live in
+    :func:`validate_model_shape`, so unit-scale tensors stay decodable.
+    """
+    if isinstance(size, int):
+        width = height = size
+    else:
+        if len(size) != 2:
+            raise ValueError(f"input shape must be int or (width, height), got {size!r}")
+        width, height = (int(size[0]), int(size[1]))
+    if width <= 0 or height <= 0:
+        raise ValueError(f"input shape must be positive, got {(width, height)}")
+    return width, height
+
+
+def validate_model_shape(shape: int | str | tuple[int, int] | list[int]) -> tuple[int, int]:
+    """Return ``(width, height)`` after enforcing the RKNN graph constraints.
+
+    Accepts ``320``, ``"320"``, ``"512x288"`` (also ``X``/``×``/``*`` separators)
+    or a two-item sequence. Both sides must be at least 32 and divisible by 32,
+    which every YOLO stride requires from a rectangular input.
+    """
+    if isinstance(shape, str):
+        text = shape.strip().lower().replace("×", "x").replace("*", "x")
+        parts = text.split("x")
+        if len(parts) not in (1, 2) or not all(part.strip().lstrip("+-").isdigit() for part in parts):
+            raise ValueError(f"cannot parse model shape {shape!r}; expected e.g. 512x288")
+        size: int | tuple[int, int] = int(parts[0]) if len(parts) == 1 else (int(parts[0]), int(parts[1]))
+    else:
+        size = shape
+    width, height = normalize_input_shape(size)
+    if width < 32 or height < 32 or width % 32 or height % 32:
+        raise ValueError(f"model input must be >=32 and divisible by 32, got {(width, height)}")
+    return width, height
+
+
+def letterbox_bgr(image: np.ndarray, size: int | tuple[int, int] | list[int]) -> tuple[np.ndarray, float, int, int]:
+    """Resize BGR input to an RGB NHWC model input without cropping.
+
+    ``size`` is either a square integer or ``(width, height)``. Padding and
+    returned coordinates are in model-space pixels.
+    """
     import cv2
 
+    model_width, model_height = normalize_input_shape(size)
     height, width = image.shape[:2]
-    scale = min(size / width, size / height)
+    scale = min(model_width / width, model_height / height)
     resized_width, resized_height = round(width * scale), round(height * scale)
     resized = cv2.resize(image, (resized_width, resized_height), interpolation=cv2.INTER_LINEAR)
-    canvas = np.full((size, size, 3), 114, dtype=np.uint8)
-    pad_x, pad_y = (size - resized_width) // 2, (size - resized_height) // 2
+    canvas = np.full((model_height, model_width, 3), 114, dtype=np.uint8)
+    pad_x, pad_y = (model_width - resized_width) // 2, (model_height - resized_height) // 2
     canvas[pad_y : pad_y + resized_height, pad_x : pad_x + resized_width] = resized
     # ONNX from Ultralytics consumes RGB. RKNN input remains uint8 NHWC.
     return np.ascontiguousarray(cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)), scale, pad_x, pad_y
@@ -94,7 +139,7 @@ def _as_nchw(output: np.ndarray) -> np.ndarray:
 
 def decode_yolo11_raw(
     outputs: Sequence[np.ndarray],
-    input_size: int,
+    input_size: int | tuple[int, int] | list[int],
     confidence_threshold: float,
     iou_threshold: float,
     scale: float,
@@ -104,6 +149,7 @@ def decode_yolo11_raw(
     """CPU DFL/decode, sigmoid, filtering and class-wise NMS for six raw outputs."""
     if len(outputs) != 6:
         raise ValueError(f"expected six raw head outputs, got {len(outputs)}")
+    model_width, model_height = normalize_input_shape(input_size)
     candidates: list[np.ndarray] = []
     dfl_weights = np.arange(DFL_BINS, dtype=np.float32)
     confidence_logit = math.log(confidence_threshold / (1.0 - confidence_threshold))
@@ -112,7 +158,9 @@ def decode_yolo11_raw(
         _, _, grid_h, grid_w = reg.shape
         if classes.shape != (1, COCO_CLASSES, grid_h, grid_w):
             raise ValueError(f"incompatible raw outputs: {reg.shape}, {classes.shape}")
-        stride = input_size / grid_h
+        if model_height % grid_h or model_width % grid_w:
+            raise ValueError(f"grid {grid_w}x{grid_h} does not divide input {(model_width, model_height)}")
+        stride_x, stride_y = model_width / grid_w, model_height / grid_h
         class_logits = np.asarray(classes[0])
         max_logits = class_logits.max(axis=0)
         ys, xs = np.where(max_logits >= confidence_logit)
@@ -131,14 +179,14 @@ def decode_yolo11_raw(
         distances = np.exp(distances)
         distances /= distances.sum(axis=2, keepdims=True)
         distances = (distances * dfl_weights.reshape(1, 1, DFL_BINS)).sum(axis=2)
-        x_center = (xs.astype(np.float32) + 0.5) * stride
-        y_center = (ys.astype(np.float32) + 0.5) * stride
+        x_center = (xs.astype(np.float32) + 0.5) * stride_x
+        y_center = (ys.astype(np.float32) + 0.5) * stride_y
         xyxy = np.column_stack(
             [
-                x_center - distances[:, 0] * stride,
-                y_center - distances[:, 1] * stride,
-                x_center + distances[:, 2] * stride,
-                y_center + distances[:, 3] * stride,
+                x_center - distances[:, 0] * stride_x,
+                y_center - distances[:, 1] * stride_y,
+                x_center + distances[:, 2] * stride_x,
+                y_center + distances[:, 3] * stride_y,
             ]
         )
         # Restore coordinates from letterboxed model space to the 1080p BGR frame.
@@ -414,10 +462,26 @@ def _run_thermal(video: Path, model_path: Path, output_dir: Path, seconds: int) 
     _write_csv(output_dir / "thermal_resource_samples.csv", sampler.rows)
 
 
-def _run_pipeline(video: Path, model_path: Path, output_dir: Path, frames: int, resolution: int = 640, queue_size: int = 4) -> None:
-    """Measure one stream through four bounded worker queues."""
+def _run_pipeline(
+    video: Path,
+    model_path: Path,
+    output_dir: Path,
+    frames: int,
+    resolution: int | str | tuple[int, int] = 640,
+    queue_size: int = 4,
+) -> None:
+    """Measure one stream through four bounded worker queues.
+
+    ``resolution`` is a square size or a ``(width, height)`` pair, so a 16:9
+    input such as 512x288 runs through exactly the same bounded pipeline and
+    only changes the letterbox canvas and the decode strides.
+    """
     import cv2
     from rknnlite.api import RKNNLite
+
+    model_width, model_height = validate_model_shape(resolution)
+    input_shape = (model_width, model_height)
+    label = f"{model_width}x{model_height}"
 
     queues = [queue.Queue(maxsize=queue_size) for _ in range(3)]
     stats = QueueStats(("decode_to_preprocess", "preprocess_to_npu", "npu_to_postprocess"))
@@ -457,7 +521,7 @@ def _run_pipeline(video: Path, model_path: Path, output_dir: Path, frames: int, 
                     put(1, stop)
                     return
                 started = time.perf_counter()
-                image, scale, pad_x, pad_y = letterbox_bgr(item["bgr"], resolution)
+                image, scale, pad_x, pad_y = letterbox_bgr(item["bgr"], input_shape)
                 item.update({"image": image, "scale": scale, "pad_x": pad_x, "pad_y": pad_y, "preprocess_ms": (time.perf_counter() - started) * 1000})
                 del item["bgr"]
                 put(1, item)
@@ -491,7 +555,7 @@ def _run_pipeline(video: Path, model_path: Path, output_dir: Path, frames: int, 
                 if item is stop:
                     return
                 started = time.perf_counter()
-                decode_yolo11_raw(item["outputs"], resolution, 0.25, 0.45, item["scale"], item["pad_x"], item["pad_y"])
+                decode_yolo11_raw(item["outputs"], input_shape, 0.25, 0.45, item["scale"], item["pad_x"], item["pad_y"])
                 item["postprocess_ms"] = (time.perf_counter() - started) * 1000
                 item.pop("outputs", None)
                 item["end_to_end_ms"] = (time.perf_counter() - item["started"]) * 1000
@@ -500,7 +564,7 @@ def _run_pipeline(video: Path, model_path: Path, output_dir: Path, frames: int, 
             errors.put(exc)
 
     sampler = ResourceSampler()
-    sampler.start(f"pipeline_{resolution}")
+    sampler.start(f"pipeline_{label}")
     workers = [threading.Thread(target=decode_worker), threading.Thread(target=preprocess_worker), threading.Thread(target=npu_worker), threading.Thread(target=postprocess_worker)]
     started = time.perf_counter()
     for worker in workers:
@@ -512,11 +576,11 @@ def _run_pipeline(video: Path, model_path: Path, output_dir: Path, frames: int, 
     if not errors.empty():
         raise errors.get()
     rows.sort(key=lambda row: row["frame_id"])
-    _write_csv(output_dir / f"pipeline_{resolution}_per_frame_latency.csv", rows, ["frame_id", "decode_ms", "preprocess_ms", "npu_infer_ms", "postprocess_ms", "end_to_end_ms"])
+    _write_csv(output_dir / f"pipeline_{label}_per_frame_latency.csv", rows, ["frame_id", "decode_ms", "preprocess_ms", "npu_infer_ms", "postprocess_ms", "end_to_end_ms"])
     _write_csv(output_dir / "pipeline_queue_stats.csv", stats.rows(), ["queue", "average_length", "samples"])
-    _write_csv(output_dir / f"pipeline_{resolution}_resource_samples.csv", sampler.rows)
+    _write_csv(output_dir / f"pipeline_{label}_resource_samples.csv", sampler.rows)
     output_dir.joinpath("pipeline_summary.md").write_text(
-        f"# {resolution} pipeline profile\n\n- frames: {len(rows)}\n- wall time: {elapsed:.3f} s\n- throughput: {len(rows) / elapsed:.3f} FPS\n\n" + "\n".join(f"- {row['queue']}: average queue length {row['average_length']:.3f}" for row in stats.rows()) + "\n", encoding="utf-8"
+        f"# {label} pipeline profile\n\n- frames: {len(rows)}\n- wall time: {elapsed:.3f} s\n- throughput: {len(rows) / elapsed:.3f} FPS\n\n" + "\n".join(f"- {row['queue']}: average queue length {row['average_length']:.3f}" for row in stats.rows()) + "\n", encoding="utf-8"
     )
 
 
@@ -552,8 +616,18 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, default=Path("profile_output"))
     parser.add_argument("--thermal-seconds", type=int, default=300)
     parser.add_argument("--switch-frames", type=int, default=200, help="Alternating 320/640 inferences; 0 disables")
-    parser.add_argument("--pipeline-frames", type=int, default=0, help="Run bounded four-thread 640 pipeline; 0 disables")
-    parser.add_argument("--pipeline-size", type=int, choices=(320, 416, 640), default=640)
+    parser.add_argument("--pipeline-frames", type=int, default=0, help="Run bounded four-thread pipeline; 0 disables")
+    parser.add_argument(
+        "--pipeline-size",
+        default="640",
+        metavar="SIZE|WxH",
+        help="pipeline input: 320, 416, 512x288, ... (default 640)",
+    )
+    parser.add_argument(
+        "--pipeline-model",
+        type=Path,
+        help="RKNN model for --pipeline-size when it is not one of the 320/416/640 models",
+    )
     parser.add_argument("--make-raw-onnx", type=Path, metavar="SOURCE")
     parser.add_argument("--raw-onnx-output", type=Path, metavar="DESTINATION")
     args = parser.parse_args()
@@ -574,7 +648,20 @@ def main() -> None:
         parser.error("--frames must be positive; optional run lengths must be non-negative")
     run_profile(args.video, model_paths, args.frames, args.output_dir, args.thermal_seconds, args.switch_frames)
     if args.pipeline_frames:
-        _run_pipeline(args.video, model_paths[args.pipeline_size], args.output_dir, args.pipeline_frames, args.pipeline_size)
+        try:
+            pipeline_shape = validate_model_shape(args.pipeline_size)
+        except ValueError as exc:
+            parser.error(str(exc))
+        if args.pipeline_model:
+            pipeline_model = args.pipeline_model
+        elif pipeline_shape[0] == pipeline_shape[1] and pipeline_shape[0] in model_paths:
+            pipeline_model = model_paths[pipeline_shape[0]]
+        else:
+            parser.error(
+                f"--pipeline-model is required for {pipeline_shape[0]}x{pipeline_shape[1]}: "
+                "only 320/416/640 are covered by --model"
+            )
+        _run_pipeline(args.video, pipeline_model, args.output_dir, args.pipeline_frames, pipeline_shape)
 
 
 if __name__ == "__main__":

@@ -9,8 +9,9 @@ COCO_NAMES = ("person","bicycle","car","motorcycle","airplane","bus","train","tr
 COMPETITION_CLASSES = {"person","bicycle","car","motorcycle","bus","truck","traffic light","stop sign"}
 
 class CompetitionDetector:
-    def __init__(self, model_path: str | Path, input_size: int = 320, conf_threshold: float = .25, nms_threshold: float = .45, runner: Any = None):
-        self.model_path, self.input_size = Path(model_path), int(input_size)
+    def __init__(self, model_path: str | Path, input_size: int | tuple[int, int] = 320, conf_threshold: float = .25, nms_threshold: float = .45, runner: Any = None):
+        self.model_path = Path(model_path)
+        self.input_size = input_size if isinstance(input_size, int) else (int(input_size[0]), int(input_size[1]))
         self.conf_threshold, self.nms_threshold = float(conf_threshold), float(nms_threshold)
         self._runner = runner
         if runner is None:
