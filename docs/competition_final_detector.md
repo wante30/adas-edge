@@ -1,5 +1,124 @@
-# Competition final detector status
+# 比赛检测器最终配置
 
-Final detector is **provisionally YOLO11n INT8 split-output 320**: `deployment/rknn/yolo11n_rk3566_int8_split_320.rknn`, COCO 80 classes, confidence 0.25, NMS IoU 0.45. RK3566 smoke inference is about 24.14 ms on one COCO128 frame. 416 remains fallback (`...split_416.rknn`, about 38.35 ms) until identical road clips establish a small-object recall gain. No fine-tuning is justified without failure evidence.
+更新日期：2026-09-17
+本文件**取代** 2026-09-01 的临时结论（"320 为主、416 为备选、四路 6 FPS 轮询"）。
 
-Four-stream planning target: 6 FPS per stream round-robin. This is a planning budget, not a PCIe end-to-end claim. Final freeze requires road-video comparison and hardware loop closure.
+## 1. 最终推荐
+
+### 1.1 单模型
+
+**FRONT 用 512×288，侧后三路用 320×192。不再使用 320×320 或 416×416 方画布。**
+
+| 用途 | 模型 | INT8 SHA-256（前 16 位） |
+| --- | --- | --- |
+| FRONT 主检测器 | `yolo11n_rk3566_int8_split_512x288.rknn` | `7A697CCC476954F6` |
+| LEFT/RIGHT/BACK | `yolo11n_rk3566_int8_split_320x192.rknn` | `543B8C572737A1D5` |
+
+完整的 SHA-256、ONNX 输入输出形状与量化配置见 [矩形模型构建](competition_rectangular_model_build.md)。
+
+### 1.2 四路配置（Q2 的答案）
+
+| 流 | 角色 | 画布 | 目标 FPS | 权重 |
+| --- | --- | --- | ---: | ---: |
+| CH0 | FRONT | **512×288** | **10** | 10 |
+| CH1 | LEFT | **320×192** | **6** | 6 |
+| CH2 | RIGHT | **320×192** | **6** | 6 |
+| CH3 | BACK | **320×192** | **6** | 6 |
+| | | | **合计 28** | |
+
+调度器：**加权轮询，权重 = 目标帧率比**（`WeightedRoundRobinScheduler`，权重 10:6:6:6）。
+队列 **深度 1**，drop-oldest（延迟优先，理由见 §1.4）。
+
+板端实测（300 s，`CONFIG-B-WRR-FAIR`，队列深度 3 与 1 两档）：
+
+| 指标 | 实测 |
+| --- | --- |
+| 聚合实际 FPS | **27.91 / 28（99.7%）** |
+| FRONT | 9.96 / 10（99.6%） |
+| LEFT / RIGHT / BACK | 5.99 / 5.99 / 5.98（各 99.7–99.8%） |
+| 丢帧 | 各路 1.4–1.6% |
+| CPU | 54.2%（4 核平均） |
+| RSS | 268 MB |
+| 队列均值 | 1.37–1.54（深度 3 未打满） |
+
+### 1.4 队列深度是延迟/吞吐的旋钮，ADAS 场景应选深度 1
+
+同样配置、只改队列深度（drop-oldest）：
+
+| 指标 | 深度 3 | **深度 1** |
+| --- | ---: | ---: |
+| 聚合 FPS | 27.91（0.997） | 27.41（0.979） |
+| 平均丢帧 | 1.4% | 3.4% |
+| **FRONT e2e p95** | 314 ms | **146 ms** |
+| FRONT 平均排队等待 | 117.6 ms | **31.1 ms** |
+| 侧路 e2e p95 | 446–457 ms | **167–181 ms** |
+
+深度 1 用 1.8% 的吞吐换掉了一半以上的尾延迟。对辅助驾驶而言，**帧的新鲜度比多出来的
+1.8% 帧率重要得多**，所以推荐深度 1。若演示更看重稳态吞吐（例如只做统计展示），
+可以改回深度 3，两者都已实测。
+
+### 1.3 两条不能违反的配置规则
+
+1. **调度器必须用加权轮询，不要用"最迟优先"。** 同样的流定义下，最迟优先只能到 23.86/28（85.2%）、
+   丢帧 11–18%、e2e p95 370–546 ms；加权轮询到 27.91/28（99.7%）、丢帧 1.4–1.6%、队列不打满。
+2. **权重必须与目标帧率成比例，不能凭直觉排优先级阶梯。** 5:2:2:1 的阶梯把 BACK 欠配到约 10% 时隙
+   （< 它 6 FPS 的需求），BACK 因此成为唯一还在丢帧的一路（8.9%，e2e p95 498 ms）。
+
+## 2. Q1：最好的 accuracy/speed trade-off 是 512×288
+
+| 画布 | 像素 | 板端 NPU mean | 冻结 holdout mAP50 | mAP50:95 | 小目标 recall |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 320×192 | 61,440 | 16.12 ms | 0.1122 | 0.0672 | 0.0009 |
+| 416×256 | 106,496 | 23.86 ms | 0.1675 | 0.0991 | 0.0097 |
+| **512×288** | 147,456 | **30.42 ms** | **0.1999** | **0.1183** | **0.0235** |
+| 640×352 | 225,280 | 47.66 ms | 0.2329 | 0.1393 | 0.0522 |
+
+- **512×288 严格支配旧方画布候选**：比 416×416（旧 38.35 ms）快 21%，精度更高，且不浪费 letterbox padding。
+- **640×352 精度最高但只适合 FRONT**：它在四路里把总吞吐从 25.72 拉到 22.42 FPS（−12.8%），
+  而 320×192/416×256 的精度回升不足以补偿。CONFIG-D 实测达成率 0.801，是四个配置里最差的。
+- 单路端到端上限（含解码与后处理）：320×192 = 28.0 FPS，512×288 = **17.1 FPS**，640×352 = 12.7 FPS。
+
+**因此：512×288 是 FRONT 的选择，320×192 是另外三路的选择。**
+
+## 3. Q3：traffic light 不能由主检测器完成
+
+```
+MAIN YOLO: FAIL
+REQUIRE FRONT-ONLY SPECIALIST
+```
+
+依据（详见 [traffic light 专项 Gate](competition_traffic_light_gate.md)）：
+
+- 512×288 的 traffic light AP50 = 0.0712；640×352 = 0.1039；640×384 = 0.1055。**始终是全类最差。**
+- 512×288 下 **78.6%** 的红绿灯 GT 框在任何置信度下都没有候选框；640×352 是 71.3%。
+- 降阈值到 0.05 只能把 recall 从 0.052 提到 0.132（512×288）/ 0.080 提到 0.188（640×352），
+  仍远不可用，且虚检显著上升。
+- 物理原因：红绿灯 GT 中位框 13×20 px（原图），在 512×288 模型空间只有 5.2×8.0 px，**低于 stride-8 特征层**。
+
+**本轮不训练专用模型**（本轮禁止 fine-tune）。方案、ROI、目标帧率、算力预算与所需数据见专项文档。
+
+## 4. 本轮的冻结项
+
+| 项 | 状态 |
+| --- | --- |
+| 检测权重 | 冻结为 COCO-80 `yolo11n.pt`，无 fine-tune。Road-FT 模型**不得**替换 baseline |
+| 冻结评测集 | BDD100K validation-only 前 1000 张，永不用作训练/校准/选型 |
+| 指标口径 | mAP50 / mAP50:95 / macro recall 三者分列，禁止混用（[协议](competition_detection_metric_protocol.md)） |
+| 画布契约 | 显式 `(width, height)`，两侧必须为 32 的倍数；`640×360` 非法 |
+| 前/侧/后分辨率 | FRONT 512×288，其余 320×192 |
+| 调度器 | `WeightedRoundRobinScheduler`，权重 10:6:6:6，队列深度 3，drop-oldest |
+| 单路帧率上限 | 512×288 = 17.1 FPS（端到端），320×192 = 28.0 FPS |
+
+## 5. 仍未闭环、且依赖 FPGA 的事项
+
+以下是**真实硬件**缺口，与本轮 AI 工作无关：
+
+| 缺口 | 为什么需要 FPGA |
+| --- | --- |
+| 视频采集与 HDMI OSD 闭环 | 赛题要求处理后回写显示；当前只有软件 mock |
+| 物理 PCIe endpoint/DMA 连续传输 | 现有证据止于 endpoint 枚举、Gen2 x1 链路、BAR 分配与 Pango 驱动加载；PIO/DMA/连续视频未验证 |
+| 四路 PCIe 帧输入 | 本轮的"四路"是**文件视频回放**，不是 PCIe 四路输入；队列与调度逻辑可直接复用，但输入源不同 |
+| 检测框回写 overlay（同 frame_id） | 需要 FPGA 侧 overlay 通路 |
+
+本轮的 RK3566 四路结论**不能**当作 PCIe 端到端验收：它证明的是 NPU + CPU + 调度 + 队列在
+四路视频输入下的行为，而不是 FPGA→PCIe→RK3566 的完整链路。

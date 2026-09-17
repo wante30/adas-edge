@@ -66,6 +66,14 @@ PLANS = {
         "CONFIG-B weighted RR", [Q512, Q320, Q320, Q320], [10, 6, 6, 6],
         {"kind": "weighted", "weights": {"0": 5, "1": 2, "2": 2, "3": 1}},
     ),
+    # The same scheduler with weights proportional to the target FPS instead of an
+    # arbitrary priority ladder. A 5:2:2:1 ladder entitles BACK to only ~10% of
+    # slots, which is less than its 6 FPS target needs, so it is the one stream
+    # that still drops frames under weighted round-robin.
+    "CONFIG-B-WRR-FAIR": config(
+        "CONFIG-B weighted RR, weights matched to targets", [Q512, Q320, Q320, Q320], [10, 6, 6, 6],
+        {"kind": "weighted", "weights": {"0": 10, "1": 6, "2": 6, "3": 6}},
+    ),
 }
 
 
