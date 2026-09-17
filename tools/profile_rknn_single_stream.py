@@ -11,12 +11,21 @@ import os
 import queue
 import statistics
 import subprocess
+import sys
 import threading
 import time
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
 import numpy as np
+
+if __package__ in (None, ""):  # allow `python tools/profile_rknn_single_stream.py` from the repo root
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from competition_ai.input_shape import (
+    normalize_shape as canonical_normalize_shape,
+    validate_model_shape as canonical_validate_model_shape,
+)
 
 
 COCO_CLASSES = 80
@@ -54,20 +63,11 @@ def summarize(values: Sequence[float]) -> dict[str, float]:
 def normalize_input_shape(size: int | tuple[int, int] | list[int]) -> tuple[int, int]:
     """Return a model input as ``(width, height)``.
 
-    This is the pure half of the contract shared by the preprocessor and the raw
-    head decoder: a square ``int`` or an explicit ``(width, height)``. The RKNN
-    graph constraints (>=32 and divisible by 32) are policy and live in
-    :func:`validate_model_shape`, so unit-scale tensors stay decodable.
+    Delegates to the canonical contract in :mod:`competition_ai.input_shape` so the
+    board profiler, the competition detector and the PC evaluators can never drift
+    apart on what a "320" input means.
     """
-    if isinstance(size, int):
-        width = height = size
-    else:
-        if len(size) != 2:
-            raise ValueError(f"input shape must be int or (width, height), got {size!r}")
-        width, height = (int(size[0]), int(size[1]))
-    if width <= 0 or height <= 0:
-        raise ValueError(f"input shape must be positive, got {(width, height)}")
-    return width, height
+    return canonical_normalize_shape(size)
 
 
 def validate_model_shape(shape: int | str | tuple[int, int] | list[int]) -> tuple[int, int]:
@@ -77,18 +77,7 @@ def validate_model_shape(shape: int | str | tuple[int, int] | list[int]) -> tupl
     or a two-item sequence. Both sides must be at least 32 and divisible by 32,
     which every YOLO stride requires from a rectangular input.
     """
-    if isinstance(shape, str):
-        text = shape.strip().lower().replace("×", "x").replace("*", "x")
-        parts = text.split("x")
-        if len(parts) not in (1, 2) or not all(part.strip().lstrip("+-").isdigit() for part in parts):
-            raise ValueError(f"cannot parse model shape {shape!r}; expected e.g. 512x288")
-        size: int | tuple[int, int] = int(parts[0]) if len(parts) == 1 else (int(parts[0]), int(parts[1]))
-    else:
-        size = shape
-    width, height = normalize_input_shape(size)
-    if width < 32 or height < 32 or width % 32 or height % 32:
-        raise ValueError(f"model input must be >=32 and divisible by 32, got {(width, height)}")
-    return width, height
+    return canonical_validate_model_shape(shape)
 
 
 def letterbox_bgr(image: np.ndarray, size: int | tuple[int, int] | list[int]) -> tuple[np.ndarray, float, int, int]:

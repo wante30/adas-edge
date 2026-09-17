@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from adas_edge.contracts import Detection, Frame
+from adas_edge.input_shape import to_ultralytics_imgsz, validate_model_shape
 from adas_edge.perception.base import Detector
 
 
@@ -25,7 +26,7 @@ class UltralyticsDetector(Detector):
         self,
         model_path: str | Path,
         confidence: float = 0.25,
-        input_size: int = 640,
+        input_size: int | str | tuple[int, int] = 640,
         device: str = "cpu",
     ) -> None:
         try:
@@ -34,7 +35,9 @@ class UltralyticsDetector(Detector):
             raise RuntimeError("Install ultralytics to use the PC detector") from exc
         self._model = YOLO(str(model_path))
         self._confidence = confidence
-        self._input_size = input_size
+        # Explicit (width, height); a bare int keeps its historical square meaning.
+        self._input_width, self._input_height = validate_model_shape(input_size)
+        self._input_size = to_ultralytics_imgsz(input_size)
         self._device = device
         self.model_name = Path(model_path).name
 

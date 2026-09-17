@@ -27,6 +27,18 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         type=Path,
         help="Calibration list required only for --precision int8.",
     )
+    parser.add_argument(
+        "--quantized-algorithm",
+        default="normal",
+        choices=("normal", "mmse", "kl_divergence"),
+        help="RKNN quantization range search; 'normal' is the toolkit default",
+    )
+    parser.add_argument(
+        "--quantized-method",
+        default="channel",
+        choices=("layer", "channel"),
+        help="per-channel ('channel') is the toolkit default and the verified setting",
+    )
     args = parser.parse_args(argv)
     if args.precision == "int8" and args.dataset is None:
         parser.error("--dataset is required when --precision int8")
@@ -47,7 +59,13 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     rknn = RKNN(verbose=True)
     try:
-        rknn.config(mean_values=[[0, 0, 0]], std_values=[[255, 255, 255]], target_platform="rk3566")
+        rknn.config(
+            mean_values=[[0, 0, 0]],
+            std_values=[[255, 255, 255]],
+            target_platform="rk3566",
+            quantized_algorithm=args.quantized_algorithm,
+            quantized_method=args.quantized_method,
+        )
         check(rknn.load_onnx(model=str(args.onnx)), "load_onnx")
         if args.precision == "int8":
             check(rknn.build(do_quantization=True, dataset=str(args.dataset)), "build")

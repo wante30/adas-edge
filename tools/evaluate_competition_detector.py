@@ -4,9 +4,10 @@ import argparse, csv, json, statistics
 from pathlib import Path
 import cv2
 from competition_ai import CompetitionDetector
+from competition_ai.input_shape import validate_model_shape
 
 def main() -> None:
-    p=argparse.ArgumentParser(); p.add_argument('--model',required=True); p.add_argument('--input',required=True); p.add_argument('--input-size',type=int,default=320); p.add_argument('--output-dir',required=True); p.add_argument('--conf',type=float,default=.25); p.add_argument('--max-frames',type=int); a=p.parse_args()
+    p=argparse.ArgumentParser(); p.add_argument('--model',required=True); p.add_argument('--input',required=True); p.add_argument('--input-size',default='320',help='static canvas: 320 or WxH, e.g. 512x288'); p.add_argument('--output-dir',required=True); p.add_argument('--conf',type=float,default=.25); p.add_argument('--max-frames',type=int); a=p.parse_args(); a.input_size=validate_model_shape(a.input_size)
     paths=[Path(a.input)] if Path(a.input).is_file() else sorted(Path(a.input).glob('*.mp4'))
     out=Path(a.output_dir); out.mkdir(parents=True,exist_ok=True); det_rows=[]; frame_rows=[]; counts={}; lat=[]; total=0
     with CompetitionDetector(a.model,a.input_size,a.conf) as detector:
