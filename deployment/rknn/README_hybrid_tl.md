@@ -1,0 +1,2 @@
+-- onnx model: tl_specialist_512x192_split.onnx
+-- dataset: calib_train_512x192.txt (train-split canvases, matches deployment distribution)

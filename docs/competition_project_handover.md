@@ -209,3 +209,19 @@ FPGA 单路 PCIe/OSD 闭环 → 连续单路 → 四路压力测试
 新增工具：`tools/telemetry_sampler.py`（SoC 温度/频率遥测）、`tools/traffic_light_roi_eval.py`、
 `tools/int8_perclass_eval.py`。原始数据在 `D:/Datasets/adas_edge_training/phase10/`（LONG20-*、
 int8check/）与 `D:/Datasets/adas_edge_training/roi_eval/`。
+
+---
+
+## 2026-09-18 晚间更新：TL specialist 交付，AI 软件侧冻结
+
+FRONT-only traffic-light specialist 全流程完成并通过 Gate（此前"MAIN YOLO NOT SUFFICIENT"的缺口就此闭环）：
+
+- 数据：BDD val 非 holdout 9000 张（23468 TL 框），512×192 ROI 画布，与验收集严格隔离；
+- 训练：YOLO11n 单类头，rect 训练，PC FP32 holdout TL AP50 0.136（主模型 0.083）、R@0.05 0.272（主 0.149）；
+- 量化：普通 INT8 因 box 分支 2 px 步长对 5×8 px 目标致命（AP50 0.101→0.029，混搭实验定位），
+  **混合量化**（框链 25 层 fp16）恢复到 AP50 0.069 / 板端 R@0.05 0.199 = 主模型板端 2.1 倍；
+- 预算：3 FPS 接入 FRONT，推理线程 78%→85.6%（5 FPS 90.7% 亦可）；
+- 主 YOLO / 调度 / 四路配置零改动。
+
+详见 [competition_tl_specialist.md](competition_tl_specialist.md)。**RK3566 AI 软件侧就此冻结**
+（主检测器 2 个 RKNN + specialist 1 个 RKNN + 调度器 + 队列参数），剩余为 FPGA 硬件侧事项。

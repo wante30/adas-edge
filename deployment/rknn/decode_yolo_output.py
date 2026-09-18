@@ -32,8 +32,14 @@ def decode_outputs(
     outputs: Sequence[np.ndarray],
     confidence_threshold: float = 0.25,
     iou_threshold: float = 0.45,
+    score_logits: bool = False,
 ) -> list[dict[str, object]]:
-    """Decode RKNN outputs shaped [1,4,N] and [1,C,N]."""
+    """Decode RKNN outputs shaped [1,4,N] and [1,C,N].
+
+    ``score_logits=True`` for models whose scores branch was cut before the
+    sigmoid (see split_yolo_output.py --scores-mode logits): the scores tensor
+    then holds log-odds and is converted to probabilities here.
+    """
     if len(outputs) != 2:
         raise ValueError(f"expected two outputs, got {len(outputs)}")
     boxes, scores = (np.asarray(output, dtype=np.float32) for output in outputs)
@@ -48,6 +54,8 @@ def decode_outputs(
          xywh[:, 0] + xywh[:, 2] / 2, xywh[:, 1] + xywh[:, 3] / 2]
     )
     class_scores = scores[0].T
+    if score_logits:
+        class_scores = 1.0 / (1.0 + np.exp(-class_scores))
     class_ids = class_scores.argmax(axis=1)
     confidences = class_scores[np.arange(class_scores.shape[0]), class_ids]
     valid = np.flatnonzero(confidences >= confidence_threshold)

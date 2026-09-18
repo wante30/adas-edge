@@ -127,6 +127,19 @@ recall 仅 **0.149**、候选覆盖率 **32.3%**，相对全帧只 +0.008。
 AP50 下降 0.01–0.11 来自置信度标定漂移（影响排序与 precision，不影响"框还在不在"）。
 person/TL 的 AP50 本来就低，其瓶颈是画布几何（§2/§3），不是量化。
 
+## 3.3 FRONT-only traffic-light specialist（2026-09-18 新增，Gate PASS）
+
+主检测器之外的独立支路，仅 FRONT 流使用：
+
+- 模型：`tl_specialist_512x192_hybrid2.rknn`（YOLO11n 单类头 + 混合量化，SHA256 前缀 `becfaada5da49c4d`）；
+- 输入：FRONT 全帧的顶部 60% 裁剪 → letterbox 512×192（与训练分布逐像素一致）；
+- 帧率：**3 FPS**（NPU 线程 +7.6%；5 FPS 可选 +12.7%）；
+- 效果：板端 TL recall@0.05 **0.199 = 主检测器（~0.095）的 2.1 倍**；
+- 输出语义：红绿灯**候选框**（含置信度），交由 ADAS 状态机做时域滤波，不直接输出灯色。
+
+主 YOLO、多流调度器、四路配置与队列参数**零改动**。构建/验收/量化归因全记录见
+[competition_tl_specialist.md](competition_tl_specialist.md)。
+
 ## 4. 本轮的冻结项
 
 | 项 | 状态 |

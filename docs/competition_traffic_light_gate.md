@@ -175,3 +175,20 @@ ROI 定义：A=全帧；B=顶部 60%；C=顶部 50%；D=由 GT 统计自动确�
 
 **TRAFFIC_LIGHT_SPECIALIST_REQUIRED**——ROI 重采样属于"无训练手段的天花板"，已被实测封死。
 下一步（下轮）应训练 front-only 专项小模型（方案见 §2），本轮不启动。
+
+---
+
+## 5. Specialist 已构建并通过 Gate（2026-09-18 晚间更新）
+
+上一节"只写方案、不训练"的限制已由新一轮任务解除。FRONT-only specialist 已完成
+数据 → 训练 → 量化 → 板端验收全流程，**Gate PASS**：
+
+| 口径 | 主模型最优 | Specialist |
+| --- | ---: | ---: |
+| PC FP32 holdout TL AP50 / R@0.05 | 0.0830 / 0.149 | **0.1362 / 0.272** |
+| RK3566 部署版 TL R@0.05 | ~0.095 | **0.199**（2.1×） |
+| 部署模型 | — | 混合量化 INT8（框链 25 层 fp16），NPU 25.3 ms |
+| 3 / 5 FPS 预算 | — | +7.6% / +12.7% 推理线程占用，均可容纳 |
+
+实施细节、量化退化归因（box 分支 INT8 步长 2 px 对 5×8 px 目标的致命抖动）与混合量化修复
+见 [competition_tl_specialist.md](competition_tl_specialist.md)。专用支路以 **3 FPS** 接入 FRONT 流。

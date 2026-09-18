@@ -85,6 +85,11 @@ def run() -> None:
     parser.add_argument("--markdown", type=Path, required=True)
     parser.add_argument("--label", default="TL-ROI")
     parser.add_argument("--canvases", default="512x288,640x352")
+    parser.add_argument(
+        "--rois",
+        default="",
+        help="comma list of ROI labels to run (default: all ROI_DEFINITIONS)",
+    )
     parser.add_argument("--confs", default="0.05,0.10,0.15,0.20,0.25")
     parser.add_argument("--device", default="0")
     parser.add_argument("--limit", type=int, default=0, help="0 = all images")
@@ -93,6 +98,12 @@ def run() -> None:
     width_px, height_px = 1280, 720
     canvases = parse_canvases(args.canvases)
     confs = [float(c) for c in args.confs.split(",")]
+    roi_filter = {token.strip() for token in args.rois.split(",") if token.strip()}
+    roi_items = [(label, roi) for label, roi in ROI_DEFINITIONS.items() if not roi_filter or label in roi_filter]
+    if roi_filter:
+        unknown = roi_filter - set(ROI_DEFINITIONS)
+        if unknown:
+            raise SystemExit(f"unknown ROI labels: {sorted(unknown)}")
 
     rows = read_bdd_rows(args.bdd_root / "bdd100k.csv")
     names_file = Path("D:/Datasets/adas_edge_training/bdd_holdout_1000_names.txt")
@@ -117,7 +128,7 @@ def run() -> None:
     started = time.perf_counter()
     for canvas_index, (canvas_w, canvas_h) in enumerate(canvases):
         canvas_label = f"{canvas_w}x{canvas_h}"
-        for roi_label, roi in ROI_DEFINITIONS.items():
+        for roi_label, roi in roi_items:
             coverage = gt_coverage(coco_gt["annotations"], roi, width_px, height_px)
             per_image: list[dict] = []
             forward_ms: list[float] = []

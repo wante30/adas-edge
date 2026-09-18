@@ -50,7 +50,13 @@ def load_dump(path: Path) -> dict:
     return payload
 
 
-def board_dir_to_dump(board_dir: Path, manifest_path: Path, conf: float, iou_threshold: float) -> dict:
+def board_dir_to_dump(
+    board_dir: Path,
+    manifest_path: Path,
+    conf: float,
+    iou_threshold: float,
+    scores_logits: bool = False,
+) -> dict:
     """Decode the board's raw RKNN outputs into the common dump schema."""
     import numpy as np
 
@@ -64,7 +70,7 @@ def board_dir_to_dump(board_dir: Path, manifest_path: Path, conf: float, iou_thr
             continue
         with np.load(archive) as data:
             outputs = [data[key] for key in sorted(data.files)]
-        decoded = decode_outputs(outputs, conf, iou_threshold)
+        decoded = decode_outputs(outputs, conf, iou_threshold, score_logits=scores_logits)
         scale, pad_x, pad_y = float(entry["scale"]), float(entry["pad_x"]), float(entry["pad_y"])
         detections = []
         for item in decoded:
@@ -190,6 +196,11 @@ def main() -> None:
         help="board outputs; '|' separates the two paths because Windows drive letters contain ':'",
     )
     parser.add_argument("--conf", type=float, default=0.25)
+    parser.add_argument(
+        "--scores-logits",
+        action="store_true",
+        help="board model exposes pre-sigmoid logits (split_yolo_output.py --scores-mode logits)",
+    )
     parser.add_argument("--iou-nms", type=float, default=0.45)
     parser.add_argument("--iou-match", type=float, default=0.5)
     parser.add_argument("--out", type=Path, required=True)
@@ -206,7 +217,7 @@ def main() -> None:
         board_dir, _, manifest = spec.partition("|")
         if not manifest:
             parser.error(f"--board expects LABEL=BOARD_DIR|MANIFEST.json, got {item!r}")
-        dump = board_dir_to_dump(Path(board_dir), Path(manifest), args.conf, args.iou_nms)
+        dump = board_dir_to_dump(Path(board_dir), Path(manifest), args.conf, args.iou_nms, args.scores_logits)
         candidates[label] = match_dumps(reference, dump, args.iou_match)
 
     report = {
