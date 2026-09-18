@@ -187,3 +187,25 @@ FPGA 单路 PCIe/OSD 闭环 → 连续单路 → 四路压力测试
 | 四路验证的边界 | 本轮的"四路"是**文件视频回放**，不是 PCIe 四路输入。调度/队列逻辑可直接复用，输入源不同 |
 | FPGA 视频采集 / OSD / 连续 PCIe | 仍无进展，维持原判断 |
 | BDD100K train | 仍不可得，本轮所有训练相关实验都用 nuImages 或未做 |
+
+---
+
+## 2026-09-18 更新：长测定稿、ROI 复核与 INT8 per-class 复核
+
+三个收尾 Gate 的结果（详见对应文档）：
+
+1. **300s=27.91 vs 600s=23.66 已归因**：measurement protocol difference——600s 那次
+   （CONFIG-B-10MIN）误用了 rate 调度器，而 27.91 是 WRR-FAIR。同协议下 600s 对 300s 仅 -0.8%。
+   修复后的 20 分钟 WRR-FAIR-D1 长测：**27.30/28（97.5%），全程平坦，SoC ≤38.9 °C，
+   NPU 恒 600 MHz**，无热降频/调度/队列问题。正式配置以长测为准。
+2. **Traffic-light ROI 复核：FAIL。** 数据驱动 ROI（覆盖 94.4% GT、面积 57%）+ 640×352 + conf 0.05
+   下 recall 仅 0.149（全帧 0.141），67.7% 的 GT 仍无任何候选。
+   **TRAFFIC_LIGHT_SPECIALIST_REQUIRED 定稿**；专项支路若按 512×288@3FPS 追加约 +9% NPU 占用
+   （5FPS@640×352 不可行），但这只在换用专项小模型时才需要重新评估。
+3. **INT8 per-class 复核：接受。** 100 张道路 holdout 图、真实板端 INT8 vs PC FP32：
+   部署工作点 per-class recall Δ≤0.008（car 0.326→0.324，person 0.175→0.168）；
+   AP50 下降 0.01–0.11 属置信度标定漂移。工具 `tools/int8_perclass_eval.py`。
+
+新增工具：`tools/telemetry_sampler.py`（SoC 温度/频率遥测）、`tools/traffic_light_roi_eval.py`、
+`tools/int8_perclass_eval.py`。原始数据在 `D:/Datasets/adas_edge_training/phase10/`（LONG20-*、
+int8check/）与 `D:/Datasets/adas_edge_training/roi_eval/`。
