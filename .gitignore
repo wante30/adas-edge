@@ -18,3 +18,7 @@ tmp/
 *.csv
 *.mp4
 *.avi
+yolo11s.pt
+yolo11s.onnx
+*.pt
+*.onnx

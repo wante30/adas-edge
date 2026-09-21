@@ -225,3 +225,20 @@ FRONT-only traffic-light specialist 全流程完成并通过 Gate（此前"MAIN 
 
 详见 [competition_tl_specialist.md](competition_tl_specialist.md)。**RK3566 AI 软件侧就此冻结**
 （主检测器 2 个 RKNN + specialist 1 个 RKNN + 调度器 + 队列参数），剩余为 FPGA 硬件侧事项。
+
+---
+
+## 2026-09-21 更新：FRONT 强模型评估关闭，维持 YOLO11n
+
+按比赛方要求做了「是否把 FRONT 主检测器升级为 YOLO11s」的最后一轮评估，结论 **KEEP CURRENT YOLO11N**：
+
+- BASE-S（不训练）精度确实显著更好：mAP50 0.1999 → 0.2848（+8.5pp），person recall 0.216 → 0.295，
+  small-object recall 0.0235 → 0.0590，每类都涨、无退化；
+- 但 11s 的算力是 11n 的 **3.31×**（矩形输入精确 FLOPs：7.74 GF vs 2.34 GF），
+  板端标定外推 full pipeline ≈ 7.9 FPS（乐观口径 11.0 FPS）；
+- **决定性约束是四路预算**：现有配置已占推理线程 87.2%，换 11s 后 FRONT 8 FPS 需要 105%（乐观）～134%（FLOPs 口径），
+  结构性装不下。要装下只能把 FRONT 降到 5 FPS，破坏已冻结的四路形态，因此不做。
+- 本轮板子未开机，11s 的板端实测（NPU/pipeline/INT8 per-class）**未取得**；开机后可用
+  [benchmark 文档 §5 的命令](front_strong_model_benchmark.md)在 10 分钟内复核外推（判读区间 62–101 ms）。
+
+AI 主模型就此冻结。SIDE/BACK、specialist、调度器、队列参数全程零改动。

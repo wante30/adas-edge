@@ -1,6 +1,6 @@
 # 比赛检测器最终配置
 
-更新日期：2026-09-18（追加 20 分钟长测定稿与 INT8 per-class 复核）
+更新日期：2026-09-21（追加 FRONT 强模型升级评估结论：维持 YOLO11n）
 本文件**取代** 2026-09-01 的临时结论（"320 为主、416 为备选、四路 6 FPS 轮询"）。
 
 ## 1. 最终推荐
@@ -139,6 +139,24 @@ person/TL 的 AP50 本来就低，其瓶颈是画布几何（§2/§3），不是
 
 主 YOLO、多流调度器、四路配置与队列参数**零改动**。构建/验收/量化归因全记录见
 [competition_tl_specialist.md](competition_tl_specialist.md)。
+
+## 3.4 FRONT 升级评估：维持 YOLO11n（2026-09-21 关闭）
+
+对「FRONT 主检测器换成 YOLO11s」做了完整评估（PC 正确性、精确 FLOPs、板端标定外推、四路预算）：
+
+- PC 侧 11s 导出无损（FP32 vs ONNX matched 1.0000 / IoU 0.9997）；
+- **不训练的 BASE-S 精度确实大幅更好**：mAP50 0.1999 → **0.2848（+8.5pp）**，person recall 0.216 → 0.295，
+  small recall 0.0235 → 0.0590，全部类别上升、无退化；
+- **但算力是硬墙**：11s 在 512×288 上是 11n 的 **3.31×**（7.74 GF vs 2.34 GF）。
+  板端标定（`ms = 12.07 × GF + 3.66`，11n 四点残差 ≤5%）外推 11s NPU ≈ 97–101 ms、full pipeline ≈ 7.9 FPS；
+  即使按最乐观的 PC ONNX 比值（2.05×）也只有 11.0 FPS；
+- **决定性判据是四路预算**：当前冻结配置已占推理线程 87.2%。换 11s 后 FRONT 8 FPS
+  在乐观口径下要 105.1%、FLOPs 口径下 134.3% —— **结构性超预算**。要装下只能把 FRONT 压到 5 FPS，
+  破坏已冻结的四路形态。
+
+**决定：KEEP CURRENT YOLO11N**，不再尝试 m/l/x。详见
+[最终决定](front_strong_model_final_decision.md)、[审计](front_strong_model_audit.md)、
+[速度评估](front_strong_model_benchmark.md)。重开条件（换平台 / 拿到合法道路 detection 数据）写在决定文档里。
 
 ## 4. 本轮的冻结项
 
