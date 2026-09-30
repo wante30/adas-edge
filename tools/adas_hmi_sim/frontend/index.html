@@ -14,8 +14,9 @@
     </header>
     <section class="workspace">
       <section class="perception-panel panel">
-        <div class="panel-label"><span id="world-label">驾驶感知</span><div class="view-controls"><button data-view="drive" class="view-button active" type="button" aria-pressed="true">驾驶</button><button data-view="bowl" class="view-button" type="button" aria-pressed="false" disabled>3D 环视</button><button data-view="top" class="view-button" type="button" aria-pressed="false" disabled>鸟瞰</button></div></div>
+        <div class="panel-label"><span id="world-label">驾驶感知</span><div class="view-controls"><button data-view="drive" class="view-button active" type="button" aria-pressed="true">驾驶</button><button data-view="bowl" class="view-button" type="button" aria-pressed="false" disabled>3D 全景</button><button data-view="top" class="view-button" type="button" aria-pressed="false" disabled>全景地图</button></div></div>
         <div id="scene-host" class="scene-host">
+          <img id="scene-surround-feed" class="scene-surround-feed" alt="全景环视地图" hidden />
           <div class="scene-loading">INITIALISING SCENE</div>
           <div class="scene-hud left"><span class="hud-chip" id="source-label">感知模拟</span></div>
           <div class="scene-hud right"><span class="hud-chip">TRACKS <b id="scene-track-count">—</b></span></div>

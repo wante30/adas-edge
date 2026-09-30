@@ -103,7 +103,15 @@ class SurroundBEVComposer:
         }
 
     def compose(self, frames: Mapping[str, np.ndarray]) -> np.ndarray:
-        canvas = np.zeros((self.height, self.width, 3), dtype=np.float32)
+        # Keep uncovered pixels as a dark road surface.  A pure black canvas
+        # makes an approximate four-camera layout look like a missing frame
+        # instead of a usable HMI map, especially while calibration is being
+        # measured on the target vehicle.
+        yy, xx = np.mgrid[0:self.height, 0:self.width]
+        distance = np.sqrt(((xx - self.width / 2) / max(1, self.width / 2)) ** 2 + ((yy - self.height / 2) / max(1, self.height / 2)) ** 2)
+        road = np.clip(1.0 - distance * 0.32, 0.62, 1.0)
+        base = np.stack((18.0 * road, 27.0 * road, 33.0 * road), axis=-1)
+        canvas = base.copy()
         weights = np.zeros((self.height, self.width), dtype=np.float32)
         present = []
         jobs = []
@@ -123,10 +131,14 @@ class SurroundBEVComposer:
             canvas += warped.astype(np.float32) * alpha[..., None]
             weights += alpha
         valid = weights > 1e-4
-        output = np.zeros_like(canvas, dtype=np.uint8)
+        output = np.clip(canvas, 0, 255).astype(np.uint8)
         if np.any(valid):
             canvas[valid] /= weights[valid, None]
             output[valid] = np.clip(canvas[valid], 0, 255).astype(np.uint8)
+        # Perspective warps use a black border for samples outside each
+        # camera quadrilateral.  Keep those border samples from punching
+        # black holes through the road surface.
+        output = np.maximum(output, np.clip(base, 0, 255).astype(np.uint8))
         self._draw_overlay(output, present)
         return output
 

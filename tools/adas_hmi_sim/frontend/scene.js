@@ -97,9 +97,15 @@ class SceneRenderer {
     this.viewMode = mode;
     const drive = mode === 'drive';
     this.drivingNodes.forEach(node => { node.visible = drive; });
-    this.objects.forEach(node => { node.visible = drive; }); this.surroundView.group.visible = !drive;
+    this.objects.forEach(node => { node.visible = drive; });
+    this.ego.visible = drive;
+    // The HMI uses the received BEV JPEG as the primary map layer.  Keeping
+    // the Three.js bowl hidden here avoids a blank CanvasTexture on browsers
+    // that resize the source image while the WebSocket is still streaming;
+    // calibrated bowl projections are already encoded in that JPEG.
+    this.surroundView.group.visible = false;
     this.scene.fog = drive ? new THREE.Fog(0x16282d, 32, 82) : null;
-    this.ego.rotation.y = 0; this.ego.scale.setScalar(drive ? 1 : 1.65);
+    this.ego.rotation.y = 0; this.ego.scale.setScalar(1);
     this.camera.up.set(0, 1, 0);
     if (drive) { this.camera.position.set(0, 5.2, -8.5); this.camera.lookAt(0, 0.5, 16); }
     else if (mode === 'top') { this.camera.position.set(0, 13, -0.01); this.camera.lookAt(0, 0, 0); }
