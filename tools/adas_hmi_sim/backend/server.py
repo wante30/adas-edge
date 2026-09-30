@@ -85,7 +85,7 @@ def create_app(options: SimulatorOptions) -> FastAPI:
                 # Preserve the transport and device-stage evidence in the
                 # renderer-facing frame. The browser can inspect these fields
                 # without knowing the source implementation.
-                for key in ("system_mode", "channel_roles", "pcie", "rk3566"):
+                for key in ("system_mode", "channel_roles", "pcie", "rk3566", "surround_bev"):
                     if key in metadata:
                         scene.metadata[key] = metadata[key]
                 now = time.perf_counter()
@@ -116,6 +116,8 @@ def create_app(options: SimulatorOptions) -> FastAPI:
                     message["video_jpegs"] = {role: _jpeg_data(image, options.video_jpeg_quality) for role, image in packet.stream_images.items() if role != "front"}
                 if packet.transport:
                     message["transport"] = dict(packet.transport)
+                if packet.surround_bev is not None:
+                    message["surround_bev_jpeg"] = _jpeg_data(packet.surround_bev, options.video_jpeg_quality)
                 await websocket.send_json(message)
                 wait = 1.0 / options.target_hz - (time.perf_counter() - tick_started)
                 if wait > 0:
@@ -124,9 +126,14 @@ def create_app(options: SimulatorOptions) -> FastAPI:
         except WebSocketDisconnect:
             return
         finally:
-            # Sources own their capture/model handles; they are closed after a client leaves.
-            if hasattr(options.source, "close"):
-                await asyncio.to_thread(options.source.close)
+            # A browser reconnect must be able to resume the same source.  The
+            # process-level shutdown hook below owns capture/model cleanup.
+            pass
+
+    @app.on_event("shutdown")
+    async def shutdown_source() -> None:
+        if hasattr(options.source, "close"):
+            await asyncio.to_thread(options.source.close)
 
     app.mount("/", StaticFiles(directory=str(options.frontend_dir), html=True), name="frontend")
     return app

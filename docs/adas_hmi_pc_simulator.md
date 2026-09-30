@@ -5,7 +5,7 @@
 ## 1. 架构
 
 ```text
-mock / pc-system(4ch) / road.mp4 + JSONL / road.mp4 + PC YOLO or RKNN
+mock / pc-system(4ch) / surround(4ch BEV) / road.mp4 + JSONL / road.mp4 + PC YOLO or RKNN
                          │
                          ▼
           backend.video_pipeline + competition_io mock
@@ -33,7 +33,7 @@ python tools/adas_hmi_sim/run.py --mode mock
 
 默认监听 `http://127.0.0.1:8765/` 并打开浏览器。服务端若不能自动打开浏览器，可以加 `--no-browser` 后手动访问该地址。
 
-四种输入模式：
+五种输入模式：
 
 ```powershell
 # A. 不依赖视频和模型的 20 秒演示
@@ -41,6 +41,9 @@ python tools/adas_hmi_sim/run.py --mode mock
 
 # PC 整机模拟：四路同步相机、PCIe descriptor、RK3566 mock、HMI
 python tools/adas_hmi_sim/run.py --mode pc-system
+
+# 四路视频回放 + BEV 卡片（默认近似平面映射）
+python tools/adas_hmi_sim/run.py --mode surround --surround-dir C:\path\to\four_cameras
 
 # B. 视频 + 已保存检测结果，调 UI 时不重新跑 YOLO
 python tools/adas_hmi_sim/run.py --mode replay --video road.mp4 --detections detections.jsonl
@@ -59,6 +62,12 @@ channel 缩略图（默认折叠），并在 `SceneFrame.metadata` 中保留 `PC
 这条路径验证的是 **软件边界、同步关系、序号回传和 HMI 接线**。它不代表真实
 FPGA PCIe endpoint、DMA、RK3566 NPU 或 HDMI 已经连接；真实硬件仍需在板上单独
 验收。
+
+`surround` 模式读取四路同步视频，把 BEV JPEG 接入同一条 WebSocket。默认配置是
+`APPROXIMATE_PLANAR`，用于快速验证画面和协议；有鱼眼内参/外参时，用
+`tools/build_calibrated_surround_lut.py` 生成上游 Open-3D-Surround-View 风格 LUT，
+再通过 `--bev-lut-dir` 运行标定版。RK3566 的实测、输入要求和性能边界见
+[`docs/adas_hmi_surround_rk3566.md`](adas_hmi_surround_rk3566.md)。
 
 `live` 仅复用已有适配器，不训练、不下载权重。`.pt` 输入走 `src/adas_edge/perception/ultralytics_detector.py`；`.rknn` 输入走 `competition_ai/detector.py`。没有模型时不会假装 live 已经完成，改用 mock 或 replay。
 

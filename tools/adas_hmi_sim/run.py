@@ -26,15 +26,20 @@ sys.path.insert(0, str(PACKAGE))
 from backend.navigation_state import NavigationState  # noqa: E402
 from backend.scene_builder import SceneBuilder  # noqa: E402
 from backend.server import SimulatorOptions, create_app  # noqa: E402
-from backend.video_pipeline import FourStreamMockSource, LiveSource, MockSource, ReplaySource  # noqa: E402
+from backend.video_pipeline import FourStreamMockSource, LiveSource, MockSource, ReplaySource, SurroundVideoSource  # noqa: E402
 
 
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description="PC ADAS driving-perception HMI simulator")
-    result.add_argument("--mode", choices=("mock", "pc-system", "replay", "live"), default="mock")
+    result.add_argument("--mode", choices=("mock", "pc-system", "surround", "replay", "live"), default="mock")
     result.add_argument("--video", type=Path, help="Input road video for replay/live")
     result.add_argument("--detections", type=Path, help="JSONL detections for replay mode")
-    result.add_argument("--model", type=Path, help=".pt (PC Ultralytics) or .rknn (CompetitionDetector) for live mode")
+    result.add_argument("--model", type=Path, help=".pt for live mode, or .rknn for live/surround front detection")
+    result.add_argument("--surround-detector-fps", type=float, default=10.0, help="front RKNN detector target for surround mode")
+    result.add_argument("--surround-detector-input-size", default="320", help="front RKNN shape, e.g. 320 or 320x192")
+    result.add_argument("--surround-dir", type=Path, help="directory containing front/left/right/rear.mp4 for surround mode")
+    result.add_argument("--bev-config", type=Path, default=PACKAGE / "configs" / "surround_bev.json")
+    result.add_argument("--bev-lut-dir", type=Path, help="calibrated Open-3D-Surround-View LUT directory; overrides --bev-config")
     result.add_argument("--config", type=Path, default=PACKAGE / "configs" / "default.json")
     result.add_argument("--route", type=Path, default=PACKAGE / "configs" / "demo_route.json")
     result.add_argument("--host", default="127.0.0.1")
@@ -50,6 +55,16 @@ def make_source(args: argparse.Namespace):
         return MockSource(start_ms=args.mock_start_ms)
     if args.mode == "pc-system":
         return FourStreamMockSource(start_ms=args.mock_start_ms)
+    if args.mode == "surround":
+        if args.surround_dir is None:
+            raise SystemExit("--surround-dir is required for --mode surround")
+        detector_input_size = args.surround_detector_input_size
+        if "x" in detector_input_size.lower():
+            width, height = detector_input_size.lower().split("x", 1)
+            detector_input_size = (int(width), int(height))
+        else:
+            detector_input_size = int(detector_input_size)
+        return SurroundVideoSource(args.surround_dir, args.bev_config, detector_model=args.model, detector_fps=args.surround_detector_fps, detector_input_size=detector_input_size, lut_dir=args.bev_lut_dir)
     if args.video is None:
         raise SystemExit(f"--video is required for --mode {args.mode}")
     if args.mode == "replay":

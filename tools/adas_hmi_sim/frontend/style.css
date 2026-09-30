@@ -96,7 +96,20 @@ body {
 .key-car { display: inline-block; width: 7px; height: 7px; margin-right: 5px; background: var(--cyan); box-shadow: 0 0 7px #61dce388; }
 
 .side-panel { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.side-panel { overflow-y: auto; scrollbar-width: thin; }
+.view-controls { display: flex; gap: 4px; }
+.view-button { color: #a4afb8; background: transparent; border: 0; border-radius: 5px; padding: 7px 12px; cursor: pointer; font: 12px "Segoe UI", sans-serif; }
+.view-button.active { color: #f3f7fa; background: #35424e; }
+.view-button:disabled { color: #5c6570; cursor: default; }
+.view-button:focus-visible { outline: 2px solid #82b0e0; }
+body[data-view-mode="bowl"] .scene-host, body[data-view-mode="top"] .scene-host { background: #17212b; }
+body[data-view-mode="bowl"] .scene-host::before, body[data-view-mode="top"] .scene-host::before { display: none; }
+body[data-view-mode="bowl"] .scene-caption, body[data-view-mode="top"] .scene-caption { visibility: hidden; }
 .video-card { flex: 0 0 auto; }
+.bev-card { flex: 0 0 auto; }
+.bev-card[hidden] { display: none; }
+.bev-frame { position: relative; aspect-ratio: 1 / 1; max-height: 170px; overflow: hidden; background: #060a0d; }
+.bev-frame img { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
 .video-frame { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #060a0d; }
 .video-frame::before { display: none; }
 .video-frame::after { content: ""; }

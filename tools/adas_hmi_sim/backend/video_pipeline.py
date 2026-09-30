@@ -12,6 +12,7 @@ import cv2
 import numpy as np
 
 from competition_io import FrameDescriptor, MockRoundRobin, MockTransport, ResultDescriptor
+from .surround_bev import SurroundBEVComposer, load_bev_config
 
 
 @dataclass
@@ -24,6 +25,7 @@ class FramePacket:
     detector_update: bool = True
     stream_images: dict[str, np.ndarray] | None = None
     transport: dict[str, Any] | None = None
+    surround_bev: np.ndarray | None = None
 
 
 def _detection(class_name: str, confidence: float, bbox: tuple[float, float, float, float]) -> dict[str, Any]:
@@ -141,6 +143,7 @@ class FourStreamMockSource:
         self.pcie_bytes = 0
         self.result_bytes = 0
         self.frames = 0
+        self.bev_composer = SurroundBEVComposer()
 
     def next(self) -> FramePacket | None:
         primary = self.primary.next()
@@ -194,6 +197,7 @@ class FourStreamMockSource:
                 "result_bytes_total": self.result_bytes,
             },
             "rk3566": {"device": "RK3566_SIM", "detector": "MOCK", "stream_count": 4},
+            "surround_bev": self.bev_composer.metadata(),
         })
         return FramePacket(
             primary.frame_id,
@@ -204,10 +208,101 @@ class FourStreamMockSource:
             True,
             images,
             {"stream_count": 4, "descriptor_order": descriptor_order, "pcie_bytes": self.pcie_bytes, "result_bytes": self.result_bytes},
+            self.bev_composer.compose(images),
         )
 
     def close(self) -> None:
         self.primary.close()
+        self.bev_composer.close()
+
+
+class SurroundVideoSource:
+    """Replay four synchronized camera files and emit a real BEV image.
+
+    An optional ``detector_model`` runs only on the front stream.  This keeps
+    the expensive RKNN stage independent from the four-camera compositor and
+    lets the same source run as a PC replay or as an RK3566 smoke test.
+    """
+
+    def __init__(self, video_dir: str | Path, bev_config: str | Path | None = None, loop: bool = True, detector_model: str | Path | None = None, detector_fps: float = 10.0, detector_input_size: int | tuple[int, int] = 320, lut_dir: str | Path | None = None):
+        root = Path(video_dir)
+        candidates = {
+            "front": root / "front.mp4",
+            "left": root / "left.mp4",
+            "right": root / "right.mp4",
+            "rear": root / "rear.mp4",
+        }
+        if not candidates["rear"].exists() and (root / "back.mp4").exists():
+            candidates["rear"] = root / "back.mp4"
+        missing = [role for role, path in candidates.items() if not path.exists()]
+        if missing:
+            raise FileNotFoundError(f"missing surround videos in {root}: {', '.join(missing)}")
+        self.captures = {role: cv2.VideoCapture(str(path)) for role, path in candidates.items()}
+        if not all(capture.isOpened() for capture in self.captures.values()):
+            raise RuntimeError(f"could not open all surround videos in {root}")
+        self.fps = float(self.captures["front"].get(cv2.CAP_PROP_FPS) or 25.0)
+        self.loop = loop
+        self.frame_id = 0
+        if lut_dir is not None:
+            from .calibrated_surround import CalibratedSurroundComposer
+            self.composer = CalibratedSurroundComposer(lut_dir)
+        else:
+            self.composer = SurroundBEVComposer(load_bev_config(Path(bev_config) if bev_config else None))
+        self.detector_fps = max(0.0, float(detector_fps))
+        self._last_detector_s = 0.0
+        self.detector = None
+        if detector_model is not None:
+            model_path = Path(detector_model)
+            if model_path.suffix.lower() != ".rknn":
+                raise ValueError("surround detector currently accepts an RKNN model so board and PC paths stay explicit")
+            from competition_ai.detector import CompetitionDetector
+            self.detector = CompetitionDetector(model_path, input_size=detector_input_size, conf_threshold=0.25)
+
+    def next(self) -> FramePacket | None:
+        frames: dict[str, np.ndarray] = {}
+        for role, capture in self.captures.items():
+            ok, frame = capture.read()
+            if not ok and self.loop:
+                capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                ok, frame = capture.read()
+            if not ok:
+                return None
+            frames[role] = frame
+        timestamp_ms = int(self.frame_id * 1000 / max(1.0, self.fps))
+        bev = self.composer.compose(frames)
+        detections: list[dict[str, Any]] = []
+        detector_update = True
+        if self.detector is not None:
+            now = time.perf_counter()
+            due = self._last_detector_s == 0.0 or self.detector_fps <= 0 or now - self._last_detector_s >= 1.0 / self.detector_fps
+            if due:
+                result = self.detector.infer(frames["front"], frame_id=self.frame_id, timestamp_ns=timestamp_ms * 1_000_000)
+                detections = [item.to_dict() for item in result.detections]
+                self._last_detector_s = now
+            else:
+                detector_update = False
+        metadata = {
+            "system_mode": "SURROUND_BEV",
+            "channel_roles": list(frames),
+            "surround_bev": self.composer.metadata(),
+            "traffic_light_state": "UNKNOWN",
+            "rk3566": {
+                "detector": "RKNN" if self.detector is not None else "NOT_CONNECTED",
+                "detector_model": str(self.detector.model_path) if self.detector is not None else None,
+                "detector_input_size": list(self.detector.input_size) if self.detector is not None and isinstance(self.detector.input_size, tuple) else self.detector.input_size if self.detector is not None else None,
+                "detector_fps_target": self.detector_fps if self.detector is not None else 0.0,
+            },
+        }
+        packet = FramePacket(self.frame_id, timestamp_ms, frames["front"], detections, metadata, detector_update, frames, None, bev)
+        self.frame_id += 1
+        return packet
+
+    def close(self) -> None:
+        for capture in self.captures.values():
+            capture.release()
+        self.composer.close()
+        if self.detector is not None:
+            self.detector.close()
 
 
 def _parse_detection(item: dict[str, Any]) -> dict[str, Any]:

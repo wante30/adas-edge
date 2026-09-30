@@ -57,7 +57,9 @@ class SceneRenderer {
     this.signal = new THREE.Group(); this.signal.position.set(0, 3.8, 20); this.scene.add(this.signal); this.makeSignal();
     this.resize = () => { const box = host.getBoundingClientRect(); this.renderer.setSize(box.width, box.height, false); this.camera.aspect = box.width / Math.max(1, box.height); this.camera.updateProjectionMatrix(); };
     window.addEventListener('resize', this.resize); this.resize();
-    this.animate = () => { requestAnimationFrame(this.animate); if (this.latest) this.ego.rotation.y += ((this.latest.ego.steering || 0) * Math.PI / 180 - this.ego.rotation.y) * 0.08; this.renderer.render(this.scene, this.camera); };
+    this.drivingNodes = [...this.scene.children].filter(node => !node.isLight && node !== this.ego);
+    this.surroundView = new SurroundView(this.scene); this.viewMode = 'drive'; this.renderFrames = 0; this.renderStarted = performance.now();
+    this.animate = () => { requestAnimationFrame(this.animate); if (this.latest && this.viewMode === 'drive') this.ego.rotation.y += ((this.latest.ego.steering || 0) * Math.PI / 180 - this.ego.rotation.y) * 0.08; this.renderer.render(this.scene, this.camera); this.renderFrames++; const now = performance.now(); if (now - this.renderStarted >= 1000) { document.body.dataset.renderFps = (this.renderFrames * 1000 / (now - this.renderStarted)).toFixed(1); this.renderFrames = 0; this.renderStarted = now; } };
     this.animate();
   }
   addRoadsideDetails() {
@@ -91,7 +93,21 @@ class SceneRenderer {
     }
     for (const [id, group] of this.objects) if (!live.has(id)) { this.scene.remove(group); this.objects.delete(id); }
   }
-  update(frame) { this.latest = frame; this.updateSignal(frame.traffic_light?.state || 'UNKNOWN'); this.updateLanes(frame.lanes); this.updateObjects(frame.objects); }
+  setView(mode) {
+    this.viewMode = mode;
+    const drive = mode === 'drive';
+    this.drivingNodes.forEach(node => { node.visible = drive; });
+    this.objects.forEach(node => { node.visible = drive; }); this.surroundView.group.visible = !drive;
+    this.scene.fog = drive ? new THREE.Fog(0x16282d, 32, 82) : null;
+    this.ego.rotation.y = 0; this.ego.scale.setScalar(drive ? 1 : 1.65);
+    this.camera.up.set(0, 1, 0);
+    if (drive) { this.camera.position.set(0, 5.2, -8.5); this.camera.lookAt(0, 0.5, 16); }
+    else if (mode === 'top') { this.camera.position.set(0, 13, -0.01); this.camera.lookAt(0, 0, 0); }
+    else { this.camera.position.set(7.5, 8, -7.5); this.camera.lookAt(0, 0, 0); }
+    document.body.dataset.viewMode = mode;
+  }
+  updateSurround(jpeg, metadata) { this.surroundView.update(jpeg, metadata); }
+  update(frame) { this.latest = frame; this.updateSignal(frame.traffic_light?.state || 'UNKNOWN'); this.updateLanes(frame.lanes); this.updateObjects(frame.objects); if (this.viewMode !== 'drive') this.objects.forEach(node => { node.visible = false; }); }
 }
 globalThis.SceneRenderer = SceneRenderer;
 })();
