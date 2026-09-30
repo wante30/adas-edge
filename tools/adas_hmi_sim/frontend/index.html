@@ -15,13 +15,17 @@
     <section class="workspace">
       <section class="perception-panel panel">
         <div class="panel-label"><span>01 / ROAD WORLD</span><span class="micro-note">PSEUDO_DISTANCE · D TO INSPECT</span></div>
-        <div id="scene-host" class="scene-host"><div class="scene-loading">INITIALISING SCENE</div></div>
-        <div class="scene-caption"><span><i class="key-line"></i> solid boundary</span><span><i class="key-line dashed"></i> dashed boundary</span><span><i class="key-car"></i> tracked object</span></div>
+        <div id="scene-host" class="scene-host">
+          <div class="scene-loading">INITIALISING SCENE</div>
+          <div class="scene-hud left"><span class="hud-chip hud-live">LIVE SENSOR FUSION</span><span class="hud-chip">FRONT + MAP</span></div>
+          <div class="scene-hud right"><span class="hud-chip">TRACKS <b id="scene-track-count">—</b></span><span class="hud-chip">WORLD MODEL</span></div>
+        </div>
+        <div class="scene-caption"><span><i class="key-line"></i> solid boundary</span><span><i class="key-line dashed"></i> dashed boundary</span><span><i class="key-car"></i> tracked object</span><span>SCENEFRAME / V1</span></div>
       </section>
       <aside class="side-panel">
         <section class="video-card panel">
           <div class="panel-label"><span>02 / FRONT SENSOR</span><span id="video-size">—</span></div>
-          <div class="video-frame"><img id="video-feed" alt="front camera preview" /><div class="video-empty" id="video-empty">WAITING FOR VIDEO</div><span class="video-tag">BBOX DEBUG</span></div>
+          <div class="video-frame"><img id="video-feed" alt="front camera preview" /><div class="video-empty" id="video-empty">WAITING FOR VIDEO</div><span class="video-tag">BBOX DEBUG</span><span class="video-corner top-left"></span><span class="video-corner top-right"></span><span class="video-corner bottom-left"></span><span class="video-corner bottom-right"></span></div>
         </section>
         <section class="status-card panel">
           <div class="panel-label"><span>03 / ADAS STATE</span><span id="frame-id">FRAME —</span></div>
@@ -36,7 +40,7 @@
       </aside>
     </section>
     <section class="debug panel" id="debug-panel"><div class="panel-label"><span>DEBUG INSPECTOR</span><span>PRESS D TO HIDE</span></div><pre id="debug-text"></pre></section>
-    <footer><span>LOCAL PC DEMO · NO FPGA / PCIe / RK3566 DEVICE CONNECTED</span><span>Three.js renderer · Browser framebuffer analogue</span></footer>
+    <footer><span>LOCAL PC SIMULATION · TARGET HARDWARE LINK OFF</span><span>SCENEFRAME V1 · BROWSER RENDERER</span></footer>
   </main>
   <script src="./vendor/three.core.global.js" defer></script>
   <script src="./vendor/three.global.js" defer></script>
