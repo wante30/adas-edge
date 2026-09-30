@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ADAS / perception cockpit</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">◒</span><div><strong>PERCEPTION COCKPIT</strong><small>PC HMI SIMULATOR / SCENEFRAME V1</small></div></div>
+      <div class="top-meta"><span class="mode-pill" id="mode-pill">MOCK</span><span class="live-dot"></span><span id="connection">CONNECTING</span></div>
+    </header>
+    <section class="workspace">
+      <section class="perception-panel panel">
+        <div class="panel-label"><span>01 / ROAD WORLD</span><span class="micro-note">PSEUDO_DISTANCE · D TO INSPECT</span></div>
+        <div id="scene-host" class="scene-host"><div class="scene-loading">INITIALISING SCENE</div></div>
+        <div class="scene-caption"><span><i class="key-line"></i> solid boundary</span><span><i class="key-line dashed"></i> dashed boundary</span><span><i class="key-car"></i> tracked object</span></div>
+      </section>
+      <aside class="side-panel">
+        <section class="video-card panel">
+          <div class="panel-label"><span>02 / FRONT SENSOR</span><span id="video-size">—</span></div>
+          <div class="video-frame"><img id="video-feed" alt="front camera preview" /><div class="video-empty" id="video-empty">WAITING FOR VIDEO</div><span class="video-tag">BBOX DEBUG</span></div>
+        </section>
+        <section class="status-card panel">
+          <div class="panel-label"><span>03 / ADAS STATE</span><span id="frame-id">FRAME —</span></div>
+          <div class="action-row"><div class="traffic-lamp" id="traffic-lamp"><span></span><span></span><span></span></div><div><small>TRAFFIC LIGHT</small><strong id="traffic-state">UNKNOWN</strong></div><div class="action-readout"><small>ACTION</small><strong id="action-state">STOP</strong></div></div>
+          <div class="warning-strip" id="warning-strip"><span class="warning-icon">!</span><span id="warning-text">TRAFFIC LIGHT UNKNOWN</span></div>
+          <div class="nav-row"><div class="nav-arrow" id="nav-arrow">↑</div><div><small>NEXT INTENT</small><strong id="nav-action">STRAIGHT</strong></div><div class="nav-distance"><small>RANGE</small><strong id="nav-distance">—</strong></div></div>
+        </section>
+        <section class="telemetry-card panel">
+          <div class="panel-label"><span>04 / TELEMETRY</span><span>UI TARGET 30–60 FPS</span></div>
+          <div class="telemetry-grid"><div><small>VIDEO</small><strong id="video-fps">—</strong></div><div><small>DETECTOR</small><strong id="detector-fps">—</strong></div><div><small>WS RATE</small><strong id="ws-rate">—</strong></div><div><small>TRACKS</small><strong id="track-count">—</strong></div></div>
+        </section>
+      </aside>
+    </section>
+    <section class="debug panel" id="debug-panel"><div class="panel-label"><span>DEBUG INSPECTOR</span><span>PRESS D TO HIDE</span></div><pre id="debug-text"></pre></section>
+    <footer><span>LOCAL PC DEMO · NO FPGA / PCIe / RK3566 DEVICE CONNECTED</span><span>Three.js renderer · Browser framebuffer analogue</span></footer>
+  </main>
+  <script src="./vendor/three.core.global.js" defer></script>
+  <script src="./vendor/three.global.js" defer></script>
+  <script src="./scene.js" defer></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>

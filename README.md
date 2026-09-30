@@ -29,6 +29,21 @@ python -m venv .venv
 
 RKNN conversion needs a Rockchip-supported Toolkit2 environment. The original COCO `yolo11n.pt` checkpoint and legal calibration data must be supplied locally; no model artifact is bundled.
 
+## PC ADAS HMI simulator
+
+The independent `tools/adas_hmi_sim` subsystem validates the perception-to-HMI
+path without FPGA, PCIe, or a Rockchip board. It supports `mock`, `replay`
+(video + JSONL), and `live` (the existing PC Ultralytics adapter or
+`CompetitionDetector`) modes:
+
+```powershell
+python tools/adas_hmi_sim/run.py --mode mock
+```
+
+The browser consumes only the versioned `SceneFrame` JSON contract. Its 3D
+world uses explicit `PSEUDO_DISTANCE` mapping for UI visualization; it is not a
+high-accuracy ranging result. See [the simulator guide](docs/adas_hmi_pc_simulator.md).
+
 ## Current status
 
 - 320 and 416 INT8 split-output candidates have completed RK3566 single-image load/inference/decode smoke tests.
