@@ -63,7 +63,8 @@ channel 缩略图（默认折叠），并在 `SceneFrame.metadata` 中保留 `PC
 FPGA PCIe endpoint、DMA、RK3566 NPU 或 HDMI 已经连接；真实硬件仍需在板上单独
 验收。
 
-`surround` 模式读取四路同步视频，把 BEV JPEG 接入同一条 WebSocket。默认配置是
+`surround` 模式读取四路视频，把 BEV JPEG 接入同一条 WebSocket。收到环视帧后，HMI
+会自动把全景地图切为主画面，前视和原始 BEV 预览保留在右侧辅助区。默认配置是
 `APPROXIMATE_PLANAR`，用于快速验证画面和协议；有鱼眼内参/外参时，用
 `tools/build_calibrated_surround_lut.py` 生成上游 Open-3D-Surround-View 风格 LUT，
 再通过 `--bev-lut-dir` 运行标定版。RK3566 的实测、输入要求和性能边界见
@@ -125,7 +126,7 @@ x        = (u - cx) × z / fx
 
 前端使用本地打包的 Three.js 0.180 依赖（`frontend/vendor/`，不依赖 CDN），场景全部由程序化几何体组成：自车、道路平面、实线/虚线车道、车辆、行人、悬浮交通灯和轻量警告状态。默认相机在自车后上方、朝道路前方看，保留固定驾驶辅助视角，不开启自由 OrbitControls。
 
-页面左侧约 60% 是 3D perception world；右侧以 front sensor video 为主，下面是 traffic light/action/warning、navigation intent 和 telemetry。left/right/rear 三路 channel 默认折叠，点击 `AUX CAMS · S` 或按 `S` 才显示，用于调试和泊车/变道场景。按 `D` 打开 debug inspector，可查看 frame、track、bbox、world X/Z、lane、light 和 navigation。前视 bbox 是 PC 调试显示，不能解读为 FPGA 已经具备 OSD。
+驾驶模式下页面左侧约 60% 是 3D perception world；收到 BEV 后左侧自动切换为全景地图主画面。右侧保留 front sensor video、环视预览、traffic light/action/warning、navigation intent 和 telemetry。left/right/rear 三路 channel 默认折叠，点击 `AUX CAMS · S` 或按 `S` 才显示，用于调试和泊车/变道场景。按 `D` 打开 debug inspector，可查看 frame、track、bbox、world X/Z、lane、light 和 navigation。前视 bbox 是 PC 调试显示，不能解读为 FPGA 已经具备 OSD。
 
 ## 8. Demo timeline
 
