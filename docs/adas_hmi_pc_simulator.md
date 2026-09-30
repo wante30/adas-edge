@@ -53,7 +53,7 @@ python tools/adas_hmi_sim/run.py --mode live --video road.mp4 --model yolo11n.pt
 四路同步相机预览，通过仓库已有的 `competition_io.FrameDescriptor` 和
 `ResultDescriptor` 做内存中的 FPGA→PCIe→RK3566 模拟传输，再把 front 感知结果
 交给同一个 Scene Builder 和浏览器 HMI。页面会显示 front 大图以及另外三路
-channel 缩略图，并在 `SceneFrame.metadata` 中保留 `PC_FOUR_STREAM`、
+channel 缩略图（默认折叠），并在 `SceneFrame.metadata` 中保留 `PC_FOUR_STREAM`、
 `RK3566_SIM`、descriptor 顺序、队列深度和累计字节数。
 
 这条路径验证的是 **软件边界、同步关系、序号回传和 HMI 接线**。它不代表真实
@@ -116,7 +116,7 @@ x        = (u - cx) × z / fx
 
 前端使用本地打包的 Three.js 0.180 依赖（`frontend/vendor/`，不依赖 CDN），场景全部由程序化几何体组成：自车、道路平面、实线/虚线车道、车辆、行人、悬浮交通灯和轻量警告状态。默认相机在自车后上方、朝道路前方看，保留固定驾驶辅助视角，不开启自由 OrbitControls。
 
-页面左侧约 60% 是 3D perception world；右侧是 front sensor video、可选的 left/right/rear 三路 channel 缩略图、traffic light/action/warning、navigation intent 和 telemetry。按 `D` 打开 debug inspector，可查看 frame、track、bbox、world X/Z、lane、light 和 navigation。前视 bbox 是 PC 调试显示，不能解读为 FPGA 已经具备 OSD。
+页面左侧约 60% 是 3D perception world；右侧以 front sensor video 为主，下面是 traffic light/action/warning、navigation intent 和 telemetry。left/right/rear 三路 channel 默认折叠，点击 `AUX CAMS · S` 或按 `S` 才显示，用于调试和泊车/变道场景。按 `D` 打开 debug inspector，可查看 frame、track、bbox、world X/Z、lane、light 和 navigation。前视 bbox 是 PC 调试显示，不能解读为 FPGA 已经具备 OSD。
 
 ## 8. Demo timeline
 

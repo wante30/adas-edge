@@ -63,6 +63,9 @@ body {
 .workspace { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(350px, .86fr); gap: 12px; flex: 1; min-height: 0; }
 .panel { background: linear-gradient(145deg, #121c22, #0d1419); border: 1px solid var(--stroke); box-shadow: 0 16px 36px #0005; }
 .panel-label { display: flex; justify-content: space-between; align-items: center; min-height: 36px; padding: 9px 13px; color: #aac0c4; font: 700 10px var(--font-display); letter-spacing: .17em; border-bottom: 1px solid var(--stroke-soft); }
+.video-meta { display: inline-flex; align-items: center; gap: 9px; }
+.aux-toggle { padding: 3px 5px; color: #8ba4a8; border: 1px solid #31464c; background: #0b1519; font: 700 8px var(--font-display); letter-spacing: .1em; cursor: pointer; }
+.aux-toggle:hover, .aux-toggle.active { color: var(--cyan); border-color: #4f8c91; background: #11262b; }
 .micro-note { color: #6e8990; font-size: 9px; letter-spacing: .14em; }
 
 .perception-panel { display: flex; flex-direction: column; min-height: 0; }
@@ -94,7 +97,7 @@ body {
 
 .side-panel { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 .video-card { flex: 0 0 auto; }
-.video-frame { position: relative; aspect-ratio: 16 / 6.5; overflow: hidden; background: #060a0d; }
+.video-frame { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #060a0d; }
 .video-frame::before { display: none; }
 .video-frame::after { content: ""; }
 .video-frame img { display: block; width: 100%; height: 100%; object-fit: cover; image-rendering: auto; }
@@ -106,6 +109,7 @@ body {
 .video-corner.top-right { top: 30px; right: 12px; border-width: 1px 1px 0 0; }
 .video-corner.bottom-left { bottom: 12px; left: 12px; border-width: 0 0 1px 1px; }
 .video-corner.bottom-right { right: 12px; bottom: 12px; border-width: 0 1px 1px 0; }
+.surround-strip[hidden] { display: none; }
 .surround-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; padding: 5px; border-top: 1px solid var(--stroke-soft); background: #0b1216; }
 .surround-thumb { position: relative; min-width: 0; aspect-ratio: 16 / 6.5; overflow: hidden; background: #060a0d; border: 1px solid #263840; }
 .surround-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }

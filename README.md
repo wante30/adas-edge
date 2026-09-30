@@ -47,9 +47,11 @@ python tools/adas_hmi_sim/run.py --mode pc-system
 
 The browser consumes only the versioned `SceneFrame` JSON contract. Its 3D
 world uses explicit `PSEUDO_DISTANCE` mapping for UI visualization; it is not a
-high-accuracy ranging result. `pc-system` exercises the existing software
-descriptor contract only; it is not physical PCIe/RK3566 evidence. See [the
-simulator guide](docs/adas_hmi_pc_simulator.md).
+high-accuracy ranging result. The HMI gives the front camera and forward ADAS
+state the primary visual area; left/right/rear channels stay optional for
+debugging, lane changes, and parking. `pc-system` exercises the existing
+software descriptor contract only; it is not physical PCIe/RK3566 evidence.
+See [the simulator guide](docs/adas_hmi_pc_simulator.md).
 
 ## Current status
 
