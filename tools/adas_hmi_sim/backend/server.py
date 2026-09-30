@@ -82,6 +82,12 @@ def create_app(options: SimulatorOptions) -> FastAPI:
                     detector_update=packet.detector_update,
                     source=options.source_name,
                 )
+                # Preserve the transport and device-stage evidence in the
+                # renderer-facing frame. The browser can inspect these fields
+                # without knowing the source implementation.
+                for key in ("system_mode", "channel_roles", "pcie", "rk3566"):
+                    if key in metadata:
+                        scene.metadata[key] = metadata[key]
                 now = time.perf_counter()
                 frame_delta = now - last_tick
                 last_tick = now
@@ -98,7 +104,18 @@ def create_app(options: SimulatorOptions) -> FastAPI:
                     "detector_fps": round(counts["detector_updates"] / wall, 2),
                     "render_target_fps": options.target_hz,
                 })
+                if packet.stream_images:
+                    scene.metrics["stream_count"] = len(packet.stream_images)
+                    if packet.transport:
+                        scene.metrics["pcie_bytes_total"] = int(packet.transport.get("pcie_bytes", 0))
                 message = {"type": "scene", "scene": scene.to_dict(), "video_jpeg": _jpeg_data(packet.image, options.video_jpeg_quality)}
+                if packet.stream_images:
+                    # ``video_jpeg`` already carries the front channel; send
+                    # only the three additional thumbnails to avoid doubling
+                    # the largest JPEG on every WebSocket tick.
+                    message["video_jpegs"] = {role: _jpeg_data(image, options.video_jpeg_quality) for role, image in packet.stream_images.items() if role != "front"}
+                if packet.transport:
+                    message["transport"] = dict(packet.transport)
                 await websocket.send_json(message)
                 wait = 1.0 / options.target_hz - (time.perf_counter() - tick_started)
                 if wait > 0:

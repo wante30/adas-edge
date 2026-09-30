@@ -5,10 +5,10 @@
 ## 1. 架构
 
 ```text
-mock / road.mp4 + JSONL / road.mp4 + PC YOLO or RKNN
+mock / pc-system(4ch) / road.mp4 + JSONL / road.mp4 + PC YOLO or RKNN
                          │
                          ▼
-                 backend.video_pipeline
+          backend.video_pipeline + competition_io mock
                          │ detections + video frame
                          ▼
                  backend.scene_builder
@@ -33,11 +33,14 @@ python tools/adas_hmi_sim/run.py --mode mock
 
 默认监听 `http://127.0.0.1:8765/` 并打开浏览器。服务端若不能自动打开浏览器，可以加 `--no-browser` 后手动访问该地址。
 
-三种输入模式：
+四种输入模式：
 
 ```powershell
 # A. 不依赖视频和模型的 20 秒演示
 python tools/adas_hmi_sim/run.py --mode mock
+
+# PC 整机模拟：四路同步相机、PCIe descriptor、RK3566 mock、HMI
+python tools/adas_hmi_sim/run.py --mode pc-system
 
 # B. 视频 + 已保存检测结果，调 UI 时不重新跑 YOLO
 python tools/adas_hmi_sim/run.py --mode replay --video road.mp4 --detections detections.jsonl
@@ -45,6 +48,17 @@ python tools/adas_hmi_sim/run.py --mode replay --video road.mp4 --detections det
 # C. PC .pt 使用现有 UltralyticsDetector；.rknn 使用 CompetitionDetector
 python tools/adas_hmi_sim/run.py --mode live --video road.mp4 --model yolo11n.pt
 ```
+
+`pc-system` 是本项目面向整机演示的推荐入口。它生成 `front/left/right/rear`
+四路同步相机预览，通过仓库已有的 `competition_io.FrameDescriptor` 和
+`ResultDescriptor` 做内存中的 FPGA→PCIe→RK3566 模拟传输，再把 front 感知结果
+交给同一个 Scene Builder 和浏览器 HMI。页面会显示 front 大图以及另外三路
+channel 缩略图，并在 `SceneFrame.metadata` 中保留 `PC_FOUR_STREAM`、
+`RK3566_SIM`、descriptor 顺序、队列深度和累计字节数。
+
+这条路径验证的是 **软件边界、同步关系、序号回传和 HMI 接线**。它不代表真实
+FPGA PCIe endpoint、DMA、RK3566 NPU 或 HDMI 已经连接；真实硬件仍需在板上单独
+验收。
 
 `live` 仅复用已有适配器，不训练、不下载权重。`.pt` 输入走 `src/adas_edge/perception/ultralytics_detector.py`；`.rknn` 输入走 `competition_ai/detector.py`。没有模型时不会假装 live 已经完成，改用 mock 或 replay。
 
@@ -102,7 +116,7 @@ x        = (u - cx) × z / fx
 
 前端使用本地打包的 Three.js 0.180 依赖（`frontend/vendor/`，不依赖 CDN），场景全部由程序化几何体组成：自车、道路平面、实线/虚线车道、车辆、行人、悬浮交通灯和轻量警告状态。默认相机在自车后上方、朝道路前方看，保留固定驾驶辅助视角，不开启自由 OrbitControls。
 
-页面左侧约 60% 是 3D perception world；右侧是 front sensor video、traffic light/action/warning、navigation intent 和 telemetry。按 `D` 打开 debug inspector，可查看 frame、track、bbox、world X/Z、lane、light 和 navigation。前视 bbox 是 PC 调试显示，不能解读为 FPGA 已经具备 OSD。
+页面左侧约 60% 是 3D perception world；右侧是 front sensor video、可选的 left/right/rear 三路 channel 缩略图、traffic light/action/warning、navigation intent 和 telemetry。按 `D` 打开 debug inspector，可查看 frame、track、bbox、world X/Z、lane、light 和 navigation。前视 bbox 是 PC 调试显示，不能解读为 FPGA 已经具备 OSD。
 
 ## 8. Demo timeline
 

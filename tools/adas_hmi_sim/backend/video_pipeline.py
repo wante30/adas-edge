@@ -11,6 +11,8 @@ from typing import Any, Iterator
 import cv2
 import numpy as np
 
+from competition_io import FrameDescriptor, MockRoundRobin, MockTransport, ResultDescriptor
+
 
 @dataclass
 class FramePacket:
@@ -20,6 +22,8 @@ class FramePacket:
     detections: list[dict[str, Any]]
     metadata: dict[str, Any]
     detector_update: bool = True
+    stream_images: dict[str, np.ndarray] | None = None
+    transport: dict[str, Any] | None = None
 
 
 def _detection(class_name: str, confidence: float, bbox: tuple[float, float, float, float]) -> dict[str, Any]:
@@ -89,6 +93,121 @@ class MockSource:
 
     def close(self) -> None:
         pass
+
+
+def _channel_variant(image: np.ndarray, role: str, timestamp_ms: int) -> np.ndarray:
+    """Create a deterministic camera preview for the PC four-stream simulator."""
+
+    if role == "rear":
+        result = cv2.flip(image, -1)
+    elif role == "left":
+        result = cv2.convertScaleAbs(image, alpha=0.86, beta=8)
+        result = np.roll(result, -36, axis=1)
+    elif role == "right":
+        result = cv2.convertScaleAbs(image, alpha=0.95, beta=-4)
+        result = np.roll(result, 36, axis=1)
+    else:
+        result = image.copy()
+    cv2.rectangle(result, (0, 0), (result.shape[1], 42), (7, 14, 18), -1)
+    cv2.putText(result, f"{role.upper()} / FPGA PCIE CH", (18, 29), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (175, 191, 187), 1, cv2.LINE_AA)
+    cv2.putText(result, f"{timestamp_ms / 1000:05.1f}s", (result.shape[1] - 92, 29), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (175, 191, 187), 1, cv2.LINE_AA)
+    return result
+
+
+def _jpeg_bytes(image: np.ndarray) -> bytes:
+    ok, encoded = cv2.imencode(".jpg", image, [int(cv2.IMWRITE_JPEG_QUALITY), 72])
+    if not ok:
+        raise RuntimeError("could not encode a PCIE preview frame")
+    return encoded.tobytes()
+
+
+class FourStreamMockSource:
+    """PC-only FPGA→PCIe→RK3566 simulation with four synchronized cameras.
+
+    The images are deterministic mock frames, but every channel crosses the
+    existing ``FrameDescriptor``/``ResultDescriptor`` wire contract through an
+    in-memory transport. This makes the browser demo exercise the same stage
+    boundaries without claiming that a PCIe endpoint or RK3566 is connected.
+    """
+
+    ROLES = ("front", "left", "right", "rear")
+
+    def __init__(self, fps: float = 20.0, duration_s: float = 20.0, width: int = 960, height: int = 540, start_ms: int = 0, queue_depth: int = 3):
+        self.primary = MockSource(fps=fps, duration_s=duration_s, width=width, height=height, start_ms=start_ms)
+        self.width, self.height, self.queue_depth = width, height, queue_depth
+        self.frame_transport = MockTransport()
+        self.result_transport = MockTransport()
+        self.round_robin = MockRoundRobin(streams=4, queue_depth=queue_depth)
+        self.pcie_bytes = 0
+        self.result_bytes = 0
+        self.frames = 0
+
+    def next(self) -> FramePacket | None:
+        primary = self.primary.next()
+        if primary is None or primary.image is None:
+            return None
+        images = {role: _channel_variant(primary.image, role, primary.timestamp_ms) for role in self.ROLES}
+        descriptor_order: list[int] = []
+        descriptor_sizes: dict[str, int] = {}
+        for stream_id, role in enumerate(self.ROLES):
+            payload = _jpeg_bytes(images[role])
+            descriptor = FrameDescriptor(stream_id, primary.frame_id, primary.timestamp_ms * 1_000_000, self.width, self.height, 0xF0, 0, payload, flags=1)
+            wire = descriptor.serialize()
+            self.pcie_bytes += len(wire)
+            descriptor_sizes[role] = len(wire)
+            self.frame_transport.send_frame(descriptor)
+            self.round_robin.push(descriptor)
+        while True:
+            descriptor = self.round_robin.pop()
+            if descriptor is None:
+                break
+            # Deserialize the queued transport copy to exercise header checks.
+            self.frame_transport.recv_frame(descriptor.stream_id)
+            descriptor_order.append(descriptor.stream_id)
+
+        # The mock RK stage emits the front detections as metadata-only results.
+        class_ids = {"person": 0, "bicycle": 1, "car": 2, "motorcycle": 3, "bus": 5, "truck": 7}
+        records = []
+        for item in primary.detections:
+            if item.get("class_name") not in class_ids:
+                continue
+            x1, y1, x2, y2 = [max(0, min(65535, int(round(v)))) for v in item["bbox"]]
+            from competition_io.protocol import DetectionRecord
+            records.append(DetectionRecord(class_ids[item["class_name"]], float(item["confidence"]), x1, y1, x2, y2))
+        result = ResultDescriptor(0, primary.frame_id, primary.timestamp_ms * 1_000_000, tuple(records))
+        result_wire = result.serialize()
+        self.result_bytes += len(result_wire)
+        self.result_transport.send_result(result)
+        self.result_transport.recv_result(0)
+        self.frames += 1
+        metadata = dict(primary.metadata)
+        metadata.update({
+            "system_mode": "PC_FOUR_STREAM",
+            "channel_roles": list(self.ROLES),
+            "pcie": {
+                "transport": "MockTransport",
+                "wire_protocol": "ADSF/ADSR v1",
+                "queue_depth": self.queue_depth,
+                "descriptor_order": descriptor_order,
+                "frame_descriptor_bytes": descriptor_sizes,
+                "frame_bytes_total": self.pcie_bytes,
+                "result_bytes_total": self.result_bytes,
+            },
+            "rk3566": {"device": "RK3566_SIM", "detector": "MOCK", "stream_count": 4},
+        })
+        return FramePacket(
+            primary.frame_id,
+            primary.timestamp_ms,
+            images["front"],
+            primary.detections,
+            metadata,
+            True,
+            images,
+            {"stream_count": 4, "descriptor_order": descriptor_order, "pcie_bytes": self.pcie_bytes, "result_bytes": self.result_bytes},
+        )
+
+    def close(self) -> None:
+        self.primary.close()
 
 
 def _parse_detection(item: dict[str, Any]) -> dict[str, Any]:

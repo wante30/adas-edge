@@ -3,6 +3,7 @@
 Examples::
 
     python tools/adas_hmi_sim/run.py --mode mock
+    python tools/adas_hmi_sim/run.py --mode pc-system
     python tools/adas_hmi_sim/run.py --mode replay --video road.mp4 --detections detections.jsonl
     python tools/adas_hmi_sim/run.py --mode live --video road.mp4 --model yolo11n.pt
 """
@@ -25,12 +26,12 @@ sys.path.insert(0, str(PACKAGE))
 from backend.navigation_state import NavigationState  # noqa: E402
 from backend.scene_builder import SceneBuilder  # noqa: E402
 from backend.server import SimulatorOptions, create_app  # noqa: E402
-from backend.video_pipeline import LiveSource, MockSource, ReplaySource  # noqa: E402
+from backend.video_pipeline import FourStreamMockSource, LiveSource, MockSource, ReplaySource  # noqa: E402
 
 
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description="PC ADAS driving-perception HMI simulator")
-    result.add_argument("--mode", choices=("mock", "replay", "live"), default="mock")
+    result.add_argument("--mode", choices=("mock", "pc-system", "replay", "live"), default="mock")
     result.add_argument("--video", type=Path, help="Input road video for replay/live")
     result.add_argument("--detections", type=Path, help="JSONL detections for replay mode")
     result.add_argument("--model", type=Path, help=".pt (PC Ultralytics) or .rknn (CompetitionDetector) for live mode")
@@ -47,6 +48,8 @@ def parser() -> argparse.ArgumentParser:
 def make_source(args: argparse.Namespace):
     if args.mode == "mock":
         return MockSource(start_ms=args.mock_start_ms)
+    if args.mode == "pc-system":
+        return FourStreamMockSource(start_ms=args.mock_start_ms)
     if args.video is None:
         raise SystemExit(f"--video is required for --mode {args.mode}")
     if args.mode == "replay":

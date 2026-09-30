@@ -32,24 +32,31 @@ RKNN conversion needs a Rockchip-supported Toolkit2 environment. The original CO
 ## PC ADAS HMI simulator
 
 The independent `tools/adas_hmi_sim` subsystem validates the perception-to-HMI
-path without FPGA, PCIe, or a Rockchip board. It supports `mock`, `replay`
+path without FPGA, PCIe, or a Rockchip board. It supports `mock`, `pc-system`
+(a four-channel PC simulation of FPGA → PCIe → RK3566 → HMI), `replay`
 (video + JSONL), and `live` (the existing PC Ultralytics adapter or
 `CompetitionDetector`) modes:
 
 ```powershell
 python tools/adas_hmi_sim/run.py --mode mock
+
+# PC whole-system simulation: four synchronised camera channels plus
+# FrameDescriptor/ResultDescriptor in-memory transport
+python tools/adas_hmi_sim/run.py --mode pc-system
 ```
 
 The browser consumes only the versioned `SceneFrame` JSON contract. Its 3D
 world uses explicit `PSEUDO_DISTANCE` mapping for UI visualization; it is not a
-high-accuracy ranging result. See [the simulator guide](docs/adas_hmi_pc_simulator.md).
+high-accuracy ranging result. `pc-system` exercises the existing software
+descriptor contract only; it is not physical PCIe/RK3566 evidence. See [the
+simulator guide](docs/adas_hmi_pc_simulator.md).
 
 ## Current status
 
 - 320 and 416 INT8 split-output candidates have completed RK3566 single-image load/inference/decode smoke tests.
 - The round-2 road-domain pilot is complete. It does not clear the RKNN INT8 gate, because traffic light regresses to zero; no board deployment follows from it.
 - Competition detector, scene policy, and PCIe software-mock tests pass.
-- Real FPGA capture, PCIe endpoint/DMA, OSD return, continuous video validation, four-stream testing, and final demonstration remain pending.
+- Real FPGA capture, PCIe endpoint/DMA, OSD return, continuous video validation, hardware four-stream testing, and final demonstration remain pending. The `pc-system` mode is a PC-only software-boundary simulation.
 
 ## Round-2 road-domain pilot
 
