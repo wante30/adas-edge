@@ -9,6 +9,7 @@
     warningStrip: $('warning-strip'), warning: $('warning-text'), navArrow: $('nav-arrow'), navAction: $('nav-action'), navDistance: $('nav-distance'),
     videoFps: $('video-fps'), detectorFps: $('detector-fps'), wsRate: $('ws-rate'), tracks: $('track-count'), sceneTracks: $('scene-track-count'), renderFps: $('render-fps'),
     sourceLabel: $('source-label'), worldLabel: $('world-label'), viewButtons: [...document.querySelectorAll('.view-button')], debug: $('debug-panel'), debugText: $('debug-text'),
+    driveSpeed: $('drive-speed'), driveAssistIcon: $('drive-assist-icon'), driveAssistText: $('drive-assist-text'), driveRouteIcon: $('drive-route-icon'), driveRouteDistance: $('drive-route-distance'), driveRouteName: $('drive-route-name'), driveLaneArrows: $('drive-lane-arrows'), driveRouteMeta: $('drive-route-meta'), driveArrival: $('drive-arrival'), sceneVideo: $('scene-video-feed'),
   };
   let renderer;
   let mapRenderer;
@@ -50,6 +51,17 @@
     setText(dom.navArrow, navArrow(nav.action));
     setText(dom.navAction, String(nav.action || 'STRAIGHT').replaceAll('_', ' '));
     setText(dom.navDistance, nav.distance_m == null ? '—' : `${Math.round(nav.distance_m)} m`);
+    const speed = Math.max(0, Math.round(Number(frame.ego?.speed || 0)));
+    setText(dom.driveSpeed, String(speed));
+    const action = String(nav.action || 'STRAIGHT');
+    setText(dom.driveAssistIcon, frame.ego?.action === 'STOP' ? '●' : '▲');
+    setText(dom.driveAssistText, frame.ego?.action === 'STOP' ? '等待信号灯' : action.startsWith('CHANGE_') ? '即将沿导航变道' : '城市领航辅助中');
+    setText(dom.driveRouteIcon, navArrow(action));
+    setText(dom.driveRouteDistance, nav.distance_m == null ? '—' : String(Math.round(nav.distance_m)));
+    setText(dom.driveRouteName, action.endsWith('LEFT') ? '兴业路' : action.endsWith('RIGHT') ? '宝源一街' : '海城路');
+    setText(dom.driveRouteMeta, `${speed > 0 ? '1.5 公里' : '0 米'} · ${speed > 0 ? '4 分' : '—'} · ${frame.objects?.length || 0}`);
+    setText(dom.driveArrival, speed > 0 ? '11:19 到' : '等待');
+    if (dom.driveLaneArrows) dom.driveLaneArrows.innerHTML = action.endsWith('LEFT') ? '<span>↰</span><b>↑</b><span>↑</span>' : action.endsWith('RIGHT') ? '<span>↑</span><span>↑</span><b>↱</b>' : '<span>↑</span><b>↑</b><span>↱</span>';
     setText(dom.videoFps, `${Number(metrics.video_fps || 0).toFixed(1)} Hz`);
     setText(dom.detectorFps, `${Number(metrics.detector_fps || 0).toFixed(1)} Hz`);
     setText(dom.wsRate, `${Number(metrics.backend_ws_rate || 0).toFixed(1)} Hz`);
@@ -85,6 +97,7 @@
     if (message.scene?.metadata?.system_mode) dom.sourceLabel.textContent = message.scene.metadata.system_mode.replaceAll('_', ' ');
     if (message.video_jpeg) {
       dom.video.src = `data:image/jpeg;base64,${message.video_jpeg}`;
+      if (dom.sceneVideo) dom.sceneVideo.src = dom.video.src;
       dom.videoEmpty.hidden = true;
       dom.videoSize.textContent = message.video_jpegs ? 'FRONT / PRIMARY' : '960 × 540';
     }
@@ -126,6 +139,6 @@
   });
   try { renderer = new SceneRenderer(dom.host); } catch (error) { dom.host.innerHTML = `<div class="scene-error">WebGL renderer unavailable<br><small>${error.message}</small></div>`; console.error(error); renderer = { update: () => {}, updateSurround: () => {}, setView: () => {} }; }
   try { const MapRenderer = globalThis.MapLibreNavigationMap || globalThis.NavigationMapRenderer; mapRenderer = new MapRenderer(dom.navMap); } catch (error) { console.error(error); }
-  activateView('nav');
+  activateView('drive');
   connect();
 })();

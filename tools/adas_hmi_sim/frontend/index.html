@@ -15,10 +15,26 @@
     </header>
     <section class="workspace">
       <section class="perception-panel panel">
-        <div class="panel-label"><span id="world-label">导航地图</span><div class="view-controls"><button data-view="nav" class="view-button active" type="button" aria-pressed="true">导航地图</button><button data-view="drive" class="view-button" type="button" aria-pressed="false">驾驶感知</button><button data-view="bowl" class="view-button" type="button" aria-pressed="false" disabled>环视 AVM</button></div></div>
+        <div class="panel-label"><span id="world-label">驾驶感知</span><div class="view-controls"><button data-view="drive" class="view-button active" type="button" aria-pressed="true">驾驶感知</button><button data-view="nav" class="view-button" type="button" aria-pressed="false">导航地图</button><button data-view="bowl" class="view-button" type="button" aria-pressed="false" disabled>环视 AVM</button></div></div>
         <div id="scene-host" class="scene-host">
           <div id="nav-map" class="nav-map" aria-label="离线导航地图"></div>
           <img id="scene-surround-feed" class="scene-surround-feed" alt="全景环视地图" hidden />
+          <div class="drive-ui" aria-label="驾驶辅助界面">
+            <div class="drive-top-left">
+              <div class="drive-speed"><strong id="drive-speed">0</strong><span>km/h</span></div>
+              <div class="drive-limit"><b id="drive-limit">60</b><small>限速</small></div>
+              <div class="drive-limit max"><b>63</b><small>MAX</small></div>
+              <div class="drive-assist" id="drive-assist"><span class="assist-mark" id="drive-assist-icon">▲</span><span id="drive-assist-text">城市领航辅助中</span></div>
+            </div>
+            <div class="drive-lane-state" id="drive-lane-state"><span>↶</span><b>↑</b><span>↷</span></div>
+            <section class="drive-route-card">
+              <div class="route-card-main"><span class="route-turn" id="drive-route-icon">↱</span><div><strong id="drive-route-distance">320</strong><span>米</span><small id="drive-route-name">海城路</small></div><div class="route-follow"><span>↱</span><small>随后</small></div></div>
+              <div class="route-lanes" id="drive-lane-arrows"><span>↑</span><span>↑</span><b>↱</b></div>
+              <div class="route-meta"><span id="drive-route-meta">1.5 公里 · 4 分 · ②</span><span id="drive-arrival">11:19 到</span></div>
+            </section>
+            <div class="drive-camera-float"><img id="scene-video-feed" alt="前视相机小窗" /><span>FRONT CAMERA</span></div>
+            <div class="drive-bottom-dock"><span class="dock-home">⌂</span><span class="dock-blue">✣</span><span>♨</span><span>22°C</span><span class="dock-sep"></span><span class="dock-nav">▲</span><span class="dock-music">♫</span><span>▦</span><span class="dock-sep"></span><span>22°C</span><span>通风</span><span>除雾</span><span>⏻</span></div>
+          </div>
           <div class="scene-loading">INITIALISING SCENE</div>
           <div class="scene-hud left"><span class="hud-chip" id="source-label">感知模拟</span></div>
           <div class="scene-hud right"><span class="hud-chip">TRACKS <b id="scene-track-count">—</b></span></div>

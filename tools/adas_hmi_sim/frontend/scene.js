@@ -1,5 +1,5 @@
 (function () {
-const COLORS = { road: 0x252c32, lane: 0xdde6df, cyan: 0x65d8df, amber: 0xffbd70, red: 0xff5964, green: 0x55e398, blue: 0x7ba8ff, marker: 0x8ca9a6 };
+const COLORS = { road: 0x9bbdc0, lane: 0xf1f4ea, cyan: 0x36c7ff, amber: 0xffbd70, red: 0xff5964, green: 0x55e398, blue: 0x268df1, marker: 0x8ca9a6 };
 
 function material(color, roughness = 0.5) { return new THREE.MeshStandardMaterial({ color, roughness, metalness: 0.15 }); }
 
@@ -45,15 +45,17 @@ function laneSegment(a, b, style) {
 class SceneRenderer {
   constructor(host) {
     this.host = host; this.latest = null; this.objects = new Map();
-    this.scene = new THREE.Scene(); this.scene.background = null; this.scene.fog = new THREE.Fog(0x16282d, 32, 82);
+    this.scene = new THREE.Scene(); this.scene.background = null; this.scene.fog = new THREE.Fog(0xa8cdd1, 34, 92);
     this.camera = new THREE.PerspectiveCamera(49, 1, 0.1, 160); this.camera.position.set(0, 5.2, -8.5); this.camera.lookAt(0, 0.5, 16);
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); this.renderer.outputColorSpace = THREE.SRGBColorSpace; const loading = host.querySelector('.scene-loading'); if (loading) loading.remove(); host.insertBefore(this.renderer.domElement, host.firstChild);
-    this.scene.add(new THREE.HemisphereLight(0xa7c5ce, 0x151c22, 1.8)); const key = new THREE.DirectionalLight(0xc9e9ff, 2.2); key.position.set(-6, 10, -5); this.scene.add(key);
-    const road = new THREE.Mesh(new THREE.PlaneGeometry(16, 110), material(COLORS.road, 0.95)); road.rotation.x = -Math.PI / 2; road.position.z = 32; this.scene.add(road);
-    const shoulder = new THREE.Mesh(new THREE.PlaneGeometry(28, 110), new THREE.MeshStandardMaterial({ color: 0x11181c, roughness: 1 })); shoulder.rotation.x = -Math.PI / 2; shoulder.position.y = -0.03; shoulder.position.z = 32; this.scene.add(shoulder);
+    this.scene.add(new THREE.HemisphereLight(0xe8ffff, 0x64858a, 2.5)); const key = new THREE.DirectionalLight(0xffffff, 2.7); key.position.set(-6, 12, -5); this.scene.add(key);
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(18, 110), material(COLORS.road, 0.95)); road.rotation.x = -Math.PI / 2; road.position.z = 32; this.scene.add(road);
+    const shoulder = new THREE.Mesh(new THREE.PlaneGeometry(34, 110), new THREE.MeshStandardMaterial({ color: 0xabc9c8, roughness: 1 })); shoulder.rotation.x = -Math.PI / 2; shoulder.position.y = -0.03; shoulder.position.z = 32; this.scene.add(shoulder);
+    this.addDriveRoadMarkings(); this.addCitySilhouette();
     this.addRoadsideDetails();
     this.laneGroup = new THREE.Group(); this.scene.add(this.laneGroup);
-    this.ego = makeCar(COLORS.cyan, 1.05); this.ego.position.y = 0.04; this.scene.add(this.ego);
+    this.ego = makeCar(0x142432, 1.05); this.ego.position.y = 0.04; this.scene.add(this.ego);
+    const egoHalo = new THREE.Mesh(new THREE.CircleGeometry(1.65, 48), new THREE.MeshBasicMaterial({ color: COLORS.blue, transparent: true, opacity: 0.3, depthWrite: false })); egoHalo.rotation.x = -Math.PI / 2; egoHalo.position.y = 0.06; this.ego.add(egoHalo);
     this.signal = new THREE.Group(); this.signal.position.set(0, 3.8, 20); this.scene.add(this.signal); this.makeSignal();
     this.resize = () => { const box = host.getBoundingClientRect(); this.renderer.setSize(box.width, box.height, false); this.camera.aspect = box.width / Math.max(1, box.height); this.camera.updateProjectionMatrix(); };
     window.addEventListener('resize', this.resize); this.resize();
@@ -61,6 +63,26 @@ class SceneRenderer {
     this.surroundView = new SurroundView(this.scene); this.viewMode = 'drive'; this.renderFrames = 0; this.renderStarted = performance.now();
     this.animate = () => { requestAnimationFrame(this.animate); if (this.latest && this.viewMode === 'drive') this.ego.rotation.y += ((this.latest.ego.steering || 0) * Math.PI / 180 - this.ego.rotation.y) * 0.08; this.renderer.render(this.scene, this.camera); this.renderFrames++; const now = performance.now(); if (now - this.renderStarted >= 1000) { document.body.dataset.renderFps = (this.renderFrames * 1000 / (now - this.renderStarted)).toFixed(1); this.renderFrames = 0; this.renderStarted = now; } };
     this.animate();
+  }
+  addDriveRoadMarkings() {
+    this.roadMarkings = new THREE.Group();
+    const white = new THREE.MeshBasicMaterial({ color: 0xf5f8ef, transparent: true, opacity: 0.88 });
+    const yellow = new THREE.MeshBasicMaterial({ color: 0xffcf52, transparent: true, opacity: 0.95 });
+    for (const x of [-6, -2, 2, 6]) for (let z = 7; z < 82; z += 7) { const dash = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.035, 2.8), white); dash.position.set(x, 0.035, z); this.roadMarkings.add(dash); }
+    for (const x of [-8.1, 8.1]) { const edge = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.04, 102), yellow); edge.position.set(x, 0.04, 32); this.roadMarkings.add(edge); }
+    this.routeGroup = new THREE.Group();
+    const routeMaterial = new THREE.MeshBasicMaterial({ color: 0x168ff1, transparent: true, opacity: 0.48, depthWrite: false });
+    const routeHighlight = new THREE.MeshBasicMaterial({ color: 0x55c9ff, transparent: true, opacity: 0.72, depthWrite: false });
+    for (let z = 3; z < 66; z += 2.25) { const x = Math.sin(z / 15) * 0.45; const nextX = Math.sin((z + 2.25) / 15) * 0.45; const segment = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.035, 2.6), routeMaterial); segment.position.set(x, 0.065, z); segment.rotation.y = Math.atan2(nextX - x, 2.25); this.routeGroup.add(segment); }
+    for (let z = 11; z < 60; z += 9) { const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.52, 3), routeHighlight); arrow.rotation.x = -Math.PI / 2; arrow.position.set(Math.sin(z / 15) * 0.45, 0.09, z); this.routeGroup.add(arrow); }
+    this.scene.add(this.roadMarkings, this.routeGroup);
+  }
+  addCitySilhouette() {
+    const skyline = new THREE.Group();
+    const colors = [0x9fc3c6, 0x8fb7bc, 0xb3cdd0];
+    const buildings = [[-14, 5, 4], [-10, 8, 5], [-6, 4, 3], [6, 6, 4], [10, 10, 5], [15, 5, 4]];
+    buildings.forEach(([x, h, w], index) => { const building = new THREE.Mesh(new THREE.BoxGeometry(w, h, 2.8), material(colors[index % colors.length], 0.9)); building.position.set(x, h / 2 - 0.04, 58 + (index % 2) * 3); skyline.add(building); });
+    this.scene.add(skyline);
   }
   addRoadsideDetails() {
     this.roadside = new THREE.Group();
@@ -88,7 +110,7 @@ class SceneRenderer {
     const live = new Set();
     for (const item of items || []) {
       live.add(item.id); let group = this.objects.get(item.id);
-      if (!group) { const scale = item.class_name === 'bus' || item.class_name === 'truck' ? 1.28 : item.class_name === 'person' ? 0.75 : 1; group = item.class_name === 'person' ? makePerson() : makeCar(item.class_name === 'car' ? 0x6d86a4 : 0x907e63, scale); group.userData.baseScale = scale; this.objects.set(item.id, group); this.scene.add(group); }
+      if (!group) { const scale = item.class_name === 'bus' || item.class_name === 'truck' ? 1.28 : item.class_name === 'person' ? 0.75 : 1; group = item.class_name === 'person' ? makePerson() : makeCar(item.class_name === 'car' ? 0xe7ece8 : 0xd0d9d8, scale); group.userData.baseScale = scale; this.objects.set(item.id, group); this.scene.add(group); }
       group.position.set(item.world.x, 0.05, item.world.z); group.scale.setScalar(Math.max(0.2, item.alpha || 1)); group.visible = item.alpha > 0.02;
     }
     for (const [id, group] of this.objects) if (!live.has(id)) { this.scene.remove(group); this.objects.delete(id); }
@@ -105,7 +127,7 @@ class SceneRenderer {
     // that resize the source image while the WebSocket is still streaming;
     // calibrated bowl projections are already encoded in that JPEG.
     this.surroundView.group.visible = false;
-    this.scene.fog = drive ? new THREE.Fog(0x16282d, 32, 82) : null;
+    this.scene.fog = drive ? new THREE.Fog(0xa8cdd1, 34, 92) : null;
     this.ego.rotation.y = 0; this.ego.scale.setScalar(1);
     this.camera.up.set(0, 1, 0);
     if (drive) { this.camera.position.set(0, 5.2, -8.5); this.camera.lookAt(0, 0.5, 16); }

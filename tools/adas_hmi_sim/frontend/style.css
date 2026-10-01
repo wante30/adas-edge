@@ -60,7 +60,7 @@ body {
 .mode-pill { padding: 6px 10px; color: var(--cyan); border: 1px solid #3e7d83; background: #11262b; box-shadow: inset 0 0 0 1px #102026; }
 .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 11px var(--green); }
 
-.workspace { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(350px, .86fr); gap: 12px; flex: 1; min-height: 0; }
+.workspace { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, .86fr); gap: 12px; flex: 1; min-height: 0; min-width: 0; }
 .panel { background: linear-gradient(145deg, #121c22, #0d1419); border: 1px solid var(--stroke); box-shadow: 0 16px 36px #0005; }
 .panel-label { display: flex; justify-content: space-between; align-items: center; min-height: 36px; padding: 9px 13px; color: #aac0c4; font: 700 10px var(--font-display); letter-spacing: .17em; border-bottom: 1px solid var(--stroke-soft); }
 .video-meta { display: inline-flex; align-items: center; gap: 9px; }
@@ -88,6 +88,39 @@ body {
 .nav-map-fallback { display: block; width: 100%; height: 100%; }
 .scene-surround-feed { position: absolute; z-index: 1; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
 .scene-surround-feed[hidden] { display: none; }
+.drive-ui { display: none; position: absolute; z-index: 7; inset: 0; color: #13252b; pointer-events: none; font-family: "Segoe UI", sans-serif; }
+.drive-top-left { position: absolute; top: 22px; left: 30px; display: flex; align-items: flex-start; gap: 9px; }
+.drive-speed { display: flex; align-items: baseline; gap: 5px; color: #10252c; text-shadow: 0 1px 1px #ffffff88; }
+.drive-speed strong { margin: 0; font: 300 clamp(34px, 4.2vw, 70px)/.9 "Arial Narrow", "Segoe UI", sans-serif; letter-spacing: -.05em; }
+.drive-speed span { font-size: 13px; font-weight: 600; }
+.drive-limit { display: grid; place-items: center; width: 43px; height: 43px; margin-top: 2px; border: 3px solid #db5d62; border-radius: 50%; color: #17252b; background: #ffffffb8; box-shadow: 0 2px 6px #47666c55; }
+.drive-limit b { font-size: 16px; line-height: 14px; }
+.drive-limit small { color: #223a40; font-size: 7px; letter-spacing: .03em; }
+.drive-limit.max { border-color: #3577c9; color: #2464b8; }
+.drive-assist { display: flex; align-items: center; gap: 7px; min-width: 178px; height: 43px; margin-top: 2px; padding: 0 12px; border-radius: 8px; color: #314d56; background: #f4f9f3c9; box-shadow: 0 3px 12px #36626b2b; font-size: 13px; font-weight: 700; }
+.assist-mark { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: #fff; background: #2c7bd4; font-size: 13px; }
+.drive-lane-state { position: absolute; top: 21px; left: 50%; display: flex; align-items: center; gap: 8px; padding: 5px 10px; transform: translateX(-50%); border-radius: 22px; color: #587278; background: #edf5f1b8; box-shadow: 0 3px 10px #47666c38; font-size: 20px; }
+.drive-lane-state b { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; color: #fff; background: #27a86b; font-size: 20px; }
+.drive-route-card { position: absolute; top: 92px; left: 30px; width: min(360px, 31vw); padding: 14px 16px 10px; border-radius: 10px; color: #182a30; background: #f5faf6dc; box-shadow: 0 7px 24px #36575e3d; }
+.route-card-main { display: grid; grid-template-columns: 48px 1fr auto; gap: 8px; align-items: center; }
+.route-turn { font-size: 50px; line-height: .8; color: #111c22; }
+.route-card-main strong { display: inline; margin: 0; font: 500 32px/1 "Arial Narrow", sans-serif; letter-spacing: -.03em; }
+.route-card-main span { font-size: 17px; }
+.route-card-main small, .route-follow small { margin-top: 5px; color: #375158; font-size: 13px; letter-spacing: 0; }
+.route-follow { display: grid; justify-items: center; align-self: start; padding-top: 3px; color: #172a30; }
+.route-follow span { font-size: 27px; line-height: 1; }
+.route-lanes { display: flex; justify-content: center; gap: 17px; margin: 13px 0 8px; padding-top: 10px; border-top: 1px solid #a1b7b866; color: #4a7ea7; font-size: 23px; }
+.route-lanes b { color: #2168bf; }
+.route-meta { display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid #a1b7b866; color: #354c53; font-size: 12px; font-weight: 700; }
+.drive-camera-float { position: absolute; right: 28px; bottom: 82px; width: min(320px, 25vw); overflow: hidden; border: 2px solid #e7f2ec; border-radius: 9px; background: #152b31; box-shadow: 0 6px 22px #15373f66; }
+.drive-camera-float img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.drive-camera-float span { position: absolute; right: 7px; bottom: 6px; padding: 3px 5px; color: #e9f6f0; background: #13242cc7; font: 700 8px var(--font-display); letter-spacing: .11em; }
+.drive-bottom-dock { position: absolute; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: space-around; height: 45px; padding: 0 22px; color: #d9efeb; background: #16323ac7; box-shadow: 0 -4px 18px #16323a33; font-size: 18px; }
+.drive-bottom-dock span { min-width: 28px; text-align: center; }
+.drive-bottom-dock .dock-home { font-size: 27px; }
+.drive-bottom-dock .dock-blue, .drive-bottom-dock .dock-nav { color: #56b8ee; }
+.drive-bottom-dock .dock-music { color: #ff8f65; font-size: 24px; }
+.drive-bottom-dock .dock-sep { min-width: 1px; height: 20px; border-left: 1px solid #b8d6d54d; }
 .scene-loading, .scene-error { position: absolute; z-index: 3; inset: 0; display: grid; place-content: center; text-align: center; color: var(--muted); letter-spacing: .18em; font: 700 11px var(--font-display); }
 .scene-error { color: var(--red); letter-spacing: .06em; }
 .scene-error small { margin-top: 9px; color: var(--muted); }
@@ -119,6 +152,17 @@ body[data-view-mode="bowl"] .workspace, body[data-view-mode="top"] .workspace { 
 body[data-view-mode="bowl"] .bev-card, body[data-view-mode="top"] .bev-card { display: block; }
 body[data-view-mode="bowl"] .bev-frame, body[data-view-mode="top"] .bev-frame { max-height: 220px; }
 body[data-view-mode="bowl"] .scene-host::after, body[data-view-mode="top"] .scene-host::after { border-color: #79dce22e; box-shadow: inset 0 0 60px #0a171d80; }
+body[data-view-mode="drive"] .workspace { display: grid; grid-template-columns: minmax(0, 1fr); position: relative; }
+body[data-view-mode="drive"] .perception-panel { height: 100%; min-width: 0; }
+body[data-view-mode="drive"] .side-panel { display: none; }
+body[data-view-mode="drive"] .scene-caption { display: none; }
+body[data-view-mode="drive"] .drive-ui { display: block; }
+body[data-view-mode="drive"] .scene-host { background: linear-gradient(180deg, #a8d5dc 0%, #d4e9e4 38%, #9ebdc0 100%); }
+body[data-view-mode="drive"] .scene-host::before { background: linear-gradient(180deg, #bde5eb00 0%, #bde5eb00 58%, #2d666855 100%); }
+body[data-view-mode="drive"] .panel-label { position: absolute; z-index: 10; top: 8px; right: 18px; left: 18px; min-height: 0; padding: 0; border: 0; color: #27464e; pointer-events: none; }
+body[data-view-mode="drive"] .panel-label .view-controls { pointer-events: auto; }
+body[data-view-mode="drive"] .scene-host canvas { z-index: 1; }
+body[data-view-mode="drive"] .scene-hud { z-index: 8; }
 .video-card { flex: 0 0 auto; }
 .bev-card { flex: 0 0 auto; }
 .bev-card[hidden] { display: none; }
