@@ -1,6 +1,6 @@
 # PC ADAS 车载大屏感知可视化模拟器
 
-这个子系统验证比赛产品的 **道路视频 → 检测元数据 → Scene Builder → Three.js 感知世界 → ADAS HMI** 链路。它只在 PC 上运行，不连接 FPGA、PCIe、RK3566/RK3568，也不修改现有冻结的比赛 AI pipeline。
+这个子系统验证比赛产品的 **道路视频 → 检测元数据 → Scene Builder → 导航地图/感知叠加 → ADAS HMI** 链路。它只在 PC 上运行，不连接 FPGA、PCIe、RK3566/RK3568，也不修改现有冻结的比赛 AI pipeline。
 
 ## 1. 架构
 
@@ -63,12 +63,19 @@ channel 缩略图（默认折叠），并在 `SceneFrame.metadata` 中保留 `PC
 FPGA PCIe endpoint、DMA、RK3566 NPU 或 HDMI 已经连接；真实硬件仍需在板上单独
 验收。
 
-`surround` 模式读取四路视频，把 BEV JPEG 接入同一条 WebSocket。收到环视帧后，HMI
-会自动把全景地图切为主画面，前视和原始 BEV 预览保留在右侧辅助区。默认配置是
-`APPROXIMATE_PLANAR`，用于快速验证画面和协议；有鱼眼内参/外参时，用
+`surround` 模式读取四路视频，把 BEV JPEG 接入同一条 WebSocket。HMI 默认以导航地图
+为主画面，前视感知是右侧主辅助卡片，环视 AVM 通过顶部按钮切换；收到 BEV 后才会
+启用 `环视 AVM` 按钮。默认配置是 `APPROXIMATE_PLANAR`，用于快速验证画面和协议；有鱼眼内参/外参时，用
 `tools/build_calibrated_surround_lut.py` 生成上游 Open-3D-Surround-View 风格 LUT，
 再通过 `--bev-lut-dir` 运行标定版。RK3566 的实测、输入要求和性能边界见
 [`docs/adas_hmi_surround_rk3566.md`](adas_hmi_surround_rk3566.md)。
+
+导航地图使用开源 [MapLibre GL JS](https://github.com/maplibre/maplibre-gl-js) 适配器。
+PC/RK 离线演示内置一小块哈尔滨 OSM 栅格瓦片，MapLibre 初始化失败时会回退到同一瓦片包
+的 Canvas 渲染，因此不会因为外网、WebGL worker 或网络瓦片不可用而显示空白地图。
+`?online-map=1` 可显式尝试公开 OSM 瓦片。当前路线和车辆位置是 SceneFrame 驱动的演示
+overlay，不是 GPS 定位或路径规划；要做完整导航，需要再接入更大范围 PMTiles/MBTiles
+地图包和 Valhalla/OSRM 路径服务。
 
 `live` 仅复用已有适配器，不训练、不下载权重。`.pt` 输入走 `src/adas_edge/perception/ultralytics_detector.py`；`.rknn` 输入走 `competition_ai/detector.py`。没有模型时不会假装 live 已经完成，改用 mock 或 replay。
 
@@ -124,9 +131,9 @@ x        = (u - cx) × z / fx
 
 ## 7. Three.js 场景与 HMI
 
-前端使用本地打包的 Three.js 0.180 依赖（`frontend/vendor/`，不依赖 CDN），场景全部由程序化几何体组成：自车、道路平面、实线/虚线车道、车辆、行人、悬浮交通灯和轻量警告状态。默认相机在自车后上方、朝道路前方看，保留固定驾驶辅助视角，不开启自由 OrbitControls。
+前端使用本地打包的 Three.js 0.180 依赖（`frontend/vendor/`，不依赖 CDN），场景全部由程序化几何体组成：自车、道路平面、实线/虚线车道、车辆、行人、悬浮交通灯和轻量警告状态。默认导航视图由 MapLibre/离线 OSM 栅格地图承载；驾驶感知按钮再切换到 Three.js 场景，不开启自由 OrbitControls。
 
-驾驶模式下页面左侧约 60% 是 3D perception world；收到 BEV 后左侧自动切换为全景地图主画面。右侧保留 front sensor video、环视预览、traffic light/action/warning、navigation intent 和 telemetry。left/right/rear 三路 channel 默认折叠，点击 `AUX CAMS · S` 或按 `S` 才显示，用于调试和泊车/变道场景。按 `D` 打开 debug inspector，可查看 frame、track、bbox、world X/Z、lane、light 和 navigation。前视 bbox 是 PC 调试显示，不能解读为 FPGA 已经具备 OSD。
+导航视图下页面左侧约 60% 是地图、路线和自车位置；右侧保留 front sensor video、环视预览、traffic light/action/warning、navigation intent 和 telemetry。`驾驶感知` 按钮切换到 3D perception world，`环视 AVM` 显示 BEV/鸟瞰辅助画面。left/right/rear 三路 channel 默认折叠，点击 `AUX CAMS · S` 或按 `S` 才显示，用于调试和泊车/变道场景。按 `D` 打开 debug inspector，可查看 frame、track、bbox、world X/Z、lane、light 和 navigation。前视 bbox 是 PC 调试显示，不能解读为 FPGA 已经具备 OSD。
 
 ## 8. Demo timeline
 

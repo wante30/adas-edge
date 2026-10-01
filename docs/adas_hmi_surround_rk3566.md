@@ -17,7 +17,7 @@ front/left/right/rear.mp4
   WebSocket: video_jpeg + surround_bev_jpeg
         │
         ▼
-  PC ADAS HMI（全景地图主画面 + 前视/BEV 辅助区）
+  PC ADAS HMI（导航地图主画面 + 前视/BEV 辅助区）
 ```
 
 PC 上可以这样启动：

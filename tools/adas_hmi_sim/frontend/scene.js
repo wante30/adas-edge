@@ -96,6 +96,7 @@ class SceneRenderer {
   setView(mode) {
     this.viewMode = mode;
     const drive = mode === 'drive';
+    const navigation = mode === 'nav';
     this.drivingNodes.forEach(node => { node.visible = drive; });
     this.objects.forEach(node => { node.visible = drive; });
     this.ego.visible = drive;
@@ -108,6 +109,7 @@ class SceneRenderer {
     this.ego.rotation.y = 0; this.ego.scale.setScalar(1);
     this.camera.up.set(0, 1, 0);
     if (drive) { this.camera.position.set(0, 5.2, -8.5); this.camera.lookAt(0, 0.5, 16); }
+    else if (navigation) { this.camera.position.set(0, 13, -0.01); this.camera.lookAt(0, 0, 0); }
     else if (mode === 'top') { this.camera.position.set(0, 13, -0.01); this.camera.lookAt(0, 0, 0); }
     else { this.camera.position.set(7.5, 8, -7.5); this.camera.lookAt(0, 0, 0); }
     document.body.dataset.viewMode = mode;

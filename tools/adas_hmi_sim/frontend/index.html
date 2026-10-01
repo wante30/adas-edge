@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ADAS / perception cockpit</title>
+  <link rel="stylesheet" href="./vendor/maplibre-gl.css" />
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
@@ -14,8 +15,9 @@
     </header>
     <section class="workspace">
       <section class="perception-panel panel">
-        <div class="panel-label"><span id="world-label">驾驶感知</span><div class="view-controls"><button data-view="drive" class="view-button active" type="button" aria-pressed="true">驾驶</button><button data-view="bowl" class="view-button" type="button" aria-pressed="false" disabled>3D 全景</button><button data-view="top" class="view-button" type="button" aria-pressed="false" disabled>全景地图</button></div></div>
+        <div class="panel-label"><span id="world-label">导航地图</span><div class="view-controls"><button data-view="nav" class="view-button active" type="button" aria-pressed="true">导航地图</button><button data-view="drive" class="view-button" type="button" aria-pressed="false">驾驶感知</button><button data-view="bowl" class="view-button" type="button" aria-pressed="false" disabled>环视 AVM</button></div></div>
         <div id="scene-host" class="scene-host">
+          <div id="nav-map" class="nav-map" aria-label="离线导航地图"></div>
           <img id="scene-surround-feed" class="scene-surround-feed" alt="全景环视地图" hidden />
           <div class="scene-loading">INITIALISING SCENE</div>
           <div class="scene-hud left"><span class="hud-chip" id="source-label">感知模拟</span></div>
@@ -56,6 +58,8 @@
   <script src="./vendor/three.global.js" defer></script>
   <script src="./surround.js" defer></script>
   <script src="./scene.js" defer></script>
+  <script src="./nav-map.js" defer></script>
+  <script type="module" src="./maplibre-nav.mjs"></script>
   <script src="./app.js" defer></script>
 </body>
 </html>
