@@ -1,0 +1,26 @@
+{
+  "name": "official_front_shared_circular_signal_fixture",
+  "evidence": "PC_VIDEO_WITH_EXPLICIT_COMPETITION_SCENE_BINDING",
+  "video_sha256": "b91c2bc464189e125e69ace24024d19a3870a5c7bf97d750bbc7fcc7ca2b4ea7",
+  "association_assumption": "The competition fixture assigns a manually reviewed circular vehicle head to all three simulated lanes. This is not automatic on-road ego-lane association. Colours are classified from pixels, never supplied by this profile.",
+  "binding_message": "比赛假设：三车道共享此圆灯组；灯色由当前视频像素判别。",
+  "bindings": [
+    {"frame": 360, "bbox": [1157, 380, 1248, 417], "lanes": ["left", "straight", "right"]},
+    {"frame": 1800, "bbox": [747, 496, 810, 525], "lanes": ["left", "straight", "right"]}
+  ],
+  "scripted_controls": [
+    {"frame": 360, "key": "s"},
+    {"frame": 420, "key": "g"},
+    {"frame": 480, "key": "1"},
+    {"frame": 510, "key": "s"},
+    {"frame": 540, "key": "3"},
+    {"frame": 570, "key": "0"},
+    {"frame": 1800, "key": "0"},
+    {"frame": 1830, "key": "1"},
+    {"frame": 1860, "key": "3"},
+    {"frame": 1890, "key": "2"},
+    {"frame": 1920, "key": "s"},
+    {"frame": 1950, "key": "g"}
+  ],
+  "snapshot_frames": [363, 423, 513, 1833, 1863, 1893, 1953]
+}
