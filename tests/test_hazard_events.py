@@ -36,8 +36,19 @@ def test_normal_following_receding_and_detector_jitter_do_not_warn(sizes):
 
 def test_nearby_off_path_vehicle_and_camera_pan_do_not_warn():
     _, off_path = run_vehicle(np.linspace(28, 66, 18), center=55)
+    _, roadside = run_vehicle(np.linspace(28, 66, 18), center=200)
     _, turning = run_vehicle(np.linspace(28, 66, 18), motion=ImageMotion(valid=True, dx=.25))
-    assert not any(o.obstacle_hazard for o in off_path+turning)
+    assert not any(o.obstacle_hazard for o in off_path+roadside+turning)
+
+
+def test_uniform_scene_zoom_does_not_become_a_lead_collision_warning():
+    engine = HazardEvents()
+    for i in range(18):
+        size = 28*np.exp(.5*i*.1)
+        box = [160-size/2, 128-size*.65, 160+size/2, 128]
+        observed = engine.update(FRAME, [{'class_name':'car','confidence':.9,'bbox':box}],
+                                 i,i*100_000_000,motion=ImageMotion(valid=True,scale_rate=.5))
+        assert not observed.obstacle_hazard
 
 
 def test_pedestrian_crossing_path_warns_without_using_vehicle_red_signal():
@@ -99,9 +110,11 @@ def test_red_lamp_pixels_alone_never_trigger_collision_or_confirm_acute_braking(
             cv2.rectangle(frame, (185, 100), (205, 113), (0, 0, 255), -1)
         observation = engine.update(frame, [{'class_name': 'car', 'confidence': .9, 'bbox': box}],
                                     i, i*100_000_000, motion=STILL)
-        assert not observation.events
+        assert not observation.obstacle_hazard
+        assert not any(e['kind'] == 'SUSPECTED_BRAKING_WITH_CLOSING' for e in observation.events)
     assert paired_red_lamps(frame, box) > .025
     assert observation.tracks[0]['brake_lamp_rise_candidate']
+    assert any(e['kind']=='LEAD_BRAKE_LAMP_RISE' for e in observation.events)
 
 
 def test_invalid_path_and_unconfirmed_background_are_explicit():

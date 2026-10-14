@@ -17,6 +17,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from competition_ai.pc_detector import PcDetector
+from competition_ai.scenario import Mode
 from competition_ai.scenario_policy import decide
 from tools.competition_console.controls import Controller
 from tools.competition_console.pipeline import FrontPipeline
@@ -56,7 +57,10 @@ def run(args):
         raise ValueError('This calibration profile belongs to a different video; use manual B binding')
     main = PcDetector(args.main_model,(512,288))
     specialist = PcDetector(args.specialist_model,(512,192),specialist=True)
-    pipeline,controller,view = FrontPipeline(main,specialist),Controller(),NativeView(args.upstream)
+    pipeline = FrontPipeline(main,specialist,hazards=args.hazards,hazard_path=profile.get('hazard_path'))
+    controller,view = Controller(),NativeView(args.upstream)
+    if args.hazards:
+        controller.controls = replace(controller.controls,mode=Mode.HAZARD)
     controller.paused = args.paused
     capture,fps,total = source_capture(video)
     frame_id = round(args.start*fps)
@@ -156,10 +160,18 @@ def run(args):
                         binding_events,control_events,snapshot_frames = {},{},set()
                         profile = {}
                         controller = Controller()
+                        if args.hazards:
+                            controller.controls = replace(controller.controls,mode=Mode.HAZARD)
+                        # A path calibrated to another video cannot be reused.
+                        if pipeline.hazard_engine is not None:
+                            from competition_ai.hazard_events import HazardEvents
+                            pipeline.hazard_engine = HazardEvents()
                         state['message'] = '新视频：请先按 B 绑定所选车道的灯组'
                     else:
                         loops += 1
                         capture.set(cv2.CAP_PROP_POS_FRAMES,0)
+                        if args.hazards:
+                            controller.controls = replace(controller.controls,mode=Mode.HAZARD)
                     frame_id,end_frame,current,advance,last_written_frame = 0,total,None,True,None
                     pipeline.reset();seen_events.clear()
                     continue
@@ -190,6 +202,7 @@ def run(args):
                     row = {'frame':frame_id,'source_s':frame_id/fps,'video':str(video),
                            'controls':asdict(controller.controls),'decision':asdict(decision),
                            'signal':asdict(snapshot.signal),'binding_source':snapshot.binding_source,
+                           'hazards':asdict(snapshot.hazards),
                            'main':snapshot.main,'specialist':snapshot.specialist,
                            'main_age_ms':snapshot.main_age_ms,'specialist_age_ms':snapshot.specialist_age_ms}
                     trace.write(json.dumps(row,ensure_ascii=False)+'\n');trace.flush()
@@ -238,9 +251,17 @@ def run(args):
               'colour_display_frame_counts':dict(colour_counts),'decision_frame_counts':dict(action_counts),
               'alarm_frame_counts':dict(alarm_counts),'events':events,'native_window_was_visible':visible,
               'renderer_source':str(ROOT/'.deps/Tesla-BevCam-Clone/main.py'),
+              'hazards_enabled':args.hazards,
+              'hazard_algorithm':'SOURCE_TIMED_IMAGE_TRAJECTORY_EXPERIMENTAL' if args.hazards else 'DISABLED',
+              'hazard_postprocess_ms':{'updates':len(pipeline.hazard_engine.timings),
+                                      'median':float(np.median(pipeline.hazard_engine.timings)),
+                                      'p95':float(np.percentile(pipeline.hazard_engine.timings,95))}
+                                      if pipeline.hazard_engine and pipeline.hazard_engine.timings else None,
               'limitations':['Lamp direction/ego association is explicitly configured, not inferred automatically',
                              'Bound colour branch is a calibrated horizontal R/Y/G pixel classifier, separate from both detection models',
-                             'No lane model, hazard-zone detector or navigation reader in this first video integration',
+                             'Path polygon is an image-space assumption, not detected lanes or a calibrated vehicle trajectory',
+                             'Sudden braking and pedestrian red-signal violations remain unconfirmed without their missing evidence',
+                             'No lane model or navigation reader in this video integration',
                              'No real vehicle motion, calibrated 3D distances, PCIe output or board benchmark']}
     (output/'summary.json').write_text(json.dumps(report,indent=2,ensure_ascii=False),encoding='utf-8')
     print(json.dumps({'output':str(output.resolve()),'frames':processed,'colours':dict(colour_counts),
@@ -262,6 +283,7 @@ def parser():
     result.add_argument('--max-frames',type=int,default=0)
     result.add_argument('--paused',action='store_true')
     result.add_argument('--headless',action='store_true')
+    result.add_argument('--hazards',action='store_true',help='Enable experimental image-trajectory danger events')
     result.add_argument('--record',action='store_true')
     result.add_argument('--scripted-controls',action='store_true')
     result.add_argument('--close-at-end',action='store_true')

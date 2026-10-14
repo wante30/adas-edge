@@ -95,7 +95,7 @@ def capture_client(hwnd, path):
         gdi.DeleteObject(bitmap);gdi.DeleteDC(memory);user.ReleaseDC(hwnd,dc)
 
 
-def verify(output):
+def verify(output, *, hazards=False):
     if os.name != 'nt':
         raise RuntimeError('This native event check requires Windows')
     output.mkdir(parents=True,exist_ok=True)
@@ -104,6 +104,8 @@ def verify(output):
     command = [sys.executable,str(ROOT/'tools/run_competition_console.py'),'--start','12','--paused',
                '--profile',str(ROOT/'configs/competition_native_official.json'),
                '--output',str(app_output),'--window-title',title]
+    if hazards:
+        command.append('--hazards')
     env = os.environ.copy();env['PYTHONIOENCODING'] = 'utf-8'
     with (output/'process.txt').open('w',encoding='utf-8') as process_log:
         process = subprocess.Popen(command,cwd=ROOT,env=env,stdout=process_log,stderr=subprocess.STDOUT,
@@ -141,6 +143,8 @@ def verify(output):
                 if not user.PostMessageW(target,0x0102,ord(key) if isinstance(key,str) else key,0):
                     raise OSError('Cannot post a key to the child HighGUI window')
             initial = wait_for(lambda:last() and last()['signal']['light']=='RED' and last())
+            if hazards:
+                assert initial['hazards']['reason'] != 'disabled'
             send('g')
             forced = wait_for(lambda:last() and 'RED_LIGHT' in last()['decision']['alarms'] and last())
             assert forced['decision']['maneuver']=='stop' and forced['decision']['simulated_motion']=='go'
@@ -176,6 +180,7 @@ def verify(output):
                       'bound_signal_gate_survives_scene_switch':True,'uppercase_shortcuts_work':True,
                       'single_frame_step':True,'restart_invalidates_binding_and_forced_go':True,
                       'escape_exits_cleanly':True,'client_capture':str((output/'native_client.png').resolve()),
+                      'hazards_enabled':hazards,
                       'input_source':'SCRIPTED_WIN32_MESSAGES_TO_THIS_TEST_CHILD_ONLY','command':command}
             (output/'gui_check.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
             print(json.dumps(report,indent=2))
@@ -188,5 +193,6 @@ def verify(output):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--hazards',action='store_true')
     args = parser.parse_args()
-    verify(args.output.resolve())
+    verify(args.output.resolve(),hazards=args.hazards)

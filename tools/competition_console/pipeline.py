@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from competition_ai.bound_signal import BoundSignal, SignalObservation
+from competition_ai.hazard_events import HazardEvents, HazardObservation
 from competition_ai.scenario import Lane, Perception
 
 
@@ -15,25 +16,31 @@ class FrontSnapshot:
     main_age_ms: float | None
     specialist_age_ms: float | None
     binding_source: str
+    hazards: HazardObservation = HazardObservation()
 
     def as_perception(self):
-        # Lane and hazard observations are not fabricated from object presence.
-        return Perception(self.signal.light,self.signal.associated,self.signal.timestamp_ns)
+        return Perception(self.signal.light,self.signal.associated,self.signal.timestamp_ns,
+                          pedestrian_hazard=self.hazards.pedestrian_hazard,
+                          obstacle_hazard=self.hazards.obstacle_hazard,
+                          hazard_timestamp_ns=self.hazards.timestamp_ns)
 
 
 class FrontPipeline:
-    def __init__(self, main, specialist, *, main_hz=10., specialist_hz=3.):
+    def __init__(self, main, specialist, *, main_hz=10., specialist_hz=3., hazards=False, hazard_path=None):
         if main_hz <= 0 or specialist_hz <= 0:
             raise ValueError('Inference cadences must be positive')
         self.main_detector, self.specialist_detector = main,specialist
         self.main_hz, self.specialist_hz = main_hz,specialist_hz
         self.main_timings, self.specialist_timings = [],[]
+        self.hazard_engine = HazardEvents(**({'path':hazard_path} if hazard_path is not None else {})) if hazards else None
         self.reset()
 
     def reset(self):
         self.main, self.specialist = [],[]
         self.last_main, self.last_specialist, self.last_frame = None,None,None
         self.bindings = {}
+        if self.hazard_engine is not None:
+            self.hazard_engine.reset()
 
     def bind(self, frame, bbox, lanes, *, source='USER_SELECTED_HORIZONTAL_RYG_HEAD'):
         signal = BoundSignal(frame,bbox)
@@ -59,6 +66,8 @@ class FrontPipeline:
             self.main,elapsed = self.main_detector.detect(frame)
             self.main_timings.append(elapsed)
             self.last_main = now
+            if self.hazard_engine is not None:
+                self.hazard_engine.update(frame,self.main,frame_id,timestamp_ns)
         if self.due(now,self.last_specialist,self.specialist_hz):
             height,width = frame.shape[:2]
             self.specialist,elapsed = self.specialist_detector.detect(frame[:round(height*.60)])
@@ -80,4 +89,5 @@ class FrontPipeline:
         sa = (now-self.last_specialist)*1000 if self.last_specialist is not None else None
         return FrontSnapshot(self.main if ma is not None and 0 <= ma < 750 else [],
                              self.specialist if sa is not None and 0 <= sa < 400 else [],
-                             signal,ma,sa,binding[1] if binding else 'UNBOUND')
+                             signal,ma,sa,binding[1] if binding else 'UNBOUND',
+                             self.hazard_engine.current(now_ns) if self.hazard_engine else HazardObservation())

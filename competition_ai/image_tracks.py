@@ -27,10 +27,13 @@ class ImageTrack:
         x1, y1, x2, y2 = self.box
         # Correct apparent lateral displacement for background translation.
         offset = self.history[-1][4] if self.history else 0.
+        zoom = self.history[-1][5] if self.history else 0.
         if self.history and motion.valid:
-            offset += motion.dx*(timestamp_ns-self.history[-1][0])/1e9
+            dt = (timestamp_ns-self.history[-1][0])/1e9
+            offset += motion.dx*dt
+            zoom += motion.scale_rate*dt
         self.history.append((timestamp_ns, (x1+x2)/2/width, y2/height,
-                             math.sqrt((x2-x1)*(y2-y1))/width, offset))
+                             math.sqrt((x2-x1)*(y2-y1))/width, offset, zoom))
 
 
 class ImageTracker:

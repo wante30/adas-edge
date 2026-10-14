@@ -15,7 +15,7 @@ from .image_motion import BackgroundMotion, ImageMotion
 from .image_tracks import ImageTracker, iou
 
 VEHICLES = {'car', 'truck', 'bus'}
-DEFAULT_PATH = ((.48, .48), (.52, .48), (.73, .88), (.27, .88))
+DEFAULT_PATH = ((.485, .48), (.515, .48), (.63, .88), (.37, .88))
 
 
 @dataclass(frozen=True)
@@ -81,6 +81,7 @@ class HazardEvents:
         self.tracker, self.background = ImageTracker(), BackgroundMotion()
         self.last_frame, self.last_ns, self.blocked_until = None, None, 0
         self.confirmations = {}
+        self.recent_leads = {}
         self.observation = HazardObservation(path=self.path, reason='warming_up')
 
     def inside(self, x, y):
@@ -125,24 +126,34 @@ class HazardEvents:
         trusted = motion.stable and timestamp_ns >= self.blocked_until
         candidates = [t for t in tracks if t.name in VEHICLES and self.inside(t.history[-1][1], t.box[3]/height)] if trusted else []
         lead = max(candidates, key=lambda t: t.box[3], default=None)
+        self.recent_leads = {k: ts for k, ts in self.recent_leads.items()
+                             if 0 <= timestamp_ns-ts <= 2_000_000_000}
+        if lead is not None:
+            self.recent_leads[lead.track_id] = timestamp_ns
         events, evidence, active_confirmations = [], [], {}
         for track in tracks:
             history = list(track.history)
             info = {'id': track.track_id, 'class_name': track.name, 'bbox': track.box,
                     'observations': len(history), 'in_assumed_path': False}
             if history:
-                _, x, foot, size, _ = history[-1]
+                x, foot, size = history[-1][1:4]
                 info['in_assumed_path'] = self.inside(x, foot)
             if trusted and len(history) >= 6:
                 lateral, lateral_fit = trend(history, 1, corrected=True)
                 expansion, expansion_fit = trend(history, 3)
+                log_history = [tuple([*row[:3], math.log(row[3]), *row[4:]]) for row in history]
+                log_growth_rate, _ = trend(log_history, 3)
+                background_scale_rate, _ = trend(history, 5)
+                residual_expansion = log_growth_rate-background_scale_rate
                 growth = size/max(history[0][3], 1e-9)
                 tau = size/expansion if expansion > 0 else None
                 info.update(lateral_frame_widths_per_s=lateral, expansion_fit=expansion_fit,
-                            visual_tau_s=tau, apparent_scale_growth=growth)
+                            visual_tau_s=tau, apparent_scale_growth=growth,
+                            relative_log_expansion_per_s=residual_expansion)
                 kind = None
                 if (track is lead and foot > .57 and size > .035 and tau is not None
-                        and tau < 2.5 and expansion_fit > .85 and growth > 1.25):
+                        and tau < 2.5 and expansion_fit > .85 and growth > 1.25
+                        and residual_expansion > .2 and abs(lateral) < .04):
                     kind = 'LEAD_RAPID_CLOSING'
                 if (track.name == 'person' and info['in_assumed_path'] and foot > .6
                         and abs(lateral) > .025 and lateral_fit > .7):
@@ -155,7 +166,10 @@ class HazardEvents:
                         events.append({'kind': kind, 'track_id': track.track_id, 'bbox': track.box,
                                        'source': 'IMAGE_TRAJECTORY_EXPERIMENTAL',
                                        'visual_tau_s': tau if kind == 'LEAD_RAPID_CLOSING' else None})
-            if track is lead:
+            # Continue a neutral lamp observation briefly when the previously
+            # selected vehicle moves out of the assumed path. This grants no
+            # collision/brake permission to an off-path vehicle.
+            if trusted and track.track_id in self.recent_leads:
                 lamp = paired_red_lamps(frame, track.box)
                 track.lamp_history.append((timestamp_ns, lamp))
                 before = [v for ts, v in track.lamp_history if .4 <= (timestamp_ns-ts)/1e9 <= 1.2]
@@ -163,6 +177,12 @@ class HazardEvents:
                 # Lamp appearance alone has no effect on the brake decision.
                 if before and lamp > .025 and lamp-min(before) > .025:
                     info['brake_lamp_rise_candidate'] = True
+                    key = (track.track_id, 'LEAD_BRAKE_LAMP_RISE')
+                    count = self.confirmations.get(key, 0)+1
+                    active_confirmations[key] = count
+                    if count >= 2:
+                        events.append({'kind': 'LEAD_BRAKE_LAMP_RISE', 'track_id': track.track_id,
+                                       'bbox': track.box, 'source': 'UNCONFIRMED_PAIRED_RED_LAMP_APPEARANCE_CHANGE'})
                     if any(e['kind'] == 'LEAD_RAPID_CLOSING' and e['track_id'] == track.track_id for e in events):
                         events.append({'kind': 'SUSPECTED_BRAKING_WITH_CLOSING', 'track_id': track.track_id,
                                        'bbox': track.box, 'source': 'PAIRED_RED_LAMP_RISE_PLUS_IMAGE_EXPANSION'})

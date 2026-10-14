@@ -22,7 +22,7 @@ class ImageMotion:
     @property
     def stable(self):
         return (self.valid and abs(self.dx) < .12 and abs(self.dy) < .12
-                and abs(self.rotation_dps) < 8 and abs(self.scale_rate) < .12)
+                and abs(self.rotation_dps) < 8 and abs(self.scale_rate) < .6)
 
 
 class BackgroundMotion:
@@ -30,7 +30,7 @@ class BackgroundMotion:
         self.reset()
 
     def reset(self):
-        self.previous, self.timestamp = None, None
+        self.previous, self.timestamp, self.previous_mask = None, None, None
 
     def update(self, frame, detections, timestamp_ns):
         height, width = frame.shape[:2]
@@ -43,12 +43,15 @@ class BackgroundMotion:
             cv2.rectangle(mask, (int(x1/width*320)-5, int(y1/height*180)-5),
                           (int(x2/width*320)+5, int(y2/height*180)+5), 0, -1)
         previous, before = self.previous, self.timestamp
+        previous_mask = self.previous_mask
+        self.previous_mask = mask.copy()
         self.previous, self.timestamp = gray, timestamp_ns
         if previous is None:
             return ImageMotion()
         dt = (timestamp_ns-before)/1e9
         if not .03 <= dt <= .3:
             return ImageMotion(reason='source_gap')
+        mask = cv2.bitwise_and(mask, previous_mask)
         points = cv2.goodFeaturesToTrack(previous, 140, .015, 9, mask=mask)
         if points is None or len(points) < 16:
             return ImageMotion(reason='insufficient_background')

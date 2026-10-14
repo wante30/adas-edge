@@ -23,7 +23,7 @@ ACTION_TEXT = {Maneuver.STOP:'停车',Maneuver.BRAKE:'制动',Maneuver.FORWARD:'
                Maneuver.CHANGE_LEFT:'左变道',Maneuver.CHANGE_RIGHT:'右变道'}
 ALARM_TEXT = {'RED_LIGHT':'闯红灯报警','UNKNOWN_SIGNAL':'灯色尚未确认','SIGNAL_UNASSOCIATED':'所选车道尚未绑定灯组',
               'STALE_SIGNAL':'灯组结果过期或未确认','SOLID_LANE':'实线变道报警','UNKNOWN_LANE':'车道类型尚未确认',
-              'PEDESTRIAN_DANGER':'行人危险：制动','COLLISION_WARNING':'障碍危险：制动',
+              'PEDESTRIAN_DANGER':'行人横穿路径：制动','COLLISION_WARNING':'前车快速逼近：制动',
               'STALE_HAZARD':'危险结果未确认','WRONG_SCENE':'动作与场景不匹配','WRONG_LANE':'转弯与所选车道不匹配'}
 
 
@@ -75,6 +75,18 @@ class NativeView:
             x1,y1,x2,y2 = item['bbox']
             colour = (215,165,55) if item['class_name'] != 'person' else (90,135,230)
             cv2.rectangle(camera,(round(x1*sx),round(y1*sy)),(round(x2*sx),round(y2*sy)),colour,1)
+        hazard = snapshot.hazards
+        if hazard.reason != 'disabled':
+            polygon = np.asarray([(round(px*w),round(py*h)) for px,py in hazard.path],np.int32)
+            cv2.polylines(camera,[polygon],True,(230,165,45),2)
+            for item in hazard.tracks:
+                x1,y1,x2,y2 = item['bbox']
+                label = f"ID {item['id']}"+(' LEAD' if item['id']==hazard.lead_id else '')
+                cv2.putText(camera,label,(round(x1*sx),max(15,round(y1*sy)-4)),cv2.FONT_HERSHEY_SIMPLEX,.45,(230,165,45),1)
+            for event in hazard.events:
+                x1,y1,x2,y2 = event['bbox']
+                colour = (30,170,235) if event['kind']=='LEAD_BRAKE_LAMP_RISE' else (55,55,235)
+                cv2.rectangle(camera,(round(x1*sx),round(y1*sy)),(round(x2*sx),round(y2*sy)),colour,3)
         if snapshot.signal.bbox:
             x1,y1,x2,y2 = snapshot.signal.bbox
             colour = {Light.RED:(55,55,235),Light.GREEN:(90,180,35),Light.YELLOW:(35,180,225)}.get(snapshot.signal.light,(130,130,130))
@@ -94,10 +106,11 @@ class NativeView:
             text((rect[0]+13,rect[1]+10),label,18,'#ffffff' if active else INK)
             self.buttons[key] = rect
         self.buttons = {}
-        if 'RED_LIGHT' in decision.alarms:
+        danger = any(alarm in decision.alarms for alarm in ('PEDESTRIAN_DANGER','COLLISION_WARNING'))
+        if 'RED_LIGHT' in decision.alarms or danger:
             draw.rectangle((x,y,x+w,y+h),outline='#cc343e',width=5)
             box((x+18,y+18,x+264,y+68),'#bb3039',radius=8)
-            text((x+33,y+29),'闯红灯报警 · 请停车',22,'#ffffff')
+            text((x+33,y+29),'危险报警 · 请制动' if danger else '闯红灯报警 · 请停车',22,'#ffffff')
         text((24,19),'竞赛感知测试台',28)
         text((25,57),'真实前视视频 · 按键模拟车辆 · 动作与报警',16,MUTED)
         mode_name = {Mode.INTERSECTION:'路口灯控',Mode.ROAD:'道路变道',Mode.NAVIGATION:'导航提示',Mode.HAZARD:'危险场景'}[controls.mode]
@@ -151,13 +164,19 @@ class NativeView:
         actual = '行驶' if decision.simulated_motion==Motion.GO else '停止'
         text((1008,492),f'模拟状态：{actual}   请求许可：'+('允许' if decision.request_allowed else '未授予'),18)
         alert = decision.alarms
-        box((988,546,1416,620),'#f9e1e2' if 'RED_LIGHT' in alert else '#fff1d4' if alert else '#e1f0e8')
+        box((988,546,1416,620),'#f9e1e2' if 'RED_LIGHT' in alert or danger else '#fff1d4' if alert else '#e1f0e8')
         text((1008,555),ALARM_TEXT.get(alert[0],alert[0]) if alert else '无报警',20,'#b72f3a' if 'RED_LIGHT' in alert else INK)
         reason = {'observed':'绑定灯组像素观测','unbound':'请绑定所选车道的灯组',
                   'colour_unknown_or_confirming':'灯色未知或正在确认','observation_expired':'旧观测已过期',
                   'housing_appearance_mismatch':'灯组跟踪丢失，需重新绑定'}.get(snapshot.signal.reason,'灯组等待确认')
+        if danger:
+            reason = '视频轨迹触发 · 蓝色路径为图像假设'
         text((1008,586),reason,14,MUTED)
-        text((988,642),'Tesla-BevCam 原版 BEV 示意',18,MUTED)
+        lamp_hint = any(e['kind']=='LEAD_BRAKE_LAMP_RISE' for e in hazard.events)
+        text((988,635),('制动灯疑似变亮 · 急刹未确认' if lamp_hint else '急刹车：未确认  /  行人闯红灯：未确认') if hazard.reason!='disabled' else 'Tesla-BevCam 原版 BEV 示意',14,MUTED)
+        if hazard.reason!='disabled':
+            status = '轨迹判断中' if hazard.reason=='tracking' else '转弯/背景未确认：暂缓判断'
+            text((988,654),status+' · 实验模式',14,BLUE)
         text((1000,863),'位置未标定 · 未接自车姿态与车道模型',14,MUTED)
         text((25,881),'I 路口 / D 道路    Q / E 左右变道（车道结果待接入）    . 逐帧    Esc 退出',14,MUTED)
         return cv2.cvtColor(np.asarray(image),cv2.COLOR_RGB2BGR)
