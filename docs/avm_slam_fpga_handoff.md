@@ -73,7 +73,8 @@ BIN 为每条 96 位数的小端字节序；HEX 为数值高位在左的一行 2
 
 ```powershell
 python -m pytest tests/test_avm_slam_lut.py -q
-python tools/export_avm_slam_fpga.py --calibration source/stitch.json --param source/param.yaml --videos '原始四路视频目录' --audit-root '审计目录' --output '新的输出目录'
+python tools/export_avm_slam_fpga.py --calibration source/stitch.json --param source/param.yaml --videos '原始四路视频目录' --audit-root source --output '新的输出目录'
+python tools/verify_avm_slam_package.py .
 iverilog -g2012 -s tb_avm_4ch_640_stream -o avm_tb.vvp rtl/avm_4ch_640_stream.v rtl/tb_avm_4ch_640_stream.v
 vvp avm_tb.vvp +LUT=lut/avm_slam_96bit.hex +SRC0=golden/frame_0000/slot_0_left.hex +SRC1=golden/frame_0000/slot_1_front.hex +SRC2=golden/frame_0000/slot_2_right.hex +SRC3=golden/frame_0000/slot_3_back.hex +EXPECTED=golden/frame_0000/expected_rgb565.hex
 ```

@@ -15,7 +15,7 @@ def main():
     args=parser.parse_args();root=args.root.resolve()
     manifest=json.loads((root/'manifest.json').read_text(encoding='utf-8'))
     for relative,info in manifest['artifacts'].items():
-        path=(root/relative).resolve()
+        path=(root/relative.replace('\\','/')).resolve()
         if not path.is_relative_to(root):raise ValueError('Artifact path escapes package')
         with path.open('rb') as f:digest=hashlib.file_digest(f,'sha256').hexdigest()
         if path.stat().st_size!=info['bytes'] or digest!=info['sha256']:

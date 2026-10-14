@@ -81,7 +81,7 @@ def main():
     cv2.setNumThreads(4)
     src=[args.videos/n for n in NAMES]
     audit=json.loads((args.audit_root/'input_audit.json').read_text(encoding='utf-8'))
-    hashes={Path(s['file']).name:s['sha256'] for s in audit['streams']}
+    hashes={str(s['file']).replace('\\','/').rsplit('/',1)[-1]:s['sha256'] for s in audit['streams']}
     for p in src:
         if sha(p)!=hashes[p.name]:raise ValueError(f'Source changed: {p}')
     pts_archive=np.load(args.audit_root/'video_pts.npz')
@@ -200,7 +200,7 @@ def main():
                  camera_slot_assignment={str(i):NAMES[i] for i in range(4)},lut_generated=True)
     audit['output_contract']['lut_status']='generated; see manifest and separate RTL logs'
     save_json(out/'source/input_audit.json',audit)
-    manifest['artifacts']={str(p.relative_to(out)):dict(bytes=p.stat().st_size,sha256=sha(p))
+    manifest['artifacts']={p.relative_to(out).as_posix():dict(bytes=p.stat().st_size,sha256=sha(p))
                            for p in out.rglob('*') if p.is_file()}
     save_json(out/'manifest.json',manifest)
     print('EXPORT COMPLETE',str(out),flush=True)
