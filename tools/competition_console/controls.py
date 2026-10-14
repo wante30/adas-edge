@@ -17,6 +17,7 @@ class Controller:
             if not 0 <= key < 128:
                 return None
             key = chr(key)
+        key = key.lower()
         lanes = {'1':Lane.LEFT,'2':Lane.STRAIGHT,'3':Lane.RIGHT}
         motions = {'0':Motion.AUTO,'s':Motion.STOP,'g':Motion.GO}
         modes = {'i':Mode.INTERSECTION,'d':Mode.ROAD,'n':Mode.NAVIGATION,'h':Mode.HAZARD}

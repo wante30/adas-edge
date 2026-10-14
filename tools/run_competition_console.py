@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -122,6 +122,7 @@ def run(args):
                 if frame_id in binding_events and ('bind',frame_id) not in seen_events:
                     event = binding_events[frame_id]
                     pipeline.bind(current,event['bbox'],event['lanes'],source='PROFILE_SHARED_CIRCULAR_SIGNAL_ASSUMPTION')
+                    controller.controls = replace(controller.controls,signalized=True)
                     seen_events.add(('bind',frame_id))
                     events.append({'frame':frame_id,'source':'EXPLICIT_SCENE_PROFILE','binding':event})
                 if frame_id in control_events and ('key',frame_id) not in seen_events:
@@ -166,6 +167,7 @@ def run(args):
                     for bbox in pending_boxes:
                         try:
                             pipeline.bind(current,bbox,[controller.controls.lane])
+                            controller.controls = replace(controller.controls,signalized=True)
                             # One source image is measured once after binding;
                             # green still needs the next distinct frame.
                             signal,_ = pipeline.bindings[controller.controls.lane]
