@@ -103,7 +103,7 @@ def verify(output, *, hazards=False):
     title = f'Tesla-BevCam Competition Integration Check {os.getpid()}'
     command = [sys.executable,str(ROOT/'tools/run_competition_console.py'),'--start','12','--paused',
                '--profile',str(ROOT/'configs/competition_native_official.json'),
-               '--output',str(app_output),'--window-title',title]
+               '--output',str(app_output),'--window-title',title,'--mock-hud']
     if hazards:
         command.append('--hazards')
     env = os.environ.copy();env['PYTHONIOENCODING'] = 'utf-8'
@@ -143,8 +143,32 @@ def verify(output, *, hazards=False):
                 if not user.PostMessageW(target,0x0102,ord(key) if isinstance(key,str) else key,0):
                     raise OSError('Cannot post a key to the child HighGUI window')
             initial = wait_for(lambda:last() and last()['signal']['light']=='RED' and last())
+            # HighGUI creates its image child after the titled parent exists.
+            # Keyboard messages work on the parent; mouse messages do not.
+            def image_child():
+                children.clear()
+                user.EnumChildWindows(hwnd,visit,0)
+                return next((child for child,name in children if name=='HighGUI class'),None)
+            target = wait_for(image_child)
+            assert initial['hud_software_receipt']['receiver_verified']
             if hazards:
                 assert initial['hazards']['reason'] != 'disabled'
+            send('v')
+            wait_for(lambda:last() and not last()['view']['overlay'])
+            send('f')
+            wait_for(lambda:last() and last()['view']['diagnostics'])
+            time.sleep(.15)
+            capture_client(hwnd,output/'diagnostics.png')
+            send(27)
+            wait_for(lambda:last() and not last()['view']['diagnostics'])
+            send('c')
+            wait_for(lambda:last() and last()['view']['bev'])
+            time.sleep(.15)
+            capture_client(hwnd,output/'upstream_bev.png')
+            send(27)
+            wait_for(lambda:last() and not last()['view']['bev'])
+            send('v')
+            wait_for(lambda:last() and last()['view']['overlay'])
             send('g')
             forced = wait_for(lambda:last() and 'RED_LIGHT' in last()['decision']['alarms'] and last())
             assert forced['decision']['maneuver']=='stop' and forced['decision']['simulated_motion']=='go'
@@ -153,6 +177,18 @@ def verify(output, *, hazards=False):
             send('s')
             stopped = wait_for(lambda:last() and last()['controls']['motion']=='stop' and last())
             assert stopped['decision']['alarms']==[]
+            # Click the navigation tab through the owned HighGUI child. Scaling
+            # matches the letterboxed 1600x900 native canvas, not desktop pixels.
+            client = wt.RECT();user.GetClientRect(target,ctypes.byref(client))
+            scale = min(client.right/1600,client.bottom/900)
+            px = round((client.right-1600*scale)/2+868*scale)
+            py = round((client.bottom-900*scale)/2+41*scale)
+            point = (py << 16) | px
+            (output/'mouse_geometry.json').write_text(json.dumps({'children':children,'target':target,
+                'hwnd':hwnd,'client':[client.right,client.bottom],'point':[px,py]},indent=2),encoding='utf-8')
+            user.PostMessageW(target,0x0201,1,point)
+            user.PostMessageW(target,0x0202,0,point)
+            wait_for(lambda:last() and last()['controls']['mode']=='navigation')
             send('D')
             wait_for(lambda:last() and last()['controls']['mode']=='road')
             send('G')
@@ -181,6 +217,8 @@ def verify(output, *, hazards=False):
                       'single_frame_step':True,'restart_invalidates_binding_and_forced_go':True,
                       'escape_exits_cleanly':True,'client_capture':str((output/'native_client.png').resolve()),
                       'hazards_enabled':hazards,
+                      'view_toggles_refresh_while_paused':True,'escape_closes_drawer_and_bev':True,
+                      'mouse_navigation_tab':True,'hud_mock_receipts_verified':True,
                       'input_source':'SCRIPTED_WIN32_MESSAGES_TO_THIS_TEST_CHILD_ONLY','command':command}
             (output/'gui_check.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
             print(json.dumps(report,indent=2))

@@ -6,13 +6,27 @@ from competition_ai.scenario import Controls, Lane, Maneuver, Mode, Motion
 
 class Controller:
     def __init__(self):
-        self.controls = Controls()
+        # The native console opens an intersection scene. Changing the visible
+        # mode must not silently turn that known signal-controlled scene off.
+        self.controls = Controls(signalized=True)
         self.paused = False
         self.binding = False
+        self.overlay = True
+        self.diagnostics = False
+        self.bev = False
 
     def key(self, key):
         if isinstance(key,int):
             if key == 27:
+                if self.binding:
+                    self.binding = False
+                    return None
+                if self.diagnostics:
+                    self.diagnostics = False
+                    return None
+                if self.bev:
+                    self.bev = False
+                    return None
                 return 'quit'
             if not 0 <= key < 128:
                 return None
@@ -30,15 +44,28 @@ class Controller:
             self.controls = replace(self.controls,motion=motions[key])
         elif key in modes:
             self.controls = replace(self.controls,mode=modes[key],request=Maneuver.AUTO)
+            self.binding = False
         elif key in requests:
             self.controls = replace(self.controls,request=requests[key])
+        elif key == 't':
+            if self.controls.mode != Mode.INTERSECTION:
+                self.controls = replace(self.controls,signalized=not self.controls.signalized)
+            self.binding = False
+        elif key == 'v':
+            self.overlay = not self.overlay
+        elif key == 'f':
+            self.diagnostics = not self.diagnostics
+        elif key == 'c':
+            self.bev = not self.bev
         elif key == ' ':
             self.paused = not self.paused
         elif key == '.':
             self.paused = True
             return 'step'
         elif key == 'b':
-            self.binding = True
+            self.binding = not self.binding
+            self.bev = False
+            self.diagnostics = False
         elif key == 'r':
             self.__init__()
             return 'restart'

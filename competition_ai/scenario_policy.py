@@ -43,6 +43,8 @@ def decide(controls: Controls, perception: Perception, now_ns: int) -> Decision:
 
     if controls.request == Maneuver.STOP or controls.motion == Motion.STOP:
         return output(Maneuver.STOP, True, reason="manual_stop")
+    if controls.mode == Mode.NAVIGATION and not controls.navigation_valid:
+        return output(Maneuver.STOP, False, ("NO_NAVIGATION",), "navigation_unavailable")
     request = controls.request
     if request == Maneuver.AUTO:
         if controls.mode == Mode.INTERSECTION:

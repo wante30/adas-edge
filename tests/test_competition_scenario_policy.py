@@ -69,6 +69,30 @@ def test_navigation_hint_does_not_implicitly_turn_or_require_nonexistent_green()
     assert decide(replace(controls, signalized=True), Perception(), 0).maneuver == Maneuver.STOP
 
 
+@pytest.mark.parametrize('maneuver_request', [Maneuver.AUTO, Maneuver.TURN_LEFT, Maneuver.TURN_RIGHT])
+def test_missing_navigation_never_claims_a_route_action(maneuver_request):
+    controls = Controls(mode=Mode.NAVIGATION, request=maneuver_request)
+    result = decide(controls, Perception(), 0)
+    assert result.maneuver == Maneuver.STOP and not result.request_allowed
+    assert result.alarms == ('NO_NAVIGATION',)
+    assert result.navigation_hint == Direction.NONE
+    assert result.simulated_motion == Motion.STOP
+
+
+def test_missing_navigation_preserves_hazard_red_and_manual_stop_priority():
+    controls = Controls(mode=Mode.NAVIGATION, signalized=True, motion=Motion.GO)
+    red = observed(Light.RED)
+    assert decide(controls, red, 0).alarms == ('RED_LIGHT',)
+    danger = replace(red, pedestrian_hazard=True, hazard_timestamp_ns=0)
+    assert decide(controls, danger, 0).maneuver == Maneuver.BRAKE
+    no_signal = replace(controls, signalized=False)
+    result = decide(no_signal, Perception(), 0)
+    assert result.alarms == ('NO_NAVIGATION',) and result.simulated_motion == Motion.GO
+    stopped = decide(replace(no_signal, motion=Motion.STOP), Perception(), 0)
+    assert stopped.maneuver == Maneuver.STOP and stopped.request_allowed
+    assert stopped.reason == 'manual_stop'
+
+
 def test_wrong_scene_or_lane_and_manual_stop_remain_explicit():
     assert decide(Controls(mode=Mode.ROAD, request=Maneuver.TURN_LEFT), Perception(), 0).alarms == ("WRONG_SCENE",)
     assert decide(Controls(request=Maneuver.TURN_RIGHT), observed(), 0).alarms == ("WRONG_LANE",)

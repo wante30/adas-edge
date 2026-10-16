@@ -1,0 +1,30 @@
+{
+  "source_package": "@dreamview/dreamview-carviz",
+  "source_version": "1.1.4",
+  "upstream_local_path": ".deps/carviz-inspect/package/assets/models/",
+  "package_license": "MIT",
+  "license_file": "CARVIZ_LICENSE.txt",
+  "copyright": "Copyright (C) 2017-2023 hxj1234",
+  "derivation": "Offline orthographic triangle rasterization of the existing OBJ. Body paint recolored silver gray; original mesh geometry and material segmentation retained. Synthetic studio illumination and ground shadow added.",
+  "display_contract": "Static ego-vehicle symbol only. It does not encode measured ego pose, yaw, lane position, speed, detected make or model.",
+  "runtime": "Loads the pre-rendered RGBA PNG only, with size-specific LRU cache; no runtime 3D model parsing or rendering.",
+  "asset_license_scope": "The local npm package includes this mesh under its package MIT license; no separate asset-specific license is supplied in the package.",
+  "files": {
+    "source/car.obj": {
+      "sha256": "a338b4125e79ccbc34ff365622c547c9c9dab47e66aacd6f67c06aed21bd5dfe",
+      "bytes": 1836942
+    },
+    "source/car.mtl": {
+      "sha256": "a63aebd867be45edbb139b5d72b4694cfddf1f688ab70915b0160fbb1b96a7a9",
+      "bytes": 2402
+    },
+    "CARVIZ_LICENSE.txt": {
+      "sha256": "02c1bf5812acb16c9060e256068bcf7c9693aaec0af657814380aa95c3dfdee5",
+      "bytes": 1056
+    },
+    "ego_car_rear.png": {
+      "sha256": "9e9164e748068c8f8b4109d00336bf4369a7e4f765e2901530e8be1939751525",
+      "bytes": 119335
+    }
+  }
+}

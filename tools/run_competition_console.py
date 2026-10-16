@@ -1,4 +1,4 @@
-"""Native PC competition workbench using the Tesla-BevCam upstream renderer."""
+"""Native competition cockpit with real-video inference and explicit simulation."""
 from __future__ import annotations
 
 import argparse
@@ -19,6 +19,7 @@ sys.path.insert(0,str(ROOT))
 from competition_ai.pc_detector import PcDetector
 from competition_ai.scenario import Mode
 from competition_ai.scenario_policy import decide
+from competition_io.scenario_hud import MockScenarioHud, project_scenario
 from tools.competition_console.controls import Controller
 from tools.competition_console.pipeline import FrontPipeline
 from tools.competition_console.view import NativeView, SIZE
@@ -59,7 +60,11 @@ def run(args):
     specialist = PcDetector(args.specialist_model,(512,192),specialist=True)
     pipeline = FrontPipeline(main,specialist,hazards=args.hazards,hazard_path=profile.get('hazard_path'))
     controller,view = Controller(),NativeView(args.upstream)
-    if args.hazards:
+    hud = MockScenarioHud() if args.mock_hud else None
+    hud_receipt,hud_checked = None,0
+    if args.mode:
+        controller.controls = replace(controller.controls,mode=Mode(args.mode))
+    elif args.hazards:
         controller.controls = replace(controller.controls,mode=Mode.HAZARD)
     controller.paused = args.paused
     capture,fps,total = source_capture(video)
@@ -74,36 +79,44 @@ def run(args):
     control_events = {int(event['frame']):event['key'] for event in profile.get('scripted_controls',[])} if args.scripted_controls else {}
     snapshot_frames = set(profile.get('snapshot_frames',[]))
     pending_keys,pending_boxes = [],[]
-    state = {'frame':None,'drag':None,'message':profile.get('binding_message','')}
+    state = {'frame':None,'drag':None,'drag_box':None,'message':profile.get('binding_message',''),'ended':False}
     events,seen_events,colour_counts,action_counts,alarm_counts = [],set(),Counter(),Counter(),Counter()
     writer = cv2.VideoWriter(str(output/'native_mp4v.mp4'),cv2.VideoWriter_fourcc(*'mp4v'),fps,SIZE) if args.record else None
     if writer is not None and not writer.isOpened():
         raise RuntimeError('Cannot create recording')
     if not args.headless:
         cv2.namedWindow(WINDOW,cv2.WINDOW_NORMAL)
-        cv2.resizeWindow(WINDOW,1280,800)
+        cv2.resizeWindow(WINDOW,1440,810)
         def mouse(event,x,y,flags,param):
             current = state['frame']
             if current is None:
                 return
-            point = view.video_point(x,y,current.shape)
+            key = view.hit(x,y)
+            if key and event == cv2.EVENT_LBUTTONUP:
+                pending_keys.append(key)
+                state['drag'] = None
+                state['drag_box'] = None
+                return
+            point = None if controller.diagnostics else view.video_point(x,y,current.shape)
             if controller.binding and point is not None:
                 if event == cv2.EVENT_LBUTTONDOWN:
                     state['drag'] = point
+                elif event == cv2.EVENT_MOUSEMOVE and state['drag'] is not None:
+                    a,b = state['drag'],point
+                    state['drag_box'] = (min(a[0],b[0]),min(a[1],b[1]),max(a[0],b[0]),max(a[1],b[1]))
                 elif event == cv2.EVENT_LBUTTONUP and state['drag'] is not None:
                     a,b = state['drag'],point
                     pending_boxes.append([min(a[0],b[0]),min(a[1],b[1]),max(a[0],b[0]),max(a[1],b[1])])
                     state['drag'] = None
-            elif event == cv2.EVENT_LBUTTONUP:
-                key = view.hit(x,y)
-                if key:
-                    pending_keys.append(key)
+                    state['drag_box'] = None
         cv2.setMouseCallback(WINDOW,mouse)
     processed,loops,visible = 0,0,False
     current = None
     advance = True
     last_written_frame = None
+    last_emitted_ended = False
     display_stamp = None
+    render_timings = []
     started = time.perf_counter()
     try:
         with (output/'trace.jsonl').open('w',encoding='utf-8') as trace:
@@ -114,6 +127,7 @@ def run(args):
                         if args.headless or args.close_at_end:
                             break
                         controller.paused = True
+                        state['ended'] = True
                         advance = False
                         frame_id = end_frame-1
                     else:
@@ -139,10 +153,18 @@ def run(args):
                     action = controller.key(key) or action
                     events.append({'frame':frame_id,'source':'NATIVE_KEYBOARD_OR_MOUSE','key':key})
                 pending_keys.clear()
+                if not controller.binding:
+                    state['drag'],state['drag_box'] = None,None
                 if action == 'quit':
                     break
                 if action in ('restart','open'):
+                    pending_boxes.clear()
+                    state['drag'],state['drag_box'] = None,None
                     if action == 'open':
+                        if writer is not None:
+                            state['message'] = '正在录制：请结束本次录制后再打开另一段视频。'
+                            advance = False
+                            continue
                         import tkinter as tk
                         from tkinter import filedialog
                         root = tk.Tk();root.withdraw()
@@ -151,7 +173,12 @@ def run(args):
                         if not chosen:
                             advance = False
                             continue
-                        next_capture,next_fps,next_total = source_capture(Path(chosen))
+                        try:
+                            next_capture,next_fps,next_total = source_capture(Path(chosen))
+                        except ValueError:
+                            state['message'] = '视频无法解码，请重新选择可播放的视频文件。'
+                            advance = False
+                            continue
                         capture.release()
                         capture,fps,total = next_capture,next_fps,next_total
                         video = Path(chosen).resolve()
@@ -160,7 +187,9 @@ def run(args):
                         binding_events,control_events,snapshot_frames = {},{},set()
                         profile = {}
                         controller = Controller()
-                        if args.hazards:
+                        if args.mode:
+                            controller.controls = replace(controller.controls,mode=Mode(args.mode))
+                        elif args.hazards:
                             controller.controls = replace(controller.controls,mode=Mode.HAZARD)
                         # A path calibrated to another video cannot be reused.
                         if pipeline.hazard_engine is not None:
@@ -170,9 +199,14 @@ def run(args):
                     else:
                         loops += 1
                         capture.set(cv2.CAP_PROP_POS_FRAMES,0)
-                        if args.hazards:
+                        if args.mode:
+                            controller.controls = replace(controller.controls,mode=Mode(args.mode))
+                        elif args.hazards:
                             controller.controls = replace(controller.controls,mode=Mode.HAZARD)
                     frame_id,end_frame,current,advance,last_written_frame = 0,total,None,True,None
+                    state['ended'] = False
+                    last_emitted_ended = False
+                    display_stamp = None
                     pipeline.reset();seen_events.clear()
                     continue
                 if pending_boxes:
@@ -192,19 +226,42 @@ def run(args):
                 timestamp_ns = round(frame_id/fps*1e9)
                 pipeline.advance(current,frame_id,timestamp_ns)
                 snapshot = pipeline.snapshot(controller.controls.lane,timestamp_ns)
-                decision = decide(controller.controls,snapshot.as_perception(),timestamp_ns)
-                stamp = (frame_id,controller.controls,controller.paused,controller.binding,state['message'],snapshot.signal)
+                perception = snapshot.as_perception()
+                decision = decide(controller.controls,perception,timestamp_ns)
+                should_emit = last_written_frame != frame_id or input_changed or action or state['ended'] != last_emitted_ended
+                if hud is not None and should_emit:
+                    # EOF is an inactive source. Explicitly project an expired
+                    # envelope to clear direction in the software receiver.
+                    projection = project_scenario(controller.controls,perception,decision,
+                                                  now_ns=timestamp_ns+(750_000_000 if state['ended'] else 0),
+                                                  source_frame_id=frame_id,source_timestamp_ns=timestamp_ns)
+                    hud_receipt = hud.submit(projection)
+                    if not hud_receipt['receiver_verified']:
+                        raise RuntimeError('Software HUD receiver does not match the encoded decision')
+                    hud_checked += 1
+                stamp = (frame_id,controller.controls,controller.paused,controller.binding,state['message'],snapshot.signal,
+                         controller.overlay,controller.diagnostics,controller.bev,state['ended'],state['drag_box'])
                 if stamp != display_stamp:
+                    render_start = time.perf_counter()
                     image = view.render(current,snapshot,controller.controls,decision,frame_id=frame_id,fps=fps,
-                                        paused=controller.paused,binding=controller.binding,message=state['message'])
+                                        paused=controller.paused,binding=controller.binding,message=state['message'],
+                                        overlay=controller.overlay,diagnostics=controller.diagnostics,bev=controller.bev,
+                                        total_frames=total,source_name=str(video),ended=state['ended'],
+                                        drag_box=state['drag_box'],
+                                        transport_status='HUD 图标仿真通过' if hud_receipt else 'PCIe 未连接')
+                    render_timings.append((time.perf_counter()-render_start)*1000)
                     display_stamp = stamp
-                if last_written_frame != frame_id or input_changed or action:
+                if should_emit:
                     row = {'frame':frame_id,'source_s':frame_id/fps,'video':str(video),
+                           'view':{'overlay':controller.overlay,'diagnostics':controller.diagnostics,
+                                   'bev':controller.bev,'paused':controller.paused,'ended':state['ended']},
                            'controls':asdict(controller.controls),'decision':asdict(decision),
                            'signal':asdict(snapshot.signal),'binding_source':snapshot.binding_source,
                            'hazards':asdict(snapshot.hazards),
                            'main':snapshot.main,'specialist':snapshot.specialist,
                            'main_age_ms':snapshot.main_age_ms,'specialist_age_ms':snapshot.specialist_age_ms}
+                    if hud_receipt is not None:
+                        row['hud_software_receipt'] = hud_receipt
                     trace.write(json.dumps(row,ensure_ascii=False)+'\n');trace.flush()
                     if last_written_frame != frame_id:
                         processed += 1
@@ -217,6 +274,7 @@ def run(args):
                         if frame_id in snapshot_frames:
                             cv2.imwrite(str(output/f'frame_{frame_id:05d}.png'),image)
                     last_written_frame = frame_id
+                    last_emitted_ended = state['ended']
                 if not args.headless:
                     cv2.imshow(WINDOW,image)
                     try:
@@ -251,6 +309,10 @@ def run(args):
               'colour_display_frame_counts':dict(colour_counts),'decision_frame_counts':dict(action_counts),
               'alarm_frame_counts':dict(alarm_counts),'events':events,'native_window_was_visible':visible,
               'renderer_source':str(ROOT/'.deps/Tesla-BevCam-Clone/main.py'),
+              'native_display_size':SIZE,'render_ms':{'median':float(np.median(render_timings)),
+                  'p95':float(np.percentile(render_timings,95))} if render_timings else None,
+              'hud_software_checked_transactions':hud_checked,'hardware_writes':0,
+              'hud_limit':'HUD1 carries icons only; complete maneuver, light, lanes and TTL remain in JSON sidecar',
               'hazards_enabled':args.hazards,
               'hazard_algorithm':'SOURCE_TIMED_IMAGE_TRAJECTORY_EXPERIMENTAL' if args.hazards else 'DISABLED',
               'hazard_postprocess_ms':{'updates':len(pipeline.hazard_engine.timings),
@@ -284,6 +346,8 @@ def parser():
     result.add_argument('--paused',action='store_true')
     result.add_argument('--headless',action='store_true')
     result.add_argument('--hazards',action='store_true',help='Enable experimental image-trajectory danger events')
+    result.add_argument('--mock-hud',action='store_true',help='Verify HUD icon projection using an in-memory receiver; no hardware writes')
+    result.add_argument('--mode',choices=[mode.value for mode in Mode],help='Initial displayed competition workflow')
     result.add_argument('--record',action='store_true')
     result.add_argument('--scripted-controls',action='store_true')
     result.add_argument('--close-at-end',action='store_true')

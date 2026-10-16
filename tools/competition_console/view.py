@@ -1,192 +1,276 @@
-"""Native pixels and controls; the BEV pixels come from upstream main.py."""
+"""Native automotive display; observations and simulation remain distinct."""
 from __future__ import annotations
-
 import importlib.util
+from functools import lru_cache
 from pathlib import Path
-
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-
-from competition_ai.scenario import Direction, Lane, Light, Maneuver, Mode, Motion
+from competition_ai.scenario import Boundary, Direction, Lane, Light, Maneuver, Mode, Motion
+from tools.competition_console.ego_asset import load_ego_asset
 
 ROOT = Path(__file__).resolve().parents[2]
-VIDEO_RECT = (24,104,940,529)
-SIZE = (1440,900)
-BACKGROUND = '#eef2f5'
-INK = '#182b3a'
-BLUE = '#246fa7'
-MUTED = '#607684'
-LIGHT_TEXT = {Light.RED:'红灯',Light.YELLOW:'黄灯',Light.GREEN:'绿灯',Light.UNKNOWN:'未知'}
-ACTION_TEXT = {Maneuver.STOP:'停车',Maneuver.BRAKE:'制动',Maneuver.FORWARD:'直行',
-               Maneuver.TURN_LEFT:'左转',Maneuver.TURN_RIGHT:'右转',
-               Maneuver.CHANGE_LEFT:'左变道',Maneuver.CHANGE_RIGHT:'右变道'}
-ALARM_TEXT = {'RED_LIGHT':'闯红灯报警','UNKNOWN_SIGNAL':'灯色尚未确认','SIGNAL_UNASSOCIATED':'所选车道尚未绑定灯组',
-              'STALE_SIGNAL':'灯组结果过期或未确认','SOLID_LANE':'实线变道报警','UNKNOWN_LANE':'车道类型尚未确认',
-              'PEDESTRIAN_DANGER':'行人横穿路径：制动','COLLISION_WARNING':'前车快速逼近：制动',
-              'STALE_HAZARD':'危险结果未确认','WRONG_SCENE':'动作与场景不匹配','WRONG_LANE':'转弯与所选车道不匹配'}
-
+SIZE = (1600, 900)
+VIDEO_RECT = (464, 106, 1104, 621)
+BG, PANEL, EDGE = '#0b1118', '#141e29', '#263441'
+INK, MUTED, ACCENT, RED, AMBER = '#f1f5f7', '#91a2b3', '#80d5cf', '#ff655e', '#ffc577'
+LIGHT_TEXT = {Light.RED:'红灯',Light.YELLOW:'黄灯',Light.GREEN:'绿灯',Light.UNKNOWN:'未确认'}
+ACTION_TEXT = {Maneuver.STOP:'请停车',Maneuver.BRAKE:'立即制动',Maneuver.FORWARD:'直行',
+               Maneuver.TURN_LEFT:'向左转弯',Maneuver.TURN_RIGHT:'向右转弯',
+               Maneuver.CHANGE_LEFT:'向左变道',Maneuver.CHANGE_RIGHT:'向右变道'}
+ALARM_TEXT = {'RED_LIGHT':'红灯下强制行驶','UNKNOWN_SIGNAL':'灯色未确认',
+ 'SIGNAL_UNASSOCIATED':'尚未关联控制灯','STALE_SIGNAL':'控制灯观测失效',
+ 'SOLID_LANE':'实线禁止变道','UNKNOWN_LANE':'车道线未确认',
+ 'PEDESTRIAN_DANGER':'行人横穿路径','COLLISION_WARNING':'前车快速逼近',
+ 'STALE_HAZARD':'危险观测失效','WRONG_SCENE':'当前场景不支持此动作',
+ 'WRONG_LANE':'转向与所选车道不符','YELLOW_LIGHT':'黄灯停车','NO_NAVIGATION':'等待导航指令'}
+MODE_TEXT = {Mode.INTERSECTION:'路口通行',Mode.ROAD:'道路变道',Mode.NAVIGATION:'导航辅助',Mode.HAZARD:'危险预警'}
 
 class NativeView:
     def __init__(self, upstream_path=None):
-        path = Path(upstream_path or ROOT / '.deps/Tesla-BevCam-Clone/main.py')
-        spec = importlib.util.spec_from_file_location('competition_tesla_upstream',path)
-        if spec is None or spec.loader is None:
-            raise RuntimeError('Cannot load Tesla-BevCam upstream renderer')
-        self.upstream = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(self.upstream)
-        self.upstream.NATIVE_WINDOW = True
-        self.fonts = {}
-        self.buttons = {}
-        for size in (14,16,18,20,22,28,42,52):
-            candidates = [Path('C:/Windows/Fonts/msyh.ttc'),Path('/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc')]
-            font = next((p for p in candidates if p.exists()),None)
-            self.fonts[size] = ImageFont.truetype(str(font),size) if font else ImageFont.load_default(size=size)
+        self.upstream_path = Path(upstream_path or ROOT/'.deps/Tesla-BevCam-Clone/main.py')
+        self.upstream = None
+        self.fonts, self.buttons = {}, []
+        self.content_rect = VIDEO_RECT
+        self.ego = load_ego_asset((280, 300))
 
-    def _bev(self, items, frame_shape):
+    def font(self,size,numeric=False):
+        key = (size,numeric)
+        if key not in self.fonts:
+            paths = ([Path('C:/Windows/Fonts/bahnschrift.ttf')] if numeric else []) + [
+                Path('C:/Windows/Fonts/msyh.ttc'),Path('/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc'),
+                Path('/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc')]
+            path = next((p for p in paths if p.exists()),None)
+            self.fonts[key] = ImageFont.truetype(str(path),size) if path else ImageFont.load_default(size=size)
+        return self.fonts[key]
+
+    @lru_cache(maxsize=768)
+    def text_tile(self,value,size,color,numeric,anchor):
+        font=self.font(size,numeric)
+        bounds=font.getbbox(value,anchor=anchor)
+        left,top,right,bottom=bounds
+        tile=Image.new('RGBA',(max(1,right-left),max(1,bottom-top)))
+        ImageDraw.Draw(tile).text((-left,-top),value,font=font,fill=color,anchor=anchor)
+        return tile,left,top
+
+    def _bev(self,items,frame_shape):
+        if self.upstream is None:
+            spec = importlib.util.spec_from_file_location('competition_tesla_upstream',self.upstream_path)
+            if spec is None or spec.loader is None:
+                raise RuntimeError('Cannot load Tesla-BevCam renderer')
+            self.upstream = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(self.upstream)
+            self.upstream.NATIVE_WINDOW = True
         up = self.upstream
         height,width = frame_shape[:2]
         objects = []
         for item in sorted(items,key=lambda item:item.get('confidence',0),reverse=True)[:18]:
             name = item['class_name']
-            if name not in up.DIMS:
-                continue
+            if name not in up.DIMS: continue
             x1,y1,x2,y2 = item['bbox']
-            if y2 > height*.84 and abs((x1+x2)/2-width/2) < width*.22 and (x2-x1)/max(1,y2-y1) > 2.2:
-                continue
+            if y2 > height*.84 and abs((x1+x2)/2-width/2)<width*.22 and (x2-x1)/max(1,y2-y1)>2.2: continue
             distance = up.H_REAL[name]*up.FOCAL_DEPTH/max(1,(y2-y1)*up.CAM_H/height)
             lateral = (((x1+x2)/2/width-.5)*up.CAM_W)*distance/up.FOCAL_DEPTH
             objects.append({'cls':name,'ego_x':lateral,'ego_y':distance})
         up.update_bev_camera(0.)
         ego = {'lane_source':'NO_MODEL','motion_mode':'NO_POSE','telemetry_valid':False,'lateral_m':0.,'speed_mps':0.}
-        bev = up.render_tesla_ui(objects,ego,0.,None)
-        # The telemetry labels are not observations in this front-video test.
-        bev[650:,:330] = up.BEV_BG
-        bev[650:,550:] = up.BEV_BG
-        return bev[92:]
+        result = up.render_tesla_ui(objects,ego,0.,None)
+        result[650:,:330] = up.BEV_BG
+        result[650:,550:] = up.BEV_BG
+        return result[92:]
 
-    def render(self, frame, snapshot, controls, decision, *, frame_id, fps, paused=False, binding=False, message=''):
-        canvas = np.full((SIZE[1],SIZE[0],3),240,np.uint8)
-        canvas[:] = (245,242,238)
-        x,y,w,h = VIDEO_RECT
-        camera = cv2.resize(frame,(w,h))
-        sx,sy = w/frame.shape[1],h/frame.shape[0]
-        for item in snapshot.main:
-            x1,y1,x2,y2 = item['bbox']
-            colour = (215,165,55) if item['class_name'] != 'person' else (90,135,230)
-            cv2.rectangle(camera,(round(x1*sx),round(y1*sy)),(round(x2*sx),round(y2*sy)),colour,1)
-        hazard = snapshot.hazards
-        if hazard.reason != 'disabled':
-            polygon = np.asarray([(round(px*w),round(py*h)) for px,py in hazard.path],np.int32)
-            cv2.polylines(camera,[polygon],True,(230,165,45),2)
-            for item in hazard.tracks:
-                x1,y1,x2,y2 = item['bbox']
-                label = f"ID {item['id']}"+(' LEAD' if item['id']==hazard.lead_id else '')
-                cv2.putText(camera,label,(round(x1*sx),max(15,round(y1*sy)-4)),cv2.FONT_HERSHEY_SIMPLEX,.45,(230,165,45),1)
-            for event in hazard.events:
-                x1,y1,x2,y2 = event['bbox']
-                colour = (30,170,235) if event['kind']=='LEAD_BRAKE_LAMP_RISE' else (55,55,235)
-                cv2.rectangle(camera,(round(x1*sx),round(y1*sy)),(round(x2*sx),round(y2*sy)),colour,3)
-        if snapshot.signal.bbox:
-            x1,y1,x2,y2 = snapshot.signal.bbox
-            colour = {Light.RED:(55,55,235),Light.GREEN:(90,180,35),Light.YELLOW:(35,180,225)}.get(snapshot.signal.light,(130,130,130))
-            cv2.rectangle(camera,(round(x1*sx),round(y1*sy)),(round(x2*sx),round(y2*sy)),colour,3)
-        canvas[y:y+h,x:x+w] = camera
-        bev = self._bev(snapshot.main,frame.shape)
-        bev = cv2.resize(bev,(408,188))
-        canvas[674:862,998:1406] = bev
-        image = Image.fromarray(cv2.cvtColor(canvas,cv2.COLOR_BGR2RGB))
+    def render(self,frame,snapshot,controls,decision,*,frame_id,fps,paused=False,binding=False,message='',
+               overlay=True,diagnostics=False,bev=False,total_frames=None,source_name='',
+               evidence='VIDEO',perception=None,ended=False,transport_status='PCIe 未连接',drag_box=None):
+        image = Image.new('RGB',SIZE,BG)
         draw = ImageDraw.Draw(image)
-        def text(position,value,size=18,colour=INK):
-            draw.text(position,value,font=self.fonts[size],fill=colour)
-        def box(rect,fill='#ffffff',outline=None,radius=12):
-            draw.rounded_rectangle(rect,radius,fill=fill,outline=outline,width=2)
-        def button(rect,label,key,active):
-            box(rect,BLUE if active else '#e4ebf0')
-            text((rect[0]+13,rect[1]+10),label,18,'#ffffff' if active else INK)
-            self.buttons[key] = rect
-        self.buttons = {}
-        danger = any(alarm in decision.alarms for alarm in ('PEDESTRIAN_DANGER','COLLISION_WARNING'))
-        if 'RED_LIGHT' in decision.alarms or danger:
-            draw.rectangle((x,y,x+w,y+h),outline='#cc343e',width=5)
-            box((x+18,y+18,x+264,y+68),'#bb3039',radius=8)
-            text((x+33,y+29),'危险报警 · 请制动' if danger else '闯红灯报警 · 请停车',22,'#ffffff')
-        text((24,19),'竞赛感知测试台',28)
-        text((25,57),'真实前视视频 · 按键模拟车辆 · 动作与报警',16,MUTED)
-        mode_name = {Mode.INTERSECTION:'路口灯控',Mode.ROAD:'道路变道',Mode.NAVIGATION:'导航提示',Mode.HAZARD:'危险场景'}[controls.mode]
-        box((1136,20,1416,71),'#dce8f1')
-        text((1152,33),f'PC 本机  /  {mode_name}',20,BLUE)
-        text((24,84),'前视视频与主模型检测',16,MUTED)
-        text((790,84),'已暂停' if paused else '播放中',16,BLUE)
-        seconds = frame_id/fps
-        text((25,639),f'原视频 {seconds:05.2f} s  ·  源帧 {frame_id}  ·  主模型 {len(snapshot.main)} 个目标  ·  灯专项 {len(snapshot.specialist)} 个候选',16,MUTED)
-        if binding:
-            text((25,659),'请拖框选择完整的横向红/黄/绿灯组；仅绑定当前所选车道',16,BLUE)
-        elif message:
-            text((25,659),message[:66],16,BLUE)
-        else:
-            text((25,659),'灯色来自绑定灯位的像素判别；车道关联由比赛场景配置或鼠标绑定提供。',16,MUTED)
-        box((24,692,964,879))
-        text((42,700),'模拟车辆所在车道',18)
-        for index,(lane,label) in enumerate(((Lane.LEFT,'1  左转车道'),(Lane.STRAIGHT,'2  直行车道'),(Lane.RIGHT,'3  右转车道'))):
-            button((42+index*184,735,210+index*184,779),label,str(index+1),controls.lane==lane)
-        text((626,702),'模拟车辆状态',18)
-        for index,(motion,label,key) in enumerate(((Motion.AUTO,'0 自动','0'),(Motion.STOP,'S 停止','s'),(Motion.GO,'G 强制行驶','g'))):
-            button((626,732+index*46,945,773+index*46),label,key,controls.motion==motion)
-        button((42,805,165,851),'O 打开视频','o',False)
-        button((179,805,325,851),'空格 暂停',' ',paused)
-        button((339,805,486,851),'B 绑定灯组','b',binding)
-        button((500,805,607,851),'R 重播','r',False)
-        box((988,104,1416,531))
-        text((1008,121),'系统建议',22)
-        colour = {Light.RED:'#ce4148',Light.GREEN:'#2e9964',Light.YELLOW:'#cb9a24'}.get(snapshot.signal.light,'#8496a2')
-        draw.ellipse((1270,128,1286,144),fill=colour)
-        text((1295,118),LIGHT_TEXT[snapshot.signal.light],20,colour)
+        self.buttons = []
+        def text(pos,value,size=18,color=INK,numeric=False,anchor=None):
+            tile,left,top=self.text_tile(str(value),size,color,numeric,anchor)
+            image.paste(tile,(round(pos[0]+left),round(pos[1]+top)),tile)
+        def box(rect,color=PANEL,radius=18,outline=None):
+            draw.rounded_rectangle(rect,radius,fill=color,outline=outline)
+        def button(rect,label,key,active=False,danger=False,size=18):
+            box(rect,'#61302f' if danger and active else '#28524f' if active else PANEL,12,
+                RED if danger and active else ACCENT if active else EDGE)
+            text(((rect[0]+rect[2])/2,(rect[1]+rect[3])/2),label,size,
+                 RED if danger else ACCENT if active else INK,anchor='mm')
+            self.buttons.append((key,rect))
+        def arrow(cx,cy,direction,color=ACCENT,scale=1.):
+            points = [(0,30),(0,-25),(0,-43)] if direction==Direction.FORWARD else [(0,30),(0,-16),(-38 if direction==Direction.LEFT else 38,-16)]
+            draw.line([(cx+x*scale,cy+y*scale) for x,y in points],fill=color,width=max(2,round(9*scale)),joint='curve')
+            head = [(0,-48),(-18,-27),(18,-27)] if direction==Direction.FORWARD else [(-49,-16),(-27,-34),(-27,2)] if direction==Direction.LEFT else [(49,-16),(27,-34),(27,2)]
+            draw.polygon([(cx+x*scale,cy+y*scale) for x,y in head],fill=color)
+
+        draw.ellipse((26,25,54,53),outline=ACCENT,width=2)
+        draw.line((40,30,40,49),fill=ACCENT,width=2)
+        text((67,20),'行车辅助',27)
+        text((204,29),'本机预演',15,MUTED)
+        for index,(mode,key) in enumerate(zip(Mode,('i','d','n','h'))):
+            button((460+index*165,18,616+index*165,64),MODE_TEXT[mode],key,controls.mode==mode,size=19)
+        button((1154,18,1274,64),'打开视频','o',size=17)
+        button((1286,18,1406,64),'诊断','f',diagnostics,size=17)
+        button((1418,18,1576,64),'空间示意','c',bev,size=17)
+        draw.line((24,82,1576,82),fill=EDGE)
+        serious = not ended and any(a in decision.alarms for a in ('RED_LIGHT','SOLID_LANE','PEDESTRIAN_DANGER','COLLISION_WARNING'))
+        attention = bool(decision.alarms)
+        tint = RED if serious else AMBER if attention else ACCENT
         action = ACTION_TEXT[decision.maneuver]
-        if decision.direction == Direction.NONE:
-            box((1063,183,1341,313),'#f7e5e6' if snapshot.signal.light==Light.RED else '#e9eef2')
-            text((1149 if len(action)==2 else 1120,218),action,52,colour if snapshot.signal.light==Light.RED else INK)
+        if decision.reason in ('selected_lane_signal_unconfirmed','source_signal_expired_or_missing','unknown_signal_stop'): action='等待灯色'
+        if 'NO_NAVIGATION' in decision.alarms: action='等待导航'
+        if ended: action='播放结束'
+
+        box((24,106,440,727))
+        text((48,126),'模拟车辆',16,MUTED)
+        text((48,150),'—' if ended else 'D' if decision.simulated_motion==Motion.GO else 'P',65,numeric=True)
+        text((110,181),'历史回看' if ended else '行驶中' if decision.simulated_motion==Motion.GO else '已停止',21)
+        text((416,139),'系统建议',16,MUTED,anchor='ra')
+        if decision.direction!=Direction.NONE and not ended: arrow(375,209,decision.direction,tint,.76)
         else:
-            draw.line((1202,306,1202,214),fill=BLUE,width=22)
-            if decision.direction == Direction.FORWARD:
-                draw.polygon([(1202,180),(1168,230),(1236,230)],fill=BLUE)
-            else:
-                sign = -1 if decision.direction==Direction.LEFT else 1
-                draw.line((1202,220,1202+sign*72,220),fill=BLUE,width=22)
-                draw.polygon([(1202+sign*96,220),(1202+sign*48,188),(1202+sign*48,252)],fill=BLUE)
-            text((1148 if len(action)==2 else 1126,321),action,42,BLUE)
-        text((1008,390),'建议指示灯（PC 模拟）',16,MUTED)
-        for index,label in enumerate(('LED0 左','LED1 直','LED2 右')):
-            active = bool(decision.led_mask & (1<<index))
-            cx = 1060+index*139
-            draw.ellipse((cx-10,424,cx+10,444),fill='#2e9964' if active else '#d5dfe6')
-            text((cx-34,451),label,16,MUTED)
-        actual = '行驶' if decision.simulated_motion==Motion.GO else '停止'
-        text((1008,492),f'模拟状态：{actual}   请求许可：'+('允许' if decision.request_allowed else '未授予'),18)
-        alert = decision.alarms
-        box((988,546,1416,620),'#f9e1e2' if 'RED_LIGHT' in alert or danger else '#fff1d4' if alert else '#e1f0e8')
-        text((1008,555),ALARM_TEXT.get(alert[0],alert[0]) if alert else '无报警',20,'#b72f3a' if 'RED_LIGHT' in alert else INK)
-        reason = {'observed':'绑定灯组像素观测','unbound':'请绑定所选车道的灯组',
-                  'colour_unknown_or_confirming':'灯色未知或正在确认','observation_expired':'旧观测已过期',
-                  'housing_appearance_mismatch':'灯组跟踪丢失，需重新绑定'}.get(snapshot.signal.reason,'灯组等待确认')
-        if danger:
-            reason = '视频轨迹触发 · 蓝色路径为图像假设'
-        text((1008,586),reason,14,MUTED)
-        lamp_hint = any(e['kind']=='LEAD_BRAKE_LAMP_RISE' for e in hazard.events)
-        text((988,635),('制动灯疑似变亮 · 急刹未确认' if lamp_hint else '急刹车：未确认  /  行人闯红灯：未确认') if hazard.reason!='disabled' else 'Tesla-BevCam 原版 BEV 示意',14,MUTED)
-        if hazard.reason!='disabled':
-            status = '轨迹判断中' if hazard.reason=='tracking' else '转弯/背景未确认：暂缓判断'
-            text((988,654),status+' · 实验模式',14,BLUE)
-        text((1000,863),'位置未标定 · 未接自车姿态与车道模型',14,MUTED)
-        text((25,881),'I 路口 / D 道路    Q / E 左右变道（车道结果待接入）    . 逐帧    Esc 退出',14,MUTED)
+            draw.ellipse((350,176,398,224),outline=tint,width=3)
+            draw.line((362,200,386,200),fill=tint,width=4)
+        text((232,254),action,37,tint,anchor='mm')
+        detail = ALARM_TEXT.get(decision.alarms[0],'') if attention else ('控制灯为红色，请保持停止' if snapshot.signal.light==Light.RED else '按选择的模拟车道通行' if controls.mode==Mode.INTERSECTION else '按当前场景规则判断')
+        text((232,299),'已停止更新，结果仅供回看' if ended else detail,17,MUTED,anchor='mm')
+        draw.ellipse((76,572,388,643),fill='#0e171f',outline='#233642',width=2)
+        draw.arc((68,564,396,651),10,170,fill=tint,width=3)
+        image.paste(self.ego,(232-self.ego.width//2,342),self.ego)
+        text((232,662),'车辆状态示意 · 姿态未测量',14,MUTED,anchor='mm')
+        for index,direction in enumerate((Direction.LEFT,Direction.FORWARD,Direction.RIGHT)):
+            active = decision.direction==direction and not ended
+            x=128+index*104
+            draw.ellipse((x-5,696,x+5,706),fill=ACCENT if active else EDGE)
+            text((x+12,692),('左','直','右')[index],14,ACCENT if active else MUTED)
+
+        vx,vy,vw,vh=VIDEO_RECT
+        box((vx,vy,vx+vw,vy+vh),'#060a10')
+        pixels=self._bev(snapshot.main,frame.shape) if bev else frame.copy()
+        if not bev:
+            if overlay:
+                for item in snapshot.main:
+                    x1,y1,x2,y2=map(round,item['bbox'])
+                    color=(207,213,128) if item['class_name']!='person' else (119,187,246)
+                    length=max(4,min(16,(x2-x1)//3,(y2-y1)//3))
+                    for x,dx in ((x1,length),(x2,-length)):
+                        for y,dy in ((y1,length),(y2,-length)):
+                            cv2.line(pixels,(x,y),(x+dx,y),color,2)
+                            cv2.line(pixels,(x,y),(x,y+dy),color,2)
+            if snapshot.signal.bbox:
+                x1,y1,x2,y2=map(round,snapshot.signal.bbox)
+                color={Light.RED:(94,101,255),Light.GREEN:(170,215,128),Light.YELLOW:(119,197,255)}.get(snapshot.signal.light,(180,160,145))
+                cv2.rectangle(pixels,(x1,y1),(x2,y2),color,3)
+            for event in snapshot.hazards.events:
+                x1,y1,x2,y2=map(round,event['bbox'])
+                color=(119,197,255) if event['kind']=='LEAD_BRAKE_LAMP_RISE' else (94,101,255)
+                cv2.rectangle(pixels,(x1,y1),(x2,y2),color,3)
+            if diagnostics and snapshot.hazards.reason!='disabled':
+                poly=np.asarray([(round(x*frame.shape[1]),round(y*frame.shape[0])) for x,y in snapshot.hazards.path],np.int32)
+                cv2.polylines(pixels,[poly],True,(207,213,128),2)
+            if binding and drag_box is not None:
+                x1,y1,x2,y2=map(round,drag_box)
+                cv2.rectangle(pixels,(x1,y1),(x2,y2),(207,213,128),3)
+        factor=min(vw/pixels.shape[1],vh/pixels.shape[0])
+        w,h=round(pixels.shape[1]*factor),round(pixels.shape[0]*factor)
+        x,y=vx+(vw-w)//2,vy+(vh-h)//2
+        self.content_rect=None if bev else (x,y,w,h)
+        image.paste(Image.fromarray(cv2.cvtColor(cv2.resize(pixels,(w,h)),cv2.COLOR_BGR2RGB)),(x,y))
+        mask=Image.new('L',(vw,vh),0)
+        ImageDraw.Draw(mask).rounded_rectangle((0,0,vw-1,vh-1),18,fill=255)
+        cropped=image.crop((vx,vy,vx+vw,vy+vh))
+        image.paste(Image.new('RGB',(vw,vh),BG),(vx,vy))
+        image.paste(cropped,(vx,vy),mask)
+        draw=ImageDraw.Draw(image)
+        box((484,124,771 if evidence!='VIDEO' else 711,164),'#131d28',10)
+        draw.ellipse((498,139,506,147),fill=AMBER if evidence!='VIDEO' else ACCENT)
+        text((517,131),'规则用例 · 非视觉识别' if evidence!='VIDEO' else '空间示意' if bev else '前视感知 / 真实视频',17)
+        if bev:
+            box((784,124,1546,164),'#131d28',10)
+            text((802,133),'Tesla-BevCam 原渲染 · 距离未标定 · 车道与自车姿态未接入',16,AMBER)
+        if serious:
+            draw.rounded_rectangle((vx,vy,vx+vw,vy+vh),18,outline=RED,width=4)
+            box((780,181,1258,238),'#932e30',12)
+            text((1019,209),ALARM_TEXT[decision.alarms[0]]+(' · 请制动' if decision.maneuver==Maneuver.BRAKE else ' · 操作被禁止'),22,INK,anchor='mm')
+        box((484,661,1548,708),'#101b26',12)
+        button((492,667,583,702),'继续' if paused else '暂停',' ',size=16)
+        seconds=frame_id/fps
+        duration=(total_frames or frame_id+1)/fps
+        text((599,677),f'{int(seconds)//60:02}:{int(seconds)%60:02}',17,numeric=True)
+        draw.line((660,685,912,685),fill=EDGE,width=3)
+        draw.line((660,685,660+252*min(1,seconds/max(.001,duration)),685),fill=ACCENT,width=3)
+        text((927,677),f'{int(duration)//60:02}:{int(duration)%60:02}',17,MUTED,numeric=True)
+        button((985,667,1067,702),'逐帧','.',size=16)
+        button((1076,667,1158,702),'重播','r',size=16)
+        button((1167,667,1327,702),'取消选灯' if binding else '选择控制灯','b',binding,size=16)
+        button((1336,667,1538,702),'检测标记：开' if overlay else '检测标记：关','v',overlay,size=16)
+        if binding:
+            box((574,579,1472,634),'#203d4b',12)
+            text((1023,606),'拖框选择完整横向红 / 黄 / 绿灯组；B 或 Esc 取消',21,INK,anchor='mm')
+        elif message and not message.startswith('比赛假设'):
+            box((484,604,1548,648),'#20313e',12)
+            text((502,614),message[:65],17,AMBER)
+        box((24,743,1576,799),PANEL,14)
+        stale_signal = 'STALE_SIGNAL' in decision.alarms
+        displayed_light = Light.UNKNOWN if ended or stale_signal or not snapshot.signal.associated else snapshot.signal.light
+        light_color={Light.RED:RED,Light.GREEN:ACCENT,Light.YELLOW:AMBER}.get(displayed_light,MUTED)
+        draw.ellipse((45,764,59,778),fill=light_color)
+        text((72,757),'视频已结束' if ended else '控制灯  已过期' if stale_signal else f'控制灯  {LIGHT_TEXT[displayed_light]}',19,light_color)
+        if controls.mode==Mode.INTERSECTION:
+            text((310,761),'车道关联由场景配置 / 选灯提供',16,MUTED)
+        elif controls.mode==Mode.ROAD:
+            p=perception or snapshot.as_perception()
+            names={Boundary.UNKNOWN:'未确认',Boundary.SOLID:'实线',Boundary.DASHED:'虚线'}
+            text((310,759),f'左侧线  {names[p.left_boundary]}     右侧线  {names[p.right_boundary]}',18)
+            text((680,761),'车道视觉未接入' if evidence=='VIDEO' else '边界输入来自规则用例',16,AMBER)
+        elif controls.mode==Mode.NAVIGATION:
+            label={Direction.NONE:'尚未接入',Direction.LEFT:'左转',Direction.RIGHT:'右转',Direction.FORWARD:'直行'}
+            text((310,759),'导航指令  '+label[decision.navigation_hint],18,ACCENT if controls.navigation_valid else AMBER)
+            text((650,761),'路线提示与即时转向分开判断',16,MUTED)
+        else:
+            lamp=any(e['kind']=='LEAD_BRAKE_LAMP_RISE' for e in snapshot.hazards.events)
+            text((310,759),'危险规则输入' if evidence!='VIDEO' else '制动灯疑似变亮' if lamp else '图像事件分析' if snapshot.hazards.reason!='disabled' else '危险分析未启用',18,AMBER if lamp or snapshot.hazards.reason=='disabled' else INK)
+            text((650,761),'急刹 / 行人闯红灯尚未确认',16,AMBER)
+        button((1264,753,1564,789),'场景：有信号灯' if controls.signalized or controls.mode==Mode.INTERSECTION else '场景：无信号灯','t',controls.signalized,size=17)
+        text((30,828),'比赛模拟',16,MUTED)
+        if controls.mode==Mode.INTERSECTION:
+            group=[('左转车道','1',controls.lane==Lane.LEFT),('直行车道','2',controls.lane==Lane.STRAIGHT),('右转车道','3',controls.lane==Lane.RIGHT)]
+        elif controls.mode==Mode.ROAD:
+            group=[('向左变道','q',controls.request==Maneuver.CHANGE_LEFT),('保持直行','a',controls.request==Maneuver.AUTO),('向右变道','e',controls.request==Maneuver.CHANGE_RIGHT)]
+        elif controls.mode==Mode.NAVIGATION:
+            group=[('请求左转','j',controls.request==Maneuver.TURN_LEFT),('跟随提示','a',controls.request==Maneuver.AUTO),('请求右转','l',controls.request==Maneuver.TURN_RIGHT)]
+        else:
+            group=[('路口灯控','i',False),('道路变道','d',False),('保持直行','a',controls.request==Maneuver.AUTO)]
+        for index,(label,key,active) in enumerate(group):
+            button((130+index*166,818,286+index*166,867),label,key,active)
+        text((674,833),'车辆状态',16,MUTED)
+        for index,(label,key,active) in enumerate((('自动模拟','0',controls.motion==Motion.AUTO),('停止','s',controls.motion==Motion.STOP),('强制行驶','g',controls.motion==Motion.GO))):
+            button((776+index*178,818,944+index*178,867),label,key,active,key=='g')
+        text((1570,829),'输出：本机预览',16,MUTED,anchor='ra')
+        text((1570,853),transport_status,14,AMBER,anchor='ra')
+        text((28,879),'模拟按键只改变建议与报警，不改变原视频中的车辆运动。',12,MUTED)
+        text((1573,879),'前视优先 / RK3566 待联调',12,MUTED,anchor='ra')
+        if diagnostics:
+            box((766,181,1548,633),'#111e2b',16,EDGE)
+            text((792,198),'诊断与证据来源',26)
+            rows=[f'视频：{Path(source_name).name or "未指定"}',
+                  f'源帧 {frame_id}   视频时间 {seconds:.2f} s   输入 {frame.shape[1]} × {frame.shape[0]}',
+                  f'主模型目标 {len(snapshot.main)}   灯专项候选 {len(snapshot.specialist)}',
+                  f'结果龄期：主 {snapshot.main_age_ms} ms / 灯专项 {snapshot.specialist_age_ms} ms',
+                  '灯组来源：'+snapshot.binding_source,'灯色判据：'+snapshot.signal.reason,
+                  '车道视觉：未接入    导航解析：未接入','危险事件：'+snapshot.hazards.reason,
+                  '控制输出：'+transport_status+'；未写真实硬件',
+                  '推理环境：PC ONNX FP32；未验证板端联合性能']
+            for index,line in enumerate(rows):text((792,245+index*31),line,16,MUTED)
+            text((792,575),'图像路径是实验假设，未标定距离；灯组关联来自显式配置。',16,AMBER)
+            text((792,605),'F 或 Esc 关闭诊断',15)
+            self.buttons=[(key,rect) for key,rect in self.buttons if not(rect[1]<633 and rect[3]>181 and rect[2]>766)]
         return cv2.cvtColor(np.asarray(image),cv2.COLOR_RGB2BGR)
 
     def hit(self,x,y):
-        return next((key for key,(x1,y1,x2,y2) in self.buttons.items() if x1<=x<=x2 and y1<=y<=y2),None)
+        return next((key for key,(x1,y1,x2,y2) in self.buttons if x1<=x<=x2 and y1<=y<=y2),None)
 
-    @staticmethod
-    def video_point(x,y,shape):
-        vx,vy,vw,vh = VIDEO_RECT
-        if vx<=x<=vx+vw and vy<=y<=vy+vh:
+    def video_point(self,x,y,shape):
+        if self.content_rect is None:return None
+        vx,vy,vw,vh=self.content_rect
+        if vx<=x<vx+vw and vy<=y<vy+vh and 170<=y<650:
             return ((x-vx)/vw*shape[1],(y-vy)/vh*shape[0])
         return None

@@ -2,7 +2,7 @@ from dataclasses import replace
 
 import numpy as np
 
-from competition_ai.scenario import Lane, Maneuver, Mode, Motion
+from competition_ai.scenario import Lane, Light, Maneuver, Mode, Motion, Perception
 from tools.competition_console.controls import Controller
 from tools.competition_console.pipeline import FrontPipeline
 from competition_ai.image_motion import ImageMotion
@@ -28,6 +28,62 @@ def test_keyboard_controls_share_one_state_and_restart_clears_forced_go():
     assert controller.key('r') == 'restart'
     assert controller.controls.motion == Motion.AUTO and not controller.paused
     assert controller.key(27) == 'quit'
+
+
+def test_mode_tabs_cannot_silently_bypass_an_unbound_intersection():
+    controller = Controller()
+    assert controller.controls.signalized
+    for key in ('d', 'n', 'h', 'i'):
+        controller.key(key)
+        decision = decide(controller.controls, Perception(), 0)
+        assert controller.controls.signalized
+        assert decision.maneuver == Maneuver.STOP
+        assert decision.alarms == ('SIGNAL_UNASSOCIATED',)
+
+
+def test_explicit_no_signal_scene_preserves_intersection_gate_and_replay_default():
+    controller = Controller()
+    controller.key('t')  # The intersection mode cannot disable its signal gate.
+    assert controller.controls.signalized
+    controller.key('d')
+    controller.key('t')
+    assert not controller.controls.signalized
+    assert decide(controller.controls, Perception(), 0).maneuver == Maneuver.FORWARD
+    controller.key('i')
+    assert decide(controller.controls, Perception(), 0).maneuver == Maneuver.STOP
+    controller.key('r')
+    assert controller.controls.signalized and controller.controls.mode == Mode.INTERSECTION
+
+
+def test_mode_change_keeps_bound_red_gate_and_cancels_binding():
+    controller = Controller()
+    controller.key('b')
+    controller.key('g')
+    controller.key('d')
+    assert not controller.binding
+    decision = decide(controller.controls, Perception(Light.RED, True, 0), 0)
+    assert decision.alarms == ('RED_LIGHT',) and decision.maneuver == Maneuver.STOP
+    assert decision.simulated_motion == Motion.GO
+
+
+def test_view_toggles_and_cancel_do_not_change_driving_controls():
+    controller = Controller()
+    original = controller.controls
+    controller.key('v')
+    controller.key('f')
+    controller.key('c')
+    controller.key('b')
+    assert not controller.overlay and not controller.diagnostics and not controller.bev and controller.binding
+    controller.key('b')
+    assert not controller.binding
+    controller.key('b')
+    assert controller.key(27) is None and not controller.binding
+    controller.key('f')
+    assert controller.key(27) is None and not controller.diagnostics
+    controller.key('c')
+    assert controller.key(27) is None and not controller.bev
+    assert controller.key(27) == 'quit'
+    assert controller.controls == original
 
 
 def test_pipeline_cadence_pause_expiry_and_replay_reset():
