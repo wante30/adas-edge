@@ -1,0 +1,6 @@
+# Optional PC native-navigation pixel reader. Preserve GUI-capable OpenCV.
+# 3.10 changes the default OpenCV dependency to headless; 3.9.2 matches this app.
+# Official API: https://rapidai.github.io/RapidOCRDocs/main/install_usage/rapidocr/usage/
+rapidocr==3.9.2
+# Existing project environment: onnxruntime 1.29.0, opencv-python 5.0.0.93.
+# This file adds OCR only; it does not replace frozen perception weights.

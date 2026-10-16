@@ -22,6 +22,7 @@ from competition_ai.scenario_policy import decide
 from competition_io.scenario_hud import MockScenarioHud, project_scenario
 from tools.competition_console.controls import Controller
 from tools.competition_console.pipeline import FrontPipeline
+from tools.competition_console.navigation_session import NavigationSession, apply_navigation
 from tools.competition_console.view import NativeView, SIZE
 
 DEFAULT_VIDEO = Path('D:/BaiduNetdiskDownload/紫光同创杯赛题三参考素材/video_20260929_113539.mp4')
@@ -56,6 +57,12 @@ def run(args):
     video_digest = digest(video)
     if profile and profile['video_sha256'] != video_digest:
         raise ValueError('This calibration profile belongs to a different video; use manual B binding')
+    splitter, navigation_session = None,None
+    if args.split_navigation:
+        from tools.competition_console.split_video import SplitVideo
+        from tools.competition_console.navigation_reader import NavigationReader
+        splitter = SplitVideo(profile)
+        navigation_session = NavigationSession(NavigationReader())
     main = PcDetector(args.main_model,(512,288))
     specialist = PcDetector(args.specialist_model,(512,192),specialist=True)
     pipeline = FrontPipeline(main,specialist,hazards=args.hazards,hazard_path=profile.get('hazard_path'))
@@ -64,6 +71,8 @@ def run(args):
     hud_receipt,hud_checked = None,0
     if args.mode:
         controller.controls = replace(controller.controls,mode=Mode(args.mode))
+    elif args.split_navigation:
+        controller.controls = replace(controller.controls,mode=Mode.NAVIGATION)
     elif args.hazards:
         controller.controls = replace(controller.controls,mode=Mode.HAZARD)
     controller.paused = args.paused
@@ -111,7 +120,7 @@ def run(args):
                     state['drag_box'] = None
         cv2.setMouseCallback(WINDOW,mouse)
     processed,loops,visible = 0,0,False
-    current = None
+    current, navigation_image, split_metadata = None,None,None
     advance = True
     last_written_frame = None
     last_emitted_ended = False
@@ -131,9 +140,14 @@ def run(args):
                         advance = False
                         frame_id = end_frame-1
                     else:
-                        ok,current = capture.read()
+                        ok,source_frame = capture.read()
                         if not ok:
                             raise RuntimeError(f'Early video end at frame {frame_id}')
+                        if splitter is not None:
+                            split = splitter.split(source_frame,frame_id)
+                            current,navigation_image,split_metadata = split.road,split.navigation,split.metadata
+                        else:
+                            current,navigation_image,split_metadata = source_frame,None,None
                 if current is None:
                     break
                 state['frame'] = current
@@ -186,6 +200,8 @@ def run(args):
                         # Loading another video invalidates the old calibration.
                         binding_events,control_events,snapshot_frames = {},{},set()
                         profile = {}
+                        # Screen geometry is tied to the calibrated source.
+                        splitter,navigation_session,navigation_image,split_metadata = None,None,None,None
                         controller = Controller()
                         if args.mode:
                             controller.controls = replace(controller.controls,mode=Mode(args.mode))
@@ -201,6 +217,8 @@ def run(args):
                         capture.set(cv2.CAP_PROP_POS_FRAMES,0)
                         if args.mode:
                             controller.controls = replace(controller.controls,mode=Mode(args.mode))
+                        elif splitter is not None:
+                            controller.controls = replace(controller.controls,mode=Mode.NAVIGATION)
                         elif args.hazards:
                             controller.controls = replace(controller.controls,mode=Mode.HAZARD)
                     frame_id,end_frame,current,advance,last_written_frame = 0,total,None,True,None
@@ -208,6 +226,8 @@ def run(args):
                     last_emitted_ended = False
                     display_stamp = None
                     pipeline.reset();seen_events.clear()
+                    if navigation_session is not None:
+                        navigation_session.reset()
                     continue
                 if pending_boxes:
                     for bbox in pending_boxes:
@@ -227,6 +247,11 @@ def run(args):
                 pipeline.advance(current,frame_id,timestamp_ns)
                 snapshot = pipeline.snapshot(controller.controls.lane,timestamp_ns)
                 perception = snapshot.as_perception()
+                navigation = None
+                if navigation_session is not None:
+                    navigation_session.advance(navigation_image,frame_id,timestamp_ns)
+                    navigation = navigation_session.current(timestamp_ns,ended=state['ended'])
+                    controller.controls = apply_navigation(controller.controls,navigation)
                 decision = decide(controller.controls,perception,timestamp_ns)
                 should_emit = last_written_frame != frame_id or input_changed or action or state['ended'] != last_emitted_ended
                 if hud is not None and should_emit:
@@ -248,6 +273,7 @@ def run(args):
                                         overlay=controller.overlay,diagnostics=controller.diagnostics,bev=controller.bev,
                                         total_frames=total,source_name=str(video),ended=state['ended'],
                                         drag_box=state['drag_box'],
+                                        navigation_image=navigation_image,navigation=navigation,
                                         transport_status='HUD 图标仿真通过' if hud_receipt else 'PCIe 未连接')
                     render_timings.append((time.perf_counter()-render_start)*1000)
                     display_stamp = stamp
@@ -260,6 +286,10 @@ def run(args):
                            'hazards':asdict(snapshot.hazards),
                            'main':snapshot.main,'specialist':snapshot.specialist,
                            'main_age_ms':snapshot.main_age_ms,'specialist_age_ms':snapshot.specialist_age_ms}
+                    if navigation is not None:
+                        row['navigation'] = navigation
+                        row['same_frame_split'] = split_metadata
+                        row['road_inference_frame_id'] = round(frame_id-(snapshot.main_age_ms or 0)*fps/1000)
                     if hud_receipt is not None:
                         row['hud_software_receipt'] = hud_receipt
                     trace.write(json.dumps(row,ensure_ascii=False)+'\n');trace.flush()
@@ -312,6 +342,12 @@ def run(args):
               'native_display_size':SIZE,'render_ms':{'median':float(np.median(render_timings)),
                   'p95':float(np.percentile(render_timings,95))} if render_timings else None,
               'hud_software_checked_transactions':hud_checked,'hardware_writes':0,
+              'same_frame_navigation_enabled':splitter is not None,
+              'navigation_hz':navigation_session.hz if navigation_session is not None else None,
+              'navigation_inference_updates':len(navigation_session.timings) if navigation_session is not None else 0,
+              'navigation_ms':{'median':float(np.median(navigation_session.timings)),
+                               'p95':float(np.percentile(navigation_session.timings,95))}
+                               if navigation_session is not None and navigation_session.timings else None,
               'hud_limit':'HUD1 carries icons only; complete maneuver, light, lanes and TTL remain in JSON sidecar',
               'hazards_enabled':args.hazards,
               'hazard_algorithm':'SOURCE_TIMED_IMAGE_TRAJECTORY_EXPERIMENTAL' if args.hazards else 'DISABLED',
@@ -323,7 +359,7 @@ def run(args):
                              'Bound colour branch is a calibrated horizontal R/Y/G pixel classifier, separate from both detection models',
                              'Path polygon is an image-space assumption, not detected lanes or a calibrated vehicle trajectory',
                              'Sudden braking and pedestrian red-signal violations remain unconfirmed without their missing evidence',
-                             'No lane model or navigation reader in this video integration',
+                             'No lane model; navigation uses calibrated screen pixels with expiry' if splitter is not None else 'No lane model or navigation reader in this video integration',
                              'No real vehicle motion, calibrated 3D distances, PCIe output or board benchmark']}
     (output/'summary.json').write_text(json.dumps(report,indent=2,ensure_ascii=False),encoding='utf-8')
     print(json.dumps({'output':str(output.resolve()),'frames':processed,'colours':dict(colour_counts),
@@ -337,6 +373,7 @@ def parser():
     result.add_argument('--main-model',type=Path,default=DEFAULT_MAIN)
     result.add_argument('--specialist-model',type=Path,default=DEFAULT_SPECIALIST)
     result.add_argument('--profile',type=Path)
+    result.add_argument('--split-navigation',action='store_true',help='Split calibrated road and navigation screen from the same source frame; recognize navigation pixels')
     result.add_argument('--upstream',type=Path)
     result.add_argument('--window-title')
     result.add_argument('--output',type=Path)
