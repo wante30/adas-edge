@@ -22,7 +22,7 @@ The program requires the active X11 mode to be 1280x720 and refuses to run on a 
 
 ## Run
 
-Synthetic RGB565 input; the 60-frame image pool is built before timing begins:
+Synthetic RGB565 input; the background is prepared once, then a source worker generates a moving road scene and frame-ID marker into a bounded four-buffer pool. The EGL thread only consumes the newest ready frame:
 
 ~~~sh
 DISPLAY=:0 XAUTHORITY=/home/cat/.Xauthority \
@@ -91,14 +91,14 @@ The saved reports in `results/` are from the RK3566 Mali-G52 at HDMI 1280x720@60
 
 | Stage | Evidence and result |
 |---|---|
-| A, video only, 60 s | `SYNTHETIC`; 3,601 monotonic source IDs produced and 3,593 submitted (59.886 FPS), input 60.002 FPS, 7 latest-only skips; the prebuilt pixel pool has 60 images and cycles, so this is not 3,601 unique pixel frames; submit interval p50/p95/p99 16.693/19.285/20.913 ms; upload p95 1.991 ms, draw p95 10.215 ms, swap p95 4.814 ms; GPU p95 37%, RSS peak 56.8 MB, max temperature 30 C. |
+| A, video only, 60 s final run | `SYNTHETIC`; the producer generated 3,601 source IDs and the EGL path submitted 3,598 unique frames (59.968 FPS), input 60.001 FPS, 2 latest-only skips; each ID changes the moving road geometry and visible 24-bit marker; input interval p50/p95/p99 16.664/17.507/18.381 ms, submit interval 16.702/19.106/21.553 ms; generation p95 1.750 ms, texture upload p95 2.134 ms, draw-call p95 9.882 ms, swap p95 5.070 ms; CPU 8.44% of four-core machine, GPU p95 35%, RSS peak 56.9 MB, max temperature 27.22 C; RGB565 red readback passed. See `results/synthetic_source_final_60s_20261019.json`. |
 | B, cached static HMI, 60 s | `SYNTHETIC`; input 60.002 FPS and unique submissions 59.907 FPS, 6 skips; GPU p95 36%, RSS peak 67.8 MB, max temperature 30 C. |
 | C, GPU detection layer, 60 s | `SYNTHETIC`; unique submissions 59.869 FPS, 8 skips, 3,589 frames with asynchronous synthetic demo boxes; box draw p50/p95 0.949/1.575 ms. The boxes are a rendering probe, not real detections. |
 | E, AI plus dynamic HMI, 20 s final run | `LOCAL_REPLAY`; 120 distinct RGB565 road images looped at 30 FPS; input 30.000 FPS, 599 source IDs submitted (29.984 FPS), EGL swaps 29.984/s, 1 latest-only skip; input interval p50/p95/p99 33.335/34.240/38.645 ms, submit interval 33.251/43.703/49.140 ms; 133 frames drew RKNN boxes, result age p50/p95 235.6/244.2 ms; YOLO 7.26 FPS, Specialist/OCR 2.52 FPS each; GPU p95 47%, NPU p95 100%, display RSS peak 273.8 MB, AI RSS peak 133.5 MB, max temperature 31.25 C, inference errors 0. |
 | F, full AI soak, 20 min | `LOCAL_REPLAY`; the same 120 road images looped at 30 FPS; 36,001 source IDs produced, 35,993 submitted (29.994 FPS), 7 latest-only skips; input interval p50/p95/p99 33.335/34.125/38.279 ms, submit interval 33.281/44.857/51.995 ms; 9,049 frames drew RKNN boxes, result age p50/p95 235.3/238.6 ms; YOLO 7.02 FPS, Specialist/OCR 2.49 FPS each; GPU p95 46%, NPU p95 100%, display RSS peak 279.9 MB, AI RSS peak 225.7 MB, max temperature 33.75 C, inference errors 0. |
 | Empty PGV source, 6 s | `PGV_LIVE`; 0 source frames and AI requests, 361 unavailable polls, 55 UI-only EGL swaps; the screen reports PCIe disconnected, FPGA unknown, signal unknown, and navigation stopped. No local video fallback occurred. |
 
-The board home directory and project tree contain no source road-video container. The available replay set has 120 distinct RGB565 payloads; the 20-second and 20-minute AI tests cycle that set. Stage A's 60-image synthetic pixel pool also cycles. These runs verify steady rendering and AI concurrency over continuous source IDs, but do not meet a 3,600-unique-image content test.
+The board home directory and project tree contain no source road-video container. The available replay set has 120 distinct RGB565 payloads; the 20-second and 20-minute AI tests cycle that set, so those runs do not represent 3,600 unique real-road images. Stage A is a generated moving-road source, not recorded footage; its producer creates a different scene and source-ID marker for each submitted frame. The synthetic 60 FPS path meets the unique-frame count for display validation, while real-road long-duration AI validation remains limited to the 120-frame replay set.
 
 Screenshot: [LOCAL_REPLAY dynamic HMI](results/local_replay_dynamic_hmi_final2_20s_20261019.png). The live HDMI scanout unique FPS is not measured. `eglSwapBuffers` completion and the configured 60 Hz mode are not evidence that 60 distinct frames reached the panel. The real PGV path, DMA ownership and RGB565/stride mapping are adapted but still need an FPGA-powered end-to-end run.
 
