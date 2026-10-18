@@ -15,7 +15,7 @@ cd /home/cat/competition_cockpit_port_20261018/deployment/lubancat/mali_video
 g++ -std=c++17 -O3 -Wall -Wextra -pthread mali_video.cpp \
   -L/lib/aarch64-linux-gnu \
   -Wl,-rpath,/lib/aarch64-linux-gnu \
-  -l:libmali.so.1 -lX11 -o mali_video
+  -l:libmali.so.1 -lX11 -o mali_video_egl_hmi
 ~~~
 
 The program requires the active X11 mode to be 1280x720 and refuses to run on a non-Mali renderer. It uses eglSwapInterval(1).
@@ -26,7 +26,7 @@ Synthetic RGB565 input; the 60-frame image pool is built before timing begins:
 
 ~~~sh
 DISPLAY=:0 XAUTHORITY=/home/cat/.Xauthority \
-  ./mali_video --source synthetic --fps 60 --duration 60 \
+  ./mali_video_egl_hmi --source synthetic --fps 60 --duration 60 \
   --output-json /home/cat/competition_cockpit_port_20261018/output/mali_video_synthetic/summary.json
 ~~~
 
@@ -34,7 +34,7 @@ Replay previously captured PCIe payloads. Each input file must be exactly 1,843,
 
 ~~~sh
 DISPLAY=:0 XAUTHORITY=/home/cat/.Xauthority \
-  ./mali_video --source replay --fps 60 --duration 60 \
+  ./mali_video_egl_hmi --source replay --fps 60 --duration 60 \
   --file /home/cat/pcie_test/pango_video_t05/frames_first/frame_g8_0000131574.rgb565 \
   --file /home/cat/pcie_test/pango_video_t05/web_evidence/browser_frame.rgb565 \
   --file /home/cat/pcie_test/pango_video_t05/t07_fifo_opt_retest/first/frame_g8_0000005285.rgb565 \
@@ -45,43 +45,62 @@ Cache and draw the static cockpit UI texture without AI:
 
 ~~~sh
 DISPLAY=:0 XAUTHORITY=/home/cat/.Xauthority \
-  ./mali_video --source replay --fps 60 --duration 60 --overlays \
+  ./mali_video_egl_hmi --source replay --fps 60 --duration 60 --overlays \
   --file /home/cat/pcie_test/pango_video_t05/frames_first/frame_g8_0000131574.rgb565 \
   --file /home/cat/pcie_test/pango_video_t05/web_evidence/browser_frame.rgb565 \
   --output-json /tmp/mali_video_hmi.json
 ~~~
 
-## Asynchronous AI Sidecar
+## Asynchronous AI and Dynamic HMI
 
-`ai_bridge.py` reads the same local RGB565 replay files, converts them with the existing PGV BGR565 conversion, and runs the existing RKNN YOLO11n, traffic-light Specialist, navigation OCR, and hazard pipeline in a separate Python process. The renderer sends only frame IDs and source timestamps over loopback UDP. The sidecar uses a single latest-only request slot and returns a bounded box/status packet; the EGL loop never waits for inference. The sidecar does not open PCIe devices or write FPGA registers.
+`ai_bridge.py` runs the existing YOLO11n, traffic-light Specialist, navigation OCR, and hazard pipeline in a separate process. It reads an identity-checked `MFR1` snapshot of the exact submitted RGB565 frame, uses a bounded latest-only work slot, and returns detection boxes plus a separately updated RGBA status texture. OpenGL resources stay on the EGL thread. The sidecar does not open PCIe devices, write FPGA registers, or change the PGV protocol.
 
-Start the sidecar first on the board, supplying three or more known RGB565 frames and the board's existing RKNN model files:
+For real input, start the sidecar with the shared snapshot and dynamic HMI paths. It stays alive while `PGV_LIVE` has no frames and keeps the disconnected/unknown panel visible; stale detection, navigation, and hazards are cleared:
 
 ~~~sh
-cd /home/cat/competition_cockpit_port_20261018
-export ADAS_EDGE_ROOT=/home/cat/competition_cockpit_port_20261018
-python3 deployment/lubancat/mali_video/ai_bridge.py \
-  --file /home/cat/pcie_test/pango_video_t05/frames_first/frame_g8_0000131574.rgb565 \
-  --file /home/cat/pcie_test/pango_video_t05/web_evidence/browser_frame.rgb565 \
-  --file /home/cat/pcie_test/pango_video_t05/t07_fifo_opt_retest/first/frame_g8_0000005285.rgb565 \
-  --main-model /home/cat/adas-edge-rect/rect_models/yolo11n_rk3566_int8_split_512x288_mmse.rknn \
-  --specialist-model /home/cat/adas-edge-rect/tl_check/tl_specialist_rk3566_int8_split_512x192.rknn \
+export PROJECT=/home/cat/competition_cockpit_port_20261018
+export ADAS_EDGE_ROOT=$PROJECT
+export AI_FRAME=/dev/shm/mali_video_ai_frame.rgb565
+export DYNAMIC_HMI=/dev/shm/mali_video_dynamic_hmi.rgba
+
+python3 $PROJECT/deployment/lubancat/mali_video/ai_bridge.py \
+  --live-frame-file $AI_FRAME \
+  --dynamic-hmi-file $DYNAMIC_HMI \
+  --source PGV_LIVE --layout front --display-view front \
+  --main-model /home/cat/adas-edge-rect/rect_models/yolo11n_rk3566_int8_split_512x288.rknn \
+  --specialist-model /home/cat/adas-edge-rect/tl_check/tl_specialist_512x192_hybrid2.rknn \
   --summary /tmp/mali_video_ai.json
 ~~~
 
-Then run the renderer with the same files and `--ai-bridge`:
+In a second terminal, run the EGL renderer against the existing PGVF publisher:
 
 ~~~sh
 DISPLAY=:0 XAUTHORITY=/home/cat/.Xauthority \
-  /tmp/mali_video_hmi_ai_20261019/mali_video \
-  --source replay --fps 60 --duration 60 --ai-bridge \
-  --file /home/cat/pcie_test/pango_video_t05/frames_first/frame_g8_0000131574.rgb565 \
-  --file /home/cat/pcie_test/pango_video_t05/web_evidence/browser_frame.rgb565 \
-  --file /home/cat/pcie_test/pango_video_t05/t07_fifo_opt_retest/first/frame_g8_0000005285.rgb565 \
-  --output-json /tmp/mali_video_render.json
+  $PROJECT/deployment/lubancat/mali_video/mali_video_egl_hmi \
+  --source pgv-live --pgv-file /dev/shm/pgv_live_codex_20261018_postreboot/latest.pgv \
+  --layout front --view front --fps 60 --duration 1200 --ai-bridge \
+  --ai-frame-file $AI_FRAME --dynamic-hmi-file $DYNAMIC_HMI \
+  --output-json /tmp/mali_video_pgv_hmi_20min.json
 ~~~
 
-Both summaries identify their input as `LOCAL_REPLAY`; replaying still images measures scheduling and resource load, not detector accuracy or motion-based hazard validity. `actual_scanout_fps` remains null until HDMI scanout is measured independently.
+For local replay, prepare a directory of distinct 1,843,200-byte RGB565 frames, pass every file to `mali_video_egl_hmi --source replay --layout front --view front`, and configure the sidecar as `--source LOCAL_REPLAY`. A 30 FPS source replayed at 30 FPS is reported as 30 FPS; it is not counted as 60 unique frames/s. A replay must never be labeled `PGV_LIVE`.
+
+## Board Verification
+
+The saved reports in `results/` are from the RK3566 Mali-G52 at HDMI 1280x720@60Hz. The refresh mode is a display setting, not a scanout measurement.
+
+| Stage | Evidence and result |
+|---|---|
+| A, video only, 60 s | `SYNTHETIC`; 3,601 monotonic source IDs produced and 3,593 submitted (59.886 FPS), input 60.002 FPS, 7 latest-only skips; the prebuilt pixel pool has 60 images and cycles, so this is not 3,601 unique pixel frames; submit interval p50/p95/p99 16.693/19.285/20.913 ms; upload p95 1.991 ms, draw p95 10.215 ms, swap p95 4.814 ms; GPU p95 37%, RSS peak 56.8 MB, max temperature 30 C. |
+| B, cached static HMI, 60 s | `SYNTHETIC`; input 60.002 FPS and unique submissions 59.907 FPS, 6 skips; GPU p95 36%, RSS peak 67.8 MB, max temperature 30 C. |
+| C, GPU detection layer, 60 s | `SYNTHETIC`; unique submissions 59.869 FPS, 8 skips, 3,589 frames with asynchronous synthetic demo boxes; box draw p50/p95 0.949/1.575 ms. The boxes are a rendering probe, not real detections. |
+| E, AI plus dynamic HMI, 20 s final run | `LOCAL_REPLAY`; 120 distinct RGB565 road images looped at 30 FPS; input 30.000 FPS, 599 source IDs submitted (29.984 FPS), EGL swaps 29.984/s, 1 latest-only skip; input interval p50/p95/p99 33.335/34.240/38.645 ms, submit interval 33.251/43.703/49.140 ms; 133 frames drew RKNN boxes, result age p50/p95 235.6/244.2 ms; YOLO 7.26 FPS, Specialist/OCR 2.52 FPS each; GPU p95 47%, NPU p95 100%, display RSS peak 273.8 MB, AI RSS peak 133.5 MB, max temperature 31.25 C, inference errors 0. |
+| F, full AI soak, 20 min | `LOCAL_REPLAY`; the same 120 road images looped at 30 FPS; 36,001 source IDs produced, 35,993 submitted (29.994 FPS), 7 latest-only skips; input interval p50/p95/p99 33.335/34.125/38.279 ms, submit interval 33.281/44.857/51.995 ms; 9,049 frames drew RKNN boxes, result age p50/p95 235.3/238.6 ms; YOLO 7.02 FPS, Specialist/OCR 2.49 FPS each; GPU p95 46%, NPU p95 100%, display RSS peak 279.9 MB, AI RSS peak 225.7 MB, max temperature 33.75 C, inference errors 0. |
+| Empty PGV source, 6 s | `PGV_LIVE`; 0 source frames and AI requests, 361 unavailable polls, 55 UI-only EGL swaps; the screen reports PCIe disconnected, FPGA unknown, signal unknown, and navigation stopped. No local video fallback occurred. |
+
+The board home directory and project tree contain no source road-video container. The available replay set has 120 distinct RGB565 payloads; the 20-second and 20-minute AI tests cycle that set. Stage A's 60-image synthetic pixel pool also cycles. These runs verify steady rendering and AI concurrency over continuous source IDs, but do not meet a 3,600-unique-image content test.
+
+Screenshot: [LOCAL_REPLAY dynamic HMI](results/local_replay_dynamic_hmi_final2_20s_20261019.png). The live HDMI scanout unique FPS is not measured. `eglSwapBuffers` completion and the configured 60 Hz mode are not evidence that 60 distinct frames reached the panel. The real PGV path, DMA ownership and RGB565/stride mapping are adapted but still need an FPGA-powered end-to-end run.
 
 ## Metrics
 

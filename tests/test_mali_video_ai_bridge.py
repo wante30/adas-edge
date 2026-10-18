@@ -50,6 +50,19 @@ def test_frame_request_wire_format_is_little_endian_and_rejects_bad_packets():
     assert bridge.decode_frame_request(b"BAD!" + payload[4:]) is None
 
 
+def test_frame_request_v2_carries_renderer_measured_fps():
+    bridge = _load_ai_bridge()
+
+    payload = bridge.encode_frame_request(
+        42, 123456789, input_fps=59.85, submitted_fps=59.68
+    )
+
+    assert payload[:4] == b"MVR2"
+    decoded = bridge.decode_frame_request(payload)
+    assert decoded[:2] == (42, 123456789)
+    assert np.allclose(decoded[2:], (59.85, 59.68), atol=0.01)
+
+
 def test_rgb565_replay_decode_matches_the_existing_pgv_bgr_contract():
     bridge = _load_ai_bridge()
     red_rgb565 = bytes((0x00, 0xF8)) * (1280 * 720)
@@ -82,6 +95,239 @@ def test_ai_result_packet_round_trips_status_and_boxes():
     assert result["nav_distance_m"] == 42.5
     assert np.allclose(result["boxes"], [box])
     assert bridge.decode_ai_result_packet(payload[:-1]) is None
+
+
+def test_ai_result_v2_preserves_class_confidence_and_dynamic_status():
+    bridge = _load_ai_bridge()
+    status = {
+        "source": "SYNTHETIC",
+        "traffic": "UNKNOWN",
+        "navigation": {"state": "UNREADABLE", "road_name": ""},
+        "hazards": ["PEDESTRIAN_CROSSING_PATH"],
+    }
+    box = (10.0, 20.0, 30.0, 60.0, 1.0, 0.2, 0.1, 0, 0.875)
+
+    payload = bridge.encode_ai_result_packet(
+        frame_id=42,
+        timestamp_ns=123456789,
+        flags=0,
+        nav_direction=0,
+        nav_distance_m=-1.0,
+        boxes=[box],
+        status=status,
+    )
+    result = bridge.decode_ai_result_packet(payload)
+
+    assert payload[:4] == b"MVA2"
+    assert result["frame_id"] == 42
+    assert result["boxes"][0][7:] == (0, 0.875)
+    assert result["status"] == status
+
+
+def test_detection_box_mapping_keeps_quad_and_front_coordinates_distinct():
+    bridge = _load_ai_bridge()
+
+    assert bridge.map_detection_box(
+        (10, 20, 50, 80), input_layout="quad", display_view="quad", road_quadrant=3
+    ) == (650.0, 380.0, 690.0, 440.0)
+    assert bridge.map_detection_box(
+        (10, 20, 50, 80), input_layout="quad", display_view="front", road_quadrant=3
+    ) == (20.0, 40.0, 100.0, 160.0)
+    assert bridge.map_detection_box(
+        (10, 20, 50, 80), input_layout="front", display_view="front", road_quadrant=3
+    ) == (10.0, 20.0, 50.0, 80.0)
+
+
+def test_dynamic_status_expires_navigation_and_never_carries_old_road_name():
+    bridge = _load_ai_bridge()
+    now_ns = 2_000_000_000
+    status = bridge.build_dynamic_status(
+        source="LOCAL_REPLAY",
+        frame_id=120,
+        timestamp_ns=now_ns,
+        now_ns=now_ns,
+        hud={"traffic": "OFF", "traffic_evidence": "YELLOW_UNSUPPORTED_BY_HUD_PROTOCOL"},
+        navigation={
+            "valid": True,
+            "direction": "left",
+            "distance_m": 42,
+            "road_name": "上一条道路",
+            "source_frame_id": 90,
+            "timestamp_ns": now_ns - 800_000_000,
+            "reason": "PIXEL_ARROW_AND_OCR_DISTANCE_VIDEO_LAYOUT_V1",
+        },
+        hazard_timestamp_ns=now_ns - 50_000_000,
+        hazards=[{"kind": "LEAD_RAPID_CLOSING", "track_id": 7}],
+        detections=[{"class_name": "person", "confidence": 0.91}],
+        signal_age_ms=30.0,
+        main_age_ms=40.0,
+        specialist_age_ms=80.0,
+    )
+
+    assert status["traffic"] == "YELLOW"
+    assert status["navigation"] == {
+        "state": "STOPPED",
+        "direction": "none",
+        "distance_m": None,
+        "road_name": "",
+        "source_frame_id": 90,
+        "age_ms": 800.0,
+    }
+    assert status["hazards"] == ["LEAD_RAPID_CLOSING"]
+    assert status["detections"]["person"] == 1
+    assert status["source"] == "LOCAL_REPLAY"
+
+
+def test_dynamic_status_expires_detection_counts_with_the_drawn_box_ttl():
+    bridge = _load_ai_bridge()
+    now_ns = 2_000_000_000
+    status = bridge.build_dynamic_status(
+        source="LOCAL_REPLAY",
+        frame_id=120,
+        timestamp_ns=now_ns - 251_000_000,
+        now_ns=now_ns,
+        hud={"traffic": "OFF", "traffic_evidence": "NO_SIGNAL_ROI"},
+        navigation={},
+        hazard_timestamp_ns=None,
+        hazards=(),
+        detections=[{"class_name": "person"}],
+        signal_age_ms=None,
+        main_age_ms=100.0,
+        specialist_age_ms=None,
+    )
+
+    assert status["result_age_ms"] == 251.0
+    assert status["detections"] == {}
+
+
+def test_dynamic_status_clears_live_results_when_source_stops():
+    bridge = _load_ai_bridge()
+    now_ns = 4_000_000_000
+    status = bridge.build_dynamic_status(
+        source="PGV_LIVE",
+        frame_id=81,
+        timestamp_ns=now_ns - 100_000_000,
+        now_ns=now_ns,
+        hud={"traffic": "RED", "traffic_evidence": "CONFIRMED_RED"},
+        navigation={
+            "valid": True,
+            "direction": "right",
+            "distance_m": 30,
+            "road_name": "旧道路",
+            "source_frame_id": 80,
+            "timestamp_ns": now_ns - 100_000_000,
+        },
+        hazard_timestamp_ns=now_ns - 100_000_000,
+        hazards=[{"kind": "PEDESTRIAN_CROSSING_PATH"}],
+        detections=[{"class_name": "person"}],
+        signal_age_ms=25.0,
+        main_age_ms=80.0,
+        specialist_age_ms=120.0,
+        input_fps=59.8,
+        submitted_fps=59.6,
+        ai_fps=9.7,
+        source_stopped=True,
+    )
+
+    assert status["traffic"] == "UNKNOWN"
+    assert status["navigation"]["state"] == "STOPPED"
+    assert status["navigation"]["road_name"] == ""
+    assert status["hazards"] == []
+    assert status["detections"] == {}
+    assert status["pcie_state"] == "DISCONNECTED"
+    assert status["input_fps"] is None
+    assert status["submitted_fps"] is None
+    assert status["ai_fps"] is None
+    assert status["result_age_ms"] is None
+
+
+def test_stopped_status_heartbeat_waits_for_quiet_source_then_refreshes_periodically():
+    bridge = _load_ai_bridge()
+    start_ns = 1_000_000_000
+    heartbeat_ns = bridge.DYNAMIC_HMI_HEARTBEAT_NS
+
+    assert not bridge.should_refresh_stopped_status(
+        start_ns + heartbeat_ns - 1, start_ns, None
+    )
+    assert bridge.should_refresh_stopped_status(
+        start_ns + heartbeat_ns, start_ns, None
+    )
+    assert not bridge.should_refresh_stopped_status(
+        start_ns + 2 * heartbeat_ns - 1, start_ns, start_ns + heartbeat_ns
+    )
+    assert bridge.should_refresh_stopped_status(
+        start_ns + 2 * heartbeat_ns, start_ns, start_ns + heartbeat_ns
+    )
+    assert not bridge.should_refresh_stopped_status(
+        start_ns + heartbeat_ns + 1,
+        start_ns + heartbeat_ns,
+        start_ns + heartbeat_ns,
+    )
+
+
+def test_initial_pgv_status_is_unknown_and_reports_unavailable_connection():
+    bridge = _load_ai_bridge()
+
+    status = bridge.initial_dynamic_status("PGV_LIVE", 123456789)
+
+    assert status["traffic"] == "UNKNOWN"
+    assert status["navigation"]["state"] == "UNREADABLE"
+    assert status["hazards"] == []
+    assert status["detections"] == {}
+    assert status["pcie_state"] == "DISCONNECTED"
+    assert status["fpga_perception"] == "UNKNOWN"
+    assert status["runtime_status"] == "WAITING_FOR_SOURCE"
+
+
+def test_dynamic_hmi_layer_is_a_bounded_rgba_texture():
+    bridge = _load_ai_bridge()
+    pixels = bridge.render_dynamic_hmi_rgba(
+        {
+            "traffic": "UNKNOWN",
+            "traffic_reason": "NO_SIGNAL_ROI",
+            "navigation": {"state": "UNREADABLE", "road_name": ""},
+            "hazards": [],
+            "detections": {},
+            "source": "SYNTHETIC",
+        }
+    )
+
+    assert len(pixels) == bridge.DYNAMIC_HMI_WIDTH * bridge.DYNAMIC_HMI_HEIGHT * 4
+    assert any(pixels)
+    assert pixels[3] == 255
+
+
+def test_dynamic_hmi_text_is_clipped_to_the_available_pixel_width():
+    bridge = _load_ai_bridge()
+    image = bridge.Image.new("RGBA", (bridge.DYNAMIC_HMI_WIDTH, bridge.DYNAMIC_HMI_HEIGHT))
+    draw = bridge.ImageDraw.Draw(image)
+    font = bridge._font(11)
+
+    text = bridge.fit_hmi_text(draw, "导航状态需要显示的完整道路名称和实时诊断信息", font, 202)
+
+    assert text.endswith("...")
+    assert bridge.hmi_text_width(draw, text, font) <= 202
+
+
+def test_live_ai_frame_snapshot_is_rgb565_and_must_match_requested_identity():
+    bridge = _load_ai_bridge()
+    pixels = bytes((0x00, 0xF8)) * (1280 * 720)
+    packet = bridge.encode_frame_snapshot(7, 1234, pixels)
+
+    assert bridge.decode_frame_snapshot(packet, 7, 1234) == pixels
+    assert bridge.decode_frame_snapshot(packet, 8, 1234) is None
+    assert bridge.decode_frame_snapshot(packet[:-1], 7, 1234) is None
+
+
+def test_dynamic_hmi_file_header_carries_latest_source_identity():
+    bridge = _load_ai_bridge()
+    status = {"frame_id": 17, "timestamp_ns": 991122}
+    pixels = bytes(bridge.DYNAMIC_HMI_WIDTH * bridge.DYNAMIC_HMI_HEIGHT * 4)
+    payload = bridge.encode_dynamic_hmi_file(status, pixels)
+
+    magic, width, height, frame_id, timestamp_ns = bridge.DYNAMIC_HMI_HEADER.unpack_from(payload)
+    assert (magic, width, height, frame_id, timestamp_ns) == (b"HMI1", 238, 452, 17, 991122)
+    assert len(payload) == bridge.DYNAMIC_HMI_HEADER.size + len(pixels)
 
 
 def test_board_telemetry_reports_load_frequency_and_temperature_distributions():

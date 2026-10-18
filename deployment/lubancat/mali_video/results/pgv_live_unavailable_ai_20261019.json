@@ -1,0 +1,116 @@
+{
+  "evidence": "PGV_LIVE",
+  "layout": "front",
+  "display_view": "front",
+  "frame_format": "1280x720 RGB565_LE packed, decoded using the existing PGV BGR565 conversion",
+  "model_paths": {
+    "yolo11n": "/home/cat/adas-edge-rect/rect_models/yolo11n_rk3566_int8_split_512x288.rknn",
+    "traffic_light_specialist": "/home/cat/adas-edge-rect/tl_check/tl_specialist_512x192_hybrid2.rknn"
+  },
+  "source_frames_loaded": 0,
+  "source_prepare_ms": 0.0,
+  "shared_frame_file_reads": 0,
+  "shared_frame_identity_mismatches": 0,
+  "input_requests_received": 0,
+  "input_request_fps": 0.0,
+  "source_ids_analyzed": 0,
+  "source_id_analysis_fps": 0.0,
+  "source_ids_replaced_before_analysis": 0,
+  "result_packets_sent": 0,
+  "dynamic_hmi_texture_updates": 100,
+  "inference_errors": 0,
+  "last_error": null,
+  "updates_per_second": {
+    "yolo11n_rknn": 0.0,
+    "traffic_light_specialist_rknn": 0.0,
+    "navigation_ocr": 0.0
+  },
+  "timings_ms": {
+    "main_rknn": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    },
+    "specialist_rknn": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    },
+    "navigation_ocr": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    },
+    "hazard_postprocess": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    },
+    "all_ai_work": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    }
+  },
+  "resources": {
+    "process_cpu_one_core_percent": 0.0,
+    "process_cpu_machine_percent": 0.0,
+    "inference_worker_cpu_one_core_percent": 0.0,
+    "online_cpus": 4,
+    "rss_end_mb": 69.8984375,
+    "rss_peak_mb": 84.625,
+    "board_telemetry": {
+      "devices": {
+        "npu": {
+          "load_percent": {
+            "samples": 200,
+            "p50_percent": 100.0,
+            "p95_percent": 100.0,
+            "mean_percent": 100.0
+          },
+          "frequency_mhz": {
+            "samples": 200,
+            "p50_mhz": 600.0,
+            "p95_mhz": 600.0,
+            "mean_mhz": 600.0
+          }
+        },
+        "gpu": {
+          "load_percent": {
+            "samples": 200,
+            "p50_percent": 0.0,
+            "p95_percent": 11.0,
+            "mean_percent": 1.765
+          },
+          "frequency_mhz": {
+            "samples": 200,
+            "p50_mhz": 200.0,
+            "p95_mhz": 200.0,
+            "mean_mhz": 209.0
+          }
+        }
+      },
+      "temperatures_c": {
+        "soc-thermal": {
+          "samples": 200,
+          "min_c": 25.555,
+          "max_c": 28.888,
+          "end_c": 27.777
+        },
+        "gpu-thermal": {
+          "samples": 200,
+          "min_c": 24.375,
+          "max_c": 26.111,
+          "end_c": 25.555
+        }
+      },
+      "sample_period_ms": 250
+    }
+  },
+  "display_note": "AI runs in a separate latest-only worker and never blocks EGL frame submission."
+}
