@@ -6,7 +6,9 @@ import argparse
 from dataclasses import replace
 import json
 import math
+import multiprocessing
 import os
+import queue
 from pathlib import Path
 import socket
 import struct
@@ -33,6 +35,8 @@ if str(ROOT) not in sys.path:
 from competition_ai.scenario import Lane
 from tools.competition_console.fpga_perception import TrafficCode, build_hud_perception
 from q2_navigation_reader import Q2NavigationReader
+from tools.competition_console.navigation_reader import NavigationObservation
+from tools.competition_console.navigation_reader import NavigationObservation
 from tools.competition_console.pipeline import FrontPipeline
 from tools.competition_console.rknn_detector import RknnConsoleDetector
 from tools.competition_console.latest_frame_slot import LatestFrameSlot
@@ -650,6 +654,43 @@ def _box_color(name):
     return 0.18, 0.92, 0.48
 
 
+def _navigation_ocr_process(request_queue, result_queue, ttl_ms):
+    """Isolated OCR worker: no Python GIL/CPU coupling with YOLO sidecar."""
+    try:
+        cpus = os.cpu_count() or 4
+        if cpus > 1:
+            os.sched_setaffinity(0, {cpus - 1})
+        os.nice(10)
+    except (AttributeError, OSError):
+        pass
+    reader = Q2NavigationReader(ttl_ms=ttl_ms)
+    try:
+        reader.warmup()
+    except BaseException as exc:
+        print(f"NAV_OCR_WARMUP_FAILED {type(exc).__name__}: {exc}", flush=True)
+    while True:
+        try:
+            item = request_queue.get(timeout=0.5)
+        except queue.Empty:
+            continue
+        if item is None:
+            break
+        image, frame_id, timestamp_ns = item
+        try:
+            observation = reader.update(image, frame_id, timestamp_ns)
+        except BaseException as exc:
+            print(f"NAV_OCR_FAILED {type(exc).__name__}: {exc}", flush=True)
+            continue
+        while True:
+            try:
+                result_queue.get_nowait()
+            except queue.Empty:
+                break
+        try:
+            result_queue.put_nowait(observation.to_dict())
+        except queue.Full:
+            pass
+
 class AiReplayBridge:
     def __init__(self, args):
         self.args = args
@@ -684,18 +725,27 @@ class AiReplayBridge:
             specialist_hz=args.specialist_hz, hazards=True,
         )
         self.navigation = None
+        self.nav_request = None
+        self.nav_result = None
+        self.nav_process = None
         if args.navigation_ocr:
-            self.navigation = Q2NavigationReader(ttl_ms=60000)
-            try:
-                # Loading ONNX Runtime on RK3566 takes several seconds. Do it
-                # before READY instead of stalling the first live AI request.
-                self.navigation.warmup()
-            except BaseException as exc:
-                print(f"NAV_OCR_WARMUP_FAILED {type(exc).__name__}: {exc}", flush=True)
+            self.navigation = Q2NavigationReader(ttl_ms=20000)
+            # OCR runs in a separate process. Do not load ONNX here: that would
+            # contend with RKNN and hold the Python GIL in the YOLO process.
+            self.nav_request = multiprocessing.get_context("spawn").Queue(maxsize=1)
+            self.nav_result = multiprocessing.get_context("spawn").Queue(maxsize=2)
+            self.nav_process = multiprocessing.get_context("spawn").Process(
+                target=_navigation_ocr_process,
+                args=(self.nav_request, self.nav_result, 20000),
+                name="q2-navigation-ocr",
+                daemon=True,
+            )
+            self.nav_process.start()
         self.navigation_last_update_ns = None
         self.navigation_timings = []
-        self.nav_worker_active = False
         self.latest_source_timestamp_ns = 0
+        self.last_nav_thumb = None
+        self.nav_ocr_skipped = 0
         self.latest = LatestFrameSlot()
         self.running = threading.Event()
         self.running.set()
@@ -849,26 +899,22 @@ class AiReplayBridge:
         self.last_dynamic_signature = signature
         self.dynamic_hmi_updates += 1
 
-    def _nav_ocr_worker(self, image, frame_id, timestamp_ns):
-        try:
-            result = self.navigation.update(image, frame_id, timestamp_ns)
-            # Q2 detection can take longer than the source frame lease. Stamp the
-            # completed observation with the newest frame time so the UI does not
-            # discard a result that has just arrived from the OCR worker.
-            if result.valid and self.latest_source_timestamp_ns:
-                result = replace(result, timestamp_ns=self.latest_source_timestamp_ns)
-                self.navigation._last = result
-            self.navigation_timings.append(float(result.inference_ms))
-            print(
-                f"NAV_OCR valid={int(result.valid)} reason={result.reason} "
-                f"distance={result.distance_m} road={result.road_name!r}",
-                flush=True,
-            )
-        except BaseException as exc:
-            print(f"NAV_OCR_FAILED {type(exc).__name__}: {exc}", flush=True)
-        finally:
-            self.nav_worker_active = False
-
+    def _poll_navigation_ocr(self):
+        if self.nav_result is None or self.navigation is None:
+            return
+        while True:
+            try:
+                payload = self.nav_result.get_nowait()
+            except queue.Empty:
+                break
+            try:
+                observation = NavigationObservation(**payload)
+            except (TypeError, ValueError):
+                continue
+            if observation.valid and self.latest_source_timestamp_ns:
+                observation = replace(observation, timestamp_ns=self.latest_source_timestamp_ns)
+            self.navigation._last = observation
+            self.navigation_timings.append(float(observation.inference_ms))
     def _analyze(self, frame_id, timestamp_ns, full_frame=None, input_fps=None,
                  submitted_fps=None, ai_fps=None):
         if full_frame is None:
@@ -881,18 +927,29 @@ class AiReplayBridge:
             navigation_image = full_frame
         self.latest_source_timestamp_ns = int(timestamp_ns)
         self.pipeline.advance(road, int(frame_id), int(timestamp_ns))
-        if (self.navigation is not None and not self.nav_worker_active and
+        self._poll_navigation_ocr()
+        if (self.navigation is not None and
                 (self.navigation_last_update_ns is None or
                  timestamp_ns - self.navigation_last_update_ns >= round(1e9 / self.args.ocr_hz))):
-            nav960 = cv2.resize(navigation_image, (960, 540), interpolation=cv2.INTER_LINEAR)
+            # Skip OCR when the navigation screen is visually unchanged and the
+            # last result is still fresh. This avoids burning CPU on a static map.
+            thumb = cv2.resize(cv2.cvtColor(navigation_image, cv2.COLOR_BGR2GRAY),
+                               (32, 18), interpolation=cv2.INTER_AREA)
+            current_nav = self.navigation.current(int(timestamp_ns))
+            changed = True
+            if self.last_nav_thumb is not None and current_nav.valid:
+                diff = np.abs(thumb.astype(np.int16) - self.last_nav_thumb.astype(np.int16)).mean()
+                changed = diff > 5.0
+            self.last_nav_thumb = thumb
             self.navigation_last_update_ns = int(timestamp_ns)
-            self.nav_worker_active = True
-            threading.Thread(
-                target=self._nav_ocr_worker,
-                args=(nav960, int(frame_id), int(timestamp_ns)),
-                name="q2-navigation-ocr",
-                daemon=True,
-            ).start()
+            if changed:
+                nav960 = cv2.resize(navigation_image, (960, 540), interpolation=cv2.INTER_LINEAR)
+                try:
+                    self.nav_request.put_nowait((nav960, int(frame_id), int(timestamp_ns)))
+                except queue.Full:
+                    self.nav_ocr_skipped += 1
+            else:
+                self.nav_ocr_skipped += 1
         lane = next(iter(Lane))
         snapshot = self.pipeline.snapshot(lane, int(timestamp_ns))
         nav = self.navigation.current(int(timestamp_ns)).to_dict() if self.navigation else {}
@@ -926,7 +983,7 @@ class AiReplayBridge:
             signal_age_ms=min(ages) if ages else None,
             main_age_ms=snapshot.main_age_ms,
             specialist_age_ms=snapshot.specialist_age_ms,
-            navigation_ttl_ms=60000,
+            navigation_ttl_ms=20000,
             input_fps=input_fps,
             submitted_fps=submitted_fps,
             ai_fps=ai_fps,
@@ -1023,6 +1080,16 @@ class AiReplayBridge:
         self.worker.join(timeout=10.0)
         self._publish_stopped_status()
         self.result_socket.close()
+        if self.nav_process is not None:
+            try:
+                self.nav_request.put_nowait(None)
+            except queue.Full:
+                pass
+            self.nav_process.join(timeout=2.0)
+            if self.nav_process.is_alive():
+                self.nav_process.terminate()
+                self.nav_process.join(timeout=1.0)
+            self.nav_process = None
         if self.timing_stream is not None:
             self.timing_stream.close()
             self.timing_stream = None
@@ -1172,8 +1239,12 @@ def parser():
     result.add_argument("--specialist-hz", type=float, default=3.0)
     result.add_argument("--ocr-hz", type=float, default=3.0)
     result.add_argument(
-        "--navigation-ocr", action="store_true",
-        help="enable the slow Q2 navigation-card OCR worker (off by default for FPS/latency)",
+        "--navigation-ocr", dest="navigation_ocr", action="store_true", default=True,
+        help="enable the low-priority Q2 navigation-card OCR worker (default: on)",
+    )
+    result.add_argument(
+        "--no-navigation-ocr", dest="navigation_ocr", action="store_false",
+        help="disable navigation OCR (performance isolation/debug)",
     )
     result.add_argument("--idle-timeout", type=float, default=2.0)
     result.add_argument("--summary", default="")

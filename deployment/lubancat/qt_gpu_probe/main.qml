@@ -28,7 +28,7 @@ Item {
     property var now: new Date()
     property bool hudTestOpen: false
     property bool autoHudSend: true
-    property bool trackingEnabled: true
+    property int trackingMode: 2  // 0=RAW, 1=FIX4, 2=TIME
     property int testTraffic: 1
     property int testLaneLeft: 0
     property int testLaneRight: 0
@@ -89,7 +89,7 @@ Item {
         else if (event.key === Qt.Key_2) { root.viewMode = 1; event.accepted = true }
         else if (event.key === Qt.Key_3) { root.viewMode = 2; event.accepted = true }
         else if (event.key === Qt.Key_T) { root.hudTestOpen = !root.hudTestOpen; event.accepted = true }
-        else if (event.key === Qt.Key_L) { root.trackingEnabled = !root.trackingEnabled; event.accepted = true }
+        else if (event.key === Qt.Key_L) { root.trackingMode = (root.trackingMode + 1) % 3; event.accepted = true }
         else if (event.key === Qt.Key_Escape) { root.hudTestOpen = false; event.accepted = true }
         else if (event.key === Qt.Key_Q) { Qt.quit() }
     }
@@ -216,8 +216,6 @@ Item {
     function navRoad() {
         if (navValid() && video.aiNavigationRoad) return video.aiNavigationRoad
         if (!video.aiOnline) return "AI 未连接"
-        if (video.sourceMode === "pgv-local" || video.sourceMode === "local-raw")
-            return "导航 OCR 未启用"
         return "等待 Q2 OCR"
     }
     function navMeta() {
@@ -226,8 +224,6 @@ Item {
                     + (navDirectionCode() === "none" ? "导航卡片" : navDirection())
         }
         if (!video.aiOnline) return "AI 未连接"
-        if (video.sourceMode === "pgv-local" || video.sourceMode === "local-raw")
-            return "本地回放 · OCR 已关闭（性能模式）"
         return "等待导航 OCR · Q" + (navQuadrant + 1)
     }
 
@@ -613,16 +609,32 @@ Item {
                     property var payload: modelData
                     property color tone: root.targetTone(payload.className)
                     property bool hot: index === 0
-                    property real predictFrames: root.trackingEnabled ? Math.min(
-                        video.maxTrackPredictionFrames, Math.max(0, Number(video.displayFrameId)
-                                        - Number(payload.frameId || video.displayFrameId))) : 0
-                    x: (payload.x + (payload.vx || 0) * predictFrames) / 1280 * video.width
-                    y: (payload.y + (payload.vy || 0) * predictFrames) / 720 * video.height + video.y
-                    width: Math.max(1, payload.width / 1280 * video.width)
-                    height: Math.max(1, payload.height / 720 * video.height)
+                    property real predictSeconds: {
+                        if (root.trackingMode === 0) return 0
+                        var maxSeconds = video.maxTrackPredictionMs / 1000
+                        if (root.trackingMode === 1) {
+                            var lagFrames = Math.max(0, Number(video.displayFrameId)
+                                                        - Number(payload.frameId || video.displayFrameId))
+                            return Math.min(maxSeconds, Math.min(4, lagFrames)
+                                                       / Math.max(1, video.sourceFps))
+                        }
+                        var displayNs = Number(video.displayTimestampNs)
+                        var detectNs = Number(payload.detectTimestampNs)
+                        if (displayNs > 0 && detectNs > 0)
+                            return Math.min(maxSeconds, Math.max(0, (displayNs - detectNs) / 1e9))
+                        var lag = Math.max(0, Number(video.displayFrameId)
+                                              - Number(payload.frameId || video.displayFrameId))
+                        return Math.min(maxSeconds, lag / Math.max(1, video.sourceFps))
+                    }
+                    property real predictedWidth: Math.max(1, payload.width + (payload.vw || 0) * predictSeconds)
+                    property real predictedHeight: Math.max(1, payload.height + (payload.vh || 0) * predictSeconds)
+                    x: (payload.x + (payload.vx || 0) * predictSeconds) / 1280 * video.width
+                    y: (payload.y + (payload.vy || 0) * predictSeconds) / 720 * video.height + video.y
+                    width: predictedWidth / 1280 * video.width
+                    height: predictedHeight / 720 * video.height
                     visible: width > 8 && height > 8
-                    opacity: (root.trackingEnabled && payload.predicted)
-                             ? Math.max(0.30, 0.56 - (payload.missed || 0) * 0.12) : 1.0
+                    opacity: payload.state === "predicted" ? 0.42
+                             : (payload.state === "tentative" ? 0.62 : 1.0)
                     z: hot ? 4 : 2
 
                     Rectangle {
@@ -660,9 +672,7 @@ Item {
                         Text {
                             id: labelText
                             x: 7; anchors.verticalCenter: parent.verticalCenter
-                            text: ((root.trackingEnabled && payload.predicted) ? "PRED " : "")
-                                  + "#" + (payload.trackId || 0) + " "
-                                  + root.compactName(payload.className) + "  "
+                            text: root.compactName(payload.className) + "  "
                                   + Math.round((payload.confidence || 0) * 100) + "%"
                             color: Qt.rgba(tone.r, tone.g, tone.b, 0.95)
                             font.family: root.num; font.pixelSize: 9; font.weight: Font.DemiBold
@@ -742,18 +752,20 @@ Item {
 
         Rectangle {
             x: parent.width - 202; y: 44; width: 84; height: 23; radius: 2
-            color: "#C0031118"; border.color: root.trackingEnabled ? "#3F7059" : "#5A4A2C"
+            color: "#C0031118"; border.color: root.trackingMode === 2 ? "#3F7059" : "#5A4A2C"
             border.width: 0.7
             Text {
                 anchors.centerIn: parent
-                text: root.trackingEnabled ? "TRACK ON" : "TRACK OFF"
-                color: root.trackingEnabled ? root.mint : root.amber
+                text: root.trackingMode === 2 ? "TRK TIME"
+                                       : (root.trackingMode === 1 ? "TRK FIX4" : "TRK RAW")
+                color: root.trackingMode === 2 ? root.mint
+                       : (root.trackingMode === 1 ? root.cyanHot : root.amber)
                 font.family: root.num; font.pixelSize: 6
             }
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.trackingEnabled = !root.trackingEnabled
+                onClicked: root.trackingMode = (root.trackingMode + 1) % 3
             }
         }
 

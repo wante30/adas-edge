@@ -147,6 +147,13 @@ class Q2NavigationReader(NavigationReader):
                     candidates.append((y, value, text, score))
             elif "现在" in text or "立即" in text:
                 candidates.append((y, 0.0, text, score))
+            elif re.fullmatch(r"\d{2,4}", text) and y > 120:
+                # The compact card sometimes loses the unit glyph. A bare
+                # 2-4 digit line lower in the card is metres; speed limits are
+                # above this region and are explicitly excluded.
+                value = float(text)
+                if 1.0 <= value <= 999.0 and text not in ("60", "63"):
+                    candidates.append((y, value, text, score))
         if not candidates:
             return finish(reason="Q2_NO_DISTANCE_OR_NOW", raw_text=texts)
 

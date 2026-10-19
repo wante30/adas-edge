@@ -804,10 +804,11 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
             QVariantList boxes;
             {
                 QMutexLocker locker(&ai_metrics_mutex_);
-                if (frameId < latest_ai_frame_id_.load()) {
+                if (frameId < latest_ai_frame_id_.load() || timestampNs <= 0) {
                     tracks_.clear();
                     next_track_id_ = 1;
                 }
+                const qint64 detectNs = static_cast<qint64>(timestampNs);
                 const auto iou = [](double ax, double ay, double aw, double ah,
                                     double bx, double by, double bw, double bh) {
                     const double ix = std::max(0.0, std::min(ax + aw, bx + bw) - std::max(ax, bx));
@@ -817,13 +818,30 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     return unionArea > 0.0 ? intersection / unionArea : 0.0;
                 };
 
-                // Predict all existing tracks to the incoming detection frame.
-                for (Track &track : tracks_) {
-                    const uint64_t dt = frameId > track.lastUpdateFrame
-                                            ? frameId - track.lastUpdateFrame : 0;
-                    track.x += track.vx * static_cast<double>(dt);
-                    track.y += track.vy * static_cast<double>(dt);
-                    track.lastUpdateFrame = frameId;
+                // Match against the track state at the *detection capture time*,
+                // not the state at the time the packet happened to arrive.
+                std::vector<std::array<double, 4>> predictedBoxes(tracks_.size());
+                for (size_t j = 0; j < tracks_.size(); ++j) {
+                    Track &track = tracks_[j];
+                    double baseX = track.x;
+                    double baseY = track.y;
+                    double baseW = track.width;
+                    double baseH = track.height;
+                    qint64 baseNs = track.lastUpdateNs;
+                    for (auto it = track.history.rbegin(); it != track.history.rend(); ++it) {
+                        if (it->ns <= detectNs) {
+                            baseX = it->x; baseY = it->y; baseW = it->width; baseH = it->height;
+                            baseNs = it->ns;
+                            break;
+                        }
+                    }
+                    const double dt = std::max<qint64>(0, detectNs - baseNs) / 1e9;
+                    const double limit = maxTrackPredictionMs() / 1000.0;
+                    const double horizon = std::min(dt, limit);
+                    predictedBoxes[j] = {baseX + track.vx * horizon,
+                                         baseY + track.vy * horizon,
+                                         std::max(3.0, baseW + track.vw * horizon),
+                                         std::max(3.0, baseH + track.vh * horizon)};
                 }
 
                 std::vector<bool> trackUsed(tracks_.size(), false);
@@ -836,14 +854,19 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     const double dw = detection.value(QStringLiteral("width")).toDouble();
                     const double dh = detection.value(QStringLiteral("height")).toDouble();
                     int best = -1;
-                    double bestIou = 0.08;
+                    double bestIou = 0.06;
                     for (int j = 0; j < static_cast<int>(tracks_.size()); ++j) {
                         if (trackUsed[static_cast<size_t>(j)]) continue;
                         Track &track = tracks_[static_cast<size_t>(j)];
                         if (track.className != className) continue;
-                        const double overlap = iou(dx, dy, dw, dh, track.x, track.y,
-                                                   track.width, track.height);
-                        if (overlap > bestIou) {
+                        const auto &box = predictedBoxes[static_cast<size_t>(j)];
+                        const double overlap = iou(dx, dy, dw, dh, box[0], box[1], box[2], box[3]);
+                        // Motion gate: a detection cannot jump more than a
+                        // generous fraction of the box size in one transition.
+                        const double gate = std::max(dw, dh) * 1.8;
+                        const double centerDx = (dx + dw * 0.5) - (box[0] + box[2] * 0.5);
+                        const double centerDy = (dy + dh * 0.5) - (box[1] + box[3] * 0.5);
+                        if (overlap > bestIou && std::hypot(centerDx, centerDy) <= gate) {
                             bestIou = overlap;
                             best = j;
                         }
@@ -861,17 +884,17 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     const double dy = detection.value(QStringLiteral("y")).toDouble();
                     const double dw = detection.value(QStringLiteral("width")).toDouble();
                     const double dh = detection.value(QStringLiteral("height")).toDouble();
-                    const uint64_t dt = std::max<uint64_t>(
-                        1, frameId > track.lastDetectFrame ? frameId - track.lastDetectFrame : 1);
-                    // Position/box always snaps to the fresh detection; only the
-                    // velocity is filtered. This prevents the tracker itself
-                    // from introducing a second positional lag.
-                    const double measuredVx = (dx - track.x) / static_cast<double>(dt);
-                    const double measuredVy = (dy - track.y) / static_cast<double>(dt);
-                    track.vx = 0.50 * track.vx + 0.50 * measuredVx;
-                    track.vy = 0.50 * track.vy + 0.50 * measuredVy;
-                    track.vx = std::clamp(track.vx, -30.0, 30.0);
-                    track.vy = std::clamp(track.vy, -30.0, 30.0);
+                    const auto &predicted = predictedBoxes[static_cast<size_t>(index)];
+                    const qint64 baseNs = track.history.empty() ? detectNs : track.history.back().ns;
+                    const double dt = std::max(0.03, (detectNs - baseNs) / 1e9);
+                    const double measuredVx = (dx - predicted[0]) / dt;
+                    const double measuredVy = (dy - predicted[1]) / dt;
+                    const double measuredVw = (dw - predicted[2]) / dt;
+                    const double measuredVh = (dh - predicted[3]) / dt;
+                    track.vx = std::clamp(0.55 * track.vx + 0.45 * measuredVx, -2000.0, 2000.0);
+                    track.vy = std::clamp(0.55 * track.vy + 0.45 * measuredVy, -2000.0, 2000.0);
+                    track.vw = std::clamp(0.65 * track.vw + 0.35 * measuredVw, -800.0, 800.0);
+                    track.vh = std::clamp(0.65 * track.vh + 0.35 * measuredVh, -800.0, 800.0);
                     track.x = dx;
                     track.y = dy;
                     track.width = dw;
@@ -880,12 +903,21 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     track.color = detection.value(QStringLiteral("color")).toString();
                     track.lastDetectFrame = frameId;
                     track.lastUpdateFrame = frameId;
+                    track.lastDetectNs = detectNs;
+                    track.lastUpdateNs = detectNs;
                     track.missed = 0;
                     track.hits += 1;
+                    track.state = track.hits >= 2 ? QStringLiteral("confirmed")
+                                                  : QStringLiteral("tentative");
+                    track.history.push_back({detectNs, dx, dy, dw, dh});
+                    while (track.history.size() > 8) track.history.pop_front();
                 }
 
                 for (size_t j = 0; j < tracks_.size(); ++j) {
-                    if (!trackUsed[j]) ++tracks_[j].missed;
+                    if (!trackUsed[j]) {
+                        ++tracks_[j].missed;
+                        tracks_[j].state = QStringLiteral("predicted");
+                    }
                 }
 
                 for (int i = 0; i < detectionMaps.size(); ++i) {
@@ -903,24 +935,31 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     track.confidence = detection.value(QStringLiteral("confidence")).toDouble();
                     track.lastDetectFrame = frameId;
                     track.lastUpdateFrame = frameId;
+                    track.lastDetectNs = detectNs;
+                    track.lastUpdateNs = detectNs;
                     track.hits = 1;
+                    track.state = QStringLiteral("tentative");
+                    track.history.push_back({detectNs, track.x, track.y, track.width, track.height});
                     tracks_.push_back(track);
                 }
 
                 constexpr int kMaxMissed = 2;
                 tracks_.erase(std::remove_if(tracks_.begin(), tracks_.end(),
                                              [&](const Track &track) {
-                                                 return track.missed > kMaxMissed ||
-                                                        frameId - track.lastDetectFrame > 35;
+                                                 const qint64 age = detectNs - track.lastDetectNs;
+                                                 return (track.hits < 2 && track.missed > 0) ||
+                                                        track.missed > kMaxMissed ||
+                                                        age > 900000000LL;
                                              }),
                               tracks_.end());
 
                 std::vector<QVariantMap> ordered;
                 ordered.reserve(tracks_.size());
                 for (const Track &track : tracks_) {
-                    // A track needs a second detection before it is shown:
-                    // never initialize the overlay with a single stale box.
-                    if (track.hits < 2) continue;
+                    // High-confidence first detections are shown immediately as
+                    // tentative; low-confidence first detections wait for a second
+                    // match. No target is created from prediction alone.
+                    if (track.hits < 2 && track.confidence < 0.45) continue;
                     if (track.width < 3.0 || track.height < 3.0) continue;
                     QVariantMap item;
                     item.insert(QStringLiteral("x"), track.x);
@@ -929,23 +968,21 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     item.insert(QStringLiteral("height"), track.height);
                     item.insert(QStringLiteral("vx"), track.vx);
                     item.insert(QStringLiteral("vy"), track.vy);
-                    item.insert(QStringLiteral("frameId"), static_cast<qulonglong>(frameId));
+                    item.insert(QStringLiteral("vw"), track.vw);
+                    item.insert(QStringLiteral("vh"), track.vh);
+                    item.insert(QStringLiteral("frameId"), static_cast<qulonglong>(track.lastDetectFrame));
+                    item.insert(QStringLiteral("detectTimestampNs"), static_cast<qulonglong>(track.lastDetectNs));
                     item.insert(QStringLiteral("trackId"), static_cast<qulonglong>(track.id));
                     item.insert(QStringLiteral("missed"), track.missed);
                     item.insert(QStringLiteral("predicted"), track.missed > 0);
-                    item.insert(QStringLiteral("state"),
-                                track.missed > 0 ? QStringLiteral("predicted")
-                                                 : QStringLiteral("detected"));
+                    item.insert(QStringLiteral("state"), track.state);
                     item.insert(QStringLiteral("classId"), track.classId);
                     item.insert(QStringLiteral("className"), track.className);
                     item.insert(QStringLiteral("color"), track.color);
                     item.insert(QStringLiteral("confidence"), track.confidence);
                     item.insert(QStringLiteral("label"),
-                                QStringLiteral("%1%2  #%3  %4%")
-                                    .arg(track.missed > 0 ? QStringLiteral("PRED ")
-                                                          : QStringLiteral(""))
+                                QStringLiteral("%1  %2%")
                                     .arg(track.className.toUpper())
-                                    .arg(track.id)
                                     .arg(qRound(track.confidence * 100.0)));
                     ordered.push_back(item);
                 }
@@ -957,7 +994,8 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     return aa > bb;
                 });
                 for (const QVariantMap &item : ordered) boxes.append(item);
-            }            const QByteArray statusData(reinterpret_cast<const char *>(packet.data() + headerBytes + count * boxBytes),
+            }
+            const QByteArray statusData(reinterpret_cast<const char *>(packet.data() + headerBytes + count * boxBytes),
                                         static_cast<int>(statusBytes));
             const QJsonObject status = QJsonDocument::fromJson(statusData).object();
             const QString traffic = status.value(QStringLiteral("traffic")).toString(QStringLiteral("UNKNOWN"));
