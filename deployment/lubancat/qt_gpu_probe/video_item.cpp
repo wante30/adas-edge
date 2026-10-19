@@ -20,6 +20,7 @@
 #include <chrono>
 #include <cstring>
 #include <fstream>
+#include <istream>
 #include <QFile>
 #include <QMetaObject>
 #include <QThread>
@@ -28,13 +29,63 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <cstdio>
+#include <ctime>
 #include <unistd.h>
+#include <zlib.h>
 
 namespace {
 constexpr int kSourceWidth = 1280;
 constexpr int kSourceHeight = 720;
 constexpr size_t kFrameBytes = static_cast<size_t>(kSourceWidth) * kSourceHeight * 2;
+constexpr size_t kPgvHeaderBytes = 40;
+constexpr size_t kPgvFileBytes = kPgvHeaderBytes + kFrameBytes;
+
+static qint64 steadyNs() {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+               std::chrono::steady_clock::now().time_since_epoch())
+        .count();
+}
+
+static uint32_t crc32Bytes(const unsigned char *bytes, size_t length) {
+    // zlib's slice-by-8 CRC is materially cheaper than a byte-at-a-time table
+    // on the RK3566 when validating 1.84 MB per frame at 60 Hz.
+    uLong crc = ::crc32(0L, Z_NULL, 0);
+    return static_cast<uint32_t>(::crc32(crc, bytes, static_cast<uInt>(length)));
+}
+
+static uint32_t readLe32(const unsigned char *bytes) {
+    return static_cast<uint32_t>(bytes[0]) | (static_cast<uint32_t>(bytes[1]) << 8U) |
+           (static_cast<uint32_t>(bytes[2]) << 16U) | (static_cast<uint32_t>(bytes[3]) << 24U);
+}
+
+static uint64_t readLe64(const unsigned char *bytes) {
+    uint64_t value = 0;
+    for (int i = 0; i < 8; ++i) value |= static_cast<uint64_t>(bytes[i]) << (8U * i);
+    return value;
+}
+
+static QString classNameForId(uint32_t id) {
+    switch (id) {
+        case 0: return QStringLiteral("person");
+        case 1: return QStringLiteral("bicycle");
+        case 2: return QStringLiteral("car");
+        case 3: return QStringLiteral("motorcycle");
+        case 5: return QStringLiteral("bus");
+        case 7: return QStringLiteral("truck");
+        case 9: return QStringLiteral("traffic light");
+        default: return QStringLiteral("object");
+    }
+}
+
+static void readNpuCounter(double *load) {
+    QFile file(QStringLiteral("/sys/class/devfreq/fde40000.npu/load"));
+    if (!file.open(QIODevice::ReadOnly)) return;
+    const QByteArray value = file.readAll().trimmed();
+    const int at = value.indexOf('@');
+    if (at > 0) *load = value.left(at).toDouble();
+}
 
 static uint64_t processCpuTicks() {
     QFile file(QStringLiteral("/proc/self/stat"));
@@ -123,8 +174,9 @@ static void fillRoadFrame(std::vector<unsigned char> &bytes, uint64_t id) {
 
 class VideoItem::Renderer final : public QQuickFramebufferObject::Renderer {
 public:
-    explicit Renderer(std::shared_ptr<VideoItem::RenderMetrics> metrics)
-        : metrics_(std::move(metrics)) {}
+    Renderer(std::shared_ptr<VideoItem::DisplayQueue> display,
+             std::shared_ptr<VideoItem::RenderMetrics> metrics)
+        : display_(std::move(display)), metrics_(std::move(metrics)) {}
 
     ~Renderer() override {
         // Scene-graph renderers are destroyed on the render thread. Release the
@@ -146,7 +198,13 @@ public:
 
     void synchronize(QQuickFramebufferObject *item) override {
         auto *video = static_cast<VideoItem *>(item);
-        if (!pending_) pending_ = video->takeLatest();
+        viewport_ = video->sourceViewport();
+        pgv_flip_ = video->pgvSource();
+        // The producer marks the item dirty for every accepted frame. Taking
+        // the newest frame during synchronize() is what makes Qt re-upload and
+        // re-composite the FBO; pulling only in render() leaves a stale frame
+        // on this xcb/EGL path even though QML animations continue.
+        if (!pending_) pending_ = display_->take();
     }
 
     void render() override {
@@ -217,9 +275,19 @@ public:
         f->glActiveTexture(GL_TEXTURE0);
         f->glBindTexture(GL_TEXTURE_2D, texture_);
         program_->setUniformValue("source", 0);
+        const float u0 = static_cast<float>(viewport_.left());
+        const float u1 = static_cast<float>(viewport_.right());
+        // The QQuickFramebufferObject path composites a vertically mirrored
+        // FBO on this X11/EGL board. Live PGVF rows need the normal top->bottom
+        // V order; the older replay/manifest frames were captured with the
+        // opposite orientation and retain the historical 1->0 mapping.
+        const float vTop = pgv_flip_ ? static_cast<float>(viewport_.top())
+                                     : static_cast<float>(1.0 - viewport_.top());
+        const float vBottom = pgv_flip_ ? static_cast<float>(viewport_.bottom())
+                                        : static_cast<float>(1.0 - viewport_.bottom());
         const GLfloat vertices[] = {
-            -1.f, -1.f, 0.f, 1.f,  1.f, -1.f, 1.f, 1.f,
-            -1.f,  1.f, 0.f, 0.f,  1.f,  1.f, 1.f, 0.f,
+            -1.f, -1.f, u0, vBottom,  1.f, -1.f, u1, vBottom,
+            -1.f,  1.f, u0, vTop,     1.f,  1.f, u1, vTop,
         };
         program_->enableAttributeArray(0);
         program_->setAttributeArray(0, GL_FLOAT, vertices, 2, 4 * sizeof(GLfloat));
@@ -233,6 +301,8 @@ public:
     }
 
 private:
+    std::shared_ptr<VideoItem::DisplayQueue> display_;
+
     void initGL() {
         auto *context = QOpenGLContext::currentContext();
         if (!context) return;
@@ -271,28 +341,63 @@ private:
 
     std::shared_ptr<VideoItem::RenderMetrics> metrics_;
     std::shared_ptr<Frame> pending_;
+    QRectF viewport_{0.0, 0.0, 1.0, 1.0};
+    bool pgv_flip_ = false;
     uint64_t uploaded_id_ = UINT64_MAX;
     GLuint texture_ = 0;
     std::unique_ptr<QOpenGLShaderProgram> program_;
 };
 
 VideoItem::VideoItem(QQuickItem *parent) : QQuickFramebufferObject(parent) {
-    setMirrorVertically(false);
+    display_queue_ = std::make_shared<DisplayQueue>();
+    const QByteArray timingPath = qgetenv("QT_AI_TIMING_LOG");
+    if (!timingPath.isEmpty()) {
+        ai_timing_stream_.open(timingPath.constData(), std::ios::app);
+    }
+    // QQuickFramebufferObject composites its FBO with a vertically flipped
+    // texture on the board's xcb/EGL path. Keep the source RGB565 rows
+    // top-to-bottom and mirror the FBO once so road video is upright.
+    setMirrorVertically(true);
     stats_clock_.start();
     connect(&metrics_timer_, &QTimer::timeout, this, &VideoItem::updateMetrics);
-    metrics_timer_.start(500);
+    metrics_timer_.start(200);
 }
 
 VideoItem::~VideoItem() { stopProducer(); }
 
 QQuickFramebufferObject::Renderer *VideoItem::createRenderer() const {
-    return new Renderer(render_metrics_);
+    return new Renderer(display_queue_, render_metrics_);
+}
+
+void VideoItem::DisplayQueue::push(const std::shared_ptr<Frame> &frame) {
+    QMutexLocker locker(&mutex_);
+    if (frames_.size() >= 4) frames_.pop_front();
+    frames_.push_back(frame);
+}
+
+std::shared_ptr<VideoItem::Frame> VideoItem::DisplayQueue::take() {
+    QMutexLocker locker(&mutex_);
+    if (frames_.empty()) return {};
+    auto frame = frames_.front();
+    frames_.pop_front();
+    return frame;
+}
+
+void VideoItem::DisplayQueue::clear() {
+    QMutexLocker locker(&mutex_);
+    frames_.clear();
 }
 
 void VideoItem::startProducer(double fps, const QStringList &replayFrames,
                               const QString &aiFrameFile, double aiHz) {
     stopProducer();
+    display_queue_->clear();
     replay_frames_ = replayFrames;
+    pgv_source_ = false;
+    source_mode_ = replayFrames.isEmpty() ? QStringLiteral("generated")
+                                          : QStringLiteral("replay");
+    source_online_.store(true);
+    last_source_ns_.store(steadyNs());
     const auto period = std::chrono::nanoseconds(
         static_cast<int64_t>(std::llround(1.0e9 / std::max(1.0, fps))));
     producer_running_.store(true);
@@ -309,6 +414,97 @@ void VideoItem::startProducer(double fps, const QStringList &replayFrames,
             if (next <= after) next = after + period;
         }
     });
+    if (!aiFrameFile.isEmpty()) {
+        ai_running_.store(true);
+        ai_thread_ = std::thread(&VideoItem::runAiBridge, this, fps, aiHz, aiFrameFile);
+    }
+}
+
+void VideoItem::startRawReplay(double fps, const QString &rawFile,
+                               const QString &aiFrameFile, double aiHz) {
+    stopProducer();
+    display_queue_->clear();
+    replay_frames_.clear();
+    pgv_source_ = false;
+    source_mode_ = QStringLiteral("local-raw");
+    source_online_.store(true);
+    last_source_ns_.store(steadyNs());
+    const auto period = std::chrono::nanoseconds(
+        static_cast<int64_t>(std::llround(1.0e9 / std::max(1.0, fps))));
+    producer_running_.store(true);
+    producer_thread_ = std::thread([this, period, path = rawFile.toStdString()]() {
+        std::ifstream raw(path, std::ios::binary);
+        if (!raw) {
+            qWarning().noquote() << "Cannot open raw replay" << QString::fromStdString(path);
+            producer_running_.store(false);
+            return;
+        }
+        raw.seekg(0, std::ios::end);
+        const auto size = static_cast<uint64_t>(raw.tellg());
+        const uint64_t count = size / kFrameBytes;
+        if (!count) {
+            qWarning() << "Raw replay has no full 1280x720 RGB565 frames";
+            producer_running_.store(false);
+            return;
+        }
+        auto next = std::chrono::steady_clock::now();
+        while (producer_running_.load()) {
+            const auto now = std::chrono::steady_clock::now();
+            if (now < next) std::this_thread::sleep_until(next);
+            if (!producer_running_.load()) break;
+            const uint64_t id = produced_frames_.fetch_add(1) + 1;
+            auto frame = std::make_shared<Frame>();
+            frame->pixels.resize(kFrameBytes);
+            raw.seekg(static_cast<std::streamoff>(((id - 1) % count) * kFrameBytes));
+            raw.read(reinterpret_cast<char *>(frame->pixels.data()),
+                     static_cast<std::streamsize>(kFrameBytes));
+            if (raw.gcount() != static_cast<std::streamsize>(kFrameBytes)) break;
+            frame->id = id;
+            frame->sourceIndex = (id - 1) % count;
+            frame->producedNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                std::chrono::steady_clock::now().time_since_epoch()).count();
+            source_frame_id_.store(frame->id);
+            last_source_ns_.store(steadyNs());
+            source_online_.store(true);
+            display_queue_->push(frame);
+            if (ai_running_.load()) {
+                std::lock_guard<std::mutex> locker(ai_frame_mutex_);
+                latest_ai_frame_ = std::move(frame);
+            }
+            if (!update_queued_.exchange(true) &&
+                !QMetaObject::invokeMethod(this, "requestFrameUpdate", Qt::QueuedConnection)) {
+                update_queued_.store(false);
+            }
+            const auto after = std::chrono::steady_clock::now();
+            next += period;
+            if (next <= after) next = after + period;
+        }
+    });
+    if (!aiFrameFile.isEmpty()) {
+        ai_running_.store(true);
+        ai_thread_ = std::thread(&VideoItem::runAiBridge, this, fps, aiHz, aiFrameFile);
+    }
+}
+
+void VideoItem::startPgvProducer(double fps, const QString &pgvFile,
+                                 const QString &aiFrameFile, double aiHz,
+                                 const QString &sourceLabel) {
+    stopProducer();
+    display_queue_->clear();
+    replay_frames_.clear();
+    pgv_source_ = true;
+    source_mode_ = sourceLabel.isEmpty() ? QStringLiteral("pgv-live") : sourceLabel;
+    source_online_.store(false);
+    last_source_ns_.store(steadyNs());
+    update();
+    pgv_pool_.clear();
+    for (int i = 0; i < 4; ++i) {
+        auto frame = std::make_shared<Frame>();
+        frame->pixels.resize(kFrameBytes);
+        pgv_pool_.push_back(std::move(frame));
+    }
+    producer_running_.store(true);
+    producer_thread_ = std::thread(&VideoItem::runPgvProducer, this, fps, pgvFile, aiHz, aiFrameFile);
     if (!aiFrameFile.isEmpty()) {
         ai_running_.store(true);
         ai_thread_ = std::thread(&VideoItem::runAiBridge, this, fps, aiHz, aiFrameFile);
@@ -353,10 +549,10 @@ void VideoItem::produceFrame(uint64_t id) {
             return;
         }
     }
-    {
-        QMutexLocker locker(&frame_mutex_);
-        latest_frame_ = frame;
-    }
+    source_frame_id_.store(frame->id);
+    last_source_ns_.store(steadyNs());
+    source_online_.store(true);
+    display_queue_->push(frame);
     if (ai_running_.load()) {
         std::lock_guard<std::mutex> locker(ai_frame_mutex_);
         latest_ai_frame_ = std::move(frame);
@@ -364,6 +560,114 @@ void VideoItem::produceFrame(uint64_t id) {
     if (!update_queued_.exchange(true) &&
         !QMetaObject::invokeMethod(this, "requestFrameUpdate", Qt::QueuedConnection)) {
         update_queued_.store(false);
+    }
+}
+
+void VideoItem::runPgvProducer(double fps, QString pgvFile, double aiHz, QString aiFrameFile) {
+    (void)fps;
+    (void)aiHz;
+    (void)aiFrameFile;
+    const std::string path = pgvFile.toStdString();
+    std::array<unsigned char, kPgvHeaderBytes> header{};
+    struct stat previous {};
+    bool havePrevious = false;
+    bool haveFrame = false;
+    uint32_t lastGeneration = 0;
+    uint64_t lastSourceFrame = 0;
+
+    while (producer_running_.load()) {
+        struct stat info {};
+        if (::stat(path.c_str(), &info) != 0 || info.st_size != static_cast<off_t>(kPgvFileBytes)) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(3));
+            continue;
+        }
+        if (havePrevious && info.st_dev == previous.st_dev && info.st_ino == previous.st_ino &&
+            info.st_mtim.tv_sec == previous.st_mtim.tv_sec &&
+            info.st_mtim.tv_nsec == previous.st_mtim.tv_nsec && info.st_size == previous.st_size) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            continue;
+        }
+        std::shared_ptr<Frame> slot;
+        for (const auto &candidate : pgv_pool_) {
+            if (candidate.use_count() == 1) {
+                slot = candidate;
+                break;
+            }
+        }
+        if (!slot) {
+            previous = info;
+            havePrevious = true;
+            source_dropped_frames_.fetch_add(1);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            continue;
+        }
+        std::ifstream input(path, std::ios::binary);
+        if (!input) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(3));
+            continue;
+        }
+        input.read(reinterpret_cast<char *>(header.data()), static_cast<std::streamsize>(header.size()));
+        if (input.gcount() != static_cast<std::streamsize>(header.size())) {
+            source_crc_errors_.fetch_add(1);
+            previous = info;
+            havePrevious = true;
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            continue;
+        }
+        const uint32_t version = readLe32(header.data() + 4);
+        const uint32_t width = readLe32(header.data() + 8);
+        const uint32_t height = readLe32(header.data() + 12);
+        const uint32_t sourceFrame = readLe32(header.data() + 16);
+        const uint32_t generation = readLe32(header.data() + 20);
+        const uint32_t expectedCrc = readLe32(header.data() + 24);
+        const uint32_t payloadBytes = readLe32(header.data() + 28);
+        const uint64_t timestampNs = readLe64(header.data() + 32);
+        if (std::memcmp(header.data(), "PGVF", 4) != 0 || version != 1 ||
+            width != kSourceWidth || height != kSourceHeight ||
+            payloadBytes != kFrameBytes || timestampNs == 0) {
+            source_crc_errors_.fetch_add(1);
+            previous = info;
+            havePrevious = true;
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            continue;
+        }
+        input.read(reinterpret_cast<char *>(slot->pixels.data()), static_cast<std::streamsize>(kFrameBytes));
+        previous = info;
+        havePrevious = true;
+        if (input.gcount() != static_cast<std::streamsize>(kFrameBytes) ||
+            crc32Bytes(slot->pixels.data(), kFrameBytes) != expectedCrc) {
+            source_crc_errors_.fetch_add(1);
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            continue;
+        }
+        if (haveFrame && generation == lastGeneration) {
+            const uint32_t delta = sourceFrame - static_cast<uint32_t>(lastSourceFrame);
+            if (delta == 0 || delta >= 0x80000000U) continue;
+            source_dropped_frames_.fetch_add(delta - 1);
+        }
+        slot->id = sourceFrame;
+        slot->sourceIndex = sourceFrame;
+        slot->producedNs = steadyNs();
+        source_frame_id_.store(sourceFrame);
+        last_source_ns_.store(slot->producedNs);
+        source_online_.store(true);
+        lastGeneration = generation;
+        lastSourceFrame = sourceFrame;
+        haveFrame = true;
+        produced_frames_.fetch_add(1);
+        display_queue_->push(slot);
+        if (ai_running_.load()) {
+            std::lock_guard<std::mutex> locker(ai_frame_mutex_);
+            latest_ai_frame_ = slot;
+        }
+        // Mark the QQuickFramebufferObject dirty once per accepted frame. The
+        // renderer takes the newest queued frame in synchronize() and uploads
+        // it; without this event the compositor keeps reusing the old texture.
+        if (!update_queued_.exchange(true) &&
+            !QMetaObject::invokeMethod(this, "requestFrameUpdate", Qt::QueuedConnection)) {
+            update_queued_.store(false);
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }
 
@@ -431,6 +735,14 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     std::memcpy(&submittedRateBits, &submittedRate, sizeof(submittedRateBits));
                     qToLittleEndian<quint32>(inputRateBits, reinterpret_cast<uchar *>(request.data() + 20));
                     qToLittleEndian<quint32>(submittedRateBits, reinterpret_cast<uchar *>(request.data() + 24));
+                    const unsigned char selection[6] = {
+                        'M', 'V', 'S', '1',
+                        static_cast<unsigned char>(ai_road_quadrant_.load()),
+                        static_cast<unsigned char>(ai_navigation_quadrant_.load()),
+                    };
+                    (void)::sendto(socketFd, selection, sizeof(selection), 0,
+                                   reinterpret_cast<const sockaddr *>(&requestAddress),
+                                   sizeof(requestAddress));
                     if (sendto(socketFd, request.constData(), request.size(), 0,
                                reinterpret_cast<const sockaddr *>(&requestAddress), sizeof(requestAddress)) == request.size()) {
                         ai_requests_sent_.fetch_add(1);
@@ -456,12 +768,13 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
             constexpr size_t boxBytes = 36;
             if (count > 32 || statusBytes > 4096 ||
                 static_cast<size_t>(received) != headerBytes + count * boxBytes + statusBytes ||
-                frameId <= latestResultId || frameId > produced_frames_.load()) continue;
+                frameId <= latestResultId || frameId > source_frame_id_.load()) continue;
             const qint64 nowNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
                 std::chrono::steady_clock::now().time_since_epoch()).count();
+
             if (nowNs < static_cast<qint64>(timestampNs) || nowNs - static_cast<qint64>(timestampNs) > 250000000) continue;
 
-            QVariantList boxes;
+            QVariantList detectionMaps;
             for (uint32_t index = 0; index < count; ++index) {
                 const unsigned char *box = packet.data() + headerBytes + index * boxBytes;
                 float values[7]{};
@@ -481,16 +794,182 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                 item.insert(QStringLiteral("color"), QColor::fromRgbF(
                     std::clamp(values[4], 0.0f, 1.0f), std::clamp(values[5], 0.0f, 1.0f),
                     std::clamp(values[6], 0.0f, 1.0f)).name());
-                item.insert(QStringLiteral("label"), QStringLiteral("ID %1  %2%").arg(classId).arg(qRound(confidence * 100.0f)));
-                boxes.append(item);
+                const QString className = classNameForId(classId);
+                item.insert(QStringLiteral("className"), className);
+                item.insert(QStringLiteral("classId"), static_cast<int>(classId));
+                item.insert(QStringLiteral("confidence"), static_cast<double>(confidence));
+                detectionMaps.append(item);
             }
-            const QByteArray statusData(reinterpret_cast<const char *>(packet.data() + headerBytes + count * boxBytes),
+
+            QVariantList boxes;
+            {
+                QMutexLocker locker(&ai_metrics_mutex_);
+                if (frameId < latest_ai_frame_id_.load()) {
+                    tracks_.clear();
+                    next_track_id_ = 1;
+                }
+                const auto iou = [](double ax, double ay, double aw, double ah,
+                                    double bx, double by, double bw, double bh) {
+                    const double ix = std::max(0.0, std::min(ax + aw, bx + bw) - std::max(ax, bx));
+                    const double iy = std::max(0.0, std::min(ay + ah, by + bh) - std::max(ay, by));
+                    const double intersection = ix * iy;
+                    const double unionArea = aw * ah + bw * bh - intersection;
+                    return unionArea > 0.0 ? intersection / unionArea : 0.0;
+                };
+
+                // Predict all existing tracks to the incoming detection frame.
+                for (Track &track : tracks_) {
+                    const uint64_t dt = frameId > track.lastUpdateFrame
+                                            ? frameId - track.lastUpdateFrame : 0;
+                    track.x += track.vx * static_cast<double>(dt);
+                    track.y += track.vy * static_cast<double>(dt);
+                    track.lastUpdateFrame = frameId;
+                }
+
+                std::vector<bool> trackUsed(tracks_.size(), false);
+                std::vector<int> detectionTrack(detectionMaps.size(), -1);
+                for (int i = 0; i < detectionMaps.size(); ++i) {
+                    const QVariantMap detection = detectionMaps.at(i).toMap();
+                    const QString className = detection.value(QStringLiteral("className")).toString();
+                    const double dx = detection.value(QStringLiteral("x")).toDouble();
+                    const double dy = detection.value(QStringLiteral("y")).toDouble();
+                    const double dw = detection.value(QStringLiteral("width")).toDouble();
+                    const double dh = detection.value(QStringLiteral("height")).toDouble();
+                    int best = -1;
+                    double bestIou = 0.08;
+                    for (int j = 0; j < static_cast<int>(tracks_.size()); ++j) {
+                        if (trackUsed[static_cast<size_t>(j)]) continue;
+                        Track &track = tracks_[static_cast<size_t>(j)];
+                        if (track.className != className) continue;
+                        const double overlap = iou(dx, dy, dw, dh, track.x, track.y,
+                                                   track.width, track.height);
+                        if (overlap > bestIou) {
+                            bestIou = overlap;
+                            best = j;
+                        }
+                    }
+                    detectionTrack[static_cast<size_t>(i)] = best;
+                    if (best >= 0) trackUsed[static_cast<size_t>(best)] = true;
+                }
+
+                for (int i = 0; i < detectionMaps.size(); ++i) {
+                    const int index = detectionTrack[static_cast<size_t>(i)];
+                    if (index < 0) continue;
+                    const QVariantMap detection = detectionMaps.at(i).toMap();
+                    Track &track = tracks_[static_cast<size_t>(index)];
+                    const double dx = detection.value(QStringLiteral("x")).toDouble();
+                    const double dy = detection.value(QStringLiteral("y")).toDouble();
+                    const double dw = detection.value(QStringLiteral("width")).toDouble();
+                    const double dh = detection.value(QStringLiteral("height")).toDouble();
+                    const uint64_t dt = std::max<uint64_t>(
+                        1, frameId > track.lastDetectFrame ? frameId - track.lastDetectFrame : 1);
+                    // Position/box always snaps to the fresh detection; only the
+                    // velocity is filtered. This prevents the tracker itself
+                    // from introducing a second positional lag.
+                    const double measuredVx = (dx - track.x) / static_cast<double>(dt);
+                    const double measuredVy = (dy - track.y) / static_cast<double>(dt);
+                    track.vx = 0.50 * track.vx + 0.50 * measuredVx;
+                    track.vy = 0.50 * track.vy + 0.50 * measuredVy;
+                    track.vx = std::clamp(track.vx, -30.0, 30.0);
+                    track.vy = std::clamp(track.vy, -30.0, 30.0);
+                    track.x = dx;
+                    track.y = dy;
+                    track.width = dw;
+                    track.height = dh;
+                    track.confidence = detection.value(QStringLiteral("confidence")).toDouble();
+                    track.color = detection.value(QStringLiteral("color")).toString();
+                    track.lastDetectFrame = frameId;
+                    track.lastUpdateFrame = frameId;
+                    track.missed = 0;
+                    track.hits += 1;
+                }
+
+                for (size_t j = 0; j < tracks_.size(); ++j) {
+                    if (!trackUsed[j]) ++tracks_[j].missed;
+                }
+
+                for (int i = 0; i < detectionMaps.size(); ++i) {
+                    if (detectionTrack[static_cast<size_t>(i)] >= 0) continue;
+                    const QVariantMap detection = detectionMaps.at(i).toMap();
+                    Track track;
+                    track.id = next_track_id_++;
+                    track.classId = detection.value(QStringLiteral("classId")).toInt();
+                    track.className = detection.value(QStringLiteral("className")).toString();
+                    track.color = detection.value(QStringLiteral("color")).toString();
+                    track.x = detection.value(QStringLiteral("x")).toDouble();
+                    track.y = detection.value(QStringLiteral("y")).toDouble();
+                    track.width = detection.value(QStringLiteral("width")).toDouble();
+                    track.height = detection.value(QStringLiteral("height")).toDouble();
+                    track.confidence = detection.value(QStringLiteral("confidence")).toDouble();
+                    track.lastDetectFrame = frameId;
+                    track.lastUpdateFrame = frameId;
+                    track.hits = 1;
+                    tracks_.push_back(track);
+                }
+
+                constexpr int kMaxMissed = 2;
+                tracks_.erase(std::remove_if(tracks_.begin(), tracks_.end(),
+                                             [&](const Track &track) {
+                                                 return track.missed > kMaxMissed ||
+                                                        frameId - track.lastDetectFrame > 35;
+                                             }),
+                              tracks_.end());
+
+                std::vector<QVariantMap> ordered;
+                ordered.reserve(tracks_.size());
+                for (const Track &track : tracks_) {
+                    // A track needs a second detection before it is shown:
+                    // never initialize the overlay with a single stale box.
+                    if (track.hits < 2) continue;
+                    if (track.width < 3.0 || track.height < 3.0) continue;
+                    QVariantMap item;
+                    item.insert(QStringLiteral("x"), track.x);
+                    item.insert(QStringLiteral("y"), track.y);
+                    item.insert(QStringLiteral("width"), track.width);
+                    item.insert(QStringLiteral("height"), track.height);
+                    item.insert(QStringLiteral("vx"), track.vx);
+                    item.insert(QStringLiteral("vy"), track.vy);
+                    item.insert(QStringLiteral("frameId"), static_cast<qulonglong>(frameId));
+                    item.insert(QStringLiteral("trackId"), static_cast<qulonglong>(track.id));
+                    item.insert(QStringLiteral("missed"), track.missed);
+                    item.insert(QStringLiteral("predicted"), track.missed > 0);
+                    item.insert(QStringLiteral("state"),
+                                track.missed > 0 ? QStringLiteral("predicted")
+                                                 : QStringLiteral("detected"));
+                    item.insert(QStringLiteral("classId"), track.classId);
+                    item.insert(QStringLiteral("className"), track.className);
+                    item.insert(QStringLiteral("color"), track.color);
+                    item.insert(QStringLiteral("confidence"), track.confidence);
+                    item.insert(QStringLiteral("label"),
+                                QStringLiteral("%1%2  #%3  %4%")
+                                    .arg(track.missed > 0 ? QStringLiteral("PRED ")
+                                                          : QStringLiteral(""))
+                                    .arg(track.className.toUpper())
+                                    .arg(track.id)
+                                    .arg(qRound(track.confidence * 100.0)));
+                    ordered.push_back(item);
+                }
+                std::sort(ordered.begin(), ordered.end(), [](const QVariantMap &a, const QVariantMap &b) {
+                    const double aa = a.value(QStringLiteral("width")).toDouble() *
+                                      a.value(QStringLiteral("height")).toDouble();
+                    const double bb = b.value(QStringLiteral("width")).toDouble() *
+                                      b.value(QStringLiteral("height")).toDouble();
+                    return aa > bb;
+                });
+                for (const QVariantMap &item : ordered) boxes.append(item);
+            }            const QByteArray statusData(reinterpret_cast<const char *>(packet.data() + headerBytes + count * boxBytes),
                                         static_cast<int>(statusBytes));
             const QJsonObject status = QJsonDocument::fromJson(statusData).object();
             const QString traffic = status.value(QStringLiteral("traffic")).toString(QStringLiteral("UNKNOWN"));
             const QJsonArray hazards = status.value(QStringLiteral("hazards")).toArray();
             const QJsonObject navigation = status.value(QStringLiteral("navigation")).toObject();
             const QString direction = navigation.value(QStringLiteral("direction")).toString(QStringLiteral("等待识别"));
+            const QString navigationRoad = navigation.value(QStringLiteral("road_name")).toString();
+            const QString navigationState = navigation.value(QStringLiteral("state")).toString(QStringLiteral("UNKNOWN"));
+            const QString navigationDirection = navigation.value(QStringLiteral("direction")).toString(QStringLiteral("none"));
+            const double navigationDistance =
+                navigation.value(QStringLiteral("distance_m")).isDouble()
+                    ? navigation.value(QStringLiteral("distance_m")).toDouble() : -1.0;
             QString navigationText = direction;
             if (navigation.value(QStringLiteral("distance_m")).isDouble()) {
                 navigationText += QStringLiteral(" · %1 m").arg(navigation.value(QStringLiteral("distance_m")).toDouble(), 0, 'f', 0);
@@ -498,6 +977,11 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
             QVariantList hazardItems;
             for (const QJsonValue &hazard : hazards) {
                 if (hazard.isString()) hazardItems.append(hazard.toString());
+            }
+            QVariantMap counts;
+            const QJsonObject detections = status.value(QStringLiteral("detections")).toObject();
+            for (auto it = detections.begin(); it != detections.end(); ++it) {
+                counts.insert(it.key(), it.value().toInt());
             }
             const QString summary = QStringLiteral("AI 帧 %1 · %2 · %3 框 · %4 危险")
                                         .arg(frameId).arg(traffic).arg(boxes.size()).arg(hazards.size());
@@ -508,9 +992,34 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                 ai_status_ = summary;
                 ai_traffic_ = traffic;
                 ai_navigation_ = navigationText;
+                ai_navigation_road_ = navigationRoad;
+                ai_navigation_state_ = navigationState;
+                ai_navigation_direction_ = navigationDirection;
+                ai_navigation_distance_m_ = navigationDistance;
+                ai_detection_counts_ = counts;
+                ai_fps_.store(status.value(QStringLiteral("ai_fps")).toDouble());
+                const QJsonValue hazardAge = status.value(QStringLiteral("hazard_age_ms"));
+                if (hazardAge.isDouble()) ai_hazard_age_ms_.store(qRound(hazardAge.toDouble()));
+                else ai_hazard_age_ms_.store(0);
                 latest_ai_frame_id_.store(frameId);
+                const uint64_t displayId = source_frame_id_.load();
+                ai_frame_lag_.store(displayId > frameId
+                                        ? static_cast<int>(std::min<uint64_t>(displayId - frameId, 99))
+                                        : 0);
             }
+            last_ai_result_ns_.store(nowNs);
+            ai_online_.store(true);
+            ai_dirty_.store(true);
             ai_results_received_.fetch_add(1);
+            if (ai_timing_stream_.is_open()) {
+                const qint64 applyNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                    std::chrono::steady_clock::now().time_since_epoch()).count();
+                ai_timing_stream_ << "{\"frame_id\":" << frameId
+                                  << ",\"qt_receive_ns\":" << nowNs
+                                  << ",\"qt_apply_ns\":" << applyNs
+                                  << ",\"display_frame_id\":" << source_frame_id_.load()
+                                  << "}" << std::endl;
+            }
             latestResultId = frameId;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(2));
@@ -520,15 +1029,11 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
 
 void VideoItem::requestFrameUpdate() {
     update_queued_.store(false);
+    emit frameAdvanced();
     update();
 }
 
-std::shared_ptr<VideoItem::Frame> VideoItem::takeLatest() {
-    QMutexLocker locker(&frame_mutex_);
-    if (!latest_frame_) return {};
-    auto frame = std::move(latest_frame_);
-    return frame;
-}
+
 
 QString VideoItem::aiStatus() const {
     QMutexLocker locker(&ai_metrics_mutex_);
@@ -545,9 +1050,122 @@ QString VideoItem::aiNavigation() const {
     return ai_navigation_;
 }
 
+QString VideoItem::aiNavigationRoad() const {
+    QMutexLocker locker(&ai_metrics_mutex_);
+    return ai_navigation_road_;
+}
+
+QString VideoItem::aiNavigationState() const {
+    QMutexLocker locker(&ai_metrics_mutex_);
+    return ai_navigation_state_;
+}
+
+QString VideoItem::aiNavigationDirection() const {
+    QMutexLocker locker(&ai_metrics_mutex_);
+    return ai_navigation_direction_;
+}
+
+double VideoItem::aiNavigationDistanceM() const {
+    QMutexLocker locker(&ai_metrics_mutex_);
+    return ai_navigation_distance_m_;
+}
+
 int VideoItem::aiDetectionCount() const {
     QMutexLocker locker(&ai_metrics_mutex_);
     return ai_boxes_.size();
+}
+
+QVariantMap VideoItem::aiDetectionCounts() const {
+    QMutexLocker locker(&ai_metrics_mutex_);
+    return ai_detection_counts_;
+}
+
+double VideoItem::sourceAgeMs() const {
+    const qint64 last = last_source_ns_.load();
+    if (last <= 0) return 0.0;
+    return std::max<qint64>(0, steadyNs() - last) / 1.0e6;
+}
+
+QRectF VideoItem::sourceViewport() const {
+    QMutexLocker locker(&viewport_mutex_);
+    return source_viewport_;
+}
+
+void VideoItem::setSourceViewport(const QRectF &viewport) {
+    QRectF normalized = viewport.normalized();
+    normalized.setLeft(std::clamp(normalized.left(), 0.0, 1.0));
+    normalized.setTop(std::clamp(normalized.top(), 0.0, 1.0));
+    normalized.setRight(std::clamp(normalized.right(), 0.0, 1.0));
+    normalized.setBottom(std::clamp(normalized.bottom(), 0.0, 1.0));
+    if (normalized.width() <= 0.001 || normalized.height() <= 0.001) {
+        normalized = QRectF(0.0, 0.0, 1.0, 1.0);
+    }
+    {
+        QMutexLocker locker(&viewport_mutex_);
+        if (source_viewport_ == normalized) return;
+        source_viewport_ = normalized;
+    }
+    // The FBO renderer only copies the viewport during synchronize(); mark the
+    // item dirty so a mode change is visible even when the video texture is
+    // otherwise static.
+    update();
+    emit sourceViewportChanged();
+}
+
+void VideoItem::sendAiSelection(int road, int navigation) {
+    const int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0) return;
+    sockaddr_in address{};
+    address.sin_family = AF_INET;
+    address.sin_port = htons(38260);
+    address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    const unsigned char packet[6] = {
+        'M', 'V', 'S', '1',
+        static_cast<unsigned char>(std::clamp(road, 0, 3)),
+        static_cast<unsigned char>(std::clamp(navigation, 0, 3)),
+    };
+    (void)::sendto(fd, packet, sizeof(packet), 0,
+                   reinterpret_cast<const sockaddr *>(&address), sizeof(address));
+    close(fd);
+}
+
+void VideoItem::setAiRoadQuadrant(int quadrant) {
+    quadrant = std::clamp(quadrant, 0, 3);
+    if (ai_road_quadrant_.exchange(quadrant) == quadrant) return;
+    {
+        QMutexLocker locker(&ai_metrics_mutex_);
+        ai_boxes_.clear();
+        tracks_.clear();
+        next_track_id_ = 1;
+        ai_hazards_.clear();
+        ai_detection_counts_.clear();
+        ai_traffic_ = QStringLiteral("UNKNOWN");
+        ai_navigation_ = QStringLiteral("等待导航识别");
+        ai_navigation_road_.clear();
+        ai_navigation_state_ = QStringLiteral("UNKNOWN");
+        ai_status_ = QStringLiteral("切换主识别源 Q%1").arg(quadrant + 1);
+    }
+    last_ai_result_ns_.store(0);
+    ai_online_.store(false);
+    ai_dirty_.store(true);
+    sendAiSelection(quadrant, ai_navigation_quadrant_.load());
+    emit aiSelectionChanged();
+}
+
+void VideoItem::setAiNavigationQuadrant(int quadrant) {
+    quadrant = std::clamp(quadrant, 0, 3);
+    if (ai_navigation_quadrant_.exchange(quadrant) == quadrant) return;
+    {
+        QMutexLocker locker(&ai_metrics_mutex_);
+        ai_navigation_ = QStringLiteral("等待导航识别");
+        ai_navigation_road_.clear();
+        ai_navigation_state_ = QStringLiteral("UNKNOWN");
+        ai_navigation_direction_ = QStringLiteral("none");
+        ai_navigation_distance_m_ = -1.0;
+    }
+    ai_dirty_.store(true);
+    sendAiSelection(ai_road_quadrant_.load(), quadrant);
+    emit aiSelectionChanged();
 }
 
 QVariantList VideoItem::aiBoxes() const {
@@ -580,6 +1198,44 @@ void VideoItem::updateMetrics() {
     readGpuCounters(&gpuLoad, &gpuFrequency);
     gpu_load_percent_.store(gpuLoad);
     gpu_frequency_hz_.store(gpuFrequency);
+    double npuLoad = npu_load_percent_.load();
+    readNpuCounter(&npuLoad);
+    npu_load_percent_.store(npuLoad);
+    source_fps_.store(input_fps_.load());
+
+    const qint64 nowNs = steadyNs();
+    if (source_mode_.startsWith(QStringLiteral("pgv"))) {
+        const qint64 lastSource = last_source_ns_.load();
+        const bool online = lastSource > 0 && nowNs - lastSource < 500000000LL;
+        source_online_.store(online);
+    }
+
+    const qint64 lastAi = last_ai_result_ns_.load();
+    const qint64 aiAgeNs = lastAi > 0 ? std::max<qint64>(0, nowNs - lastAi) : 0;
+    const bool aiOnlineNow = ai_running_.load() && lastAi > 0 && aiAgeNs < 1500000000LL;
+    ai_result_age_ms_.store(static_cast<int>(aiAgeNs / 1000000));
+    if (ai_online_.load() && !aiOnlineNow) {
+        QMutexLocker locker(&ai_metrics_mutex_);
+        ai_boxes_.clear();
+        tracks_.clear();
+        next_track_id_ = 1;
+        ai_hazards_.clear();
+        ai_detection_counts_.clear();
+        ai_traffic_ = QStringLiteral("UNKNOWN");
+        ai_navigation_ = QStringLiteral("等待导航识别");
+        ai_navigation_road_.clear();
+        ai_navigation_state_ = QStringLiteral("UNKNOWN");
+        ai_navigation_direction_ = QStringLiteral("none");
+        ai_navigation_distance_m_ = -1.0;
+        ai_status_ = QStringLiteral("AI sidecar 未连接");
+        ai_fps_.store(0.0);
+        ai_dirty_.store(true);
+    }
+    ai_online_.store(aiOnlineNow);
+    if (ai_dirty_.exchange(false)) {
+        emit aiChanged();
+    }
+
     last_produced_for_stats_ = produced;
     last_consumed_for_stats_ = consumed;
     last_rendered_for_stats_ = rendered;

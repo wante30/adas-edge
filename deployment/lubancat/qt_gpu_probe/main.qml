@@ -1,210 +1,1601 @@
 import QtQuick 2.12
 import QtGpuProbe 1.0
+import "components"
 
 Item {
     id: root
     width: 1280
     height: 720
-    property int viewMode: 0
+    focus: true
 
-    function trafficLabel(code) {
-        if (code === "RED") return "红灯"
-        if (code === "GREEN") return "绿灯"
-        if (code === "YELLOW") return "黄灯"
-        return "未知"
+    property string cjk: "Noto Sans CJK SC"
+    property string num: "DejaVu Sans"
+    property color ink: "#EAFBFF"
+    property color inkSoft: "#C4E1E8"
+    property color muted: "#7F9BA9"
+    property color cyan: "#3CE3FF"
+    property color cyanHot: "#8CF5FF"
+    property color mint: "#45F3B0"
+    property color amber: "#FFBC5C"
+    property color red: "#FF5064"
+    property color line: "#1B4052"
+    property string inputLayout: (typeof pgvInputLayout !== "undefined" ? pgvInputLayout : "front")
+    // The user wants the top-right quadrant (Q2) as the default main view.
+    property int roadQuadrant: (typeof pgvRoadQuadrant !== "undefined" ? pgvRoadQuadrant : 1)
+    property int navQuadrant: 1
+    property int viewMode: (typeof initialViewMode !== "undefined" ? initialViewMode : 0)
+    property bool autoCycle: (typeof autoCycleCapture !== "undefined" ? autoCycleCapture : false)
+    property var now: new Date()
+    property bool hudTestOpen: false
+    property bool autoHudSend: true
+    property bool trackingEnabled: true
+    property int testTraffic: 1
+    property int testLaneLeft: 0
+    property int testLaneRight: 0
+    property var hudFlags: ({
+        perception: true,
+        pedestrian: false,
+        staticTarget: false,
+        overspeed: false,
+        lka: false,
+        legacy: true
+    })
+
+    HudControl { id: pcieHud }
+
+    onRoadQuadrantChanged: if (video) video.aiRoadQuadrant = roadQuadrant
+    onNavQuadrantChanged: if (video) video.aiNavigationQuadrant = navQuadrant
+
+    Component.onCompleted: {
+        video.aiRoadQuadrant = roadQuadrant
+        video.aiNavigationQuadrant = navQuadrant
     }
 
+    // Real snapshots from the current PCIe 2x2 frame. The large viewport is
+    // live; these dock thumbnails are snapshots, labelled SNAP.
+    property var cameras: [
+        { name: "前视", source: "PCIE Q1", image: "assets/cam_front.png" },
+        { name: "导航", source: "PCIE Q2", image: "assets/cam_upper_right.png" },
+        { name: "车内", source: "PCIE Q3", image: "assets/cam_lower_left.png" },
+        { name: "路口", source: "PCIE Q4", image: "assets/cam_hdmi.png" }
+    ]
+
+    Timer {
+        interval: 1000
+        running: true
+        repeat: true
+        onTriggered: root.now = new Date()
+    }
+
+    // Capture-only helper; the normal UI never auto-switches.
+    Timer {
+        interval: 5000
+        running: root.autoCycle
+        repeat: true
+        onTriggered: root.viewMode = (root.viewMode + 1) % 3
+    }
+
+    // The AI traffic/pedestrian snapshot is transmitted to the FPGA over the
+    // root BAR1 bridge every 500 ms. Other V2 fields are manual-test only.
+    Timer {
+        interval: 500
+        running: root.autoHudSend
+        repeat: true
+        onTriggered: root.sendAiHud()
+    }
+
+    Keys.onPressed: {
+        if (event.key === Qt.Key_1) { root.viewMode = 0; event.accepted = true }
+        else if (event.key === Qt.Key_2) { root.viewMode = 1; event.accepted = true }
+        else if (event.key === Qt.Key_3) { root.viewMode = 2; event.accepted = true }
+        else if (event.key === Qt.Key_T) { root.hudTestOpen = !root.hudTestOpen; event.accepted = true }
+        else if (event.key === Qt.Key_L) { root.trackingEnabled = !root.trackingEnabled; event.accepted = true }
+        else if (event.key === Qt.Key_Escape) { root.hudTestOpen = false; event.accepted = true }
+        else if (event.key === Qt.Key_Q) { Qt.quit() }
+    }
+
+    function toggleHudFlag(key) {
+        var old = root.hudFlags, next = ({})
+        for (var name in old) next[name] = old[name]
+        next[key] = !next[key]
+        root.hudFlags = next
+    }
+    function sendAiHud() {
+        var counts = video.aiDetectionCounts || ({})
+        var traffic = video.aiTraffic === "RED" ? 1 : (video.aiTraffic === "GREEN" ? 2 : 0)
+        var pedestrian = (counts["person"] || 0) > 0
+        pcieHud.sendPerception(true, traffic, pedestrian, false, false, 0, 0,
+                                false, false, true, 0x101)
+    }
+    function sendTestHud() {
+        var f = root.hudFlags
+        pcieHud.sendPerception(f.perception, root.testTraffic, f.pedestrian,
+                                f.staticTarget, f.overspeed, root.testLaneLeft,
+                                root.testLaneRight, f.lka, false, f.legacy, 0x101)
+    }
+    function laneText(value) {
+        return value === 2 ? "虚线" : (value === 1 ? "实线" : "无")
+    }
+
+    function sourceIsPcie() { return video.sourceMode === "pgv-live" }
+    function sourceLabel() {
+        if (!video.sourceOnline) return "视频等待"
+        if (video.sourceMode === "pgv-live") return "PCIe LIVE"
+        if (video.sourceMode === "pgv-fixture") return "PGVF TEST"
+        if (video.sourceMode === "pgv-local") return "LOCAL REPLAY"
+        if (video.sourceMode === "local-raw") return "LOCAL RAW"
+        if (video.sourceMode === "replay") return "REPLAY"
+        return "DEMO"
+    }
+    function sourceColor() {
+        if (!video.sourceOnline) return ambertone()
+        return video.sourceMode === "pgv-live" ? mint : amber
+    }
+    function ambertone() { return amber }
+
+    function detectionMap() { return video.aiDetectionCounts ? video.aiDetectionCounts : ({}) }
+    function countOf(name) { var m = detectionMap(); return m && m[name] !== undefined ? m[name] : 0 }
+    function vehicleCount() {
+        if (!video.aiOnline) return "--"
+        return (countOf("car") + countOf("bus") + countOf("truck") + countOf("motorcycle"))
+    }
+    function personCount() {
+        if (!video.aiOnline) return "--"
+        return countOf("person")
+    }
+    function cycleCount() {
+        if (!video.aiOnline) return "--"
+        return countOf("bicycle")
+    }
+    function totalDetections() {
+        if (!video.aiOnline) return "--"
+        var m = detectionMap(), total = 0
+        for (var k in m) total += m[k]
+        return total
+    }
+    function trafficConfidence() {
+        if (!video.aiOnline) return "--"
+        var boxes = video.aiBoxes || [], best = 0
+        for (var i = 0; i < boxes.length; ++i) {
+            if (boxes[i].className === "traffic light")
+                best = Math.max(best, boxes[i].confidence || 0)
+        }
+        return best > 0 ? Math.round(best * 100) + "%" : "--"
+    }
+    function trafficText() {
+        if (!video.aiOnline) return "等待识别"
+        if (video.aiTraffic === "GREEN") return "绿灯"
+        if (video.aiTraffic === "RED") return "红灯"
+        if (video.aiTraffic === "YELLOW") return "黄灯"
+        return "未识别"
+    }
+    function trafficTone() {
+        if (!video.aiOnline) return muted
+        if (video.aiTraffic === "GREEN") return mint
+        if (video.aiTraffic === "RED") return red
+        if (video.aiTraffic === "YELLOW") return amber
+        return muted
+    }
+    function trafficLamp(index) {
+        if (!video.aiOnline) return "#1A3038"
+        if (video.aiTraffic === "RED" && index === 0) return red
+        if (video.aiTraffic === "YELLOW" && index === 1) return amber
+        if (video.aiTraffic === "GREEN" && index === 2) return mint
+        return "#1A3038"
+    }
+    function signalChip() {
+        if (!video.aiOnline) return "等待 AI"
+        if (video.aiTraffic === "GREEN") return "通行"
+        if (video.aiTraffic === "RED") return "停车"
+        if (video.aiTraffic === "YELLOW") return "注意"
+        return "未识别"
+    }
+
+    function navValid() {
+        return video.aiOnline && video.aiNavigationState === "VALID"
+                && ((video.aiNavigationRoad && video.aiNavigationRoad.length > 0)
+                    || video.aiNavigationDistanceM >= 0)
+    }
+    function navDirectionCode() {
+        if (!navValid()) return "none"
+        return video.aiNavigationDirection || "none"
+    }
+    function navDirection() {
+        if (!navValid()) return "等待"
+        if (video.aiNavigationDirection === "left") return "左转"
+        if (video.aiNavigationDirection === "right") return "右转"
+        if (video.aiNavigationDirection === "forward") return "直行"
+        if (video.aiNavigationDirection === "uturn") return "掉头"
+        return "导航"
+    }
+    function navDistance() {
+        if (!navValid() || video.aiNavigationDistanceM < 0) return "—"
+        if (video.aiNavigationDistanceM === 0) return "现在"
+        return Math.round(video.aiNavigationDistanceM)
+    }
+    function navRoad() {
+        if (navValid() && video.aiNavigationRoad) return video.aiNavigationRoad
+        if (!video.aiOnline) return "AI 未连接"
+        if (video.sourceMode === "pgv-local" || video.sourceMode === "local-raw")
+            return "导航 OCR 未启用"
+        return "等待 Q2 OCR"
+    }
+    function navMeta() {
+        if (navValid()) {
+            return "OCR Q" + (navQuadrant + 1) + " · "
+                    + (navDirectionCode() === "none" ? "导航卡片" : navDirection())
+        }
+        if (!video.aiOnline) return "AI 未连接"
+        if (video.sourceMode === "pgv-local" || video.sourceMode === "local-raw")
+            return "本地回放 · OCR 已关闭（性能模式）"
+        return "等待导航 OCR · Q" + (navQuadrant + 1)
+    }
+
+    function hazardLabel(kind) {
+        if (kind === "LEAD_RAPID_CLOSING") return "前车快速接近"
+        if (kind === "PEDESTRIAN_CROSSING_PATH") return "行人进入预测路径"
+        if (kind === "LEAD_BRAKE_LAMP_RISE") return "前车制动灯变化"
+        if (kind === "SUSPECTED_BRAKING_WITH_CLOSING") return "制动灯变化且快速接近"
+        return "感知风险"
+    }
+    function hazardRows() {
+        var rows = []
+        if (video.aiOnline) {
+            var hs = video.aiHazards || []
+            for (var i = 0; i < hs.length && i < 3; ++i)
+                rows.push({ label: hazardLabel(hs[i]), live: true, value: "实时" })
+            return rows
+        }
+        return [
+            { label: "前车距离较近", live: false, value: "—" },
+            { label: "右侧行人注意", live: false, value: "—" },
+            { label: "无效变道风险", live: false, value: "—" }
+        ]
+    }
+    function hazardBadge() {
+        if (!video.aiOnline) return "设计预览"
+        var n = (video.aiHazards || []).length
+        return n > 0 ? (n + " 项实时") : "监控中"
+    }
+    function hazardFooter() {
+        if (!video.aiOnline) return "AI sidecar 未连接"
+        if ((video.aiHazards || []).length === 0) return "AI 实时分析 · 更新 " + video.aiResultAgeMs + " ms"
+        return "AI 帧龄 " + video.aiResultAgeMs + " ms · 实时分析"
+    }
+    function previewWarningVisible() {
+        return video.aiOnline && (video.aiHazards || []).length === 0
+    }
+    function primaryHazard() {
+        var hs = video.aiHazards || []
+        return hs.length > 0 ? hazardLabel(hs[0]) : "未检测到危险事件"
+    }
+
+    function targetTone(name) {
+        if (name === "person" || name === "bicycle") return mint
+        if (name === "traffic light") return amber
+        return cyan
+    }
+    function compactName(name) {
+        if (!name) return "OBJECT"
+        if (name === "traffic light") return "SIGNAL"
+        return String(name).toUpperCase()
+    }
+    function targetFrame(name) {
+        if (name === "person" || name === "bicycle") return "assets/target_mint.png"
+        if (name === "traffic light") return "assets/target_amber.png"
+        return "assets/target_cyan.png"
+    }
+
+    function metricLabel(index) {
+        return ["PCIE", "视频", "AI", "NPU", "GPU"][index]
+    }
+    function metricValue(index) {
+        if (index === 0) return video.sourceOnline ? "在线" : "断开"
+        if (index === 1) return video.sourceFps.toFixed(0) + " FPS"
+        if (index === 2) return video.aiOnline ? video.aiFps.toFixed(1) + " FPS" : "等待"
+        if (index === 3) return Math.round(video.npuLoadPercent) + "%"
+        return Math.round(video.gpuLoadPercent) + "%"
+    }
+    function metricColor(index) {
+        if (index === 0) return video.sourceOnline ? mint : amber
+        return index < 3 ? ink : inkSoft
+    }
+    function inputSummary() {
+        if (video.sourceMode === "pgv-live")
+            return inputLayout === "quad" ? ("PCIe 主视 Q" + (roadQuadrant + 1)) : "PCIe 前视"
+        if (video.sourceMode === "pgv-local") return "本地回放 Q" + (roadQuadrant + 1)
+        if (video.sourceMode === "local-raw") return "本地直读 Q" + (roadQuadrant + 1)
+        if (video.sourceMode === "pgv-fixture") return "PGVF 夹具"
+        if (video.sourceMode === "replay") return "前视 (RGB565)"
+        return "模拟视频源"
+    }
+    function quadName(index) {
+        return ["PCIe Q1 · 前视", "PCIe Q2 · 导航", "PCIe Q3 · 车内", "PCIe Q4 · 路口"][index]
+    }
+    function clockText() { return Qt.formatDateTime(now, "HH:mm") }
+    function dateText() { return Qt.formatDateTime(now, "yyyy/MM/dd") }
+
+    // ------------------------------------------------------------------ base
     Rectangle {
         anchors.fill: parent
-        color: "#070d15"
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#06131C" }
+            GradientStop { position: 0.48; color: "#03090E" }
+            GradientStop { position: 1.0; color: "#02070B" }
+        }
     }
 
-    Rectangle {
-        id: topBar
-        x: 20; y: 16; width: parent.width - 40; height: 60
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#101f30" }
-            GradientStop { position: 1.0; color: "#0a1420" }
+    // Subtle engineering grid, kept static and cheap.
+    Canvas {
+        anchors.fill: parent
+        opacity: 0.7
+        onPaint: {
+            var ctx = getContext("2d")
+            ctx.clearRect(0, 0, width, height)
+            ctx.strokeStyle = "rgba(70,145,160,0.045)"
+            ctx.lineWidth = 1
+            for (var x = 0; x <= width; x += 48) {
+                ctx.beginPath(); ctx.moveTo(x, 64); ctx.lineTo(x, height); ctx.stroke()
+            }
+            for (var y = 80; y <= height; y += 48) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke()
+            }
+            ctx.strokeStyle = "rgba(66,167,186,0.05)"
+            ctx.beginPath(); ctx.moveTo(0, 684); ctx.lineTo(width, 620); ctx.stroke()
         }
-        border.color: "#28637c"; border.width: 1; radius: 12
-        Text { x: 22; y: 9; text: "◉  ADAS  智能驾驶感知系统"; color: "#ecf7ff"; font.pixelSize: 22; font.family: "Noto Sans CJK SC" }
-        Text { x: 22; y: 37; text: "Qt Quick / QML + C++ / RGB565 GPU 探针"; color: "#7e9bad"; font.pixelSize: 11 }
-        Row {
-            x: 420; y: 11; spacing: 10
-            Repeater {
-                model: ["单路检测", "四路检测", "空间视图"]
-                delegate: Rectangle {
-                    width: 112; height: 38; radius: 18
-                    color: root.viewMode === index ? "#176c91" : "#122334"
-                    border.color: root.viewMode === index ? "#5ce0ff" : "#2a4b60"
-                    Text { anchors.centerIn: parent; text: modelData; color: "#e9f8ff"; font.pixelSize: 13 }
-                    MouseArea { anchors.fill: parent; onClicked: root.viewMode = index }
+    }
+
+    // ----------------------------------------------------------------- header
+    Rectangle {
+        id: header
+        x: 0; y: 0; width: parent.width; height: 64
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#081823" }
+            GradientStop { position: 0.72; color: "#051019" }
+            GradientStop { position: 1.0; color: "#030B11" }
+        }
+    }
+    Rectangle { x: 0; y: 0; width: 3; height: 64; color: cyan }
+    Rectangle {
+        x: 0; y: 63; width: parent.width; height: 1
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: "#8CF5FF" }
+            GradientStop { position: 0.35; color: "#1B6377" }
+            GradientStop { position: 0.76; color: "#255E6E" }
+            GradientStop { position: 1.0; color: "#65CFE1" }
+        }
+    }
+
+    Item {
+        id: brandBadge
+        x: 20; y: 14; width: 38; height: 38
+        HudPanel {
+            anchors.fill: parent
+            cut: 6
+            accent: root.cyan
+            fillTop: "#0B3445"
+            fillBottom: "#05151E"
+            fillOpacity: 0.88
+            glow: true
+            showTicks: false
+        }
+        Image {
+            anchors.centerIn: parent
+            width: 28; height: 22
+            source: "assets/icon_car.png"
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+        }
+    }
+    Text {
+        x: 68; y: 0; width: 84; height: 35
+        text: "ADAS"
+        color: root.ink
+        font.family: root.num
+        font.pixelSize: 26
+        font.weight: Font.Bold
+        font.letterSpacing: 1.5
+        verticalAlignment: Text.AlignVCenter
+    }
+    Rectangle { x: 154; y: 12; width: 1; height: 38; color: "#27515E" }
+    Text {
+        x: 164; y: 5; width: 168; height: 24
+        text: "智能驾驶感知系统"
+        color: root.ink
+        font.family: root.cjk
+        font.pixelSize: 17
+        font.weight: Font.DemiBold
+        verticalAlignment: Text.AlignVCenter
+    }
+    Text {
+        x: 166; y: 29; width: 176; height: 12
+        text: "MULTI-SENSOR  ·  PERCEPTION"
+        color: "#7BABB8"
+        font.family: root.num
+        font.pixelSize: 6
+        font.letterSpacing: 1.3
+        opacity: 0.9
+    }
+    Rectangle {
+        x: 313; y: 34; width: 4; height: 4; radius: 2
+        color: root.mint
+        opacity: 0.65 + 0.35 * Math.sin(root.now.getSeconds() * 1.7)
+    }
+    Text {
+        x: 321; y: 29; text: "LIVE"
+        color: "#7195A2"; font.family: root.num; font.pixelSize: 6; font.weight: Font.DemiBold
+        font.letterSpacing: 1.0
+    }
+
+    // Mode tabs.
+    Rectangle {
+        id: tabTrack
+        x: 348; y: 15; width: 270; height: 34; radius: 7
+        color: "#06131B"
+        border.color: "#1A4051"; border.width: 1
+    }
+    Rectangle {
+        id: tabHighlight
+        x: 349 + root.viewMode * 90
+        y: 16; width: 88; height: 32; radius: 6
+        color: "#0B3C50"
+        border.color: root.cyan; border.width: 1
+        Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutQuad } }
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#103E50" }
+            GradientStop { position: 1.0; color: "#08222E" }
+        }
+    }
+    Row {
+        x: 348; y: 15
+        Repeater {
+            model: ["单路检测", "四路检测", "空间视图"]
+            delegate: Item {
+                width: 90; height: 34
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: 3; height: 3; radius: 1.5
+                    color: index === root.viewMode ? root.cyan : "#507983"
+                    opacity: index === root.viewMode ? 0.95 : 0.55
+                    x: 12
+                }
+                Text {
+                    anchors.centerIn: parent
+                    text: modelData
+                    color: index === root.viewMode ? root.ink : "#7698A5"
+                    font.family: root.cjk
+                    font.pixelSize: 11
+                    font.weight: index === root.viewMode ? Font.DemiBold : Font.Normal
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.viewMode = index
                 }
             }
         }
-        Text { x: parent.width - 240; y: 12; text: video.hardwareAccelerated ? "GPU  硬件" : "GPU  待验证"; color: video.hardwareAccelerated ? "#52e4bc" : "#ffcf5a"; font.pixelSize: 13 }
-        Text { x: parent.width - 240; y: 35; text: "渲染回调 " + video.renderFps.toFixed(1) + "/s  ·  " + video.renderer; color: "#8eb1c3"; font.pixelSize: 10; elide: Text.ElideRight; width: 225 }
     }
 
+    // Input source chip. It is a status chip, not a fake dropdown.
     Rectangle {
-        id: trafficCard
-        x: 20; y: 92; width: 282; height: 186; radius: 14
-        color: "#102131"; border.color: "#2c94ba"; border.width: 1
-        Text { x: 18; y: 14; text: "交通灯状态"; color: "#9db4c2"; font.pixelSize: 16 }
-        Rectangle { x: 18; y: 51; width: 48; height: 94; radius: 10; color: "#071018"; border.color: "#3d6678" }
-        Column { x: 33; y: 62; spacing: 7
-            Repeater { model: ["#e34a58", "#e1b243", "#43e0ae"]
-                delegate: Rectangle {
-                    width: 18; height: 18; radius: 9; color: modelData; opacity: index === 2 ? 0.78 : 0.28
-                    SequentialAnimation on opacity {
-                        running: index === 2
-                        loops: Animation.Infinite
-                        NumberAnimation { to: 1.0; duration: 700 }
-                        NumberAnimation { to: 0.62; duration: 700 }
+        x: 626; y: 15; width: 208; height: 34; radius: 7
+        color: "#06141D"
+        border.color: "#214A5C"; border.width: 1
+        Image {
+            x: 11; y: 10; width: 14; height: 13
+            source: "assets/icon_camera.png"; fillMode: Image.PreserveAspectFit
+        }
+        Text {
+            x: 32; y: 3; text: "输入源"
+            color: "#6B919D"; font.family: root.cjk; font.pixelSize: 7
+        }
+        Text {
+            x: 32; y: 14; text: root.inputSummary()
+            color: root.inkSoft; font.family: root.cjk; font.pixelSize: 10; font.weight: Font.DemiBold
+        }
+
+        Rectangle { x: 174; y: 9; width: 1; height: 17; color: "#214A5C" }
+        Text {
+            x: 179; y: 10; text: root.inputLayout === "quad" ? "2×2" : "1×1"
+            color: "#84A9B4"; font.family: root.num; font.pixelSize: 6
+        }
+        Rectangle {
+            x: 198; y: 14; width: 5; height: 5; radius: 2.5
+            color: video.sourceOnline ? root.mint : root.amber
+        }
+    }
+
+    // Five compact telemetry cells.
+    Item {
+        x: 850; y: 8; width: 318; height: 48
+        Repeater {
+            model: 5
+            delegate: Item {
+                x: index * 63.5; width: 63.5; height: 48
+                Rectangle {
+                    x: 0; y: 13; width: 1; height: 30; color: "#1A3C4C"
+                    visible: index > 0
+                }
+                Text {
+                    x: 9; y: 2; text: root.metricLabel(index)
+                    color: "#708F9B"; font.family: root.num; font.pixelSize: 7; font.letterSpacing: 0.8
+                }
+                Text {
+                    x: 9; y: 16; width: 54; height: 20
+                    text: root.metricValue(index)
+                    color: root.metricColor(index)
+                    font.family: root.num; font.pixelSize: index === 1 ? 9 : 10
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                }
+            }
+        }
+    }
+
+    Text {
+        x: 1176; y: 6; width: 84; height: 28
+        text: root.clockText()
+        color: root.ink
+        font.family: root.num; font.pixelSize: 19; font.weight: Font.DemiBold
+        horizontalAlignment: Text.AlignRight
+        verticalAlignment: Text.AlignVCenter
+    }
+    Text {
+        x: 1176; y: 35; width: 84; height: 15
+        text: root.dateText()
+        color: "#6E929F"; font.family: root.num; font.pixelSize: 7
+        horizontalAlignment: Text.AlignRight
+        verticalAlignment: Text.AlignVCenter
+    }
+    Rectangle { x: 1166; y: 15; width: 1; height: 34; color: "#224653" }
+
+    // ------------------------------------------------------------------- main
+    Item {
+        id: mainView
+        x: 20; y: 77; width: 967; height: 460
+        clip: true
+
+        Rectangle { anchors.fill: parent; color: "#02070B" }
+
+        VideoItem {
+            id: video
+            objectName: "videoProbeItem"
+            x: 0
+            y: (mainView.height - height) / 2
+            width: mainView.width
+            height: width * 9.0 / 16.0
+            visible: root.viewMode !== 2
+            sourceViewport: {
+                if (root.viewMode === 1 || root.inputLayout !== "quad")
+                    return Qt.rect(0, 0, 1, 1)
+                var q = root.roadQuadrant
+                return Qt.rect((q % 2) * 0.5, Math.floor(q / 2) * 0.5, 0.5, 0.5)
+            }
+        }
+
+        AnimatedImage {
+            x: 0; y: 0; width: 720; height: 460
+            source: "assets/tesla_bev_demo.gif"
+            fillMode: Image.PreserveAspectCrop
+            visible: root.viewMode === 2
+            playing: root.viewMode === 2
+            cache: true
+            smooth: true
+        }
+
+        // Readability gradients.
+        Rectangle {
+            x: 0; y: 0; width: parent.width; height: 118
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#D901080C" }
+                GradientStop { position: 1.0; color: "#0001080C" }
+            }
+        }
+        Rectangle {
+            x: 0; y: parent.height - 112; width: parent.width; height: 112
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: "#0001080C" }
+                GradientStop { position: 1.0; color: "#D901080C" }
+            }
+        }
+
+        // AI target layer, mapped from the 1280x720 AI display space onto
+        // the live front view. Simple QML primitives render faster than a
+        // continuously repainted Canvas on this Mali/X11 path.
+        Item {
+            anchors.fill: parent
+            clip: true
+            visible: root.viewMode === 0 && video.aiOnline && video.aiBoxes.length > 0
+            Repeater {
+                model: video.aiBoxes
+                delegate: Item {
+                    property var payload: modelData
+                    property color tone: root.targetTone(payload.className)
+                    property bool hot: index === 0
+                    property real predictFrames: root.trackingEnabled ? Math.min(
+                        video.maxTrackPredictionFrames, Math.max(0, Number(video.displayFrameId)
+                                        - Number(payload.frameId || video.displayFrameId))) : 0
+                    x: (payload.x + (payload.vx || 0) * predictFrames) / 1280 * video.width
+                    y: (payload.y + (payload.vy || 0) * predictFrames) / 720 * video.height + video.y
+                    width: Math.max(1, payload.width / 1280 * video.width)
+                    height: Math.max(1, payload.height / 720 * video.height)
+                    visible: width > 8 && height > 8
+                    opacity: (root.trackingEnabled && payload.predicted)
+                             ? Math.max(0.30, 0.56 - (payload.missed || 0) * 0.12) : 1.0
+                    z: hot ? 4 : 2
+
+                    Rectangle {
+                        anchors.fill: parent
+                        color: Qt.rgba(tone.r, tone.g, tone.b, hot ? 0.055 : 0.018)
+                    }
+                    BorderImage {
+                        anchors.fill: parent
+                        source: root.targetFrame(payload.className)
+                        border.left: 14
+                        border.top: 14
+                        border.right: 14
+                        border.bottom: 14
+                        horizontalTileMode: BorderImage.Stretch
+                        verticalTileMode: BorderImage.Stretch
+                        smooth: true
+                        opacity: hot ? 1.0 : 0.82
+                    }
+                    Rectangle {
+                        anchors.fill: parent
+                        color: "transparent"
+                        border.width: hot ? 1.2 : 0.8
+                        border.color: Qt.rgba(tone.r, tone.g, tone.b, hot ? 0.62 : 0.34)
+                    }
+
+                    Rectangle {
+                        id: boxLabel
+                        x: 0; y: -19
+                        width: Math.min(190, 14 + labelText.implicitWidth)
+                        height: 18
+                        color: "#E8020C12"
+                        border.color: Qt.rgba(tone.r, tone.g, tone.b, 0.5)
+                        border.width: 0.8
+                        Rectangle { x: 0; y: 0; width: 2.2; height: parent.height; color: tone }
+                        Text {
+                            id: labelText
+                            x: 7; anchors.verticalCenter: parent.verticalCenter
+                            text: ((root.trackingEnabled && payload.predicted) ? "PRED " : "")
+                                  + "#" + (payload.trackId || 0) + " "
+                                  + root.compactName(payload.className) + "  "
+                                  + Math.round((payload.confidence || 0) * 100) + "%"
+                            color: Qt.rgba(tone.r, tone.g, tone.b, 0.95)
+                            font.family: root.num; font.pixelSize: 9; font.weight: Font.DemiBold
+                        }
                     }
                 }
+            }
+        }
+
+        // Frame border and status chip.
+        Rectangle {
+            anchors.fill: parent
+            color: "transparent"
+            border.color: "#296579"; border.width: 1
+            radius: 4
+        }
+        Canvas {
+            anchors.fill: parent
+            onPaint: {
+                var ctx = getContext("2d")
+                ctx.clearRect(0, 0, width, height)
+                var c = 14
+                ctx.fillStyle = "#02070B"
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(c, 0); ctx.lineTo(0, c); ctx.closePath(); ctx.fill()
+                ctx.beginPath(); ctx.moveTo(width, height); ctx.lineTo(width - c, height); ctx.lineTo(width, height - c); ctx.closePath(); ctx.fill()
+                ctx.strokeStyle = "rgba(60,227,255,0.38)"
+                ctx.lineWidth = 1
+                ctx.beginPath(); ctx.moveTo(0, 34); ctx.lineTo(0, c); ctx.lineTo(c, 0); ctx.lineTo(34, 0); ctx.stroke()
+                ctx.beginPath(); ctx.moveTo(width, height - 34); ctx.lineTo(width, height - c); ctx.lineTo(width - c, height); ctx.lineTo(width - 34, height); ctx.stroke()
+            }
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+        }
+
+        Rectangle {
+            x: parent.width - 163; y: 12; width: 151; height: 23
+            color: "#B8020D13"
+            border.color: "#2C5563"; border.width: 0.8
+            Rectangle {
+                x: 9; y: 9; width: 4; height: 4; radius: 2
+                color: root.sourceColor()
+            }
+            Text {
+                x: 18; y: 3
+                text: root.sourceLabel()
+                color: root.sourceColor()
+                font.family: root.num; font.pixelSize: 7; font.weight: Font.DemiBold
+            }
+            Text {
+                anchors.right: parent.right; anchors.rightMargin: 8; y: 3
+                text: video.sourceOnline ? video.sourceFps.toFixed(0) + " FPS" : "NO SIGNAL"
+                color: "#91B8C4"; font.family: root.num; font.pixelSize: 7
+            }
+        }
+
+        Rectangle {
+            x: parent.width - 108; y: 44; width: 96; height: 23; radius: 2
+            color: "#C0031118"; border.color: "#355E6C"; border.width: 0.7
+            Rectangle {
+                x: 8; y: 9; width: 5; height: 5; radius: 2.5
+                color: pcieHud.bridgeOnline ? root.mint : root.amber
+            }
+            Text {
+                x: 18; y: 4; text: "PCIe 信号测试"
+                color: pcieHud.bridgeOnline ? root.cyanHot : root.amber
+                font.family: root.cjk; font.pixelSize: 7
+            }
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    root.autoHudSend = false
+                    root.hudTestOpen = true
+                }
+            }
+        }
+
+        Rectangle {
+            x: parent.width - 202; y: 44; width: 84; height: 23; radius: 2
+            color: "#C0031118"; border.color: root.trackingEnabled ? "#3F7059" : "#5A4A2C"
+            border.width: 0.7
+            Text {
+                anchors.centerIn: parent
+                text: root.trackingEnabled ? "TRACK ON" : "TRACK OFF"
+                color: root.trackingEnabled ? root.mint : root.amber
+                font.family: root.num; font.pixelSize: 6
+            }
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.trackingEnabled = !root.trackingEnabled
+            }
+        }
+
+        // Single mode: signal card.
+        Item {
+            id: signalCard
+            visible: root.viewMode === 0
+            layer.enabled: true
+            layer.smooth: true
+            x: 16; y: 16; width: 244; height: 150
+            HudPanel {
+                anchors.fill: parent
+                cut: 12
+                accent: root.mint
+                fillTop: "#0A2028"
+                fillBottom: "#040E14"
+                fillOpacity: 0.94
+                borderOpacity: 0.62
+            }
+            Rectangle {
+                x: 1; y: 25; width: 1.5; height: 58; color: Qt.rgba(root.mint.r, root.mint.g, root.mint.b, 0.45)
+            }
+            // Vertical signal lamp.
+            Rectangle {
+                x: 14; y: 15; width: 25; height: 66; radius: 8
+                color: "#07161A"
+                border.color: "#285B55"; border.width: 0.8
+                Repeater {
+                    model: 3
+                    delegate: Rectangle {
+                        x: 6; y: 10 + index * 17; width: 13; height: 13; radius: 6.5
+                        color: root.trafficLamp(index)
+                        border.color: Qt.rgba(root.trafficTone().r, root.trafficTone().g, root.trafficTone().b, 0.28)
+                        border.width: 0.8
+                    }
+                }
+            }
+            Text {
+                x: 51; y: 12; text: "信号灯"
+                color: "#8FB3BD"; font.family: root.cjk; font.pixelSize: 8
+            }
+            Text {
+                x: 51; y: 25; width: 102; height: 28
+                text: root.trafficText()
+                color: root.trafficTone()
+                font.family: root.cjk; font.pixelSize: 18; font.weight: Font.DemiBold
+                verticalAlignment: Text.AlignVCenter
+            }
+            Rectangle {
+                x: parent.width - 52; y: 17; width: 38; height: 17
+                color: "#241E0C"
+                border.color: Qt.rgba(root.trafficTone().r, root.trafficTone().g, root.trafficTone().b, 0.42)
+                border.width: 0.7
+                radius: 2
+                Text {
+                    anchors.centerIn: parent
+                    text: root.signalChip()
+                    color: root.trafficTone(); font.family: root.cjk; font.pixelSize: 7
+                }
+            }
+            Text {
+                x: 51; y: 55; width: 76; height: 13; text: video.aiOnline ? "实时识别" : "AI 未连接"
+                color: "#7E9DA7"; font.family: root.cjk; font.pixelSize: 7
+            }
+            Text {
+                x: parent.width - 105; y: 55; width: 91; height: 13
+                text: "置信度 " + root.trafficConfidence()
+                color: "#9AB8C0"; font.family: root.num; font.pixelSize: 7
+                horizontalAlignment: Text.AlignRight
+            }
+            Rectangle { x: 13; y: 91; width: parent.width - 26; height: 1; color: "#1C3B42" }
+            Row {
+                x: 14; y: 99; spacing: 0
+                Repeater {
+                    model: [
+                        { icon: "assets/icon_car.png", value: root.vehicleCount(), name: "车辆" },
+                        { icon: "assets/icon_person.png", value: root.personCount(), name: "行人" },
+                        { icon: "assets/icon_bike.png", value: root.cycleCount(), name: "非机动车" }
+                    ]
+                    delegate: Item {
+                        width: 72; height: 38
+                        Image {
+                            x: 0; y: 1; width: 13; height: 13
+                            source: modelData.icon; fillMode: Image.PreserveAspectFit
+                        }
+                        Text {
+                            x: 17; y: -2; text: modelData.value
+                            color: root.ink; font.family: root.num; font.pixelSize: 13; font.weight: Font.DemiBold
+                        }
+                        Text {
+                            x: 17; y: 16; text: modelData.name
+                            color: "#89A5AE"; font.family: root.cjk; font.pixelSize: 7
+                        }
+                    }
+                }
+            }
+        }
+
+        // Single mode: a real hazard warning or the neutral monitoring strip.
+        Rectangle {
+            id: warningStrip
+            visible: root.viewMode === 0
+            x: parent.width / 2 - 181; y: parent.height - 37
+            width: 362; height: 27; radius: 3
+            color: (video.aiOnline && (video.aiHazards || []).length > 0)
+                   ? "#B326111A" : "#B308171E"
+            border.width: 0.8
+            border.color: (video.aiOnline && (video.aiHazards || []).length > 0)
+                          ? "#B9FF5064" : "#4A2A5B66"
+            Image {
+                x: 10; y: 6; width: 15; height: 15
+                source: "assets/icon_warning.png"; fillMode: Image.PreserveAspectFit
+                opacity: (video.aiOnline && (video.aiHazards || []).length > 0) ? 1 : 0.5
+            }
+            Text {
+                x: 32; y: 4; width: 260; height: 19
+                text: (video.aiOnline && (video.aiHazards || []).length > 0)
+                      ? root.primaryHazard() : (video.aiOnline ? "感知监控中 · 未检测到危险事件" : "AI sidecar 未连接 · 设计演示")
+                color: (video.aiOnline && (video.aiHazards || []).length > 0) ? "#FFE7E9" : "#91B6C0"
+                font.family: root.cjk; font.pixelSize: 9; font.weight: Font.DemiBold
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+            }
+            Text {
+                anchors.right: parent.right; anchors.rightMargin: 10
+                y: 5; text: (video.aiOnline && (video.aiHazards || []).length > 0) ? "实时" : "PGVF"
+                color: (video.aiOnline && (video.aiHazards || []).length > 0) ? "#FF9BA3" : "#6E939E"
+                font.family: root.num; font.pixelSize: 6
+            }
+        }
+
+        // Single mode: bottom-left telemetry.
+        Rectangle {
+            visible: root.viewMode === 0
+            x: 14; y: parent.height - 22; width: 250; height: 14; radius: 2
+            color: "#B8031118"
+            Text {
+                x: 8; y: 1
+                text: "FUSION " + root.totalDetections() + "  ·  PCIE RGB565  ·  AI " + (video.aiOnline ? "LIVE" : "OFF")
+                color: "#7099A4"; font.family: root.num; font.pixelSize: 6
+            }
+        }
+
+        // Quad mode labels.
+        Repeater {
+            model: 4
+            delegate: Rectangle {
+                visible: root.viewMode === 1
+                x: (index % 2 === 0 ? 10 : parent.width - 124)
+                y: (index === 1 ? 40 : (index === 0 ? 10 : parent.height / 2 + 8))
+                width: 114; height: 19; radius: 2
+                color: "#C0031118"
+                border.color: index === root.roadQuadrant ? "#643CE3FF" : "#352F5662"
+                border.width: 0.7
+                Text {
+                    x: 8; anchors.verticalCenter: parent.verticalCenter
+                    text: root.quadName(index)
+                    color: index === root.roadQuadrant ? root.cyanHot : root.inkSoft
+                    font.family: root.cjk; font.pixelSize: 7
+                }
+                Rectangle {
+                    anchors.right: parent.right; anchors.rightMargin: 7
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 4; height: 4; radius: 2
+                    color: root.mint
+                }
+            }
+        }
+        Rectangle {
+            visible: root.viewMode === 1
+            x: parent.width / 2 - 96; y: 10; width: 192; height: 20; radius: 2
+            color: "#D504131B"; border.color: "#365D6D"; border.width: 0.6
+            Text {
+                anchors.centerIn: parent
+                text: "四路环视  ·  PGVF 同步 60 Hz"
+                color: "#A4C8D1"; font.family: root.cjk; font.pixelSize: 7
+            }
+        }
+
+        // Spatial mode overlay.
+        Item {
+            id: spatialOverlay
+            anchors.fill: parent
+            visible: root.viewMode === 2
+            Text {
+                x: 24; y: 16; text: "空间视图"
+                color: root.ink; font.family: root.cjk; font.pixelSize: 20; font.weight: Font.DemiBold
+            }
+            Text {
+                x: 25; y: 43; text: "BEV  ·  OCCUPANCY  ·  FUSION  /  RANGE 80 m"
+                color: "#76AAB7"; font.family: root.num; font.pixelSize: 7; font.letterSpacing: 0.7
+            }
+            Row {
+                x: parent.width - 196; y: 17; spacing: 5
+                Repeater {
+                    model: [
+                        { name: "BEV", tone: root.cyan },
+                        { name: "OCC", tone: root.mint },
+                        { name: "VRU", tone: root.amber }
+                    ]
+                    delegate: Rectangle {
+                        width: 60; height: 19; radius: 2
+                        color: "#B3031118"; border.color: "#3A51606B"; border.width: 0.6
+                        Rectangle { x: 8; anchors.verticalCenter: parent.verticalCenter; width: 4; height: 4; radius: 2; color: modelData.tone }
+                        Text { x: 17; anchors.verticalCenter: parent.verticalCenter; text: modelData.name; color: modelData.tone; font.family: root.num; font.pixelSize: 6 }
+                    }
+                }
+            }
+            Item {
+                x: parent.width - 242; y: 72; width: 218; height: 91
+                HudPanel {
+                    anchors.fill: parent
+                    cut: 8; accent: root.red; fillTop: "#1D0C12"; fillBottom: "#080B0F"
+                    fillOpacity: 0.92; borderOpacity: 0.72; glow: true
+                }
+                Image { x: 12; y: 12; width: 14; height: 14; source: "assets/icon_warning.png" }
+                Text {
+                    x: 32; y: 8; text: video.aiOnline ? ("感知目标  " + root.totalDetections()) : "等待 AI"
+                    color: "#FFB4BA"; font.family: root.cjk; font.pixelSize: 8
+                }
+                Text {
+                    x: 12; y: 32; text: video.aiOnline ? root.primaryHazard() : "AI sidecar 未连接"
+                    color: root.ink; font.family: root.cjk; font.pixelSize: 12; font.weight: Font.DemiBold
+                }
+                Text {
+                    x: 12; y: 57; text: "空间示意 · 未标定"; color: root.amber
+                    font.family: root.cjk; font.pixelSize: 7
+                }
+                Text {
+                    x: 12; y: 73; text: "not a calibrated lane model" ; color: "#7D7478"
+                    font.family: root.num; font.pixelSize: 6
+                }
+            }
+            Rectangle {
+                x: parent.width - 242; y: 176; width: 218; height: 103; radius: 4
+                color: "#B3051219"; border.color: "#254B58"; border.width: 0.7
+                Text {
+                    x: 12; y: 9; text: "TESLA-BEVCAM-CLONE"
+                    color: root.cyanHot; font.family: root.num; font.pixelSize: 7; font.weight: Font.DemiBold
+                }
+                Text {
+                    x: 12; y: 27; text: "BEV 视觉演示"
+                    color: root.inkSoft; font.family: root.cjk; font.pixelSize: 10; font.weight: Font.DemiBold
+                }
+                Rectangle { x: 12; y: 47; width: 194; height: 1; color: "#1D3B46" }
+                Text {
+                    x: 12; y: 55; text: "上游渲染序列 · 非实时几何"
+                    color: root.amber; font.family: root.cjk; font.pixelSize: 6
+                }
+                Text {
+                    x: 12; y: 72; text: "ADAS 计数来自右侧真实 AI"
+                    color: "#7E9FA9"; font.family: root.cjk; font.pixelSize: 6
+                }
+            }
+            Text {
+                x: 24; y: parent.height - 32; text: "EGO   ·   " + root.totalDetections() + " TARGETS   ·   CLONE VISUAL  ·   NON-CALIBRATED"
+                color: "#8FBCC8"; font.family: root.num; font.pixelSize: 7
+            }
+        }
+    }
+
+    // ----------------------------------------------------------------- sidebar
+    Item {
+        id: navCard
+        x: 1000
+        layer.enabled: true
+        layer.smooth: true; y: 77; width: 260; height: 152
+        HudPanel {
+            anchors.fill: parent
+            cut: 11; accent: root.cyan
+            fillTop: "#0A1D28"; fillBottom: "#040F17"
+            fillOpacity: 0.95; borderOpacity: 0.58
+        }
+        Text {
+            x: 14; y: 9; text: "路径规划"
+            color: "#9EC9D3"; font.family: root.cjk; font.pixelSize: 9; font.weight: Font.DemiBold
+        }
+        Text {
+            x: 73; y: 10; text: "NAVIGATION"
+            color: "#517F8B"; font.family: root.num; font.pixelSize: 6; font.letterSpacing: 0.9
+        }
+        Rectangle {
+            x: parent.width - 75; y: 9; width: 61; height: 16; radius: 2
+            color: root.navValid() ? "#0B302A" : "#2B220E"
+            border.color: root.navValid() ? "#436B56" : "#6B552A"; border.width: 0.6
+            Text {
+                anchors.centerIn: parent
+                text: root.navValid() ? "AI 实时" : "设计预览"
+                color: root.navValid() ? root.mint : root.amber
+                font.family: root.cjk; font.pixelSize: 6
+            }
+        }
+        Image {
+            x: 13; y: 30; width: 62; height: 62
+            source: "assets/route_turn.png"
+            fillMode: Image.PreserveAspectFit
+            visible: root.navValid() && root.navDirectionCode() === "right"
+        }
+        Item {
+            x: 13; y: 30; width: 62; height: 62
+            visible: root.navValid() && root.navDirectionCode() !== "right"
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: 8; text: "OCR"; color: root.cyan; font.family: root.num
+                font.pixelSize: 13; font.weight: Font.DemiBold
+            }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: 28; text: "Q" + (root.navQuadrant + 1); color: "#79A8B3"
+                font.family: root.num; font.pixelSize: 7
+            }
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: 44; width: 32; height: 1; color: "#2D5360"
+            }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: 49; text: "LIVE"; color: root.mint; font.family: root.num; font.pixelSize: 6
             }
         }
         Text {
-            x: 84; y: 54; text: root.trafficLabel(video.aiTraffic)
-            color: video.aiTraffic === "GREEN" ? "#55e7b5" : video.aiTraffic === "RED" ? "#ff6575" : video.aiTraffic === "YELLOW" ? "#f3c35b" : "#9ab4c1"
-            font.pixelSize: 25
+            x: 81; y: 25; width: 56; height: 30
+            text: root.navDistance()
+            color: root.ink; font.family: root.num; font.pixelSize: 28; font.weight: Font.Bold
+            verticalAlignment: Text.AlignVCenter
         }
-        Text { x: 84; y: 90; width: 176; text: video.aiStatus; color: "#9ab4c1"; font.pixelSize: 10; elide: Text.ElideRight }
-        Rectangle { x: 84; y: 120; width: 178; height: 1; color: "#285164" }
-        Text { x: 18; y: 153; text: "实时检测框  " + video.aiDetectionCount; color: "#b5c9d3"; font.pixelSize: 11 }
-        Text { x: 194; y: 14; text: video.aiResultsReceived > 0 ? "MVA2 实时" : "等待 AI"; color: "#f5c75f"; font.pixelSize: 10 }
-    }
-
-    Rectangle {
-        id: videoFrame
-        x: 320; y: 92; width: 640; height: 398; radius: 14
-        visible: root.viewMode === 0
-        color: "#05090e"; border.color: "#286981"; border.width: 1
-        VideoItem { id: video; objectName: "videoProbeItem"; anchors.fill: parent; anchors.margins: 4 }
-        Repeater {
-            model: video.aiBoxes
-            delegate: Item {
-                x: video.x + modelData.x * video.width / 1280
-                y: video.y + modelData.y * video.height / 720
-                width: modelData.width * video.width / 1280
-                height: modelData.height * video.height / 720
-                Rectangle { anchors.fill: parent; color: "transparent"; border.color: modelData.color; border.width: 2 }
-                Rectangle {
-                    y: -18; width: label.implicitWidth + 8; height: 16
-                    color: modelData.color; opacity: 0.92
-                    Text { id: label; anchors.centerIn: parent; text: modelData.label; color: "#ffffff"; font.pixelSize: 9 }
-                }
-            }
+        Text {
+            x: 133; y: 38; text: "m"
+            color: root.muted; font.family: root.num; font.pixelSize: 8
+            visible: root.navValid() && video.aiNavigationDistanceM > 0
         }
-        Rectangle { x: 16; y: 14; width: 190; height: 34; radius: 17; color: "#152636"; opacity: 0.92
-            Text { anchors.centerIn: parent; text: root.viewMode === 1 ? "四路预览 / GPU纹理" : root.viewMode === 2 ? "空间视图 / 预览" : "前视感知 / RGB565"; color: "#e9f7ff"; font.pixelSize: 13 }
+        Text {
+            x: 153; y: 31; width: 84; height: 24
+            text: root.navDirection()
+            color: root.cyanHot; font.family: root.cjk; font.pixelSize: 17; font.weight: Font.DemiBold
+            verticalAlignment: Text.AlignVCenter
         }
-        Text { x: 18; y: height - 30; text: "frame_id  " + video.frameId + "   ·   latest-only"; color: "#85bacb"; font.pixelSize: 11 }
-        Text { x: width - 190; y: height - 30; text: "上传 " + video.uploadMs.toFixed(2) + " ms"; color: "#85bacb"; font.pixelSize: 11 }
-    }
-
-    Rectangle {
-        x: 320; y: 92; width: 640; height: 398; radius: 14
-        visible: root.viewMode === 1
-        color: "#05090e"; border.color: "#286981"; border.width: 1
-        Grid {
-            anchors.fill: parent; anchors.margins: 10; spacing: 8; columns: 2
+        Text {
+            x: 82; y: 58; width: 158; height: 17
+            text: root.navRoad()
+            color: root.inkSoft; font.family: root.cjk; font.pixelSize: 10
+            elide: Text.ElideRight
+        }
+        Rectangle { x: 14; y: 100; width: parent.width - 28; height: 1; color: "#1A3B47" }
+        Text {
+            x: 14; y: 106; width: 232; height: 13
+            text: root.navMeta()
+            color: root.navValid() ? "#77A8B2" : "#A58E58"
+            font.family: root.cjk; font.pixelSize: 6
+        }
+        Text {
+            x: 14; y: 124; text: "导航源"
+            color: "#7598A3"; font.family: root.cjk; font.pixelSize: 6
+        }
+        Row {
+            x: 57; y: 121; spacing: 3
             Repeater {
-                model: ["前视 / RGB565 实时", "左视 / 预览", "后视 / 预览", "右视 / 预览"]
+                model: 4
                 delegate: Rectangle {
-                    width: 306; height: 184; radius: 8
-                    gradient: Gradient {
-                        GradientStop { position: 0.0; color: "#10283b" }
-                        GradientStop { position: 0.56; color: "#16212a" }
-                        GradientStop { position: 1.0; color: "#08121d" }
+                    width: 36; height: 18; radius: 2
+                    color: index === root.navQuadrant ? "#163B47" : "#07161D"
+                    border.width: 0.7
+                    border.color: index === root.navQuadrant ? root.amber : "#284752"
+                    Text {
+                        anchors.centerIn: parent
+                        text: "Q" + (index + 1)
+                        color: index === root.navQuadrant ? root.amber : "#7F9BA5"
+                        font.family: root.num; font.pixelSize: 6
                     }
-                    border.color: index === 0 ? "#53dfff" : "#2b718d"; border.width: 1
-                    Text { x: 12; y: 10; text: modelData; color: "#e4f4fa"; font.pixelSize: 12 }
-                    Rectangle { x: parent.width / 2 - 3; y: 62; width: 6; height: 96; color: "#eff0d0"; opacity: 0.75 }
-                    Rectangle { x: parent.width / 2 - 62; y: 95; width: 124; height: 2; color: "#7cb0bb"; rotation: -12; opacity: 0.45 }
-                    Text { x: 12; y: parent.height - 24; text: index === 0 ? "frame_id " + video.frameId : "DESIGN PREVIEW"; color: "#88b3c3"; font.pixelSize: 10 }
-                    Text { x: parent.width - 70; y: parent.height - 24; text: "预览数据"; color: "#f2c45c"; font.pixelSize: 9 }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.navQuadrant = index
+                    }
                 }
             }
         }
     }
 
-    Rectangle {
-        x: 320; y: 92; width: 640; height: 398; radius: 14
-        visible: root.viewMode === 2
-        color: "#081523"; border.color: "#286981"; border.width: 1
-        Text { x: 24; y: 20; text: "ADAS 空间示意"; color: "#e3f3fa"; font.pixelSize: 18 }
-        Text { x: 24; y: 50; text: "设计预览 · 未接入标定与真实目标"; color: "#f2c45c"; font.pixelSize: 11 }
-        Canvas {
-            anchors.fill: parent; anchors.margins: 60
-            onPaint: {
-                var p = getContext("2d"); p.clearRect(0,0,width,height); p.strokeStyle="#38bfe8"; p.lineWidth=4;
-                p.beginPath(); p.moveTo(width*0.43,height); p.lineTo(width*0.18,height*0.12); p.moveTo(width*0.57,height); p.lineTo(width*0.82,height*0.12); p.stroke();
-                p.fillStyle="#173c56"; p.fillRect(width*0.44,height*0.72,width*0.12,height*0.18); p.strokeRect(width*0.44,height*0.72,width*0.12,height*0.18);
-                p.fillStyle="#ff4c69"; p.fillRect(width*0.465,height*0.24,width*0.07,height*0.09); p.fillStyle="#269be0"; p.fillRect(width*0.22,height*0.48,width*0.08,height*0.1); p.fillRect(width*0.70,height*0.48,width*0.08,height*0.1);
+    Item {
+        id: hazardCard
+        x: 1000
+        layer.enabled: true
+        layer.smooth: true; y: 241; width: 260; height: 142
+        HudPanel {
+            anchors.fill: parent
+            cut: 11; accent: root.red
+            fillTop: "#1D0B11"; fillBottom: "#080B0F"
+            fillOpacity: 0.96; borderOpacity: 0.64; glow: true
+        }
+        Image { x: 13; y: 10; width: 15; height: 15; source: "assets/icon_warning.png" }
+        Text {
+            x: 34; y: 6; text: "危险事件"
+            color: "#FFE7E9"; font.family: root.cjk; font.pixelSize: 10; font.weight: Font.DemiBold
+        }
+        Text {
+            x: 96; y: 10; text: "HAZARD"
+            color: "#A76D73"; font.family: root.num; font.pixelSize: 6; font.letterSpacing: 0.9
+        }
+        Rectangle {
+            x: parent.width - 73; y: 8; width: 59; height: 16; radius: 2
+            color: "#2E1119"; border.color: "#65303A"; border.width: 0.6
+            Text {
+                anchors.centerIn: parent
+                text: root.hazardBadge()
+                color: "#E3A1A8"; font.family: root.cjk; font.pixelSize: 6
             }
+        }
+        Rectangle { x: 13; y: 31; width: parent.width - 26; height: 1; color: "#3A1E24" }
+        Item {
+            visible: video.aiOnline && root.hazardRows().length === 0
+            x: 0; y: 34; width: parent.width; height: 89
+            Image {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: 10; width: 26; height: 26
+                source: "assets/icon_warning.png"
+                opacity: 0.28
+            }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: 42; text: "未检测到危险事件"
+                color: "#E2BFC2"; font.family: root.cjk; font.pixelSize: 9
+            }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: 60; text: "AI 实时监控中"
+                color: "#A6797E"; font.family: root.cjk; font.pixelSize: 6
+            }
+        }
+        Repeater {
+            model: root.hazardRows()
+            delegate: Item {
+                x: 10; y: 37 + index * 28; width: parent.width - 20; height: 25
+                Rectangle {
+                    x: 0; y: 2; width: 2; height: 17; color: root.red
+                    opacity: modelData.live ? 0.75 : 0.25
+                }
+                Image {
+                    x: 9; y: 4; width: 12; height: 12
+                    source: "assets/icon_warning.png"
+                    opacity: modelData.live ? 0.9 : 0.35
+                }
+                Text {
+                    x: 28; y: 1; width: 176; height: 17
+                    text: modelData.label
+                    color: modelData.live ? "#F5DFE1" : "#8F7376"
+                    font.family: root.cjk; font.pixelSize: 8
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                }
+                Text {
+                    anchors.right: parent.right; y: 2
+                    text: modelData.value
+                    color: modelData.live ? "#FF9DA5" : "#69585A"
+                    font.family: root.num; font.pixelSize: 6
+                }
+                Rectangle { x: 28; anchors.bottom: parent.bottom; width: parent.width - 28; height: 1; color: "#332027" }
+            }
+        }
+        Text {
+            x: 14; y: parent.height - 17
+            text: root.hazardFooter()
+            color: "#B8848A"; font.family: root.cjk; font.pixelSize: 6
+            elide: Text.ElideRight; width: parent.width - 28
         }
     }
 
-    Rectangle {
-        x: 978; y: 92; width: 282; height: 154; radius: 14
-        color: "#0d263b"; border.color: "#2b9dcd"; border.width: 1
-        Text { x: 18; y: 14; text: "导航辅助"; color: "#a5bac7"; font.pixelSize: 16 }
-        Text { x: 18; y: 50; text: "↗"; color: "#43c8ff"; font.pixelSize: 50 }
-        Text { x: 98; y: 54; width: 165; text: video.aiNavigation; color: "#edf8ff"; font.pixelSize: 15; elide: Text.ElideRight }
-        Text { x: 98; y: 88; text: video.aiResultsReceived > 0 ? "OCR 已接入" : "等待 OCR"; color: "#d5e7ef"; font.pixelSize: 13 }
-        Text { x: 98; y: 119; width: 165; text: video.aiStatus; color: "#8faab8"; font.pixelSize: 9; elide: Text.ElideRight }
-        Text { x: 204; y: 14; text: "AI状态"; color: "#f5c75f"; font.pixelSize: 10 }
+    Item {
+        id: laneCard
+        x: 1000
+        layer.enabled: true
+        layer.smooth: true; y: 395; width: 260; height: 142
+        HudPanel {
+            anchors.fill: parent
+            cut: 11; accent: root.cyan
+            fillTop: "#091D27"; fillBottom: "#040F16"
+            fillOpacity: 0.95; borderOpacity: 0.52
+        }
+        Image { x: 13; y: 10; width: 14; height: 14; source: "assets/icon_lane.png" }
+        Text {
+            x: 34; y: 6; text: "车道状态"
+            color: root.inkSoft; font.family: root.cjk; font.pixelSize: 9; font.weight: Font.DemiBold
+        }
+        Rectangle {
+            x: parent.width - 72; y: 8; width: 58; height: 16; radius: 2
+            color: "#2B220E"; border.color: "#6A542A"; border.width: 0.6
+            Text {
+                anchors.centerIn: parent; text: "设计预览"; color: root.amber
+                font.family: root.cjk; font.pixelSize: 6
+            }
+        }
+        Image {
+            x: 12; y: 33; width: 78; height: 96
+            source: "assets/lane_diagram.png"
+            fillMode: Image.PreserveAspectFit
+        }
+        Text { x: 104; y: 35; text: "当前车道"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 7 }
+        Text { x: 178; y: 35; text: "直行"; color: root.mint; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
+        Rectangle { x: 104; y: 53; width: parent.width - 118; height: 1; color: "#1A343D" }
+        Text { x: 104; y: 59; text: "左侧车道"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 7 }
+        Text { x: 178; y: 59; text: "可变道"; color: "#9FE4D0"; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
+        Rectangle { x: 104; y: 77; width: parent.width - 118; height: 1; color: "#1A343D" }
+        Text { x: 104; y: 83; text: "右侧车道"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 7 }
+        Text { x: 178; y: 83; text: "禁止变道"; color: root.red; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
+        Text {
+            x: 104; y: parent.height - 23; width: parent.width - 118
+            text: "车道识别未接入 · 仅示意"
+            color: "#9A8452"; font.family: root.cjk; font.pixelSize: 6
+        }
     }
 
-    Rectangle {
-        x: 978; y: 258; width: 282; height: 152; radius: 14
-        color: "#351321"; border.color: "#e64c67"; border.width: 1
-        Text { x: 18; y: 14; text: "⚠  危险事件"; color: "#ff6680"; font.pixelSize: 16 }
-        Column { x: 18; y: 48; spacing: 0
-            Repeater { model: video.aiHazards.length > 0 ? video.aiHazards : ["等待分析结果"]
-                delegate: Rectangle { width: 245; height: 32; color: "transparent"; border.color: "#713146"; border.width: index === 0 ? 0 : 1
-                    Text { anchors.verticalCenter: parent.verticalCenter; text: "•  " + modelData; color: "#ffdce2"; font.pixelSize: 12; elide: Text.ElideRight; width: 230 }
+    // --------------------------------------------------------------- bottom dock
+    Repeater {
+        model: root.cameras
+        delegate: Item {
+            x: 20 + index * 203; y: 547; width: 193; height: 145
+            layer.enabled: true
+            layer.smooth: true
+            Rectangle {
+                anchors.fill: parent
+                radius: 5
+                color: "#040D13"
+                border.width: index === root.roadQuadrant ? 1.2 : 0.8
+                border.color: index === root.roadQuadrant ? root.cyan : "#254754"
+                clip: true
+                Image {
+                    anchors.fill: parent
+                    source: modelData.image
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    opacity: index === root.roadQuadrant ? 1 : 0.78
+                }
+                Rectangle {
+                    anchors.fill: parent
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: "#23040B11" }
+                        GradientStop { position: 0.55; color: "#00040B11" }
+                        GradientStop { position: 1.0; color: "#E6040B11" }
+                    }
+                }
+                Rectangle {
+                    x: 9; y: 9; width: 31; height: 13; radius: 2
+                    color: "#B4020D13"
+                    Text {
+                        anchors.centerIn: parent
+                        text: index === root.roadQuadrant ? "MAIN"
+                              : (index === root.navQuadrant ? "NAV" : "SNAP")
+                        color: index === root.roadQuadrant ? root.mint
+                               : (index === root.navQuadrant ? root.amber : "#81A7B2")
+                        font.family: root.num; font.pixelSize: 5; font.weight: Font.DemiBold
+                    }
+                }
+                Rectangle {
+                    anchors.right: parent.right; anchors.rightMargin: 8; y: 10
+                    width: 4; height: 4; radius: 2
+                    color: index === root.roadQuadrant ? root.mint : "#6A8993"
+                }
+                Rectangle {
+                    x: 10; y: 104; width: 23; height: 19; radius: 2
+                    color: index === root.roadQuadrant ? root.cyan : "#0D2B36"
+                    Text {
+                        anchors.centerIn: parent
+                        text: "0" + (index + 1)
+                        color: index === root.roadQuadrant ? "#031118" : "#9AC5CE"
+                        font.family: root.num; font.pixelSize: 7; font.weight: Font.Bold
+                    }
+                }
+                Text {
+                    x: 39; y: 102; width: 100; height: 17
+                    text: modelData.name
+                    color: root.ink; font.family: root.cjk; font.pixelSize: 9; font.weight: Font.DemiBold
+                }
+                Text {
+                    x: 39; y: 119; width: 133; height: 12
+                    text: modelData.source
+                    color: "#80A7B1"; font.family: root.num; font.pixelSize: 6
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        root.roadQuadrant = index
+                        root.viewMode = 0
+                    }
                 }
             }
         }
-        Text { x: 205; y: 130; text: video.aiResultsReceived > 0 ? "MVA2" : "等待"; color: "#f5c75f"; font.pixelSize: 10 }
     }
 
-    Rectangle {
-        x: 978; y: 422; width: 282; height: 68; radius: 14
-        color: "#0e2130"; border.color: "#2b789b"; border.width: 1
-        Text { x: 18; y: 12; text: "车道状态"; color: "#bed2dc"; font.pixelSize: 15 }
-        Text { x: 18; y: 39; text: "左侧线  ▬    当前车道：直行    ▬  右侧线"; color: "#79d8e9"; font.pixelSize: 11 }
+    Item {
+        id: spatialCard
+        x: 833
+        layer.enabled: true
+        layer.smooth: true; y: 547; width: 427; height: 145
+        HudPanel {
+            anchors.fill: parent
+            cut: 11; accent: root.cyan
+            fillTop: "#091D27"; fillBottom: "#040F16"
+            fillOpacity: 0.96; borderOpacity: 0.58
+        }
+        Image { x: 14; y: 11; width: 15; height: 15; source: "assets/icon_radar.png" }
+        Text {
+            x: 35; y: 7; text: "ADAS 空间识别"
+            color: root.ink; font.family: root.cjk; font.pixelSize: 10; font.weight: Font.DemiBold
+        }
+        Rectangle {
+            x: parent.width - 72; y: 9; width: 57; height: 16; radius: 2
+            color: "#0B302A"; border.color: "#3F7059"; border.width: 0.6
+            Text { anchors.centerIn: parent; text: "LIVE"; color: root.mint; font.family: root.num; font.pixelSize: 6 }
+        }
+        Rectangle { x: 14; y: 31; width: parent.width - 28; height: 1; color: "#1A3942" }
+        Column {
+            x: 14; y: 40; spacing: 6
+            Repeater {
+                model: [
+                    { icon: "assets/icon_car.png", value: root.vehicleCount(), name: "车辆" },
+                    { icon: "assets/icon_person.png", value: root.personCount(), name: "行人" },
+                    { icon: "assets/icon_bike.png", value: root.cycleCount(), name: "非机动车" }
+                ]
+                delegate: Item {
+                    width: 105; height: 18
+                    Image { x: 0; y: 2; width: 12; height: 12; source: modelData.icon }
+                    Text { x: 18; y: -1; text: modelData.value; color: root.inkSoft; font.family: root.num; font.pixelSize: 10; font.weight: Font.DemiBold }
+                    Text { x: 38; y: 1; text: modelData.name; color: "#8BA8B1"; font.family: root.cjk; font.pixelSize: 7 }
+                }
+            }
+        }
+        Rectangle {
+            x: 126; y: 36; width: 289; height: 98; radius: 3
+            color: "#70051118"; border.color: "#244653"; border.width: 0.7
+        }
+        LiveBev {
+            x: 130; y: 39; width: 281; height: 92
+            boxes: video.aiBoxes
+            activeQuadrant: root.roadQuadrant
+            online: video.aiOnline
+        }
+        Text {
+            x: 138; y: parent.height - 18
+            text: "LIVE BEV · 主视 Q" + (root.roadQuadrant + 1) + " · 实时目标投影"
+            color: "#7FB3B8"; font.family: root.cjk; font.pixelSize: 6
+        }
     }
 
-    Row {
-        x: 20; y: 510; spacing: 12
-        Repeater { model: ["前视", "左视", "后视", "导航"]
-            delegate: Rectangle { width: 196; height: 118; radius: 12; color: "#0d1824"; border.color: index === 0 ? "#56dcff" : "#23576d"; border.width: 1
-                Rectangle { x: 8; y: 8; width: parent.width - 16; height: 74; color: "#05090e"; border.color: "#1f526a" }
-                Text { x: 12; y: 88; text: (index + 1) + "  " + modelData; color: "#e3f2f8"; font.pixelSize: 13 }
-                Text { x: 12; y: 103; text: index === 0 ? "HDMI-IN" : "预览通道"; color: "#7c9cac"; font.pixelSize: 10 }
+    // ------------------------------------------------------------ signal test
+    Item {
+        anchors.fill: parent
+        visible: root.hudTestOpen
+        z: 300
+
+        Rectangle {
+            anchors.fill: parent
+            color: "#C902070B"
+            MouseArea { anchors.fill: parent; onClicked: root.hudTestOpen = false }
+        }
+
+        Item {
+            x: 240; y: 118; width: 800; height: 486
+            HudPanel {
+                anchors.fill: parent
+                cut: 14; accent: root.cyan
+                fillTop: "#0A1D28"; fillBottom: "#030C12"
+                fillOpacity: 0.98; borderOpacity: 0.7; glow: true
+            }
+            MouseArea { anchors.fill: parent; onClicked: {} }
+
+            Text {
+                x: 24; y: 16; text: "PCIe HUD V2 信号测试"
+                color: root.ink; font.family: root.cjk; font.pixelSize: 15; font.weight: Font.DemiBold
+            }
+            Text {
+                x: 280; y: 20; text: "BAR1 +0x638 / +0x644 · root bridge 38262"
+                color: "#6F95A0"; font.family: root.num; font.pixelSize: 7
+            }
+            Rectangle { x: 24; y: 47; width: parent.width - 48; height: 1; color: "#23434E" }
+            Rectangle {
+                x: parent.width - 92; y: 14; width: 70; height: 22; radius: 2
+                color: pcieHud.bridgeOnline ? "#0B302A" : "#2B220E"
+                border.color: pcieHud.bridgeOnline ? "#3F7059" : "#6B552A"; border.width: 0.7
+                Text {
+                    anchors.centerIn: parent
+                    text: pcieHud.bridgeOnline ? "BRIDGE ON" : "BRIDGE OFF"
+                    color: pcieHud.bridgeOnline ? root.mint : root.amber
+                    font.family: root.num; font.pixelSize: 6
+                }
+            }
+            Text {
+                x: parent.width - 30; y: 16; text: "×"
+                color: "#89A9B3"; font.family: root.num; font.pixelSize: 18
+                MouseArea { anchors.fill: parent; anchors.margins: -8; onClicked: root.hudTestOpen = false }
+            }
+
+            Text { x: 24; y: 63; text: "红绿灯"; color: "#8FB0BA"; font.family: root.cjk; font.pixelSize: 8 }
+            Repeater {
+                model: [{ name: "熄灭", value: 0 }, { name: "红灯", value: 1 }, { name: "绿灯", value: 2 }]
+                delegate: Rectangle {
+                    x: 90 + index * 92; y: 59; width: 82; height: 24; radius: 2
+                    color: root.testTraffic === modelData.value ? "#163B47" : "#07161D"
+                    border.width: 0.8
+                    border.color: root.testTraffic === modelData.value ? root.cyan : "#284752"
+                    Text {
+                        anchors.centerIn: parent
+                        text: modelData.name
+                        color: root.testTraffic === modelData.value ? root.cyanHot : "#8AA5AE"
+                        font.family: root.cjk; font.pixelSize: 8
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.testTraffic = modelData.value
+                    }
+                }
+            }
+            Text {
+                x: 380; y: 66; text: "协议只有 OFF/RED/GREEN；黄灯无字段"
+                color: "#6E8E98"; font.family: root.cjk; font.pixelSize: 6
+            }
+
+            Repeater {
+                model: [
+                    { key: "perception", label: "感知使能 (perception_enable)" },
+                    { key: "pedestrian", label: "行人 (pedestrian)" },
+                    { key: "staticTarget", label: "静止目标 (static_target)" },
+                    { key: "overspeed", label: "超速 (overspeed)" },
+                    { key: "lka", label: "LKA 警告 (lka_warning)" },
+                    { key: "legacy", label: "HUD/ADAS 使能 (0x608)" }
+                ]
+                delegate: Item {
+                    x: 24 + (index % 2) * 378
+                    y: 100 + Math.floor(index / 2) * 42
+                    width: 360; height: 32
+                    Text {
+                        x: 0; y: 4; text: modelData.label
+                        color: "#A9C5CD"; font.family: root.cjk; font.pixelSize: 8
+                    }
+                    Rectangle {
+                        x: 282; y: 3; width: 56; height: 22; radius: 2
+                        color: root.hudFlags[modelData.key] ? "#0C3A33" : "#101C22"
+                        border.color: root.hudFlags[modelData.key] ? root.mint : "#33505B"; border.width: 0.8
+                        Text {
+                            anchors.centerIn: parent
+                            text: root.hudFlags[modelData.key] ? "ON" : "OFF"
+                            color: root.hudFlags[modelData.key] ? root.mint : "#718C95"
+                            font.family: root.num; font.pixelSize: 7
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.toggleHudFlag(modelData.key)
+                        }
+                    }
+                }
+            }
+
+            Text { x: 24; y: 232; text: "车道"; color: "#8FB0BA"; font.family: root.cjk; font.pixelSize: 8 }
+            Text { x: 90; y: 235; text: "左 " + root.laneText(root.testLaneLeft); color: root.cyanHot; font.family: root.cjk; font.pixelSize: 8 }
+            Rectangle {
+                x: 156; y: 229; width: 52; height: 22; radius: 2
+                color: "#163B47"; border.color: "#3A6775"; border.width: 0.7
+                Text { anchors.centerIn: parent; text: "切换"; color: root.inkSoft; font.family: root.cjk; font.pixelSize: 7 }
+                MouseArea { anchors.fill: parent; onClicked: root.testLaneLeft = (root.testLaneLeft + 1) % 3 }
+            }
+            Text { x: 240; y: 235; text: "右 " + root.laneText(root.testLaneRight); color: root.cyanHot; font.family: root.cjk; font.pixelSize: 8 }
+            Rectangle {
+                x: 306; y: 229; width: 52; height: 22; radius: 2
+                color: "#163B47"; border.color: "#3A6775"; border.width: 0.7
+                Text { anchors.centerIn: parent; text: "切换"; color: root.inkSoft; font.family: root.cjk; font.pixelSize: 7 }
+                MouseArea { anchors.fill: parent; onClicked: root.testLaneRight = (root.testLaneRight + 1) % 3 }
+            }
+            Text {
+                x: 390; y: 235; text: "时间控制未启用：板端时钟未同步"
+                color: "#8B7B55"; font.family: root.cjk; font.pixelSize: 6
+            }
+
+            Rectangle { x: 24; y: 274; width: parent.width - 48; height: 1; color: "#23434E" }
+            Text {
+                x: 24; y: 287; width: parent.width - 48; height: 34
+                text: "识别信号自动发送：红/绿灯取 AI traffic，行人取 person 检测；每 500 ms 一次。\n"
+                      + "手动测试可勾选其它字段；HUD/ADAS 使能通过 legacy 0x608 保持可见。"
+                color: "#8EAAB3"; font.family: root.cjk; font.pixelSize: 7; lineHeight: 1.3
+            }
+            Text {
+                x: 24; y: 334; width: parent.width - 48; height: 20
+                text: "状态: " + pcieHud.bridgeStatus + "  ·  applied seq " + pcieHud.lastAppliedSeq
+                      + "  ·  error " + pcieHud.lastError
+                color: pcieHud.bridgeOnline ? root.mint : root.amber
+                font.family: root.num; font.pixelSize: 7
+            }
+            Text {
+                x: 24; y: 354; width: parent.width - 48; height: 20
+                text: "回复: " + (pcieHud.lastReply.length > 160 ? pcieHud.lastReply.substring(0, 160) + "..." : pcieHud.lastReply)
+                color: "#6E8C95"; font.family: root.num; font.pixelSize: 6
+                elide: Text.ElideRight
+            }
+
+            Rectangle {
+                x: 24; y: 390; width: 176; height: 34; radius: 3
+                color: "#0C3C50"; border.color: root.cyan; border.width: 1
+                Text { anchors.centerIn: parent; text: "发送一次"; color: root.cyanHot; font.family: root.cjk; font.pixelSize: 10; font.weight: Font.DemiBold }
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.sendTestHud()
+                }
+            }
+            Rectangle {
+                x: 214; y: 390; width: 176; height: 34; radius: 3
+                color: root.autoHudSend ? "#0C3A33" : "#101C22"
+                border.color: root.autoHudSend ? root.mint : "#33505B"; border.width: 1
+                Text { anchors.centerIn: parent; text: root.autoHudSend ? "AI 自动发送 ON" : "AI 自动发送 OFF"; color: root.autoHudSend ? root.mint : "#8AA5AE"; font.family: root.cjk; font.pixelSize: 9 }
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.autoHudSend = !root.autoHudSend }
+            }
+            Rectangle {
+                x: 404; y: 390; width: 100; height: 34; radius: 3
+                color: "#07161D"; border.color: "#33505B"; border.width: 0.8
+                Text { anchors.centerIn: parent; text: "关闭"; color: "#9CB5BE"; font.family: root.cjk; font.pixelSize: 9 }
+                MouseArea { anchors.fill: parent; onClicked: root.hudTestOpen = false }
+            }
+            Text {
+                x: 520; y: 397; text: "T 打开/关闭 · Esc 关闭"
+                color: "#5F7E88"; font.family: root.cjk; font.pixelSize: 6
             }
         }
     }
 
-    Rectangle {
-        x: 832; y: 510; width: 428; height: 118; radius: 14
-        color: "#0c2032"; border.color: "#2f82a4"; border.width: 1
-        Text { x: 18; y: 13; text: "ADAS 空间示意"; color: "#e3f3fa"; font.pixelSize: 15 }
-        Text { x: width - 88; y: 14; text: "预览数据"; color: "#f5c75f"; font.pixelSize: 10 }
-        Canvas { anchors.fill: parent; anchors.margins: 8; onPaint: {
-                var p = getContext("2d"); p.clearRect(0,0,width,height); p.strokeStyle="#38bfe8"; p.lineWidth=2;
-                p.beginPath(); p.moveTo(214,100); p.lineTo(170,20); p.moveTo(238,100); p.lineTo(282,20); p.stroke();
-                p.fillStyle="#173c56"; p.fillRect(205,66,42,30); p.strokeRect(205,66,42,30);
-                p.fillStyle="#ff4c69"; p.fillRect(210,28,30,18); p.fillStyle="#269be0"; p.fillRect(152,44,28,17); p.fillRect(278,44,28,17);
-            }
-        }
-        Text { x: 18; y: 91; text: "车辆 12  行人 3  非机动车 1   ·   空间示意 · 预览"; color: "#84b8c8"; font.pixelSize: 10 }
+    // ------------------------------------------------------------------ footer
+    Rectangle { x: 20; y: 696; width: 1240; height: 1; color: "#142E3A" }
+    Text {
+        x: 20; y: 701; height: 15; text: "PCIE RGB565 1280×720  ·  Mali-G52  ·  GLES 3.2  ·  " + video.sourceFps.toFixed(0) + " FPS IN"
+        color: "#7195A0"; font.family: root.num; font.pixelSize: 6
     }
-
-    Text { x: 20; y: 686; text: "OpenGL ES  ·  " + video.glVersion + "  ·  EGL " + video.eglVendor; color: "#6f8e9d"; font.pixelSize: 10; elide: Text.ElideRight; width: 820 }
-    Text { x: 1000; y: 686; text: "RGB565 1280×720  |  物理 scanout 未测量"; color: "#f5c75f"; font.pixelSize: 10 }
+    Text {
+        x: 500; y: 701; width: 550; height: 15
+        text: "1 / 2 / 3 切换视图   ·   Q 退出"
+        color: "#6F909B"; font.family: root.cjk; font.pixelSize: 7
+        horizontalAlignment: Text.AlignHCenter
+    }
+    Text {
+        x: 1036; y: 701; width: 224; height: 15
+        text: video.aiOnline ? ("AI SIDECAR LIVE  ·  " + video.aiFps.toFixed(1) + " FPS") : "AI SIDECAR OFFLINE"
+        color: video.aiOnline ? "#74A7A8" : "#A98A50"
+        font.family: root.num; font.pixelSize: 6
+        horizontalAlignment: Text.AlignRight
+    }
 }

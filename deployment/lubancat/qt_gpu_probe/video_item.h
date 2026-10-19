@@ -1,13 +1,18 @@
 #pragma once
 
 #include <QQuickFramebufferObject>
+#include <fstream>
+#include <vector>
 #include <QMutex>
+#include <QRectF>
 #include <QSet>
 #include <QStringList>
 #include <QVariantList>
+#include <QVariantMap>
 #include <QTimer>
 #include <QElapsedTimer>
 #include <atomic>
+#include <deque>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -35,13 +40,40 @@ class VideoItem : public QQuickFramebufferObject {
     Q_PROPERTY(QString eglVendor READ eglVendor NOTIFY metricsChanged)
     Q_PROPERTY(bool hardwareAccelerated READ hardwareAccelerated NOTIFY metricsChanged)
     Q_PROPERTY(QString aiStatus READ aiStatus NOTIFY metricsChanged)
-    Q_PROPERTY(QString aiTraffic READ aiTraffic NOTIFY metricsChanged)
-    Q_PROPERTY(QString aiNavigation READ aiNavigation NOTIFY metricsChanged)
-    Q_PROPERTY(int aiDetectionCount READ aiDetectionCount NOTIFY metricsChanged)
-    Q_PROPERTY(QVariantList aiBoxes READ aiBoxes NOTIFY metricsChanged)
-    Q_PROPERTY(QVariantList aiHazards READ aiHazards NOTIFY metricsChanged)
+    Q_PROPERTY(bool aiOnline READ aiOnline NOTIFY metricsChanged)
+    Q_PROPERTY(double aiFps READ aiFps NOTIFY metricsChanged)
+    Q_PROPERTY(QString aiTraffic READ aiTraffic NOTIFY aiChanged)
+    Q_PROPERTY(QString aiNavigation READ aiNavigation NOTIFY aiChanged)
+    Q_PROPERTY(QString aiNavigationRoad READ aiNavigationRoad NOTIFY aiChanged)
+    Q_PROPERTY(QString aiNavigationState READ aiNavigationState NOTIFY aiChanged)
+    Q_PROPERTY(QString aiNavigationDirection READ aiNavigationDirection NOTIFY aiChanged)
+    Q_PROPERTY(double aiNavigationDistanceM READ aiNavigationDistanceM NOTIFY aiChanged)
+    Q_PROPERTY(int aiResultAgeMs READ aiResultAgeMs NOTIFY metricsChanged)
+    Q_PROPERTY(int aiHazardAgeMs READ aiHazardAgeMs NOTIFY metricsChanged)
+    Q_PROPERTY(int aiDetectionCount READ aiDetectionCount NOTIFY aiChanged)
+    Q_PROPERTY(QVariantMap aiDetectionCounts READ aiDetectionCounts NOTIFY aiChanged)
+    Q_PROPERTY(QVariantList aiBoxes READ aiBoxes NOTIFY aiChanged)
+    Q_PROPERTY(QVariantList aiHazards READ aiHazards NOTIFY aiChanged)
     Q_PROPERTY(qulonglong aiRequestsSent READ aiRequestsSent NOTIFY metricsChanged)
     Q_PROPERTY(qulonglong aiResultsReceived READ aiResultsReceived NOTIFY metricsChanged)
+    Q_PROPERTY(QString sourceMode READ sourceMode NOTIFY metricsChanged)
+    Q_PROPERTY(bool sourceOnline READ sourceOnline NOTIFY metricsChanged)
+    Q_PROPERTY(double sourceAgeMs READ sourceAgeMs NOTIFY metricsChanged)
+    Q_PROPERTY(double sourceFps READ sourceFps NOTIFY metricsChanged)
+    Q_PROPERTY(qulonglong sourceFrameId READ sourceFrameId NOTIFY metricsChanged)
+    Q_PROPERTY(qulonglong displayFrameId READ displayFrameId NOTIFY frameAdvanced)
+    Q_PROPERTY(int aiFrameLag READ aiFrameLag NOTIFY aiChanged)
+    Q_PROPERTY(int maxTrackPredictionFrames READ maxTrackPredictionFrames
+               WRITE setMaxTrackPredictionFrames NOTIFY metricsChanged)
+    Q_PROPERTY(qulonglong sourceDroppedFrames READ sourceDroppedFrames NOTIFY metricsChanged)
+    Q_PROPERTY(qulonglong sourceCrcErrors READ sourceCrcErrors NOTIFY metricsChanged)
+    Q_PROPERTY(double npuLoadPercent READ npuLoadPercent NOTIFY metricsChanged)
+    Q_PROPERTY(QRectF sourceViewport READ sourceViewport WRITE setSourceViewport
+               NOTIFY sourceViewportChanged)
+    Q_PROPERTY(int aiRoadQuadrant READ aiRoadQuadrant WRITE setAiRoadQuadrant
+               NOTIFY aiSelectionChanged)
+    Q_PROPERTY(int aiNavigationQuadrant READ aiNavigationQuadrant WRITE setAiNavigationQuadrant
+               NOTIFY aiSelectionChanged)
 
 public:
     struct Frame {
@@ -49,6 +81,20 @@ public:
         std::vector<unsigned char> pixels;
         qint64 producedNs = 0;
         uint64_t sourceIndex = 0;
+    };
+
+    // Shared by the producer thread and the framebuffer renderer. Keeping the
+    // queue independent of VideoItem lets the renderer survive scene-graph
+    // teardown without dereferencing a deleted QQuickItem.
+    class DisplayQueue {
+    public:
+        void push(const std::shared_ptr<Frame> &frame);
+        std::shared_ptr<Frame> take();
+        void clear();
+
+    private:
+        mutable QMutex mutex_;
+        std::deque<std::shared_ptr<Frame>> frames_;
     };
 
     struct RenderMetrics {
@@ -102,13 +148,43 @@ public:
     QString eglVendor() const;
     bool hardwareAccelerated() const { return render_metrics_->hardware_accelerated.load(); }
     QString aiStatus() const;
+    bool aiOnline() const { return ai_online_.load(); }
+    double aiFps() const { return ai_fps_.load(); }
     QString aiTraffic() const;
     QString aiNavigation() const;
+    QString aiNavigationRoad() const;
+    QString aiNavigationState() const;
+    QString aiNavigationDirection() const;
+    double aiNavigationDistanceM() const;
+    int aiResultAgeMs() const { return ai_result_age_ms_.load(); }
+    int aiHazardAgeMs() const { return ai_hazard_age_ms_.load(); }
     int aiDetectionCount() const;
+    QVariantMap aiDetectionCounts() const;
     QVariantList aiBoxes() const;
     QVariantList aiHazards() const;
     qulonglong aiRequestsSent() const { return ai_requests_sent_.load(); }
     qulonglong aiResultsReceived() const { return ai_results_received_.load(); }
+    QString sourceMode() const { return source_mode_; }
+    bool pgvSource() const { return pgv_source_; }
+    bool sourceOnline() const { return source_online_.load(); }
+    double sourceAgeMs() const;
+    double sourceFps() const { return source_fps_.load(); }
+    qulonglong sourceFrameId() const { return source_frame_id_.load(); }
+    qulonglong displayFrameId() const { return source_frame_id_.load(); }
+    int aiFrameLag() const { return ai_frame_lag_.load(); }
+    int maxTrackPredictionFrames() const { return max_track_prediction_frames_.load(); }
+    void setMaxTrackPredictionFrames(int value) {
+        max_track_prediction_frames_.store(std::clamp(value, 1, 30));
+    }
+    qulonglong sourceDroppedFrames() const { return source_dropped_frames_.load(); }
+    qulonglong sourceCrcErrors() const { return source_crc_errors_.load(); }
+    double npuLoadPercent() const { return npu_load_percent_.load(); }
+    QRectF sourceViewport() const;
+    void setSourceViewport(const QRectF &viewport);
+    int aiRoadQuadrant() const { return ai_road_quadrant_.load(); }
+    int aiNavigationQuadrant() const { return ai_navigation_quadrant_.load(); }
+    void setAiRoadQuadrant(int quadrant);
+    void setAiNavigationQuadrant(int quadrant);
     qulonglong uniqueReplayContentFramesUploaded() const {
         return render_metrics_->unique_replay_content_frames.load();
     }
@@ -116,22 +192,31 @@ public:
 
     void startProducer(double fps, const QStringList &replayFrames = {},
                        const QString &aiFrameFile = QString(), double aiHz = 10.0);
+    void startRawReplay(double fps, const QString &rawFile,
+                        const QString &aiFrameFile = QString(), double aiHz = 10.0);
+    void startPgvProducer(double fps, const QString &pgvFile,
+                          const QString &aiFrameFile = QString(),
+                          double aiHz = 10.0,
+                          const QString &sourceLabel = QStringLiteral("pgv-live"));
     void stopProducer();
     void updateMetrics();
-    std::shared_ptr<Frame> takeLatest();
 
 public slots:
     void requestFrameUpdate();
 
 signals:
     void metricsChanged();
+    void aiChanged();
+    void frameAdvanced();
+    void sourceViewportChanged();
+    void aiSelectionChanged();
 
 private:
     void produceFrame(uint64_t id);
+    void runPgvProducer(double fps, QString pgvFile, double aiHz, QString aiFrameFile);
     void runAiBridge(double fps, double aiHz, QString frameFile);
 
-    mutable QMutex frame_mutex_;
-    std::shared_ptr<Frame> latest_frame_;
+    std::shared_ptr<DisplayQueue> display_queue_;
     std::mutex ai_frame_mutex_;
     std::shared_ptr<Frame> latest_ai_frame_;
     QStringList replay_frames_;
@@ -156,11 +241,61 @@ private:
     std::atomic<uint64_t> ai_requests_sent_{0};
     std::atomic<uint64_t> ai_results_received_{0};
     std::atomic<bool> ai_running_{false};
+    std::atomic<bool> ai_online_{false};
+    std::atomic<bool> ai_dirty_{false};
+    std::atomic<double> ai_fps_{0.0};
+    std::atomic<int> ai_result_age_ms_{0};
+    std::atomic<int> ai_hazard_age_ms_{0};
+    std::atomic<qint64> last_ai_result_ns_{0};
     mutable QMutex ai_metrics_mutex_;
     QString ai_status_ = QStringLiteral("AI sidecar 未连接");
-    QString ai_traffic_ = QStringLiteral("未知");
+    QString ai_traffic_ = QStringLiteral("UNKNOWN");
     QString ai_navigation_ = QStringLiteral("等待导航识别");
+    QString ai_navigation_road_;
+    QString ai_navigation_state_ = QStringLiteral("UNKNOWN");
+    QString ai_navigation_direction_ = QStringLiteral("none");
+    double ai_navigation_distance_m_ = -1.0;
+    QVariantMap ai_detection_counts_;
     QVariantList ai_boxes_;
     QVariantList ai_hazards_;
     std::atomic<uint64_t> latest_ai_frame_id_{0};
+    std::atomic<int> ai_frame_lag_{0};
+    std::atomic<int> max_track_prediction_frames_{4};
+
+    struct Track {
+        uint64_t id = 0;
+        int classId = 255;
+        QString className;
+        QString color;
+        double x = 0.0;
+        double y = 0.0;
+        double width = 0.0;
+        double height = 0.0;
+        double vx = 0.0;
+        double vy = 0.0;
+        double confidence = 0.0;
+        uint64_t lastDetectFrame = 0;
+        uint64_t lastUpdateFrame = 0;
+        int missed = 0;
+        int hits = 0;
+    };
+    std::vector<Track> tracks_;
+    uint64_t next_track_id_ = 1;
+    std::ofstream ai_timing_stream_;
+
+    QString source_mode_ = QStringLiteral("generated");
+    bool pgv_source_ = false;
+    std::atomic<bool> source_online_{true};
+    std::atomic<double> source_fps_{0.0};
+    std::atomic<qint64> last_source_ns_{0};
+    std::atomic<qulonglong> source_frame_id_{0};
+    std::atomic<qulonglong> source_dropped_frames_{0};
+    std::atomic<qulonglong> source_crc_errors_{0};
+    std::atomic<double> npu_load_percent_{0.0};
+    std::vector<std::shared_ptr<Frame>> pgv_pool_;
+    mutable QMutex viewport_mutex_;
+    QRectF source_viewport_{0.0, 0.0, 1.0, 1.0};
+    std::atomic<int> ai_road_quadrant_{1};
+    std::atomic<int> ai_navigation_quadrant_{1};
+    void sendAiSelection(int road, int navigation);
 };
