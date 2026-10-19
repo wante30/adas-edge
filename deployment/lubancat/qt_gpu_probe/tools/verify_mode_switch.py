@@ -71,14 +71,14 @@ def main(output_dir):
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    for name, x in (("single", 496), ("quad", 618), ("spatial", 740), ("single_return", 496)):
-        xtst.XTestFakeMotionEvent(display, -1, x, 46, 0)
+    for name, x in (("single", 393), ("quad", 483), ("spatial", 573), ("single_return", 393)):
+        xtst.XTestFakeMotionEvent(display, -1, x, 32, 0)
         xtst.XTestFakeButtonEvent(display, 1, 1, 0)
         xtst.XTestFakeButtonEvent(display, 1, 0, 0)
         x11.XFlush(display)
         time.sleep(1.0)
         capture = output_dir / f"qt_mode_{name}.xwd"
-        subprocess.run(["xwd", "-root", "-silent", "-out", str(capture)], check=True)
+        subprocess.run(["xwd", "-id", str(probe_window), "-silent", "-out", str(capture)], check=True)
 
     x11.XCloseDisplay(display)
 

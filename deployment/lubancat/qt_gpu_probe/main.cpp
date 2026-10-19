@@ -2,6 +2,7 @@
 #define _GNU_SOURCE
 #endif
 
+#include "hud_control.h"
 #include "video_item.h"
 
 #include <QFile>
@@ -18,6 +19,7 @@
 #include <QUrl>
 #include <QDebug>
 #include <QGuiApplication>
+#include <algorithm>
 #include <QElapsedTimer>
 #include <algorithm>
 #include <cstdlib>
@@ -109,11 +111,31 @@ int main(int argc, char **argv) {
     if (!manifestPath.isEmpty() && replayFrames.isEmpty()) return 4;
     const QString aiFrameFile = stringArg(args, "--ai-frame-file");
     const double aiHz = std::max(0.1, static_cast<double>(intArg(args, "--ai-hz", 10)));
+    const QString pgvFile = stringArg(args, "--pgv-file");
+    const QString rawReplay = stringArg(args, "--raw-replay");
+    const QString sourceLabel = stringArg(args, "--source-label");
+    const bool autoCycleCapture = args.contains("--capture-cycle");
+    const QString pgvLayout = stringArg(args, "--pgv-layout");
+    const int roadQuadrant = intArg(args, "--road-quadrant", 1);
+    const int startMode = std::clamp(intArg(args, "--start-mode", 0), 0, 2);
+    const QString effectiveLayout = pgvLayout.isEmpty()
+                                        ? ((pgvFile.isEmpty() && rawReplay.isEmpty())
+                                               ? QStringLiteral("front")
+                                               : QStringLiteral("quad"))
+                                        : pgvLayout;
+    if (!pgvFile.isEmpty() && !QFileInfo::exists(pgvFile)) {
+        qWarning().noquote() << "PGVF file does not exist yet:" << pgvFile;
+    }
 
     qmlRegisterType<VideoItem>("QtGpuProbe", 1, 0, "VideoItem");
+    qmlRegisterType<HudControl>("QtGpuProbe", 1, 0, "HudControl");
     QQuickView view;
     view.setTitle(QStringLiteral("Qt Quick GPU Probe - RK3566"));
     view.setResizeMode(QQuickView::SizeRootObjectToView);
+    view.rootContext()->setContextProperty(QStringLiteral("pgvInputLayout"), effectiveLayout);
+    view.rootContext()->setContextProperty(QStringLiteral("pgvRoadQuadrant"), roadQuadrant);
+    view.rootContext()->setContextProperty(QStringLiteral("initialViewMode"), startMode);
+    view.rootContext()->setContextProperty(QStringLiteral("autoCycleCapture"), autoCycleCapture);
     view.setSource(QUrl(QStringLiteral("qrc:/main.qml")));
     auto *video = view.rootObject() ? view.rootObject()->findChild<VideoItem *>(QStringLiteral("videoProbeItem")) : nullptr;
     if (!video) {
@@ -128,7 +150,14 @@ int main(int argc, char **argv) {
     QElapsedTimer runClock;
     runClock.start();
     view.showFullScreen();
-    video->startProducer(fps, replayFrames, aiFrameFile, aiHz);
+    if (!rawReplay.isEmpty()) {
+        video->startRawReplay(fps, rawReplay, aiFrameFile, aiHz);
+    } else if (!pgvFile.isEmpty()) {
+        video->startPgvProducer(fps, pgvFile, aiFrameFile, aiHz,
+                                sourceLabel.isEmpty() ? QStringLiteral("pgv-live") : sourceLabel);
+    } else {
+        video->startProducer(fps, replayFrames, aiFrameFile, aiHz);
+    }
 
     QTimer stopTimer;
     if (duration > 0) {
@@ -147,7 +176,19 @@ int main(int argc, char **argv) {
     report["source_width"] = 1280;
     report["source_height"] = 720;
     report["source_format"] = "RGB565_LE";
-    report["frame_source"] = replayFrames.isEmpty() ? "generated_rgb565_pattern" : "board_rgb565_replay";
+    report["frame_source"] = video->sourceMode();
+    report["pgv_file"] = pgvFile;
+    report["raw_replay"] = rawReplay;
+    report["pgv_layout"] = effectiveLayout;
+    report["pgv_road_quadrant"] = roadQuadrant;
+    report["start_mode"] = startMode;
+    report["auto_cycle_capture"] = autoCycleCapture;
+    report["source_online"] = video->sourceOnline();
+    report["source_fps"] = video->sourceFps();
+    report["source_frame_id"] = static_cast<qint64>(video->sourceFrameId());
+    report["source_dropped_frames"] = static_cast<qint64>(video->sourceDroppedFrames());
+    report["source_crc_errors"] = static_cast<qint64>(video->sourceCrcErrors());
+    report["npu_load_percent_last"] = video->npuLoadPercent();
     report["replay_manifest"] = manifestPath;
     report["replay_manifest_frame_count"] = replayFrames.size();
     report["input_fps_last_window"] = video->inputFps();
@@ -191,9 +232,24 @@ int main(int argc, char **argv) {
     report["hardware_accelerated"] = video->hardwareAccelerated();
     report["ai_requests_sent"] = static_cast<qint64>(video->aiRequestsSent());
     report["ai_results_received"] = static_cast<qint64>(video->aiResultsReceived());
+    report["ai_online"] = video->aiOnline();
+    report["ai_fps"] = video->aiFps();
     report["ai_latest_result_frame_id"] = static_cast<qint64>(video->latestAiFrameId());
     report["ai_detection_count_last"] = video->aiDetectionCount();
     report["ai_status_last"] = video->aiStatus();
+    report["ai_traffic_last"] = video->aiTraffic();
+    report["ai_navigation_last"] = video->aiNavigation();
+    report["ai_navigation_road_last"] = video->aiNavigationRoad();
+    report["ai_navigation_state_last"] = video->aiNavigationState();
+    report["ai_navigation_direction_last"] = video->aiNavigationDirection();
+    report["ai_navigation_distance_m_last"] = video->aiNavigationDistanceM();
+    report["ai_result_age_ms_last"] = video->aiResultAgeMs();
+    QJsonObject countObject;
+    const QVariantMap counts = video->aiDetectionCounts();
+    for (auto it = counts.begin(); it != counts.end(); ++it) {
+        countObject.insert(it.key(), it.value().toInt());
+    }
+    report["ai_detection_counts_last"] = countObject;
     report["physical_scanout_fps"] = QJsonValue::Null;
     QFile file(output);
     if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {

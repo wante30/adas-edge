@@ -32,9 +32,15 @@ def main(path, sidecar_path=None):
     assert any("libmali.so" in path for path in report["loaded_graphics_libraries"])
     assert report["physical_scanout_fps"] is None
     unique_replay_frames = report["unique_replay_content_frames_uploaded"]
-    assert 0 <= unique_replay_frames <= report["replay_manifest_frame_count"]
+    source = report["frame_source"]
+    if source in ("generated_rgb565_pattern", "pgv-live", "pgv-fixture"):
+        # Generated frames and live PGVF snapshots use the producer frame ID
+        # as their content index; there is no replay manifest to bound this.
+        assert unique_replay_frames == consumed
+    else:
+        assert 0 <= unique_replay_frames <= report["replay_manifest_frame_count"]
     assert report["unique_replay_content_fps_average"] <= actual_fps + 0.01
-    if report["frame_source"] == "board_rgb565_replay":
+    if source == "board_rgb565_replay":
         expected_wrap = produced > report["replay_manifest_frame_count"]
         assert report["replay_content_wrapped"] is expected_wrap
 

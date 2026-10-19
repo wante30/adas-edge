@@ -1,102 +1,296 @@
-# RK3566 Qt Quick GPU Probe
+# RK3566 Qt Quick ADAS HUD / 真实 PCIe PGVF
 
-独立 Qt 5.12.8 / Qt Quick 验证程序，不替换或链接到 `deployment/lubancat/mali_video` 正式 EGL 显示程序。视频自定义渲染使用 `QQuickFramebufferObject` 和单个复用的 RGB565 GLES 纹理；CPU 生产线程只保留最新帧，AI 通过现有 UDP sidecar 异步收发。
+Qt 5.12.8 + Qt Quick 的 1280×720 ADAS HMI 验证程序。它直接消费 PCIe 采集程序发布的 `PGVF` 快照，用 Mali-G52 / OpenGL ES 3.2 做单纹理 RGB565 硬件加速，并通过现有 UDP sidecar 接入 YOLO11n RKNN、交通灯专模与导航 OCR；同时把识别信号按 **PCIe HUD Control V2** 写回 FPGA BAR1，并提供上位机信号测试界面。
 
-## 板端环境
+正式 EGL 程序、FPGA/PCIe 协议、RKNN 模型和驱动均未修改；本工程是独立探针，不替换正式车机入口。
 
-- LubanCat RK3566，Ubuntu 20.04.6 LTS arm64，Linux `4.19.232`。
-- Qt `5.12.8`，qmake，Qt Quick/QML 头文件和运行模块已安装，安装前缀 `/usr`。
-- X11 会话运行方式：`QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl`。实际加载 `libqxcb.so`、`libqxcb-egl-integration.so`、`libEGL.so.1` 和 `/lib/aarch64-linux-gnu/libmali.so.1`。
-- Qt 的 `eglfs`、`linuxfb` 插件也存在；本轮 xcb 已能工作，没有切换平台，也没有改动驱动。
-- GL 运行时证据：vendor `ARM`，renderer `Mali-G52`，OpenGL ES `3.2`，EGL vendor `ARM`。程序拒绝 `llvmpipe`、`softpipe` 和非 Mali renderer。
-- 3.8 GiB RAM；测试前约 1.8-1.9 GiB 可用，无 swap。根分区 29 GiB，测试前约 17 GiB 可用。
+![默认 Q2 主视 + AI HUD](results/qt_ui_default_q2.png)
 
-## 构建与运行
+## 已验证的硬件与数据链路
 
-本轮板端工程目录为 `/home/cat/qt_gpu_probe_ai_20261019`。在已运行 X11 桌面会话、1280x720 HDMI 屏的板端执行：
+- LubanCat RK3566，Ubuntu 20.04.6 LTS arm64，Linux `4.19.232`，1280×720 HDMI/X11。
+- Qt `5.12.8`，`QQuickFramebufferObject`，Mali-G52，OpenGL ES `3.2`，EGL vendor `ARM`。
+- 实际加载 `/lib/aarch64-linux-gnu/libmali.so.1`、`libqxcb.so`、`libqxcb-egl-integration.so`；`physical_scanout_fps` 未测量，保持 `null`。
+- PCIe 端点：`01:00.0`，驱动 `pango_video.ko`，设备 `/dev/pango_video0`。
+- 采集程序：`/home/cat/pcie_test/pango_video_t05/pcie_video/app/pango_video_capture`。
+- PGVF：40 字节头 + 1280×720 RGB565，payload `1,843,200` 字节，CRC32；Qt 读取与校验 CRC 后才发布到渲染线程。
+- 当前真实画面/四宫格布局（以 `pcie_quad_raw.png` 为准）：
+  - Q1 左上：前视道路；
+  - Q2 右上：导航/地图 HDMI；
+  - Q3 左下：车内摄像头；
+  - Q4 右下：路口/后视道路。
+- **默认主视改为 Q2（右上）**；底部四张卡任意点击即可切换主视，四路模式显示完整 2×2。
+- 导航识别源可独立选择：导航卡底部 `Q1/Q2/Q3/Q4` 四个芯片，不要求与主视相同。
+- 主视和导航的选择通过 `MVS1` 控制包实时发给 AI sidecar，不需要重启 RKNN；Qt 立刻切换显示裁剪和检测框。
+- 联调中曾观察到 Q1 前视源冻结（原始像素差 0.0，而 Q2/Q3/Q4 正常）；板卡重启/恢复采集后 Q1 已恢复为实时。若再次出现，先检查前视相机/HDMI/FPGA 通道，不要先怀疑 Qt。
+
+![真实 PCIe 2×2 原始帧](results/pcie_quad_raw.png)
+
+## 板端环境与构建
+
+板端工程目录：`/home/cat/qt_gpu_probe_ai_20261019`。
 
 ```sh
 cd /home/cat/qt_gpu_probe_ai_20261019
 qmake qt_gpu_probe.pro
 make -j2
-DISPLAY=:0 XAUTHORITY=/home/cat/.Xauthority QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl QSG_INFO=1 \
-  ./qt_gpu_probe --fps 30 --duration 30 --output-json results/qt_gpu_probe_smoke.json
 ```
 
-使用全量真实道路 RGB565 回放。帧生成器源文件是 `../mali_video/prepare_replay.py`；将其部署为 `$RUN/prepare_replay_ch2.py` 后生成 2700 帧清单：
+板卡时钟未同步（系统显示 2024 年），从 Windows 拷贝文件后若 make 反复执行 qmake，
+先 `touch` 源文件再构建：
+
+```sh
+touch *.cpp *.h *.pro *.qml qml.qrc assets/* components/*
+qmake qt_gpu_probe.pro && make -j2
+```
+
+## 启动真实 PCIe 视频
+
+先确认 FPGA 端点已供电且链路枚举成功：
+
+```sh
+lspci -nn | grep 01:00.0
+sudo insmod /home/cat/pcie_test/pango_video_t05/pcie_video/driver/pango_video.ko
+ls -l /dev/pango_video0
+```
+
+本次调试中板卡重启后链路恢复为 `PCIe Link up`。若仍是 `PCIe Link Fail`，先恢复 FPGA 位流/端点，不要用夹具冒充真实输入。
+
+板端开机可能已经自动启动采集，输出到 `/dev/shm/pango-video`。先检查：
+
+```sh
+pgrep -af pango_video_capture
+cat /dev/shm/pango-video/status.json
+```
+
+如果已有 publisher，不要再启动第二个（第二个会报 `capture_io`）。若没有，启动：
+
+```sh
+sudo /home/cat/pcie_test/pango_video_t05/pcie_video/app/pango_video_capture \
+  --continuous --fps 60 --publish-dir /dev/shm/pango-video
+cat /dev/shm/pango-video/status.json
+```
+
+本次实测 publisher 状态约 `fps=58.8`，`latest.pgv` 持续更新。
+
+启动 Qt（真实 PCIe + AI）：
+
+```sh
+cd /home/cat/qt_gpu_probe_ai_20261019
+DISPLAY=:0 XAUTHORITY=/home/cat/.Xauthority \
+QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl QSG_INFO=1 \
+  ./qt_gpu_probe --fps 60 --duration 30 --start-mode 0 \
+  --pgv-file /dev/shm/pango-video/latest.pgv --source-label pgv-live \
+  --pgv-layout quad --road-quadrant 1 \
+  --ai-frame-file /dev/shm/qt_gpu_probe_ai.mfr1 --ai-hz 5 \
+  --output-json results/qt_real_pcie.json
+```
+
+### AI sidecar
+
+必须使用本工程同目录的 `ai_bridge.py`，不要再用旧的
+`/home/cat/competition_cockpit_port_20261018/deployment/lubancat/mali_video/ai_bridge.py`
+（两者端口/状态字段不匹配）。
 
 ```sh
 RUN=/home/cat/qt_gpu_probe_ai_20261019
-python3 "$RUN/prepare_replay_ch2.py" \
-  /home/cat/adas-edge-rect/videos/ch2_right.mp4 \
-  "$RUN/replay_ch2_all" "$RUN/replay_ch2_all.manifest"
-```
-
-播放命令：
-
-```sh
-DISPLAY=:0 XAUTHORITY=/home/cat/.Xauthority QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl QSG_INFO=1 \
-  ./qt_gpu_probe --fps 30 --duration 30 \
-  --replay-manifest /home/cat/qt_gpu_probe_ai_20261019/replay_ch2_all.manifest \
-  --output-json results/qt_replay_30.json
-```
-
-AI 联合测试需用同一工程版本的 `ai_bridge.py`，避免覆盖正在运行的正式 EGL 程序。sidecar 和 Qt 程序在同一板端分别运行：
-
-```sh
-RUN=/home/cat/qt_gpu_probe_ai_20261019
-ADAS_EDGE_ROOT=/home/cat/competition_cockpit_port_20261018 /usr/bin/python3 \
-  /home/cat/competition_cockpit_port_20261018/deployment/lubancat/mali_video/ai_bridge.py \
-  --live-frame-file /dev/shm/qt_gpu_probe_ai.mfr1 --source LOCAL_REPLAY \
-  --layout front --display-view front \
+ADAS_EDGE_ROOT=/home/cat/competition_cockpit_port_20261018 \
+/usr/bin/python3 "$RUN/ai_bridge.py" \
+  --live-frame-file /dev/shm/qt_gpu_probe_ai.mfr1 --source PGV_LIVE \
+  --layout quad --display-view front --road-quadrant 1 \
+  --navigation-quadrant 1 \
   --main-model /home/cat/adas-edge-rect/rect_models/yolo11n_rk3566_int8_split_512x288.rknn \
   --specialist-model /home/cat/adas-edge-rect/tl_check/tl_specialist_512x192_hybrid2.rknn \
-  --main-hz 10 --specialist-hz 3 --ocr-hz 3 --idle-timeout 60 \
-  --summary "$RUN/results/ai_summary.json" >"$RUN/results/ai.log" 2>&1 &
+  --main-hz 5 --specialist-hz 1 --ocr-hz 0.5 --idle-timeout 90 \
+  --summary "$RUN/results/ai_summary.json" \
+  > "$RUN/results/ai.log" 2>&1 &
 ```
 
-等 sidecar 日志出现 `READY` 后运行：
+等日志出现 `READY` 后再启动 Qt。AI 结果通过 `MVA2` 返回；无结果超过 1.5 秒时 UI 自动清空检测框、交通灯、危险和导航状态并显示未连接。
+
+### 自由选择主视 / 导航源
+
+- **主视**：点击底部四张卡任意一张；被选卡显示 `MAIN`，主画面立即切到该象限，并给 sidecar 发 `MVS1` 更新检测裁剪。
+- **导航源**：点击右侧导航卡底部的 `Q1/Q2/Q3/Q4`；选中芯片变琥珀色，并给 sidecar 发 `MVS1` 更新 OCR 裁剪。
+- 默认 `主视=Q2`、`导航源=Q2`；主视和导航源可以不同。
+- 四路页签仍显示完整 2×2；空间页签显示 Tesla-BevCam-Clone 视觉层。
+- **右下角 ADAS 卡改为实时 BEV 投影**：用当前主视的 `aiBoxes` 画目标，主视切换后立即跟随，不再是一张静态 clone 卡。
+- `MVS1` 包格式：`"MVS1" + uint8 road + uint8 navigation`，发到 UDP `38260`。
+
+### PCIe HUD V2 回传与信号测试
+
+协议使用 `PCIE_HUD_CONTROL_PROTOCOL_V2_20261018.json` 的 BAR1 HUD 窗口：`0x638` 感知字段、`0x63C/0x640` 时间、`0x644` commit、`0x648` 状态、`0x64C` applied seq；legacy `0x608` 保持 HUD/ADAS 可见。
+
+Qt 进程不以 root 直接 mmap `resource1`，而是通过本机 root helper：
 
 ```sh
-DISPLAY=:0 XAUTHORITY=/home/cat/.Xauthority QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl QSG_INFO=1 \
-  ./qt_gpu_probe --fps 30 --duration 30 \
-  --replay-manifest /home/cat/qt_gpu_probe_ai_20261019/replay_ch2_all.manifest \
-  --ai-frame-file /dev/shm/qt_gpu_probe_ai.mfr1 --ai-hz 10 \
-  --output-json results/qt_ai_30.json
+RUN=/home/cat/qt_gpu_probe_ai_20261019
+cd "$RUN"
+sudo nohup python3 hud_bridge.py \
+  --bar1 /sys/bus/pci/devices/0000:01:00.0/resource1 --port 38262 \
+  > results/hud_bridge.log 2>&1 &
+cat results/hud_bridge.log
 ```
 
-改 `--fps 60` 可测试 60 FPS 请求档位。测试素材 `/home/cat/adas-edge-rect/videos/ch2_right.mp4` 为 1280x720、25 FPS、108 秒、2700 个不同源帧；完整 RGB565 帧文件约占 4.64 GiB，写入根分区而非 `/tmp`。程序通过 `MFR1` 原子发布完整帧快照、`MVR2` 发送请求并检查 `MVA2` frame_id、时间戳和包结构；AI 返回只更新最新 QML 状态，不阻塞纹理上传。
+日志应出现 `READY ... magic=0x31445548 caps=0x000000ff`。Qt 里的 `HudControl` 监听 `127.0.0.1:38262`，每 500 ms 自动发送 AI 交通灯/行人快照；手动测试界面由主画面右上角 **“PCIe 信号测试”** 按钮或 `T` 打开。
 
-## 测试结果（2026-10-19）
+- 自动字段：`perception_enable=1`、red/green 取 `aiTraffic`、pedestrian 取 person 检测数；其它字段置 0。
+- 手动字段：红/绿灯、行人、静止目标、超速、LKA、左右车道、HUD/ADAS 使能；每个按钮发送一次。
+- 时间字段默认不发：板端系统时钟未同步；黄灯协议没有字段，不伪造。
+- legacy 使用 `state=0x101`（HUD + ADAS 可见）并递增 sequence。
+- 实测：手动红灯 `ext_request=0x00000003`、绿灯+行人 `0x0000000d`、自动行人 `0x00000009`，`ext_applied` 持续递增、`error=0`。
+- HUD overlay 在 FPGA 的 HDMI 输出端合成，**不会出现在上游 PGVF 视频里**；因此验收看 BAR1 applied seq / status，而不是截取 PGVF 画面。
 
-真实板端日志与 JSON 报告记录 Qt Quick OpenGL scene graph、GL vendor `ARM`、renderer `Mali-G52`、OpenGL ES `3.2`、EGL vendor `ARM`，以及已加载的 `libmali.so.1`、EGL、xcb 和 Qt Quick 库。程序拒绝 `llvmpipe`、`softpipe` 和非 Mali renderer。RGB565 以 `GL_UNSIGNED_SHORT_5_6_5` 上传到复用纹理；回放读取直接进入该帧的 `std::vector`，避免 `QByteArray` 临时整帧副本，但每帧仍会分配新的 vector，测试结果包含这项成本。物理 HDMI scanout FPS 未测量，报告保持 `null`。
+![PCIe HUD V2 测试界面](results/hud_test_panel.png)
 
-| 负载 | 请求 FPS | 实际输入平均 / 末窗 | 不同 manifest 索引被 GL 接受 | QSG 回调末窗 | 上传 API p95 |
+### 常用参数
+
+| 参数 | 作用 |
+|---|---|
+| `--pgv-file PATH` | 开启真实 PGVF 输入（空则使用 replay / 生成源） |
+| `--source-label pgv-live\|pgv-fixture\|replay` | UI 来源标签；夹具必须标 `pgv-fixture` |
+| `--pgv-layout front\|quad` | 原始帧布局；本次真实源为 `quad` |
+| `--road-quadrant 0..3` | Q1=0、Q2=1、Q3=2、Q4=3；默认 Q2=1，可在 UI 自由切换 |
+| `--start-mode 0\|1\|2` | 单路/四路/空间视图 |
+| `--capture-cycle` | 仅测试用，每 5 秒自动切换模式，便于一次抓三张图 |
+| `--ai-frame-file PATH` | `MFR1` 快照路径；必须与 sidecar 一致 |
+| `--ai-hz N` | 向 sidecar 发请求的频率 |
+
+## 当前性能
+
+| 负载 | Qt 源 FPS（末窗） | 不同 PCIe 帧被 GL 接受 | QSG 回调 | AI | 上传 p95 |
 |---|---:|---:|---:|---:|---:|
-| Qt Quick + 道路回放，无 AI | 30 | 25.86 / 24 FPS | 25.50/s | 60/s | 1.95 ms |
-| Qt Quick + 道路回放 + YOLO11n/交通灯专模/OCR | 30 | 23.11 / 30.06 FPS | 22.11/s | 58.12/s | 2.41 ms |
-| Qt Quick + 道路回放 + YOLO11n/交通灯专模/OCR | 60 | 33.07 / 20.08 FPS | 27.94/s | 58.23/s | 2.27 ms |
+| 真实 PCIe，无 AI | 60.3 | 51.4/s | 60.3/s | off | 1.89 ms |
+| 真实 PCIe + AI 5 Hz | 51.5 | 46.6/s | 56.7/s | 4.86 Hz | 2.45 ms |
+| 真实 PCIe + AI 3 Hz | 56.1 | 49.4/s | 61.2/s | 3.0 Hz（末窗 0.76） | 2.33 ms |
+| 真实 PCIe + AI 5 Hz，Q1 截图档（旧） | 51.3 | 44.2/s | 51.3/s | 4.92 Hz | 3.13 ms |
 
-30 FPS AI 测试为 30.12 秒，696 个 producer 帧中 666 个不同 manifest 索引被 GL 上传调用接受；60 FPS AI 测试为 30.17 秒，998 个 producer 帧中 843 个不同 manifest 索引被接受。两次 `replay_content_wrapped=false`，全程没有重复 manifest 索引。这里的“接受”只表示 `glTex*` 后 `glGetError()==GL_NO_ERROR`，不表示 GPU 已完成传输。`source_frames_not_uploaded` 是 producer 与接受数的残差上界，包含 latest-only 覆盖、停止时待处理帧及其他未接受原因，不能直接解释为单一丢帧原因。原始素材为 25 FPS；实际回放低于请求值，因此目标 PCIe/DDR 直达输入没有在本轮测量。
+- 采集 publisher 本身约 **58.8 fps**；旧布局 Qt 单路 scene graph 约 **51–61 fps**。新增 LiveBev + PCIe 测试面板后的截图档实测约 **20–29 fps**，不能用旧表当作新布局指标。
+- `GL 接受` 只表示 `glTexSubImage2D` 无错误，不等于物理 HDMI scanout；`physical_scanout_fps` 保持 `null`。
+- Qt 使用一个复用 RGB565 纹理、一次上传；producer 读取直接写入预分配帧池，CRC 使用 zlib，避免每帧临时整帧 copy。
+- 渲染线程直接拉取共享帧队列，QML 不再为每个 PCIe 帧排一次 GUI 事件；静态卡片用 `layer.enabled` 缓存，目标框使用预渲染 BorderImage 角标而不是大量 QML 图元。
+- AI sidecar 在持续高频率推理时可能变慢或停止返回（约 15–20 秒后出现）；5 Hz 截图档可见，但持续运行也可能变慢，必要时重启 sidecar。UI 会在 1.5 秒后如实显示离线，不保留陈旧框。
 
-两次 AI 测试都收到约 10.04 Hz 请求，分别分析约 9.94/10.00 个不同请求 frame_id/s；帧快照身份错配为 0，推理错误为 0。30 FPS 档 YOLO11n/交通灯专模/OCR 更新约 6.86/2.61/2.61 Hz，AI 全流程 p95 约 142 ms；60 FPS 档约 6.24/2.57/2.57 Hz，p95 约 143 ms。两档 NPU 中位利用率均为 100%，GPU 平均约 27%，sidecar 峰值 RSS 约 126-129 MiB；Qt 进程 RSS 约 111-119 MiB。没有 OOM。上传计时是 CPU 侧 GL API 调用时间，不代表 GPU 完成时间。
+## AI 结果与诚实边界
 
-Qt-only 同素材基线为 25.50 个不同 manifest 索引被 GL 接受/s，AI 联合 30 FPS 档为 22.11/s。QSG 回调维持约 58-60/s、纹理上传 API p95 约 2.0-2.4ms、GPU 利用率约 27%；结合 eMMC 逐帧读入和 NPU 满载，结果提示输入生产与 AI/CPU 资源竞争需继续隔离测试。本轮没有单独测量 eMMC 带宽或 PCIe 实时输入。
+![默认 Q2 主视](results/qt_ui_default_q2.png)
 
-此前原生 C++ EGL/Mali 路线的 5 分钟报告使用合成 RGB565 内存输入、60 FPS 请求，完整 AI 下 `unique_source_submit_fps=58.216`，renderer 同为 Mali-G52；物理 scanout 同样未测量。它与本轮 eMMC 逐文件回放不是同一输入条件，不能把性能差值直接归因于 Qt。原报告：`deployment/lubancat/mali_video/results/p0_full_ai_60fps_5m_verified_display_20261019.json`。
+![点击 Q1 后的主视与检测框](results/qt_ui_selected_q1.png)
 
-实际 RK3566 HDMI/X11 运行截图（单路模式，检测框来自 AI sidecar）：![Qt Quick + Mali-G52 + RKNN AI 回放](results/qt_ai_stream_30_20261019.png)
+![右下角实时 BEV 跟随主视](results/qt_ui_live_bev_q1.png)
 
-QML 样板包含顶栏模式切换、中央道路视频、交通灯、导航、危险事件、底部缩略图和空间示意；单路/四路/空间视图已在板端验证可切换。指定 `docs/ui/adas_cockpit_reference.png` 和 `docs/ui/` 在当前仓库中不存在；根目录 `ref.png`/`new.png` 属于另一套 PC 模拟器画面，不是指定参考图。因此截图证明组件和硬件运行，不证明严格复刻该概念图。
+![Tesla-BevCam-Clone 空间视图](results/qt_ui_tesla_spatial.png)
 
-## 结论
+- 默认截图主视是 Q2（右上），底部 Q2 卡标 `MAIN`，导航源芯片也选中 Q2；点击 Q1 后主视立刻换成前视，AI 检测框重新对齐 Q1（截图中有 6 个真实框，含 person）。
+- 右下角“ADAS 空间识别”卡使用当前主视的 AI boxes 做实时 BEV 投影，选中 Q1 时能看到对应目标；不再使用一张静态图片。
+- 底部卡状态：`MAIN` 是主识别源，`NAV` 是导航 OCR 源，`SNAP` 是其它快照。
+- 交通灯仍可能 `UNKNOWN`；导航 OCR 仍可能 `UNREADABLE`；没有数据时显示“未识别/设计预览”，不编造。
+- 危险事件为 0 时显示监控态；不伪造 TTC。
+- 四路页签是实时的 2×2；单路主视也是实时的，取决于所选象限。
+- **Tesla-BevCam-Clone 接入**：空间主视图使用 clone 的 BEV 渲染序列（已做暗色适配）。上游完整流程需要 Ultralytics/torch/depth，RK3566 上没有重跑整条上游；因此 clone 背景标“视觉演示/非实时几何”。右下角 ADAS 卡是**另一套实时 BEV 投影**，用当前主视 AI boxes 绘制，不是 clone 的静态图。
+- 识别信号通过 BAR1 V2 写回 FPGA；自动发送的交通灯/行人字段来自当前主视 AI，切换主视后同步变化。
+- Q1 曾经出现过一次输入冻结，重启后恢复；如果再次出现，按硬件输入源排查。
 
-**PARTIAL PASS**：Qt Quick 确实使用 Mali-G52 硬件加速，RGB565 连续更新、完整 UI 和 YOLO11n/交通灯专模/OCR sidecar 可同时运行，没有 OOM；但两档道路回放的不同源图像上传率均未达到 30/s，因此没有证明无卡顿的 30 FPS 联合显示。eMMC 逐文件读取可能限制输入生产，PCIe/DDR 直达路径尚未测量。指定参考图缺失也阻止严格视觉验收。现阶段保留正式 EGL 路线，不替换车机入口。
+## 测试工具
 
-## 报告文件
+- `tools/capture_one.sh OUTPUT`：抓当前 Qt 窗口（不是根窗口）。
+- `tools/capture_three.sh`：在 `--capture-cycle` 运行时依次抓单路/四路/空间。
+- `tools/verify_mode_switch.py OUTPUT_DIR`：XTest 点击三个页签并抓窗口；坐标为 1280×720 新版。
+- `tools/click_mode.py X Y`：不退出程序，直接点击运行中 HUD 的某个坐标；用于选择主视/导航源或切页签。
+- `tools/run_pgv_no_ai.sh`：真实 PGVF、无 AI 的 18 秒性能与截图。
+- `tools/run_real_pgv_ai.sh [seconds]`：真实 PGVF + AI 的启动/截图。
+- `tools/run_pgvf_probe.sh`：**PGVF 夹具**测试，UI 标 `pgv-fixture`，不能冒充真实 PCIe。
+- `tools/pgv_to_png.py latest.pgv out.png`：检查当前原始帧/象限布局。
+- `tools/pgvf_fixture_publisher.py`：写合法 PGVF 测试流，仅用于解析/性能回归。
+- `tools/run_hud_bridge.sh`：以 root 启动 `hud_bridge.py`（BAR1 V2）。
+- `tools/hud_bar1_probe.py`：只读 BAR1 magic/caps/status/applied seq，需 root。
+- `tools/hud_bar1_write_test.py`：一次性 V2 + legacy 写测试，需 root。
+- `tools/hud_udp_test.py`：不经过 Qt，向 bridge 发一条红/绿灯+行人测试快照。
 
-- `results/qt_ai_stream_30_20261019.json` 与 `results/qt_ai_sidecar_stream_30_20261019.json`：30 FPS 请求档、30 秒道路 RGB565 + 完整 AI。
-- `results/qt_ai_stream_60_20261019.json` 与 `results/qt_ai_sidecar_stream_60_20261019.json`：60 FPS 请求档、30 秒道路 RGB565 + 完整 AI。
-- `results/qt_no_ai_real_ch2_30_20261019.json`：同一长素材的 Qt-only 30 FPS 请求基线。
-- `results/qt_ai_stream_30_20261019.png`：真实板端 QML/AI 截图。
-- `check_report.py REPORT.json [AI_SIDECAR_SUMMARY.json]`：核对 Mali renderer、实际加载库、RGB565 上传账目与 AI 帧身份/推理结果。
+## 本地素材回放（当前无 FPGA / 无输入）
+
+参考素材在 `D:\BaiduNetdiskDownload\紫光同创杯赛题三参考素材`（1080p30 HEVC）。本地测试时把它们组成 1280×720 的 2×2：
+
+- Q1：`video_20260929_113421.mp4`（前视道路）
+- Q2：`video_20260929_111440.mp4`（导航屏，用于导航卡测试）
+- Q3：`video_20260929_112739.mp4`（车内/仪表）
+- Q4：`video_20260929_112454.mp4`（路口）
+
+已生成板端文件：
+
+```text
+/home/cat/qt_gpu_probe_ai_20261019/local_quad.mp4      1280x720 30fps 合成视频
+/home/cat/qt_gpu_probe_ai_20261019/local_quad.rgb      240 帧 RGB565LE（约 422 MB）
+```
+
+启动（不需要 FPGA、不需要 pango_video_capture）：
+
+```sh
+cd /home/cat/qt_gpu_probe_ai_20261019
+python3 pgv_local_publisher.py --raw local_quad.rgb \
+  --output /dev/shm/pgv_local/latest.pgv --fps 30 --source-fps 30 &
+
+ADAS_EDGE_ROOT=/home/cat/competition_cockpit_port_20261018 \
+/usr/bin/python3 ai_bridge.py \
+  --live-frame-file /dev/shm/qt_gpu_probe_ai.mfr1 --source LOCAL_REPLAY \
+  --layout quad --display-view front --road-quadrant 0 --navigation-quadrant 1 \
+  --main-model /home/cat/adas-edge-rect/rect_models/yolo11n_rk3566_int8_split_320x192.rknn \
+  --specialist-model /home/cat/adas-edge-rect/tl_check/tl_specialist_512x192_hybrid2.rknn \
+  --main-hz 10 --specialist-hz 1 \
+  > results/ai_local.log 2>&1 &
+
+DISPLAY=:0 XAUTHORITY=/home/cat/.Xauthority \
+QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl \
+./qt_gpu_probe --fps 30 --duration 0 --start-mode 0 --road-quadrant 0 \
+  --pgv-file /dev/shm/pgv_local/latest.pgv --source-label pgv-local \
+  --pgv-layout quad --ai-frame-file /dev/shm/qt_gpu_probe_ai.mfr1 --ai-hz 10 \
+  --output-json results/local_final3.json
+```
+
+注意：导航 OCR 默认就是**关闭**，只有加 `--navigation-ocr` 才启用；本地性能启动命令不要带这个参数。
+
+本地性能（15 秒报告）：
+
+| 场景 | 源 FPS（末窗） | QSG | 上传 p95 | AI 结果年龄 |
+|---|---:|---:|---:|---:|
+| 本地 PGVF，无 AI | 30.3 | 60.6 | 1.67 ms | — |
+| 本地 PGVF + 512 模型 10 Hz | 30.9 | 56.7 | 2.20 ms | 2 ms |
+| 本地 PGVF + 416 模型 10 Hz | 23.7 | 59.2 | 2.64 ms | 140 ms |
+| 本地 PGVF + 320 模型 10 Hz（当前） | 24–29 | 约 59 | 约 2.6 ms | 约 118–140 ms |
+
+- 参考素材本身是 30 fps，所以本地视频内容最多 30 fps；QSG 接近 60。不要宣称本地回放是 60 fps 内容。
+- 320/416 模型降低延迟但交通灯/远小目标精度下降；512 模型精度更好但 AI 状态约 3–5 fps。
+- **导航 OCR 默认关闭**：Q2 卡片 OCR 在 RK3566 上单次约 10 s，会抢占 CPU 并让源 FPS/框延迟变差。需要时加 `--navigation-ocr`，并接受掉帧；本地性能模式不启用。
+- 图像/时序证据：`results/local_noai.json`、`local_ai30.json`、`local_ai416.json`、`local_final3.json`。
+
+## 已知限制
+
+- FPGA/PCIe 链路在冷启动/端点未就绪时会失败；本次通过板卡重启恢复，未改驱动。
+- 采集 publisher 是测试程序，不是生产服务；60 fps 状态会随输入/负载波动。
+- Qt AI-on 的 `QSG` 为约 51–61 fps，PCIe 帧上传约 44–49/s，尚未做到严格 60 帧唯一视频流；无 AI 时 QSG 稳定 60.3。
+- 交通灯、导航 OCR、车道/危险语义仍受模型和输入限制；没有数据时显示预览/未知。
+- Q1 前视源曾出现一次冻结，板卡重启后恢复；若再次遇到，检查前视相机/HDMI 源、FPGA 前视通道和输入时钟/格式。Qt 侧无法让静态源产生运动；可切到四路确认其它输入是否刷新。
+- Tesla clone 空间主画面是**渲染序列 + 真实 ADAS 计数叠加**，不是由当前帧 AI 几何实时重建；上游模型未在 RK3566 上运行。右下角 ADAS 卡才是实时 AI 投影。
+- 右下角 LiveBev 是**示意性透视投影**（用 2D box 底边/尺寸估算），不是标定地面模型；不能用于测距验收。
+- PCIe HUD V2 helper 需要 root；HUD overlay 在 FPGA HDMI 输出端，不在上游 PGVF 内。自动发送只覆盖交通灯/行人，静止目标/超速/LKA/车道需手动测试；时间字段因板端时钟未同步默认不发，黄灯协议无字段。
+- 板卡系统时钟未同步，截图右上角日期为板端时间。
+- 本轮没有修改正式 EGL、FPGA 协议、模型或驱动；只新增独立 BAR1 helper 和 V2 写路径。
+
+## 结果文件
+
+- `results/qt_ui_default_q2.png`：默认 Q2 主视 + AI 框 + MAIN/NAV 标记。
+- `results/qt_ui_selected_q1.png`：点击底部 Q1 后的主视 + AI 框。
+- `results/qt_ui_live_bev_q1.png`：右下角 ADAS 实时 BEV 跟随 Q1 的盒子。
+- `results/hud_test_panel.png`：PCIe HUD V2 手动信号测试界面。
+- `results/hud_pcie_v2_validation.json`：红/绿+行人/自动行人的 BAR1 写回证据。
+- `results/qt_ui_tesla_spatial.png`：Tesla-BevCam-Clone 空间主视图。
+- `results/qt_ui_optimized_pcie.png`：此前 Q1 单路 + AI 截图（旧布局，保留）。
+- `results/qt_ui_optimized_quad.png`：四路截图。
+- `results/qt_ui_optimized_spatial.png`：旧空间示意截图（已被 Tesla 版本替代）。
+- `results/pcie_quad_raw.png`：真实 PCIe 2×2 原始帧。
+- `results/qt_ui_optimized_pcie.json`：单路截图当次 Qt 报告。
+- `results/qt_ui_optimized_5hz.json` / `qt_ui_optimized_3hz.json`：AI 5/3 Hz 性能。
+- `results/qt_ui_no_ai.json`：真实 PCIe、无 AI 性能。
+- `results/qt_ui_optimized_cycle.json`：一次自动切换三模式的 20 秒报告。
+
+原始窗口抓取格式为 XWD，最终交付只保留 PNG；重新抓取使用 `capture_one.sh` 或 `verify_mode_switch.py`。
