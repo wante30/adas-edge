@@ -30,7 +30,9 @@
 - 不使用独立 EGL 程序句柄；GL 资源均在 `QQuickFramebufferObject::Renderer` 的 Qt 渲染线程创建/使用/释放。
 - 不再通过 PNG 编码/解码刷新三维场景。
 
-## 3. P2/P3：DEMO 与 LIVE
+'## 3. P2/P3：DEMO 与 LIVE
+
+空间场景为 **四条同向车道**（每条约 3.5 m）+ 路肩；自车位于第二车道中心，FSD 蓝色路径只铺自车车道，三条内部虚线边界和两侧实线可见。原先的单蓝带/两车道观感已移除。'
 
 ### DEMO
 
@@ -134,4 +136,4 @@ QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl \
 - `deployment/lubancat/qt_gpu_probe/qt_gpu_probe.pro`
 - `deployment/lubancat/qt_gpu_probe/qml.qrc`
 - `deployment/lubancat/qt_gpu_probe/assets/ego_car_rear.png`
-- 结果：`results/p0_upstream_baseline.jpg`、`results/gpu_scene_demo.png`、`results/gpu_scene_app.json`
+- 结果：`results/p0_upstream_baseline.jpg`、`results/gpu_scene_demo.png`、`results/gpu_scene_4lane.png`、`results/gpu_scene_app.json`
