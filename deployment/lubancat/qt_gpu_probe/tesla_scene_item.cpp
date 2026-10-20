@@ -2,6 +2,10 @@
 
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QDebug>
 #include <QFile>
 #include <QTextStream>
@@ -257,6 +261,51 @@ void TeslaSceneItem::setBoxes(const QVariantList &boxes) {
         QMutexLocker locker(&mutex_);
         boxes_ = boxes;
     }
+    // Auditable bridge from real tracker output to scene objects. This file
+    // contains no demo objects and no metric distance claim.
+    QJsonArray objects;
+    qint64 newest_detect_ns = sourceTimestampNs();
+    for (const QVariant &entry : boxes) {
+        const QVariantMap b = entry.toMap();
+        const QString cls = b.value(QStringLiteral("className")).toString();
+        const bool predicted = b.value(QStringLiteral("predicted")).toBool();
+        const bool mappable = cls == QStringLiteral("car") || cls == QStringLiteral("truck") ||
+                              cls == QStringLiteral("bus") || cls == QStringLiteral("person") ||
+                              cls == QStringLiteral("motorcycle") || cls == QStringLiteral("bicycle");
+        QJsonObject o;
+        o.insert(QStringLiteral("track_id"), static_cast<qint64>(b.value(QStringLiteral("trackId")).toULongLong()));
+        o.insert(QStringLiteral("class"), cls);
+        o.insert(QStringLiteral("confidence"), b.value(QStringLiteral("confidence")).toDouble());
+        o.insert(QStringLiteral("bbox"), QJsonArray{b.value(QStringLiteral("x")).toDouble(),
+                                                     b.value(QStringLiteral("y")).toDouble(),
+                                                     b.value(QStringLiteral("width")).toDouble(),
+                                                     b.value(QStringLiteral("height")).toDouble()});
+        o.insert(QStringLiteral("predicted"), predicted);
+        o.insert(QStringLiteral("missed"), b.value(QStringLiteral("missed")).toInt());
+        o.insert(QStringLiteral("track_state"), predicted ? QStringLiteral("PREDICTED")
+                                                          : QStringLiteral("CONFIRMED"));
+        o.insert(QStringLiteral("spatial_validity"),
+                 (!predicted && mappable) ? QStringLiteral("RELATIVE_ONLY") : QStringLiteral("UNKNOWN"));
+        const qint64 detect_ns = static_cast<qint64>(b.value(QStringLiteral("detectTimestampNs")).toULongLong());
+        newest_detect_ns = std::max(newest_detect_ns, detect_ns);
+        o.insert(QStringLiteral("detect_timestamp_ns"), detect_ns);
+        objects.append(o);
+    }
+    QJsonObject root;
+    root.insert(QStringLiteral("source_id"), sourceKey());
+    root.insert(QStringLiteral("source_frame_id"), static_cast<qint64>(sourceFrameId()));
+    root.insert(QStringLiteral("source_timestamp_ns"), newest_detect_ns);
+    root.insert(QStringLiteral("objects"), objects);
+    const QByteArray payload = QJsonDocument(root).toJson(QJsonDocument::Compact);
+    const QString tmp = QStringLiteral("/dev/shm/tesla_live_objects.json.tmp");
+    const QString out = QStringLiteral("/dev/shm/tesla_live_objects.json");
+    QFile f(tmp);
+    if (f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        f.write(payload);
+        f.close();
+        QFile::remove(out);
+        QFile::rename(tmp, out);
+    }
     emit boxesChanged();
     update();
 }
@@ -282,6 +331,15 @@ void TeslaSceneItem::setSourceKey(const QString &key) {
     }
     emit sourceKeyChanged();
     update();
+}
+
+void TeslaSceneItem::setSourceFrameId(qulonglong id) {
+    if (source_frame_id_.exchange(id) == id) return;
+    emit sourceFrameIdChanged();
+}
+void TeslaSceneItem::setSourceTimestampNs(qint64 ns) {
+    if (source_timestamp_ns_.exchange(ns) == ns) return;
+    emit sourceTimestampNsChanged();
 }
 
 class SceneRenderer : public QQuickFramebufferObject::Renderer {
@@ -364,10 +422,14 @@ public:
         program_->setAttributeBuffer(col, GL_FLOAT, 3 * sizeof(float), 3, 6 * sizeof(float));
         QMatrix4x4 projection;
         const float aspect = viewport_.height() > 0 ? float(viewport_.width()) / float(viewport_.height()) : 1.7f;
-        projection.perspective(52.0f, aspect, 0.08f, 180.0f);
+        const bool compact = viewport_.height() < 160;
+        projection.perspective(compact ? 44.0f : 52.0f, aspect, 0.08f, 180.0f);
         projection.scale(1.0f, -1.0f, 1.0f);
         QMatrix4x4 view;
-        view.lookAt(QVector3D(-1.75f, 8.2f, -13.5f), QVector3D(-1.75f, 0.2f, 18.0f), QVector3D(0, 1, 0));
+        if (compact)
+            view.lookAt(QVector3D(-1.75f, 5.2f, -8.0f), QVector3D(-1.75f, 0.1f, 12.0f), QVector3D(0, 1, 0));
+        else
+            view.lookAt(QVector3D(-1.75f, 8.2f, -13.5f), QVector3D(-1.75f, 0.2f, 18.0f), QVector3D(0, 1, 0));
         QMatrix4x4 mvp = projection * view;
         program_->setUniformValue("uMVP", mvp);
         f->glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size() / 6));
@@ -579,7 +641,9 @@ private:
                  .045f, .065f, .075f, false);
         }
         if (demo_) addDemo(v); else addLive(v);
-        // Ego is the QML rear-view asset above the FBO.
+        // Ego is a real 3D member of the same projected world, not a QML
+        // overlay. Its shape is a presentation model, not a measurement.
+        carMesh(v, -1.75f, 0.65f, QStringLiteral("car"), true);
     }
 
     std::unique_ptr<QOpenGLShaderProgram> program_;

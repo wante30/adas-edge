@@ -45,11 +45,25 @@ Item {
 
     onRoadQuadrantChanged: if (video) video.aiRoadQuadrant = roadQuadrant
     onNavQuadrantChanged: if (video) video.aiNavigationQuadrant = navQuadrant
-    onViewModeChanged: if (video) video.spatialViewActive = (viewMode === 2)
+    function attachTeslaScene() {
+        if (!teslaLive) return
+        var target = (viewMode === 2) ? spatialSceneHost : cardSceneHost
+        if (teslaLive.parent !== target) {
+            teslaLive.parent = target
+            teslaLive.anchors.fill = target
+        }
+        teslaLive.visible = (viewMode === 0 || viewMode === 2)
+    }
+
+    onViewModeChanged: {
+        if (video) video.spatialViewActive = (viewMode === 2)
+        attachTeslaScene()
+    }
 
     Component.onCompleted: {
         video.aiRoadQuadrant = roadQuadrant
         video.aiNavigationQuadrant = navQuadrant
+        attachTeslaScene()
     }
 
     // Real snapshots from the current PCIe 2x2 frame. The large viewport is
@@ -578,11 +592,10 @@ Item {
             }
         }
 
-        TeslaBevView {
-            id: teslaScene
+        Item {
+            id: spatialSceneHost
             x: 0; y: 0; width: mainView.width; height: mainView.height
             visible: root.viewMode === 2
-            compact: false
         }
 
         // Readability gradients.
@@ -1017,11 +1030,11 @@ Item {
                 }
                 Rectangle { x: 12; y: 47; width: 194; height: 1; color: "#1D3B46" }
                 Text {
-                    x: 12; y: 55; text: "TESLA-BEVCAM-CLONE · 原版动态 GIF"
+                    x: 12; y: 55; text: "LIVE TRACKS · RELATIVE_ONLY"
                     color: root.amber; font.family: root.cjk; font.pixelSize: 6
                 }
                 Text {
-                    x: 12; y: 72; text: "DEMO · 非标定空间示意"
+                    x: 12; y: 72; text: "真实 Track ID · 非标定相对空间"
                     color: "#7E9FA9"; font.family: root.cjk; font.pixelSize: 6
                 }
             }
@@ -1367,6 +1380,7 @@ Item {
         x: 833
         layer.enabled: true
         layer.smooth: true; y: 547; width: 427; height: 145
+        visible: root.viewMode === 0
         HudPanel {
             anchors.fill: parent
             cut: 11; accent: root.cyan
@@ -1380,17 +1394,27 @@ Item {
         }
         Rectangle {
             x: parent.width - 72; y: 9; width: 57; height: 16; radius: 2
-            color: "#2B220E"; border.color: "#6B552A"; border.width: 0.6
-            Text { anchors.centerIn: parent; text: "DEMO"; color: root.amber; font.family: root.num; font.pixelSize: 6 }
+            color: "#0B302A"; border.color: "#3F7059"; border.width: 0.6
+            Text { anchors.centerIn: parent; text: "LIVE"; color: root.mint; font.family: root.num; font.pixelSize: 6 }
         }
         Rectangle { x: 14; y: 31; width: parent.width - 28; height: 1; color: "#1A3942" }
-        TeslaBevView {
+        Item {
+            id: cardSceneHost
             x: 14; y: 37; width: parent.width - 28; height: 88
-            compact: true
+            visible: root.viewMode === 0
+            TeslaSceneItem {
+                id: teslaLive
+                anchors.fill: parent
+                boxes: video.aiBoxes
+                online: video.aiOnline
+                sourceKey: video.sourceMode
+                sourceFrameId: video.displayFrameId
+                sourceTimestampNs: video.displayTimestampNs
+            }
         }
         Text {
             x: 16; y: parent.height - 15
-            text: "TESLA-BEVCAM-CLONE · 原版动态演示 · 非标定"
+            text: "LIVE · Q1 · F" + video.displayFrameId + " · " + video.aiDetectionCount + " targets · RELATIVE_ONLY"
             color: "#7FB3B8"; font.family: root.cjk; font.pixelSize: 6
         }
     }
