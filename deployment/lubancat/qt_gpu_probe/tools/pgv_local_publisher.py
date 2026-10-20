@@ -53,18 +53,23 @@ def main() -> int:
     period = 1.0 / max(1.0, args.fps)
     next_tick = time.monotonic()
     transport_index = 0
+    last_source_index = -1
+    cycle = 0
     while True:
         now = time.monotonic()
         if now < next_tick:
             time.sleep(min(0.002, next_tick - now))
             continue
         source_index = int(transport_index * args.source_fps / args.fps) % frame_count
+        if last_source_index >= 0 and source_index < last_source_index:
+            cycle += 1
+        last_source_index = source_index
         offset = source_index * FRAME_BYTES
         stamp = time.monotonic_ns()
         with temp.open("wb") as stream:
             stream.write(HEADER.pack(
                 b"PGVF", 1, WIDTH, HEIGHT, transport_index & 0xFFFFFFFF,
-                args.generation, crc[source_index], FRAME_BYTES, stamp))
+                args.generation + cycle, crc[source_index], FRAME_BYTES, stamp))
             stream.write(mm[offset:offset + FRAME_BYTES])
         os.replace(temp, output)
         transport_index += 1

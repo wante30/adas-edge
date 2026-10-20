@@ -260,6 +260,8 @@ private:
     std::atomic<uint64_t> ai_requests_sent_{0};
     std::atomic<uint64_t> ai_results_received_{0};
     std::atomic<bool> ai_running_{false};
+    std::atomic<uint32_t> ai_epoch_{0};
+    uint32_t last_ai_epoch_ = 0;
     std::atomic<bool> ai_online_{false};
     std::atomic<bool> ai_dirty_{false};
     std::atomic<double> ai_fps_{0.0};

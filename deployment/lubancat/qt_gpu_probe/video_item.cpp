@@ -669,7 +669,12 @@ void VideoItem::runPgvProducer(double fps, QString pgvFile, double aiHz, QString
             std::this_thread::sleep_for(std::chrono::milliseconds(2));
             continue;
         }
-        if (haveFrame && generation == lastGeneration) {
+        if (haveFrame && generation != lastGeneration) {
+            // Local PGVF cycles increment generation. Start a new tracker epoch
+            // so the tail of the previous loop cannot be associated with the
+            // first vehicles of the next loop.
+            ai_epoch_.fetch_add(1);
+        } else if (haveFrame && generation == lastGeneration) {
             const uint32_t delta = sourceFrame - static_cast<uint32_t>(lastSourceFrame);
             if (delta == 0 || delta >= 0x80000000U) continue;
             source_dropped_frames_.fetch_add(delta - 1);
@@ -833,6 +838,12 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
             QVariantList boxes;
             {
                 QMutexLocker locker(&ai_metrics_mutex_);
+                const uint32_t resultEpoch = ai_epoch_.load();
+                if (resultEpoch != last_ai_epoch_) {
+                    tracks_.clear();
+                    next_track_id_ = 1;
+                    last_ai_epoch_ = resultEpoch;
+                }
                 if (frameId < latest_ai_frame_id_.load() || timestampNs <= 0) {
                     tracks_.clear();
                     next_track_id_ = 1;
