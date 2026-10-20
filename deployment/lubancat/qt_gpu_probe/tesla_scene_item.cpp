@@ -1,0 +1,589 @@
+#include "tesla_scene_item.h"
+
+#include <QCoreApplication>
+#include <QDateTime>
+#include <QDebug>
+#include <QFile>
+#include <QTextStream>
+#include <QVector3D>
+#include <QElapsedTimer>
+#include <QHash>
+#include <QMatrix4x4>
+#include <QOpenGLBuffer>
+#include <QOpenGLContext>
+#include <QOpenGLFramebufferObject>
+#include <QOpenGLFunctions>
+#include <QOpenGLShaderProgram>
+#include <QOpenGLTexture>
+#include <QImage>
+#include <QOpenGLVertexArrayObject>
+#include <QTimer>
+#include <QVariantMap>
+#include <QtMath>
+#include <algorithm>
+#include <memory>
+#include <cmath>
+#include <vector>
+
+namespace {
+struct SourceBox {
+    int id = 0;
+    QString cls;
+    double x = 0, y = 0, w = 0, h = 0;
+};
+
+struct LiveCar {
+    float x = 0, z = 0;
+    QString cls = QStringLiteral("car");
+    double seen = 0;
+};
+
+struct DemoCar {
+    float x = 0, z = 0;
+    QString cls = QStringLiteral("car");
+    float phase = 0;
+};
+
+struct Billboard {
+    float x = 0, z = 0, w = 1.9f, h = 2.0f;
+    QVector3D tint{0.55f, 0.60f, 0.65f};
+};
+
+void pushVertex(std::vector<float> &out, float x, float y, float z, float r, float g, float b) {
+    out.insert(out.end(), {x, y, z, r, g, b});
+}
+
+void quad(std::vector<float> &v, float x1, float z1, float x2, float z2,
+          float y, float r, float g, float b) {
+    // x1/z1 and x2/z2 are opposite corners; build the four actual corners.
+    const float xa = x1, za = z1, xb = x2, zb = z2;
+    pushVertex(v, xa, y, za, r, g, b); pushVertex(v, xb, y, za, r, g, b);
+    pushVertex(v, xb, y, zb, r, g, b);
+    pushVertex(v, xa, y, za, r, g, b); pushVertex(v, xb, y, zb, r, g, b);
+    pushVertex(v, xa, y, zb, r, g, b);
+}
+
+void box3(std::vector<float> &v, float cx, float y0, float cz, float w, float h, float d,
+          float r, float g, float b, bool darkBottom = true) {
+    const float x0 = cx - w * .5f, x1 = cx + w * .5f;
+    const float z0 = cz - d * .5f, z1 = cz + d * .5f;
+    const float y1 = y0 + h;
+    const float sr = r * .72f, sg = g * .72f, sb = b * .72f;
+    const float tr = std::min(1.f, r * 1.18f), tg = std::min(1.f, g * 1.18f), tb = std::min(1.f, b * 1.18f);
+    // side faces
+    pushVertex(v, x0, y0, z0, sr, sg, sb); pushVertex(v, x0, y0, z1, sr, sg, sb); pushVertex(v, x0, y1, z1, r, g, b);
+    pushVertex(v, x0, y0, z0, sr, sg, sb); pushVertex(v, x0, y1, z1, r, g, b); pushVertex(v, x0, y1, z0, r, g, b);
+    pushVertex(v, x1, y0, z0, sr, sg, sb); pushVertex(v, x1, y1, z1, r, g, b); pushVertex(v, x1, y0, z1, sr, sg, sb);
+    pushVertex(v, x1, y0, z0, sr, sg, sb); pushVertex(v, x1, y1, z0, r, g, b); pushVertex(v, x1, y1, z1, r, g, b);
+    // rear/front
+    pushVertex(v, x0, y0, z0, sr, sg, sb); pushVertex(v, x1, y0, z0, sr, sg, sb); pushVertex(v, x1, y1, z0, r, g, b);
+    pushVertex(v, x0, y0, z0, sr, sg, sb); pushVertex(v, x1, y1, z0, r, g, b); pushVertex(v, x0, y1, z0, r, g, b);
+    pushVertex(v, x0, y0, z1, sr, sg, sb); pushVertex(v, x1, y1, z1, r, g, b); pushVertex(v, x1, y0, z1, sr, sg, sb);
+    pushVertex(v, x0, y0, z1, sr, sg, sb); pushVertex(v, x0, y1, z1, r, g, b); pushVertex(v, x1, y1, z1, r, g, b);
+    // top
+    pushVertex(v, x0, y1, z0, tr, tg, tb); pushVertex(v, x1, y1, z0, tr, tg, tb); pushVertex(v, x1, y1, z1, tr, tg, tb);
+    pushVertex(v, x0, y1, z0, tr, tg, tb); pushVertex(v, x1, y1, z1, tr, tg, tb); pushVertex(v, x0, y1, z1, tr, tg, tb);
+    if (darkBottom) {
+        pushVertex(v, x0, y0, z0, 0.05f, 0.06f, 0.07f); pushVertex(v, x0, y0, z1, 0.05f, 0.06f, 0.07f);
+        pushVertex(v, x1, y0, z1, 0.05f, 0.06f, 0.07f);
+        pushVertex(v, x0, y0, z0, 0.05f, 0.06f, 0.07f); pushVertex(v, x1, y0, z1, 0.05f, 0.06f, 0.07f);
+        pushVertex(v, x1, y0, z0, 0.05f, 0.06f, 0.07f);
+    }
+}
+
+struct ModelFace {
+    QVector3D a, b, c;
+    QVector3D n;
+    int material = 0;
+};
+
+QVector3D materialColor(int material, bool ego) {
+    switch (material) {
+    case 1: return QVector3D(.035f, .040f, .045f);  // tire
+    case 2: return QVector3D(.26f, .28f, .30f);     // metal
+    case 3: return QVector3D(.06f, .10f, .13f);     // glass
+    case 4: return QVector3D(.42f, .43f, .45f);     // trim
+    case 5: return QVector3D(.72f, .62f, .34f);     // lamp
+    default: return ego ? QVector3D(.20f, .29f, .39f) : QVector3D(.40f, .43f, .46f);
+    }
+}
+
+void modelCar(std::vector<float> &v, const QVector<ModelFace> &faces, float x, float z,
+              float scale, float scaleZ, bool ego) {
+    quad(v, x - 1.0f, z - 2.2f, x + 1.0f, z + 2.2f, .012f, .022f, .027f, .032f);
+    const float cx = 1.428f, cz = .029f;
+    const int step = ego ? 2 : 4;
+    for (int i = 0; i < faces.size(); i += step) {
+        const ModelFace &f = faces[i];
+        QVector3D col = materialColor(f.material, ego);
+        const float shade = .62f + .38f * std::max(0.0f, f.n.y());
+        col *= shade;
+        const float xs[3] = {f.a.x(), f.b.x(), f.c.x()};
+        const float ys[3] = {f.a.y(), f.b.y(), f.c.y()};
+        const float zs[3] = {f.a.z(), f.b.z(), f.c.z()};
+        for (int k = 0; k < 3; ++k) {
+            const float wx = x + (zs[k] - cz) * scaleZ;
+            const float wz = z + (xs[k] - cx) * scale;
+            pushVertex(v, wx, std::max(0.015f, ys[k] * scale), wz, col.x(), col.y(), col.z());
+        }
+    }
+}
+
+static QVector<ModelFace> *g_modelFaces = nullptr;
+
+void carMesh(std::vector<float> &v, float x, float z, const QString &cls, bool ego) {
+    const bool truck = cls == QStringLiteral("truck");
+    const bool bus = cls == QStringLiteral("bus");
+    const bool person = cls == QStringLiteral("person");
+    const float w = person ? .55f : (truck ? 2.25f : (bus ? 2.45f : 1.9f));
+    const float h = person ? 1.65f : (truck ? 2.7f : (bus ? 2.8f : 1.45f));
+    const float d = person ? .5f : (truck ? 7.2f : (bus ? 9.5f : 4.4f));
+    const float r = ego ? .20f : (truck ? .24f : (bus ? .20f : .36f));
+    const float g = ego ? .28f : (truck ? .28f : (bus ? .30f : .41f));
+    const float b = ego ? .38f : (truck ? .31f : (bus ? .35f : .46f));
+
+    // soft ground shadow
+    quad(v, x - w * .62f, z - d * .55f, x + w * .62f, z + d * .55f, .012f, .025f, .03f, .035f);
+
+    if (person) {
+        box3(v, x, .02f, z, .5f, .9f, .4f, .30f, .38f, .42f);
+        box3(v, x, .92f, z, .34f, .55f, .30f, .38f, .46f, .50f);
+        return;
+    }
+    if (truck) {
+        box3(v, x, .18f, z - d * .28f, w * .94f, h * .68f, d * .26f, r, g, b);
+        box3(v, x, .18f, z + d * .18f, w, h * .92f, d * .64f, r * .9f, g * .9f, b * .9f);
+    } else if (bus) {
+        box3(v, x, .18f, z, w, h * .90f, d, r, g, b);
+        for (int i = -2; i <= 2; ++i)
+            box3(v, x - w * .505f, h * .48f, z + i * d * .16f, .03f, h * .30f, d * .11f, .06f, .10f, .13f);
+    } else {
+        box3(v, x, .18f, z, w, h * .48f, d, r, g, b);
+        box3(v, x, h * .60f, z - d * .03f, w * .82f, h * .46f, d * .58f, r * 1.05f, g * 1.05f, b * 1.05f);
+        // glass planes, kept as thin dark boxes on the visible rear/side
+        box3(v, x, h * .67f, z - d * .31f, w * .62f, h * .22f, .025f, .04f, .07f, .09f);
+        box3(v, x - w * .41f, h * .65f, z - d * .02f, .025f, h * .22f, d * .34f, .05f, .09f, .11f);
+        box3(v, x + w * .41f, h * .65f, z - d * .02f, .025f, h * .22f, d * .34f, .05f, .09f, .11f);
+    }
+    // wheels
+    for (int sx = -1; sx <= 1; sx += 2) {
+        for (int sz = -1; sz <= 1; sz += 2) {
+            box3(v, x + sx * (w * .51f), .02f, z + sz * (d * .30f),
+                 .18f, h * .22f, .55f, .035f, .04f, .045f);
+        }
+    }
+    if (!person && !truck && !bus) {
+        // Rear glass, trunk lip and bumper make the chase view read as a car.
+        box3(v, x, h * .72f, z - d * .505f, w * .58f, h * .25f, .035f, .035f, .065f, .085f);
+        box3(v, x, h * .52f, z - d * .50f, w * .94f, .09f, .11f, r * .75f, g * .75f, b * .75f);
+        box3(v, x, h * .20f, z - d * .50f, w * .98f, .11f, .10f, .08f, .09f, .10f);
+        box3(v, x, h * .88f, z - d * .04f, w * .80f, .035f, d * .18f, r * .7f, g * .7f, b * .7f);
+    }
+    // lamps: neutral amber/white, never hazard red
+    box3(v, x - w * .31f, h * .40f, z - d * .51f, .24f, .10f, .03f, .92f, .82f, .56f);
+    box3(v, x + w * .31f, h * .40f, z - d * .51f, .24f, .10f, .03f, .92f, .82f, .56f);
+    if (ego) {
+        box3(v, x, h * .84f, z + d * .02f, w * .55f, .035f, d * .21f, .38f, .68f, .78f);
+    }
+}
+
+
+static QVector<ModelFace> loadModelFaces() {
+    QVector<ModelFace> faces;
+    QFile file(QCoreApplication::applicationDirPath() + QStringLiteral("/assets/car.obj"));
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "car.obj unavailable:" << file.fileName();
+        return faces;
+    }
+    QVector<QVector3D> vertices;
+    QVector<int> faceVertices;
+    int material = 0;
+    QTextStream in(&file);
+    while (!in.atEnd()) {
+        const QString line = in.readLine().trimmed();
+        if (line.isEmpty() || line.startsWith('#')) continue;
+        const QStringList parts = line.split(' ', QString::SkipEmptyParts);
+        if (parts.size() < 2) continue;
+        if (parts[0] == "v" && parts.size() >= 4)
+            vertices.push_back(QVector3D(parts[1].toFloat(), parts[2].toFloat(), parts[3].toFloat()));
+        else if (parts[0] == "usemtl") {
+            const QString n = parts[1];
+            if (n == "tire" || n == "Black_Plastic" || n == "tirehouse") material = 1;
+            else if (n == "metal" || n == "metal2") material = 2;
+            else if (n == "glass3") material = 3;
+            else if (n == "plt1" || n == "plt3" || n == "plt4") material = 4;
+            else if (n == "wire_115115115" || n == "wire_086086086") material = 5;
+            else material = 0;
+        } else if (parts[0] == "f") {
+            faceVertices.clear();
+            for (int i = 1; i < parts.size(); ++i) {
+                const QString idx = parts[i].section('/', 0, 0);
+                const int vi = idx.toInt() - 1;
+                if (vi >= 0 && vi < vertices.size()) faceVertices.push_back(vi);
+            }
+            for (int i = 1; i + 1 < faceVertices.size(); ++i) {
+                ModelFace f;
+                f.a = vertices[faceVertices[0]];
+                f.b = vertices[faceVertices[i]];
+                f.c = vertices[faceVertices[i + 1]];
+                f.n = QVector3D::crossProduct(f.b - f.a, f.c - f.a).normalized();
+                f.material = material;
+                faces.push_back(f);
+            }
+        }
+    }
+    qInfo() << "car.obj loaded faces:" << faces.size();
+    return faces;
+}
+} // namespace
+
+TeslaSceneItem::TeslaSceneItem(QQuickItem *parent) : QQuickFramebufferObject(parent) {
+    setFlag(ItemHasContents, true);
+    auto *timer = new QTimer(this);
+    timer->setInterval(16);
+    connect(timer, &QTimer::timeout, this, [this]() { update(); });
+    timer->start();
+}
+
+QVariantList TeslaSceneItem::boxes() const {
+    QMutexLocker locker(&mutex_);
+    return boxes_;
+}
+void TeslaSceneItem::setBoxes(const QVariantList &boxes) {
+    {
+        QMutexLocker locker(&mutex_);
+        boxes_ = boxes;
+    }
+    emit boxesChanged();
+    update();
+}
+void TeslaSceneItem::setOnline(bool online) {
+    if (online_.exchange(online) == online) return;
+    emit onlineChanged();
+    update();
+}
+void TeslaSceneItem::setDemoMode(bool demo) {
+    if (demo_mode_.exchange(demo) == demo) return;
+    emit demoModeChanged();
+    update();
+}
+QString TeslaSceneItem::sourceKey() const {
+    QMutexLocker locker(&mutex_);
+    return source_key_;
+}
+void TeslaSceneItem::setSourceKey(const QString &key) {
+    {
+        QMutexLocker locker(&mutex_);
+        if (source_key_ == key) return;
+        source_key_ = key;
+    }
+    emit sourceKeyChanged();
+    update();
+}
+
+class SceneRenderer : public QQuickFramebufferObject::Renderer {
+public:
+    SceneRenderer() { clock_.start(); }
+
+    QOpenGLFramebufferObject *createFramebufferObject(const QSize &size) override {
+        QOpenGLFramebufferObjectFormat fmt;
+        fmt.setAttachment(QOpenGLFramebufferObject::Depth);
+        fmt.setSamples(0);
+        return new QOpenGLFramebufferObject(size, fmt);
+    }
+
+    void synchronize(QQuickFramebufferObject *item) override {
+        auto *scene = static_cast<TeslaSceneItem *>(item);
+        const QVariantList list = scene->boxes();
+        QVector<SourceBox> next;
+        next.reserve(list.size());
+        for (const QVariant &entry : list) {
+            const QVariantMap map = entry.toMap();
+            SourceBox b;
+            b.id = map.value(QStringLiteral("trackId")).toInt();
+            b.cls = map.value(QStringLiteral("className")).toString();
+            b.x = map.value(QStringLiteral("x")).toDouble();
+            b.y = map.value(QStringLiteral("y")).toDouble();
+            b.w = map.value(QStringLiteral("width")).toDouble();
+            b.h = map.value(QStringLiteral("height")).toDouble();
+            if (b.id > 0 && b.w > 2 && b.h > 2) next.push_back(b);
+        }
+        boxes_ = next;
+        online_ = scene->online();
+        demo_ = scene->demoMode();
+        viewport_ = scene->size().toSize();
+        const QString key = scene->sourceKey();
+        if (key != source_key_) {
+            source_key_ = key;
+            live_.clear();
+        }
+        const double now = clock_.nsecsElapsed() / 1e9;
+        dt_ = std::clamp(now - last_time_, 0.001, 0.12);
+        last_time_ = now;
+        elapsed_ = now;
+    }
+
+    void render() override {
+        auto *ctx = QOpenGLContext::currentContext();
+        if (!ctx) return;
+        auto *f = ctx->functions();
+        if (!program_) initGL();
+        if (!program_) return;
+
+        f->glViewport(0, 0, static_cast<GLint>(viewport_.width()), static_cast<GLint>(viewport_.height()));
+        f->glDisable(GL_BLEND);
+        f->glEnable(GL_DEPTH_TEST);
+        f->glDepthFunc(GL_LEQUAL);
+        f->glClearColor(0.018f, 0.028f, 0.036f, 1.0f);
+        f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        std::vector<float> vertices;
+        vertices.reserve(24000);
+        buildScene(vertices);
+        if (vertices.empty()) return;
+
+        vao_.bind();
+        vbo_.bind();
+        vbo_.allocate(vertices.data(), static_cast<int>(vertices.size() * sizeof(float)));
+        program_->bind();
+        const int pos = program_->attributeLocation("aPos");
+        const int col = program_->attributeLocation("aColor");
+        program_->enableAttributeArray(pos);
+        program_->enableAttributeArray(col);
+        program_->setAttributeBuffer(pos, GL_FLOAT, 0, 3, 6 * sizeof(float));
+        program_->setAttributeBuffer(col, GL_FLOAT, 3 * sizeof(float), 3, 6 * sizeof(float));
+        QMatrix4x4 projection;
+        const float aspect = viewport_.height() > 0 ? float(viewport_.width()) / float(viewport_.height()) : 1.7f;
+        projection.perspective(52.0f, aspect, 0.08f, 180.0f);
+        projection.scale(1.0f, -1.0f, 1.0f);
+        QMatrix4x4 view;
+        view.lookAt(QVector3D(0.0f, 8.2f, -13.5f), QVector3D(0.0f, 0.2f, 18.0f), QVector3D(0, 1, 0));
+        QMatrix4x4 mvp = projection * view;
+        program_->setUniformValue("uMVP", mvp);
+        f->glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size() / 6));
+        program_->disableAttributeArray(pos);
+        program_->disableAttributeArray(col);
+        vbo_.release();
+        vao_.release();
+        drawBillboards(mvp);
+
+        frames_++;
+        if (elapsed_ - last_report_ > 1.0) {
+            // Rendering thread only updates an atomic; no QObject signal here.
+            last_report_ = elapsed_;
+            frames_ = 0;
+        }
+    }
+
+private:
+    void initGL() {
+        program_ = std::make_unique<QOpenGLShaderProgram>();
+        const char *vs = R"(#version 300 es
+        in vec3 aPos; in vec3 aColor; uniform mat4 uMVP; out vec3 vColor;
+        void main(){ vColor=aColor; gl_Position=uMVP*vec4(aPos,1.0); })";
+        const char *fs = R"(#version 300 es
+        precision mediump float; in vec3 vColor; out vec4 fragColor;
+        void main(){ fragColor=vec4(vColor,1.0); })";
+        if (!program_->addShaderFromSourceCode(QOpenGLShader::Vertex, vs) ||
+            !program_->addShaderFromSourceCode(QOpenGLShader::Fragment, fs) ||
+            !program_->link()) {
+            qWarning("TeslaScene shader failed: %s", qPrintable(program_->log()));
+            program_.reset();
+            return;
+        }
+        vbo_.create();
+        vao_.create();
+        vbo_.setUsagePattern(QOpenGLBuffer::DynamicDraw);
+
+        billboard_program_ = std::make_unique<QOpenGLShaderProgram>();
+        const char *bvs = R"(#version 300 es
+        in vec3 aPos; in vec2 aUV; uniform mat4 uMVP; out vec2 vUV;
+        void main(){ vUV=aUV; gl_Position=uMVP*vec4(aPos,1.0); })";
+        const char *bfs = R"(#version 300 es
+        precision mediump float; in vec2 vUV; uniform sampler2D uTex; out vec4 fragColor;
+        void main(){ vec4 t=texture(uTex,vUV); if(t.a<0.04) discard; fragColor=vec4(t.rgb, t.a); })";
+        if (billboard_program_->addShaderFromSourceCode(QOpenGLShader::Vertex, bvs) &&
+            billboard_program_->addShaderFromSourceCode(QOpenGLShader::Fragment, bfs) &&
+            billboard_program_->link()) {
+            billboard_vbo_.create();
+            billboard_vbo_.setUsagePattern(QOpenGLBuffer::DynamicDraw);
+            billboard_vao_.create();
+            QImage image(QStringLiteral(":/assets/ego_car_rear.png"));
+            if (!image.isNull()) {
+                texture_ = new QOpenGLTexture(image.mirrored());
+                texture_->setMinificationFilter(QOpenGLTexture::Linear);
+                texture_->setMagnificationFilter(QOpenGLTexture::Linear);
+            }
+        } else {
+            qWarning("billboard shader failed: %s", qPrintable(billboard_program_->log()));
+            billboard_program_.reset();
+        }
+    }
+
+    void addBillboard(float x, float z, const QString &cls) {
+        Billboard b;
+        b.x = x; b.z = z;
+        if (cls == "truck") { b.w = 2.5f; b.tint = QVector3D(.42f, .46f, .50f); }
+        else if (cls == "bus") { b.w = 2.7f; b.tint = QVector3D(.34f, .44f, .52f); }
+        else if (cls == "person") { b.w = .75f; b.tint = QVector3D(.65f, .66f, .58f); }
+        else { b.w = 1.95f; b.tint = QVector3D(.58f, .62f, .67f); }
+        b.h = b.w * 740.0f / 680.0f;
+        billboards_.push_back(b);
+    }
+
+    void addDemo(std::vector<float> &v) {
+        // The original demo's motion is deliberately separate from LIVE.
+        const float phase = float(std::fmod(elapsed_ * 0.055, 1.0));
+        const char *classes[] = {"car", "car", "car", "car", "car", "car"};
+        const float lanes[] = {-2.4f, 2.4f, 0.0f, 3.1f, -3.1f, 1.2f};
+        for (int i = 0; i < 5; ++i) {
+            const float z = 8.0f + std::fmod(10.0f + i * 11.0f + phase * 58.0f, 58.0f);
+            addBillboard(lanes[i], z, QString::fromLatin1(classes[i]));
+        }
+        // dash motion makes the DEMO world visibly move without claiming metric speed.
+        for (int i = 0; i < 18; ++i) {
+            const float z = 5.0f + std::fmod(i * 4.0f + elapsed_ * 8.0f, 72.0f);
+            quad(v, -0.035f, z, 0.035f, z + 1.6f, .021f, .55f, .60f, .63f);
+        }
+    }
+
+    void addLive(std::vector<float> &v) {
+        if (!online_) {
+            live_.clear();
+            return;
+        }
+        const double now = elapsed_;
+        for (const SourceBox &b : boxes_) {
+            if (!(b.cls == "car" || b.cls == "truck" || b.cls == "bus" ||
+                  b.cls == "person" || b.cls == "motorcycle")) continue;
+            const double cx = (b.x + b.w * .5) / 1280.0;
+            const double bottom = (b.y + b.h) / 720.0;
+            const float tx = std::clamp(float((cx - .5) * 7.0), -5.4f, 5.4f);
+            const float tz = std::clamp(float(3.8 + (1.0 - bottom) * 51.0), 3.8f, 55.0f);
+            auto it = live_.find(b.id);
+            if (it == live_.end()) {
+                live_.insert(b.id, LiveCar{tx, tz, b.cls, now});
+            } else {
+                it->cls = b.cls;
+                const float k = std::min(1.0f, float(dt_ * 5.0));
+                it->x += (tx - it->x) * k;
+                it->z += (tz - it->z) * k;
+                it->seen = now;
+            }
+        }
+        for (auto it = live_.begin(); it != live_.end();) {
+            if (now - it->seen > 1.2) it = live_.erase(it); else ++it;
+        }
+        for (const LiveCar &car : live_) addBillboard(car.x, car.z, car.cls);
+    }
+
+    void drawBillboards(const QMatrix4x4 &mvp) {
+        if (!texture_ || billboards_.empty()) return;
+        auto *ctx = QOpenGLContext::currentContext();
+        if (!ctx) return;
+        auto *f = ctx->functions();
+        std::sort(billboards_.begin(), billboards_.end(), [](const Billboard &a, const Billboard &b) { return a.z > b.z; });
+        std::vector<float> verts;
+        verts.reserve(billboards_.size() * 6 * 5);
+        for (const Billboard &b : billboards_) {
+            const float x0 = b.x - b.w * .5f, x1 = b.x + b.w * .5f;
+            const float y0 = .02f, y1 = b.h;
+            const float z = b.z;
+            auto vtx = [&](float x, float y, float u, float v) {
+                verts.insert(verts.end(), {x, y, z, u, v});
+            };
+            vtx(x0, y0, 0, 1); vtx(x1, y0, 1, 1); vtx(x1, y1, 1, 0);
+            vtx(x0, y0, 0, 1); vtx(x1, y1, 1, 0); vtx(x0, y1, 0, 0);
+        }
+        if (!billboard_program_) return;
+        billboard_vao_.bind(); billboard_vbo_.bind();
+        billboard_vbo_.allocate(verts.data(), int(verts.size() * sizeof(float)));
+        billboard_program_->bind();
+        billboard_program_->setUniformValue("uMVP", mvp);
+        billboard_program_->setUniformValue("uTex", 0);
+        const int p = billboard_program_->attributeLocation("aPos");
+        const int uv = billboard_program_->attributeLocation("aUV");
+        billboard_program_->enableAttributeArray(p);
+        billboard_program_->enableAttributeArray(uv);
+        billboard_program_->setAttributeBuffer(p, GL_FLOAT, 0, 3, 5 * sizeof(float));
+        billboard_program_->setAttributeBuffer(uv, GL_FLOAT, 3 * sizeof(float), 2, 5 * sizeof(float));
+        f->glEnable(GL_BLEND);
+        f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        f->glDepthMask(GL_FALSE);
+        texture_->bind(0);
+        f->glDrawArrays(GL_TRIANGLES, 0, GLsizei(verts.size() / 5));
+        texture_->release();
+        f->glDepthMask(GL_TRUE);
+        f->glDisable(GL_BLEND);
+        billboard_program_->disableAttributeArray(p);
+        billboard_program_->disableAttributeArray(uv);
+        billboard_vbo_.release();
+        billboard_vao_.release();
+        billboards_.clear();
+    }
+
+    void buildScene(std::vector<float> &v) {
+        billboards_.clear();
+        // Ground, grass shoulders, road bed, path, lane lines, grid.
+        quad(v, -30, -8, 30, 96, 0.0f, .035f, .055f, .060f);
+        quad(v, -28, -6, -4.2f, 92, .006f, .055f, .085f, .075f);
+        quad(v, 4.2f, -6, 28, 92, .006f, .055f, .085f, .075f);
+        quad(v, -4.1f, 0, 4.1f, 88, .018f, .105f, .125f, .135f);
+        quad(v, -3.15f, 0, 3.15f, 86, .024f, .070f, .27f, .42f);
+        // road shoulders
+        quad(v, -3.75f, 0, -3.15f, 86, .028f, .22f, .25f, .26f);
+        quad(v, 3.15f, 0, 3.75f, 86, .028f, .22f, .25f, .26f);
+        quad(v, -3.22f, 0, -3.15f, 86, .031f, .62f, .72f, .76f);
+        quad(v, 3.15f, 0, 3.22f, 86, .031f, .62f, .72f, .76f);
+        for (int i = 0; i < 22; ++i) {
+            const float z0 = i * 4.0f;
+            quad(v, -.055f, z0 + .8f, .055f, z0 + 2.4f, .033f, .48f, .54f, .57f);
+        }
+        for (int i = 0; i < 8; ++i) {
+            const float z = 8.0f + i * 9.0f;
+            quad(v, -28, z, -4.2f, z + .06f, .022f, .085f, .11f, .13f);
+            quad(v, 4.2f, z, 28, z + .06f, .022f, .085f, .11f, .13f);
+        }
+        for (int side = -1; side <= 1; side += 2) {
+            for (int i = 0; i < 7; ++i) {
+                const float x = side * (5.0f + i * 3.0f);
+                quad(v, x, 0, x + .05f, 88, .025f, .065f, .085f, .10f);
+            }
+        }
+        // distant city silhouette; purely decorative DEMO/LIVE background
+        for (int i = 0; i < 11; ++i) {
+            const float x = -24.0f + i * 4.8f;
+            const float h = 3.0f + float((i * 7) % 9);
+            box3(v, x, 0.0f, 82.0f + (i % 3) * 2.5f, 3.2f, h, 2.0f,
+                 .045f, .065f, .075f, false);
+        }
+        if (demo_) addDemo(v); else addLive(v);
+        // Ego is the QML rear-view asset above the FBO.
+    }
+
+    std::unique_ptr<QOpenGLShaderProgram> program_;
+    std::unique_ptr<QOpenGLShaderProgram> billboard_program_;
+    QOpenGLTexture *texture_ = nullptr;
+    std::vector<Billboard> billboards_;
+    QOpenGLBuffer billboard_vbo_{QOpenGLBuffer::VertexBuffer};
+    QOpenGLVertexArrayObject billboard_vao_;
+    QOpenGLBuffer vbo_{QOpenGLBuffer::VertexBuffer};
+    QOpenGLVertexArrayObject vao_;
+    QElapsedTimer clock_;
+    double last_time_ = 0.0;
+    double elapsed_ = 0.0;
+    float dt_ = .016f;
+    double last_report_ = 0.0;
+    int frames_ = 0;
+    QVector<SourceBox> boxes_;
+    QHash<int, LiveCar> live_;
+    QString source_key_;
+    bool online_ = false;
+    bool demo_ = false;
+    QSize viewport_;
+};
+
+
+QQuickFramebufferObject::Renderer *TeslaSceneItem::createRenderer() const {
+    return new SceneRenderer();
+}

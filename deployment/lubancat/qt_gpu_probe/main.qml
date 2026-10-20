@@ -29,9 +29,7 @@ Item {
     property bool hudTestOpen: false
     property bool autoHudSend: true
     property int trackingMode: 2  // 0=RAW, 1=FIX4, 2=TIME
-    property int sceneTick: 0
-    property int sceneBuffer: 0
-    property int scenePending: -1
+    property bool sceneDemo: false
     property int testTraffic: 1
     property int testLaneLeft: 0
     property int testLaneRight: 0
@@ -581,44 +579,30 @@ Item {
             }
         }
 
-        Image {
-            id: sceneA
+        TeslaSceneItem {
+            id: teslaScene
             x: 0; y: 0; width: mainView.width; height: mainView.height
-            source: "file:///dev/shm/tesla_scene_a.png"
-            fillMode: Image.PreserveAspectFit
-            visible: root.viewMode === 2 && root.sceneBuffer === 0
-            cache: false
-            smooth: true
-            asynchronous: true
-            onStatusChanged: if (status === Image.Ready && root.scenePending === 0) {
-                root.sceneBuffer = 0; root.scenePending = -1
+            visible: root.viewMode === 2
+            boxes: video.aiBoxes
+            online: video.aiOnline
+            sourceKey: video.sourceMode
+            demoMode: root.sceneDemo
+            Timer {
+                interval: 16; repeat: true; running: root.viewMode === 2
+                onTriggered: teslaScene.requestUpdate()
             }
         }
         Image {
-            id: sceneB
-            x: 0; y: 0; width: mainView.width; height: mainView.height
-            source: "file:///dev/shm/tesla_scene_b.png"
+            id: egoOverlay
+            visible: root.viewMode === 2
+            source: "assets/ego_car_rear.png"
+            width: 205
+            height: width * 740.0 / 680.0
+            x: (mainView.width - width) / 2
+            y: mainView.height - height - 2
             fillMode: Image.PreserveAspectFit
-            visible: root.viewMode === 2 && root.sceneBuffer === 1
-            cache: false
             smooth: true
-            asynchronous: true
-            onStatusChanged: if (status === Image.Ready && root.scenePending === 1) {
-                root.sceneBuffer = 1; root.scenePending = -1
-            }
-        }
-        Timer {
-            interval: 100; repeat: true; running: root.viewMode === 2
-            onTriggered: {
-                if (root.scenePending !== -1) return
-                var next = 1 - root.sceneBuffer
-                root.sceneTick = (root.sceneTick + 1) % 100000
-                root.scenePending = next
-                if (next === 0)
-                    sceneA.source = "file:///dev/shm/tesla_scene_a.png?t=" + root.sceneTick
-                else
-                    sceneB.source = "file:///dev/shm/tesla_scene_b.png?t=" + root.sceneTick
-            }
+            cache: true
         }
 
         // Readability gradients.
@@ -788,6 +772,21 @@ Item {
                     root.autoHudSend = false
                     root.hudTestOpen = true
                 }
+            }
+        }
+
+        Rectangle {
+            x: parent.width - 300; y: 44; width: 88; height: 23; radius: 2
+            color: "#C0031118"; border.color: root.sceneDemo ? "#5A4A2C" : "#3F7059"; border.width: 0.7
+            Text {
+                anchors.centerIn: parent
+                text: root.sceneDemo ? "SCENE DEMO" : "SCENE LIVE"
+                color: root.sceneDemo ? root.amber : root.mint
+                font.family: root.num; font.pixelSize: 6
+            }
+            MouseArea {
+                anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                onClicked: root.sceneDemo = !root.sceneDemo
             }
         }
 
@@ -1053,11 +1052,11 @@ Item {
                 }
                 Rectangle { x: 12; y: 47; width: 194; height: 1; color: "#1D3B46" }
                 Text {
-                    x: 12; y: 55; text: "LIVE TRACKS · 5 Hz · 非实时几何"
+                    x: 12; y: 55; text: root.sceneDemo ? "DEMO · GPU 连续动画" : "LIVE TARGETS · GPU · 非实时几何"
                     color: root.amber; font.family: root.cjk; font.pixelSize: 6
                 }
                 Text {
-                    x: 12; y: 72; text: "目标来自真实 Track ID · 坐标未标定"
+                    x: 12; y: 72; text: root.sceneDemo ? "演示目标 · 非真实检测" : "真实 Track ID · 坐标未标定"
                     color: "#7E9FA9"; font.family: root.cjk; font.pixelSize: 6
                 }
             }

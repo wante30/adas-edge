@@ -4,6 +4,7 @@
 
 #include "hud_control.h"
 #include "video_item.h"
+#include "tesla_scene_item.h"
 
 #include <QFile>
 #include <QFileInfo>
@@ -128,6 +129,7 @@ int main(int argc, char **argv) {
     }
 
     qmlRegisterType<VideoItem>("QtGpuProbe", 1, 0, "VideoItem");
+    qmlRegisterType<TeslaSceneItem>("QtGpuProbe", 1, 0, "TeslaSceneItem");
     qmlRegisterType<HudControl>("QtGpuProbe", 1, 0, "HudControl");
     QQuickView view;
     view.setTitle(QStringLiteral("Qt Quick GPU Probe - RK3566"));
