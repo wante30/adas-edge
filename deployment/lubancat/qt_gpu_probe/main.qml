@@ -608,7 +608,7 @@ Item {
             }
         }
         Timer {
-            interval: 125; repeat: true; running: root.viewMode === 2
+            interval: 100; repeat: true; running: root.viewMode === 2
             onTriggered: {
                 if (root.scenePending !== -1) return
                 var next = 1 - root.sceneBuffer
