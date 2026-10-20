@@ -174,3 +174,44 @@ Publisher 从内存 mmap 读取，设置 `--fps 60 --source-fps 30`：
 - 最佳全功能唯一上传：约 **14.3 FPS**
 - 仅 YOLO：约 **18.1 FPS**
 - 无 AI：**27.5 FPS**
+
+## 12. 本轮 AI 输入预处理优化
+
+实际热点：
+
+- `decode_rgb565_payload()` 在 `_listen` 中把完整 1280×720 RGB565 解码为 BGR；
+- `_analyze` 再从整张 BGR 中裁 Q1/Q2；
+- 每次请求实际只消费 Q1（YOLO/Specialist）和 Q2（OCR），Q3/Q4 没有 AI 消费者。
+
+修改：
+
+- 新增 `PackedRgb565`，保留 packed payload；
+- `_analyze` 只对 `road_quadrant` 和 `navigation_quadrant` 做 `cvtColor`；
+- 坐标仍使用原 quadrant crop，Q1/Q2 偏移和检测框映射不变；
+- Q3/Q4 不再参与 AI 颜色转换；
+- 保留完整 MFR1 兼容路径。
+
+### 实测（本地 30 FPS 回放，全功能）
+
+| 指标 | 优化前 | 优化后 |
+|---|---:|---:|
+| Qt 唯一上传 | 14.18 | **14.78** |
+| AI FPS | 9.24 | 9.49 |
+| AI 结果年龄 p50 | 121.2 ms | 123.9 ms |
+| AI 结果年龄 p95 | 173.1 ms | 194.2 ms |
+| YOLO 检测数 | 正常 | 正常, 12 |
+| Tesla LIVE | 正常 | 正常 |
+
+提升约 **+0.6 FPS**，但目标 20–25 仍远未达到。原因不是颜色转换单项，而是 YOLO/Specialist/OCR 整体占用。
+
+## 13. 最终建议
+
+本轮到此停止常规性能优化。剩余成本集中在：
+
+- 每 100 ms 写/读 1.8MB MFR1；
+- YOLO 512 预处理与 RKNN；
+- Specialist 1 Hz；
+- RapidOCR 独立进程；
+- RK3566 四核 CPU/NPU 资源上限。
+
+继续优化需要改 AI 传输协议/ROI 或 OCR 快路径，属于更大改动；在未确认模型精度与坐标一致性的情况下不再盲改。
