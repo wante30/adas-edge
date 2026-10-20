@@ -216,6 +216,9 @@ Item {
     function navRoad() {
         if (navValid() && video.aiNavigationRoad) return video.aiNavigationRoad
         if (!video.aiOnline) return "AI 未连接"
+        if (video.aiNavigationState === "STOPPED") return "导航已停止更新"
+        if (video.aiNavigationState === "STALE") return "导航暂不可读"
+        if (video.aiNavigationState === "UNREADABLE") return "导航暂不可读"
         return "等待 Q2 OCR"
     }
     function navMeta() {
@@ -224,12 +227,16 @@ Item {
                     + (navDirectionCode() === "none" ? "导航卡片" : navDirection())
         }
         if (!video.aiOnline) return "AI 未连接"
+        if (video.aiNavigationState === "UNREADABLE") return "导航暂不可读 · Q" + (navQuadrant + 1)
+        if (video.aiNavigationState === "STALE") return "导航过期 · Q" + (navQuadrant + 1)
         return "等待导航 OCR · Q" + (navQuadrant + 1)
     }
 
     function hazardLabel(kind) {
         if (kind === "LEAD_RAPID_CLOSING") return "前车快速接近"
         if (kind === "PEDESTRIAN_CROSSING_PATH") return "行人进入预测路径"
+        if (kind === "PEDESTRIAN_IN_PATH") return "前方行人"
+        if (kind === "RED_SIGNAL_CONFIRMED") return "确认红灯 · 注意信号"
         if (kind === "LEAD_BRAKE_LAMP_RISE") return "前车制动灯变化"
         if (kind === "SUSPECTED_BRAKING_WITH_CLOSING") return "制动灯变化且快速接近"
         return "感知风险"
@@ -237,19 +244,19 @@ Item {
     function hazardRows() {
         var rows = []
         if (video.aiOnline) {
-            var hs = video.aiHazards || []
+            var hs = (video.aiHazards || []).slice()
+            var priority = { "RED_SIGNAL_CONFIRMED": 0, "PEDESTRIAN_CROSSING_PATH": 1,
+                             "PEDESTRIAN_IN_PATH": 1, "LEAD_RAPID_CLOSING": 2,
+                             "SUSPECTED_BRAKING_WITH_CLOSING": 3, "LEAD_BRAKE_LAMP_RISE": 4 }
+            hs.sort(function(a, b) { var pa = priority[a]; var pb = priority[b]; if (pa === undefined) pa = 9; if (pb === undefined) pb = 9; return pa - pb })
             for (var i = 0; i < hs.length && i < 3; ++i)
                 rows.push({ label: hazardLabel(hs[i]), live: true, value: "实时" })
             return rows
         }
-        return [
-            { label: "前车距离较近", live: false, value: "—" },
-            { label: "右侧行人注意", live: false, value: "—" },
-            { label: "无效变道风险", live: false, value: "—" }
-        ]
+        return [ { label: "AI 源失联", live: false, value: "无数据" } ]
     }
     function hazardBadge() {
-        if (!video.aiOnline) return "设计预览"
+        if (!video.aiOnline) return "离线"
         var n = (video.aiHazards || []).length
         return n > 0 ? (n + " 项实时") : "监控中"
     }
@@ -883,7 +890,7 @@ Item {
             Text {
                 x: 32; y: 4; width: 260; height: 19
                 text: (video.aiOnline && (video.aiHazards || []).length > 0)
-                      ? root.primaryHazard() : (video.aiOnline ? "感知监控中 · 未检测到危险事件" : "AI sidecar 未连接 · 设计演示")
+                      ? root.primaryHazard() : (video.aiOnline ? "感知监控中 · 未检测到危险事件" : "AI sidecar 未连接")
                 color: (video.aiOnline && (video.aiHazards || []).length > 0) ? "#FFE7E9" : "#91B6C0"
                 font.family: root.cjk; font.pixelSize: 9; font.weight: Font.DemiBold
                 verticalAlignment: Text.AlignVCenter
@@ -1053,7 +1060,9 @@ Item {
             border.color: root.navValid() ? "#436B56" : "#6B552A"; border.width: 0.6
             Text {
                 anchors.centerIn: parent
-                text: root.navValid() ? "AI 实时" : "设计预览"
+                text: root.navValid() ? "AI 实时"
+                      : (video.aiNavigationState === "STALE" ? "已过期"
+                      : (video.aiNavigationState === "UNREADABLE" ? "暂不可读" : "等待"))
                 color: root.navValid() ? root.mint : root.amber
                 font.family: root.cjk; font.pixelSize: 6
             }
@@ -1251,9 +1260,9 @@ Item {
         }
         Rectangle {
             x: parent.width - 72; y: 8; width: 58; height: 16; radius: 2
-            color: "#2B220E"; border.color: "#6A542A"; border.width: 0.6
+            color: "#0B1B22"; border.color: "#355E6C"; border.width: 0.6
             Text {
-                anchors.centerIn: parent; text: "设计预览"; color: root.amber
+                anchors.centerIn: parent; text: "未接入"; color: root.amber
                 font.family: root.cjk; font.pixelSize: 6
             }
         }
@@ -1263,17 +1272,17 @@ Item {
             fillMode: Image.PreserveAspectFit
         }
         Text { x: 104; y: 35; text: "当前车道"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 7 }
-        Text { x: 178; y: 35; text: "直行"; color: root.mint; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
+        Text { x: 178; y: 35; text: "—"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
         Rectangle { x: 104; y: 53; width: parent.width - 118; height: 1; color: "#1A343D" }
         Text { x: 104; y: 59; text: "左侧车道"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 7 }
-        Text { x: 178; y: 59; text: "可变道"; color: "#9FE4D0"; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
+        Text { x: 178; y: 59; text: "—"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
         Rectangle { x: 104; y: 77; width: parent.width - 118; height: 1; color: "#1A343D" }
         Text { x: 104; y: 83; text: "右侧车道"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 7 }
-        Text { x: 178; y: 83; text: "禁止变道"; color: root.red; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
+        Text { x: 178; y: 83; text: "—"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
         Text {
             x: 104; y: parent.height - 23; width: parent.width - 118
-            text: "车道识别未接入 · 仅示意"
-            color: "#9A8452"; font.family: root.cjk; font.pixelSize: 6
+            text: "车道信息未接入"
+            color: "#8A9AA0"; font.family: root.cjk; font.pixelSize: 6
         }
     }
 

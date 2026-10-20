@@ -9,6 +9,7 @@ import math
 import multiprocessing
 import os
 import queue
+import signal
 from pathlib import Path
 import socket
 import struct
@@ -34,7 +35,7 @@ if str(ROOT) not in sys.path:
 
 from competition_ai.scenario import Lane
 from tools.competition_console.fpga_perception import TrafficCode, build_hud_perception
-from q2_navigation_reader import Q2NavigationReader
+from q2_navigation_reader import CARD_ROI, Q2NavigationReader
 from tools.competition_console.navigation_reader import NavigationObservation
 from tools.competition_console.navigation_reader import NavigationObservation
 from tools.competition_console.pipeline import FrontPipeline
@@ -120,9 +121,16 @@ def build_dynamic_status(*, source, frame_id, timestamp_ns, now_ns, hud, navigat
         and type(nav_timestamp) is int and 0 <= nav_timestamp <= timestamp_ns <= now_ns
     )
     nav_fresh = age_ms is not None and age_ms < navigation_ttl_ms
-    nav_valid = bool(navigation.get("valid")) and nav_identity_valid and nav_fresh and not source_stopped
-    if source_stopped or (navigation.get("valid") and nav_identity_valid and not nav_fresh):
+    ocr_timestamp = navigation.get("ocr_timestamp_ns")
+    ocr_age_ms = ((now_ns - ocr_timestamp) / 1_000_000
+                  if isinstance(ocr_timestamp, int) and 0 <= ocr_timestamp <= now_ns else None)
+    ocr_fresh = ocr_age_ms is not None and ocr_age_ms < navigation_ttl_ms
+    nav_valid = (bool(navigation.get("valid")) and nav_identity_valid
+                 and nav_fresh and ocr_fresh and not source_stopped)
+    if source_stopped:
         nav_state = "STOPPED"
+    elif navigation.get("valid") and nav_identity_valid and (not nav_fresh or not ocr_fresh):
+        nav_state = "STALE"
     elif nav_valid and navigation.get("direction") in NAV_DIRECTIONS:
         nav_state = "VALID"
     else:
@@ -134,18 +142,48 @@ def build_dynamic_status(*, source, frame_id, timestamp_ns, now_ns, hud, navigat
         "road_name": str(navigation.get("road_name") or "") if nav_state == "VALID" else "",
         "source_frame_id": nav_source,
         "age_ms": age_ms,
+        "ocr_timestamp_ns": ocr_timestamp,
+        "ocr_age_ms": ocr_age_ms,
+        "reason": navigation.get("reason", ""),
+        "valid": nav_state == "VALID",
     }
 
     hazard_age_ms = ((now_ns - hazard_timestamp_ns) / 1_000_000
                      if isinstance(hazard_timestamp_ns, int)
                      and 0 <= hazard_timestamp_ns <= now_ns else None)
     hazard_kinds = []
+    hazard_details = []
     if (not source_stopped and source_available and hazard_age_ms is not None
             and hazard_age_ms < DYNAMIC_RESULT_TTL_MS):
-        hazard_kinds = list(dict.fromkeys(
-            str(item.get("kind")) for item in hazards
-            if isinstance(item, dict) and isinstance(item.get("kind"), str)
-        ))
+        for item in hazards:
+            if not isinstance(item, dict) or not isinstance(item.get("kind"), str):
+                continue
+            kind = item["kind"]
+            hazard_kinds.append(kind)
+            hazard_details.append({
+                "event_type": kind,
+                "source_id": source,
+                "source_frame_id": int(frame_id),
+                "timestamp": int(hazard_timestamp_ns),
+                "severity": "warning",
+                "valid": True,
+                "ttl_ms": DYNAMIC_RESULT_TTL_MS,
+                "evidence": item.get("source") or "IMAGE_PERCEPTION",
+            })
+    if (not source_stopped and source_available and traffic == "RED"
+            and signal_age_ms is not None and signal_age_ms < 2500):
+        hazard_kinds.append("RED_SIGNAL_CONFIRMED")
+        hazard_details.append({
+            "event_type": "RED_SIGNAL_CONFIRMED",
+            "source_id": source,
+            "source_frame_id": int(frame_id),
+            "timestamp": int(timestamp_ns),
+            "severity": "info",
+            "valid": True,
+            "ttl_ms": 2500,
+            "evidence": traffic_reason,
+        })
+    hazard_kinds = list(dict.fromkeys(hazard_kinds))
 
     result_age_ms = ((now_ns - timestamp_ns) / 1_000_000
                      if source_available and not source_stopped
@@ -168,6 +206,7 @@ def build_dynamic_status(*, source, frame_id, timestamp_ns, now_ns, hud, navigat
         "result_age_ms": result_age_ms,
         "navigation": nav,
         "hazards": hazard_kinds,
+        "hazard_details": hazard_details,
         "hazard_age_ms": hazard_age_ms,
         "detections": counts,
         "main_age_ms": None if source_stopped or not source_available else main_age_ms,
@@ -729,23 +768,27 @@ class AiReplayBridge:
         self.nav_result = None
         self.nav_process = None
         if args.navigation_ocr:
-            self.navigation = Q2NavigationReader(ttl_ms=20000)
+            self.navigation = Q2NavigationReader(ttl_ms=12000)
             # OCR runs in a separate process. Do not load ONNX here: that would
             # contend with RKNN and hold the Python GIL in the YOLO process.
             self.nav_request = multiprocessing.get_context("spawn").Queue(maxsize=1)
             self.nav_result = multiprocessing.get_context("spawn").Queue(maxsize=2)
             self.nav_process = multiprocessing.get_context("spawn").Process(
                 target=_navigation_ocr_process,
-                args=(self.nav_request, self.nav_result, 20000),
+                args=(self.nav_request, self.nav_result, 12000),
                 name="q2-navigation-ocr",
                 daemon=True,
             )
             self.nav_process.start()
         self.navigation_last_update_ns = None
         self.navigation_timings = []
+        self.navigation_preprocess_timings = []
+        self.navigation_engine_timings = []
+        self.navigation_jump_rejections = 0
         self.latest_source_timestamp_ns = 0
         self.last_nav_thumb = None
         self.nav_ocr_skipped = 0
+        self.navigation_last_force_ns = 0
         self.latest = LatestFrameSlot()
         self.running = threading.Event()
         self.running.set()
@@ -911,10 +954,32 @@ class AiReplayBridge:
                 observation = NavigationObservation(**payload)
             except (TypeError, ValueError):
                 continue
+            previous = self.navigation.current(self.latest_source_timestamp_ns)
+            if not observation.valid and previous.valid:
+                # A single failed OCR recognition must not erase a still-fresh
+                # validated card. Keep it until its own TTL expires; the next
+                # focused recognition or periodic detection can refresh it.
+                self.navigation_timings.append(float(observation.inference_ms))
+                continue
+            if (observation.valid and previous.valid
+                    and previous.distance_m is not None and observation.distance_m is not None):
+                if (abs(float(observation.distance_m) - float(previous.distance_m)) > 500.0
+                        and observation.ocr_timestamp_ns - previous.ocr_timestamp_ns < 3_000_000_000):
+                    self.navigation_jump_rejections += 1
+                    continue
             if observation.valid and self.latest_source_timestamp_ns:
                 observation = replace(observation, timestamp_ns=self.latest_source_timestamp_ns)
             self.navigation._last = observation
+            print(
+                f"NAV_OCR_RESULT valid={int(observation.valid)} reason={observation.reason} "
+                f"distance={observation.distance_m} road={observation.road_name!r} "
+                f"infer_ms={observation.inference_ms:.1f} pre_ms={observation.preprocess_ms:.2f} "
+                f"engine_ms={observation.engine_ms:.1f}",
+                flush=True,
+            )
             self.navigation_timings.append(float(observation.inference_ms))
+            self.navigation_preprocess_timings.append(float(observation.preprocess_ms))
+            self.navigation_engine_timings.append(float(observation.engine_ms))
     def _analyze(self, frame_id, timestamp_ns, full_frame=None, input_fps=None,
                  submitted_fps=None, ai_fps=None):
         if full_frame is None:
@@ -933,13 +998,20 @@ class AiReplayBridge:
                  timestamp_ns - self.navigation_last_update_ns >= round(1e9 / self.args.ocr_hz))):
             # Skip OCR when the navigation screen is visually unchanged and the
             # last result is still fresh. This avoids burning CPU on a static map.
-            thumb = cv2.resize(cv2.cvtColor(navigation_image, cv2.COLOR_BGR2GRAY),
-                               (32, 18), interpolation=cv2.INTER_AREA)
+            x0, y0, x1, y1 = CARD_ROI
+            card = navigation_image[y0:y1, x0:x1]
+            thumb = cv2.resize(cv2.cvtColor(card, cv2.COLOR_BGR2GRAY),
+                               (96, 45), interpolation=cv2.INTER_AREA)
             current_nav = self.navigation.current(int(timestamp_ns))
             changed = True
             if self.last_nav_thumb is not None and current_nav.valid:
                 diff = np.abs(thumb.astype(np.int16) - self.last_nav_thumb.astype(np.int16)).mean()
-                changed = diff > 5.0
+                changed = diff > 3.0
+            # Force a periodic full re-check even if the card looks static.
+            force = timestamp_ns - self.navigation_last_force_ns >= 10_000_000_000
+            if force:
+                changed = True
+                self.navigation_last_force_ns = int(timestamp_ns)
             self.last_nav_thumb = thumb
             self.navigation_last_update_ns = int(timestamp_ns)
             if changed:
@@ -983,7 +1055,7 @@ class AiReplayBridge:
             signal_age_ms=min(ages) if ages else None,
             main_age_ms=snapshot.main_age_ms,
             specialist_age_ms=snapshot.specialist_age_ms,
-            navigation_ttl_ms=20000,
+            navigation_ttl_ms=12000,
             input_fps=input_fps,
             submitted_fps=submitted_fps,
             ai_fps=ai_fps,
@@ -1034,6 +1106,13 @@ class AiReplayBridge:
                         "infer_end_ns": int(infer_end_ns),
                         "result_publish_timestamp_ns": int(publish_ns),
                         "boxes": int(struct.unpack_from("<I", packet, 20)[0]),
+                        "traffic": self.latest_dynamic_status.get("traffic"),
+                        "traffic_reason": self.latest_dynamic_status.get("traffic_reason"),
+                        "specialist_age_ms": self.latest_dynamic_status.get("specialist_age_ms"),
+                        "navigation_state": (self.latest_dynamic_status.get("navigation") or {}).get("state"),
+                        "navigation_ocr_age_ms": (self.latest_dynamic_status.get("navigation") or {}).get("ocr_age_ms"),
+                        "hazards": self.latest_dynamic_status.get("hazards"),
+                        "hazard_details": self.latest_dynamic_status.get("hazard_details"),
                     }, separators=(",", ":")) + "\n")
                 self.result_count += 1
                 self.frame_ids.append(frame_id)
@@ -1259,6 +1338,15 @@ def main():
     if args.layout == "front" and args.display_view == "quad":
         raise SystemExit("A front-only input cannot be shown as a four-camera view")
     bridge = AiReplayBridge(args)
+
+    def _terminate(signum, _frame):
+        try:
+            bridge.close()
+        finally:
+            raise SystemExit(0)
+
+    signal.signal(signal.SIGTERM, _terminate)
+    signal.signal(signal.SIGINT, _terminate)
     bridge.run()
 
 

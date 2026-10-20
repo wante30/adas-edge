@@ -12,11 +12,16 @@ is not run: a small, geometrically located instruction line is recognized.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field, replace
+import logging
 import re
 import time
 
 import cv2
 import numpy as np
+
+
+# The live Q1 navigation card sits below the status strip after 1.5x resize.
+INSTRUCTION_REGION_HEIGHT = 300
 
 
 @dataclass(frozen=True)
@@ -31,6 +36,9 @@ class NavigationObservation:
     timestamp_ns: int = 0
     raw_text: list[str] = field(default_factory=list)
     inference_ms: float = 0.
+    preprocess_ms: float = 0.
+    engine_ms: float = 0.
+    ocr_timestamp_ns: int = 0
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -114,8 +122,10 @@ class NavigationReader:
     def _engine(self):
         if self._ocr is None:
             from rapidocr import RapidOCR
+            # RKNN Lite shortens standard level names before OCR is initialized.
+            logging.addLevelName(logging.ERROR, 'ERROR')
             self._ocr = RapidOCR(params={
-                'Global.log_level': 'warning', 'Global.use_det': False, 'Global.use_cls': False,
+                'Global.log_level': 'error', 'Global.use_det': False, 'Global.use_cls': False,
                 'EngineConfig.onnxruntime.intra_op_num_threads': 2,
                 'EngineConfig.onnxruntime.inter_op_num_threads': 1,
             })
@@ -125,7 +135,7 @@ class NavigationReader:
     def _arrow(nav: np.ndarray):
         # Fixed geometry of the rectified screen, not source-video coordinates.
         # Main instruction is above the row of lane arrows and left of distance.
-        crop = nav[:180, :115]
+        crop = nav[:INSTRUCTION_REGION_HEIGHT, :115]
         gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
         if float(np.percentile(gray, 80)) < 65 or float(np.std(gray)) < 12:
             return None
@@ -161,7 +171,7 @@ class NavigationReader:
         """
         x, y, w, h = box
         left, top = x+w+5, max(0, y-5)
-        crop = nav[top:min(180, y+round(h*.7)+13), left:250]
+        crop = nav[top:min(INSTRUCTION_REGION_HEIGHT, y+round(h*.7)+13), left:250]
         if crop.size == 0:
             return None
         gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
@@ -237,7 +247,11 @@ class NavigationReader:
         # interpolation, map coordinate, frame index or route schedule is used.
         enlarged = cv2.resize(number_line, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
         try:
-            result = self._engine()(enlarged, use_det=False, use_cls=False)
+            engine = self._engine()
+        except ModuleNotFoundError as exc:
+            return finish(reason=f'OCR_ENGINE_UNAVAILABLE:{exc.name or "dependency"}')
+        try:
+            result = engine(enlarged, use_det=False, use_cls=False)
         except (ImportError, OSError, RuntimeError, ValueError) as exc:
             return finish(reason=f'OCR_UNAVAILABLE_{type(exc).__name__}')
         texts = list(result.txts or ())

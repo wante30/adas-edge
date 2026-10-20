@@ -4,6 +4,8 @@ Image expansion is a collision cue, not measured lead-car deceleration.
 The displayed path is an explicit image-space assumption, not detected lanes.
 Vehicle traffic lights never establish a pedestrian signal violation.
 """
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 import math
 import time
@@ -138,6 +140,12 @@ class HazardEvents:
             if history:
                 x, foot, size = history[-1][1:4]
                 info['in_assumed_path'] = self.inside(x, foot)
+            if (trusted and track.name == 'person' and info['in_assumed_path']
+                    and track.box[3] / height > .60):
+                # Image-space path presence is a real detection-backed
+                # reminder, not a collision/TTC estimate.
+                events.append({'kind': 'PEDESTRIAN_IN_PATH', 'track_id': track.track_id,
+                               'bbox': track.box, 'source': 'IMAGE_SPACE_PATH_PRESENCE'})
             if trusted and len(history) >= 6:
                 lateral, lateral_fit = trend(history, 1, corrected=True)
                 expansion, expansion_fit = trend(history, 3)

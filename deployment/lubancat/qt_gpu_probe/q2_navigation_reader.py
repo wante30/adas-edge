@@ -48,6 +48,11 @@ class Q2NavigationReader(NavigationReader):
         # 20 s lease prevents the UI flipping offline between two OCR passes.
         super().__init__(ttl_ms=min(int(ttl_ms), 10000), ocr=ocr)
         self.ttl_ms = int(ttl_ms)
+        self._cached_line_boxes = ()
+        self._cached_text_boxes = ()
+        self._focus_boxes = ()
+        self._last_detection_ns = 0
+        self._recognition_failures = 0
 
     def _engine(self):
         if self._ocr is None:
@@ -79,6 +84,9 @@ class Q2NavigationReader(NavigationReader):
     @staticmethod
     def _clean(text):
         text = str(text).strip()
+        # Recognition of a tight crop can append a star/period that the line
+        # detector does not; it is not part of the distance or road name.
+        text = text.strip(" *·•,，。")
         for wrong, right in OCR_FIXES:
             text = text.replace(wrong, right)
         if "城市领航" in text and "退出" in text:
@@ -94,12 +102,17 @@ class Q2NavigationReader(NavigationReader):
         if frame_id < self._last.source_frame_id or timestamp_ns < self._last.timestamp_ns:
             self.reset()
         start = time.perf_counter()
+        preprocess_ms = 0.0
         base = NavigationObservation(source_frame_id=frame_id, timestamp_ns=timestamp_ns)
 
         def finish(**changes):
             values = base.to_dict()
             values.update(changes)
-            values["inference_ms"] = (time.perf_counter() - start) * 1000.0
+            total_ms = (time.perf_counter() - start) * 1000.0
+            values["inference_ms"] = total_ms
+            values["preprocess_ms"] = preprocess_ms
+            values["engine_ms"] = max(0.0, total_ms - preprocess_ms)
+            values["ocr_timestamp_ns"] = time.monotonic_ns()
             self._last = NavigationObservation(**values)
             return self._last
 
@@ -115,29 +128,66 @@ class Q2NavigationReader(NavigationReader):
         card = nav_bgr[y0:y1, x0:x1]
         if card.size == 0:
             return finish(reason="Q2_CARD_EMPTY")
-        card = cv2.resize(card, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+        preprocess_ms = (time.perf_counter() - start) * 1000.0
+        now_ns = time.monotonic_ns()
+        # Detection is the expensive part (~6 s on RK3566). Detect once,
+        # cache the line boxes, then run recognition-only on those lines at
+        # 1 Hz. A periodic detection (15 s) recovers from card movement.
+        use_detection = (not self._cached_line_boxes
+                         or now_ns - self._last_detection_ns > 15_000_000_000
+                         or self._recognition_failures >= 2)
+        lines = []
+        raw_text = []
         try:
-            result = engine(card, use_det=True, use_cls=True)
+            if use_detection:
+                result = engine(card, use_det=True, use_cls=True)
+                texts = list(result.txts or ())
+                scores = list(result.scores or ())
+                boxes = list(result.boxes) if result.boxes is not None else []
+                if len(texts) != len(scores) or len(texts) != len(boxes):
+                    return finish(reason="OCR_RESULT_MISMATCH")
+                cached = []
+                for text, score, box in zip(texts, scores, boxes):
+                    text = self._clean(text)
+                    if not text:
+                        continue
+                    points = np.asarray(box, dtype=np.float32).reshape(-1, 2)
+                    bx1, by1 = points[:, 0].min(), points[:, 1].min()
+                    bx2, by2 = points[:, 0].max(), points[:, 1].max()
+                    cached.append((float(bx1), float(by1), float(bx2), float(by2)))
+                    lines.append(((by1 + by2) * 0.5, text, float(score)))
+                    raw_text.append(text)
+                self._cached_line_boxes = tuple(cached)
+                self._cached_text_boxes = tuple(zip(raw_text, cached))
+                self._last_detection_ns = now_ns
+                self._recognition_failures = 0
+            else:
+                for bx1, by1, bx2, by2 in self._focus_boxes:
+                    pad = 3
+                    left = max(0, int(round(bx1)) - pad)
+                    top = max(0, int(round(by1)) - pad)
+                    right = min(card.shape[1], int(round(bx2)) + pad)
+                    bottom = min(card.shape[0], int(round(by2)) + pad)
+                    if right <= left or bottom <= top:
+                        continue
+                    result = engine(card[top:bottom, left:right], use_det=False, use_cls=False)
+                    texts = list(result.txts or ())
+                    scores = list(result.scores or ())
+                    if not texts:
+                        continue
+                    text = self._clean(texts[0])
+                    if not text:
+                        continue
+                    lines.append(((by1 + by2) * 0.5, text, float(scores[0])))
+                    raw_text.append(text)
+                if len(lines) < 2:
+                    self._recognition_failures += 1
+                if not lines:
+                    return finish(reason="Q2_RECOGNITION_EMPTY")
         except (ImportError, OSError, RuntimeError, ValueError) as exc:
             return finish(reason=f"OCR_UNAVAILABLE_{type(exc).__name__}")
 
-        texts = list(result.txts or ())
-        scores = list(result.scores or ())
-        boxes = list(result.boxes) if result.boxes is not None else []
-        if len(texts) != len(scores) or len(texts) != len(boxes):
-            return finish(reason="OCR_RESULT_MISMATCH")
-
-        lines = []
-        for text, score, box in zip(texts, scores, boxes):
-            text = self._clean(text)
-            if not text:
-                continue
-            _, y = self._center(box)
-            lines.append((y, text, float(score)))
         lines.sort()
-
-        # Only a distance with a metre/kilometre unit, or the explicit
-        # "现在/立即" instruction, is a valid primary line.
         candidates = []
         for y, text, score in lines:
             match = DISTANCE_RE.match(text)
@@ -147,7 +197,7 @@ class Q2NavigationReader(NavigationReader):
                     candidates.append((y, value, text, score))
             elif "现在" in text or "立即" in text:
                 candidates.append((y, 0.0, text, score))
-            elif re.fullmatch(r"\d{2,4}", text) and y > 120:
+            elif re.fullmatch(r"\d{2,4}", text) and y > card.shape[0] * 0.42:
                 # The compact card sometimes loses the unit glyph. A bare
                 # 2-4 digit line lower in the card is metres; speed limits are
                 # above this region and are explicitly excluded.
@@ -155,12 +205,14 @@ class Q2NavigationReader(NavigationReader):
                 if 1.0 <= value <= 999.0 and text not in ("60", "63"):
                     candidates.append((y, value, text, score))
         if not candidates:
-            return finish(reason="Q2_NO_DISTANCE_OR_NOW", raw_text=texts)
+            self._recognition_failures += 1
+            return finish(reason="Q2_NO_DISTANCE_OR_NOW", raw_text=raw_text)
 
         dist_y, distance, distance_text, distance_score = min(candidates, key=lambda item: item[0])
         instruction = None
+        window = max(8, round(card.shape[0] * 0.14))
         for y, text, score in lines:
-            if y <= dist_y + 4 or y > dist_y + 55:
+            if y <= dist_y + max(2, round(card.shape[0] * 0.01)) or y > dist_y + window:
                 continue
             if text in ("随后",) or "km/h" in text.lower() or "kmh" in text.lower():
                 continue
@@ -169,9 +221,16 @@ class Q2NavigationReader(NavigationReader):
             if instruction is None or score > instruction[2]:
                 instruction = (y, text, score)
         if instruction is None:
-            return finish(reason="Q2_NO_INSTRUCTION", raw_text=texts)
+            self._recognition_failures += 1
+            return finish(reason="Q2_NO_INSTRUCTION", raw_text=raw_text)
 
         instruction_text = instruction[1]
+        focus = []
+        for text, box in self._cached_text_boxes:
+            if text in (distance_text, instruction_text):
+                focus.append(box)
+        if focus:
+            self._focus_boxes = tuple(focus)
         direction = "none"
         for token, value in (("掉头", "uturn"), ("左转", "left"), ("右转", "right"),
                              ("直行", "forward")):
@@ -184,6 +243,6 @@ class Q2NavigationReader(NavigationReader):
             road_name=instruction_text,
             valid=True,
             confidence=min(distance_score, instruction[2]),
-            raw_text=texts,
-            reason="Q2_CARD_OCR_DET_V1",
+            raw_text=raw_text,
+            reason="Q2_CARD_OCR_RECOGNITION_CACHE",
         )
