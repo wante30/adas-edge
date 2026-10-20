@@ -116,6 +116,7 @@ int main(int argc, char **argv) {
     const QString rawReplay = stringArg(args, "--raw-replay");
     const QString sourceLabel = stringArg(args, "--source-label");
     const bool autoCycleCapture = args.contains("--capture-cycle");
+    const bool sceneEnabled = !args.contains("--scene-off");
     const QString pgvLayout = stringArg(args, "--pgv-layout");
     const int roadQuadrant = intArg(args, "--road-quadrant", 1);
     const int startMode = std::clamp(intArg(args, "--start-mode", 0), 0, 2);
@@ -138,6 +139,7 @@ int main(int argc, char **argv) {
     view.rootContext()->setContextProperty(QStringLiteral("pgvRoadQuadrant"), roadQuadrant);
     view.rootContext()->setContextProperty(QStringLiteral("initialViewMode"), startMode);
     view.rootContext()->setContextProperty(QStringLiteral("autoCycleCapture"), autoCycleCapture);
+    view.rootContext()->setContextProperty(QStringLiteral("sceneEnabled"), sceneEnabled);
     view.setSource(QUrl(QStringLiteral("qrc:/main.qml")));
     auto *video = view.rootObject() ? view.rootObject()->findChild<VideoItem *>(QStringLiteral("videoProbeItem")) : nullptr;
     if (!video) {

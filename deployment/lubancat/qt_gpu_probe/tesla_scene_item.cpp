@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QDateTime>
+#include <cstdio>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -138,6 +139,19 @@ void modelCar(std::vector<float> &v, const QVector<ModelFace> &faces, float x, f
 
 static QVector<ModelFace> *g_modelFaces = nullptr;
 
+void tri3(std::vector<float> &v, const QVector3D &a, const QVector3D &b,
+          const QVector3D &c, float r, float g, float bl) {
+    pushVertex(v, a.x(), a.y(), a.z(), r, g, bl);
+    pushVertex(v, b.x(), b.y(), b.z(), r, g, bl);
+    pushVertex(v, c.x(), c.y(), c.z(), r, g, bl);
+}
+
+void quad3(std::vector<float> &v, const QVector3D &a, const QVector3D &b,
+           const QVector3D &c, const QVector3D &d, float r, float g, float bl) {
+    tri3(v, a, b, c, r, g, bl);
+    tri3(v, a, c, d, r, g, bl);
+}
+
 void carMesh(std::vector<float> &v, float x, float z, const QString &cls, bool ego) {
     const bool truck = cls == QStringLiteral("truck");
     const bool bus = cls == QStringLiteral("bus");
@@ -165,12 +179,37 @@ void carMesh(std::vector<float> &v, float x, float z, const QString &cls, bool e
         for (int i = -2; i <= 2; ++i)
             box3(v, x - w * .505f, h * .48f, z + i * d * .16f, .03f, h * .30f, d * .11f, .06f, .10f, .13f);
     } else {
+        const float y0 = h * .58f, y1 = h * 1.28f;
+        const float lw = w * .82f, uw = w * .56f;
+        const float ld = d * .58f, ud = d * .40f;
+        const float zl = z - ld * .5f, zrf = z + ld * .5f;
+        const float zu = z - ud * .18f, zuf = z + ud * .5f;
+        // lower body and tapered cabin/roof
         box3(v, x, .18f, z, w, h * .48f, d, r, g, b);
-        box3(v, x, h * .60f, z - d * .03f, w * .82f, h * .46f, d * .58f, r * 1.05f, g * 1.05f, b * 1.05f);
-        // glass planes, kept as thin dark boxes on the visible rear/side
-        box3(v, x, h * .67f, z - d * .31f, w * .62f, h * .22f, .025f, .04f, .07f, .09f);
-        box3(v, x - w * .41f, h * .65f, z - d * .02f, .025f, h * .22f, d * .34f, .05f, .09f, .11f);
-        box3(v, x + w * .41f, h * .65f, z - d * .02f, .025f, h * .22f, d * .34f, .05f, .09f, .11f);
+        QVector3D bl(x - lw * .5f, y0, zl), br(x + lw * .5f, y0, zl);
+        QVector3D fl(x - lw * .5f, y0, zrf), fr(x + lw * .5f, y0, zrf);
+        QVector3D ubl(x - uw * .5f, y1, zu), ubr(x + uw * .5f, y1, zu);
+        QVector3D ufl(x - uw * .5f, y1, zuf), ufr(x + uw * .5f, y1, zuf);
+        quad3(v, bl, br, ubr, ubl, r * .85f, g * .85f, b * .85f);   // rear slope
+        quad3(v, fl, fr, ufr, ufl, r * .95f, g * .95f, b * .95f);   // front slope
+        quad3(v, bl, ubl, ufl, fl, r, g, b);                        // left side
+        quad3(v, br, ubr, ufr, fr, r, g, b);                        // right side
+        quad3(v, ubl, ubr, ufr, ufl, r * 1.10f, g * 1.10f, b * 1.10f); // roof
+        // rear/side glass, slightly inset
+        const float gy0 = y0 + h * .10f, gy1 = y1 - h * .06f;
+        tri3(v, QVector3D(x - lw * .34f, gy0, zl + .035f),
+             QVector3D(x + lw * .34f, gy0, zl + .035f),
+             QVector3D(x + uw * .32f, gy1, zu + .02f), .025f, .055f, .075f);
+        tri3(v, QVector3D(x - lw * .34f, gy0, zl + .035f),
+             QVector3D(x + uw * .32f, gy1, zu + .02f),
+             QVector3D(x - uw * .32f, gy1, zu + .02f), .025f, .055f, .075f);
+        box3(v, x - lw * .505f, y0 + .12f, z - d * .09f, .022f, h * .26f, d * .24f, .04f, .08f, .10f);
+        box3(v, x + lw * .505f, y0 + .12f, z - d * .09f, .022f, h * .26f, d * .24f, .04f, .08f, .10f);
+        // hood/trunk planes give the body a car silhouette
+        quad3(v, QVector3D(x - w * .48f, h * .66f, z + d * .18f),
+              QVector3D(x + w * .48f, h * .66f, z + d * .18f),
+              QVector3D(x + uw * .5f, y1, zuf),
+              QVector3D(x - uw * .5f, y1, zuf), r * .92f, g * .92f, b * .92f);
     }
     // wheels
     for (int sx = -1; sx <= 1; sx += 2) {
@@ -551,7 +590,7 @@ private:
         for (auto it = live_.begin(); it != live_.end();) {
             if (now - it->seen > 1.2) it = live_.erase(it); else ++it;
         }
-        for (const LiveCar &car : live_) addBillboard(car.x, car.z, car.cls);
+        for (const LiveCar &car : live_) carMesh(v, car.x, car.z, car.cls, false);
     }
 
     void drawBillboards(const QMatrix4x4 &mvp) {
@@ -605,9 +644,11 @@ private:
         // the ego lane (second from the left), not the whole road.
         const float roadHalf = 7.0f;
         const float egoX = -1.75f;
-        quad(v, -32, -8, 32, 100, 0.0f, .035f, .055f, .060f);
-        quad(v, -30, -6, -7.8f, 96, .006f, .055f, .085f, .075f);
-        quad(v, 7.8f, -6, 30, 96, .006f, .055f, .085f, .075f);
+        quad(v, -90, -12, 90, 120, 0.0f, .030f, .046f, .050f);
+        quad(v, -80, -8, -7.8f, 112, .006f, .045f, .070f, .062f);
+        quad(v, 7.8f, -8, 80, 112, .006f, .045f, .070f, .062f);
+        // Dark distant sky wall; buildings are only schematic background.
+        box3(v, 0, 0, 116, 170, 34, 2, .020f, .032f, .044f, false);
         quad(v, -7.5f, 0, 7.5f, 92, .018f, .105f, .125f, .135f);
         quad(v, -7.25f, 0, 7.25f, 92, .026f, .105f, .115f, .120f);
         // Ego-lane FSD path.
@@ -639,6 +680,13 @@ private:
             const float h = 3.0f + float((i * 7) % 9);
             box3(v, x, 0.0f, 86.0f + (i % 3) * 2.5f, 3.4f, h, 2.0f,
                  .045f, .065f, .075f, false);
+        }
+        for (int side = -1; side <= 1; side += 2) {
+            for (int i = 0; i < 4; ++i) {
+                box3(v, side * (14.0f + i * 3.5f), 0.0f, 26.0f + i * 13.0f,
+                     4.0f + i * 1.2f, 4.0f + (i % 3) * 3.0f, 4.0f,
+                     .035f, .052f, .062f, false);
+            }
         }
         if (demo_) addDemo(v); else addLive(v);
         // Ego is a real 3D member of the same projected world, not a QML

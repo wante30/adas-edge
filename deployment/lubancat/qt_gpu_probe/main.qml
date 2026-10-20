@@ -28,6 +28,7 @@ Item {
     property var now: new Date()
     property bool hudTestOpen: false
     property bool autoHudSend: true
+    property bool sceneEnabled: (typeof sceneEnabled !== "undefined" ? sceneEnabled : true)
     property int trackingMode: 2  // 0=RAW, 1=FIX4, 2=TIME
     property int testTraffic: 1
     property int testLaneLeft: 0
@@ -1407,6 +1408,7 @@ Item {
                 anchors.fill: parent
                 boxes: video.aiBoxes
                 online: video.aiOnline
+                visible: root.sceneEnabled
                 sourceKey: video.sourceMode
                 sourceFrameId: video.displayFrameId
                 sourceTimestampNs: video.displayTimestampNs
