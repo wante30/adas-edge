@@ -32,7 +32,7 @@
   - 其他视图不写、不启动场景。
 - 渲染器独立进程读取最新 JSON，调用上游 `render_tesla_ui` 的投影/道路/相机逻辑，输出 `960×540` 场景。
 - Qt 用双缓冲 `Image`（A/B）异步刷新；每次新帧 Ready 后才切换，**避免单文件重载造成的黑帧**。
-- 场景输出 2 Hz（配置 5 Hz，但实际渲染+PNG编码约 0.4–0.5 s/帧；实测 3 秒 6 次写帧）。
+- 场景输出约 5 Hz（缓存静态道路基底、目标 LOD、720×405 + 双缓冲；实测 3 秒 15 次写帧）。
 
 ### 2.2 自车 P0
 
@@ -86,9 +86,9 @@
 ## 3. 视觉对比
 
 - 原版空间视图（静态 GIF）：`results/mode_spatial.png`
-- 动态空间视图：`results/live_final.png`、`results/live10.png`
-- 前后并排：`results/scene_before_after.png`
-- 10 帧、约 1 秒间隔：`results/scene_sequence10.png`
+- 动态空间视图：`results/final_opt3.png`、`results/final_opt10.png`
+- 前后并排：`results/scene_before_after_opt.png`
+- 10 帧、约 1 秒间隔：`results/scene_opt_sequence10.png`
 - AI 暂停后仅自车、目标清空：`results/pause2.png`
 
 原版：没有自车，灰色方块悬浮，只有蓝色道路和静态演示目标。
@@ -103,22 +103,22 @@
 
 | 指标 | 值 |
 |---|---:|
-| QSG 回调 FPS | **58.82** |
-| 场景写帧率（3 秒统计） | **2.0 Hz**（配置 5 Hz） |
-| 唯一源帧上传 FPS 平均 | 6.09 |
-| YOLO FPS | 6.07 |
-| Mali GPU 负载 | 42% |
+| QSG 回调 FPS | **51.85** |
+| 场景写帧率（3 秒统计） | **5.0 Hz**（15 次/3 s） |
+| 唯一源帧上传 FPS 平均 | 6.44 |
+| YOLO FPS | 7.30 |
+| Mali GPU 负载 | 72% |
 | NPU 负载 | 100% |
-| Qt 进程 CPU（全核百分比） | 44.1% |
-| 场景渲染进程 CPU | 80.95% 单核 |
-| 场景渲染进程 RSS | 77.5 MB |
-| 四核平均负载 | 79.0 / 99.4 / 83.3 / 99.0% |
+| Qt 进程 CPU（全核百分比） | 31.5% |
+| 场景渲染进程 CPU | 64.34% 单核 |
+| 场景渲染进程 RSS | 53.9 MB |
+| 四核平均负载 | 80.1 / 93.8 / 84.3 / 91.9% |
 
 结论：
 
 - **QSG 仍为 58.8**，空间场景没有拖垮 Qt 合成。
-- 场景实际只有 **2 Hz**，不是 5 Hz；每帧 OpenCV 绘制 + PNG 编码约 0.4–0.5 s，CPU 单核约 81%。这是当前最重要的性能限制。
-- 空间模式下唯一视频上传平均只有 6.09 FPS；单路/四路不受场景渲染影响，但因为避免 AI 断流，空间模式下 VideoItem 仍保持运行，源视频上传会被场景进程抢占。
+- 场景实际约 **5 Hz**；每帧基础道路/地面已缓存，只重画车辆，并按距离使用 LOD。CPU 单核约 64%。仍不是 60 Hz 的流畅动画，但相比最初的 2 Hz 已提升约 2.5 倍。
+- 空间模式下唯一视频上传平均只有 6.44 FPS；单路/四路不受场景渲染影响，但因为避免 AI 断流，空间模式下 VideoItem 仍保持运行，源视频上传会被场景进程抢占。
 - 没有做 20 分钟长测。
 
 ## 5. 稳定性验证
@@ -129,7 +129,7 @@
 - 场景进程通过 `/dev/shm/tesla_scene_tracks.json` 的 mtime 判断 AI 停止；超过 1.5 s 清空。
 - 同一 Track ID 在 JSON 和渲染器场景对象中复用；source 改变时清空。
 - 仍存在的限制：
-  - 场景 2 Hz，目标运动有低频跳步；
+  - 场景约 5 Hz，目标运动仍有低频跳步；
   - 深度由检测框高度近似，未标定；
   - 目标没有真正的透明度淡出（1.6 s 后删除，不是 alpha 渐隐）；
   - 车辆仍是程序化低多边形，不是高精度车模；
@@ -158,4 +158,4 @@ QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl \
 - `deployment/lubancat/qt_gpu_probe/main.qml`
 - `deployment/lubancat/qt_gpu_probe/tools/tesla_scene_renderer.py`
 - `deployment/lubancat/qt_gpu_probe/tools/perf_sampler.py`（增加 scene 角色）
-- 结果：`results/scene_before_after.png`、`results/scene_sequence10.png`、`results/live_final.png`、`results/pause2.png`、`results/scene_perf*.json`
+- 结果：`results/scene_before_after_opt.png`、`results/scene_opt_sequence10.png`、`results/live_final.png`、`results/pause2.png`、`results/scene_perf*.json`

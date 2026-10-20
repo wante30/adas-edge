@@ -20,7 +20,7 @@ ACTIVE = Path("/dev/shm/tesla_scene.active")
 DEBUG = Path("/dev/shm/tesla_scene_debug.json")
 OUT_A = Path("/dev/shm/tesla_scene_a.png")
 OUT_B = Path("/dev/shm/tesla_scene_b.png")
-W, H = 960, 540
+W, H = 720, 405
 
 
 def load_upstream():
@@ -94,6 +94,28 @@ def draw_vehicle(up, img, center, dims, is_ego=False, kind="car"):
         # the image is a metric reconstruction.
         w *= 1.24; h *= 1.16; d *= 1.12
     x, y, z = center
+    if not is_ego and y > 40.0:
+        # Far LOD: silhouette only, no glass/wheels/lamps.
+        if kind == "person":
+            _box(up, img, x, y, .02, .9, .48, .35, (62, 78, 86), (110, 125, 132))
+        else:
+            _box(up, img, x, y, .12, h * .55, w, d, (118, 126, 132), (150, 160, 166))
+            _box(up, img, x, y - d * .04, h * .55, h * .9, w * .76, d * .5, (145, 153, 160), (170, 178, 184))
+        return
+    if not is_ego and y > 22.0:
+        # Mid LOD: body + cabin, no per-part glass/wheels.
+        if kind == "person":
+            _box(up, img, x, y, .02, .62, .48, .35, (62, 78, 86), (120, 140, 148))
+            _box(up, img, x, y, .62, 1.05, .34, .3, (92, 104, 112), (130, 145, 152))
+        elif kind == "truck":
+            _box(up, img, x, y - d * .28, .18, h * .78, w * .94, d * .26, (118, 126, 132), (150, 160, 166))
+            _box(up, img, x, y + d * .16, .22, h * .98, w, d * .62, (104, 112, 120), (145, 155, 162))
+        elif kind == "bus":
+            _box(up, img, x, y, .18, h * .93, w, d, (88, 108, 124), (120, 145, 160))
+        else:
+            _box(up, img, x, y, .12, h * .52, w, d, (118, 126, 132), (150, 160, 166))
+            _box(up, img, x, y - d * .04, h * .52, h * .9, w * .82, d * .58, (145, 153, 160), (170, 178, 184))
+        return
     if kind == "person":
         # Head, torso and legs are still low-poly, but not a rectangular block.
         body = (62, 78, 86) if not is_ego else (65, 90, 105)
@@ -282,13 +304,14 @@ class SceneState:
         self.targets.clear()
 
 
-def render(up, scene):
-    state = {"speed_mps": 0.0, "accel_x": 0.0, "heading": 0.0, "lat": 0.0, "lon": 0.0,
-             "lane_source": "SCHEMATIC", "motion_mode": "NO_POSE"}
-    tracked = sorted(scene, key=lambda item: item["ego_y"], reverse=True)
-    image = up.render_tesla_ui(tracked, state, 0.0, None)
-    # Keep the upstream projection and palette, but add road-edge curb detail
-    # and remove its uncalibrated numerical telemetry chrome.
+_BASE = None
+
+
+def build_base(up):
+    """Render the static road/ground once; only vehicles change per frame."""
+    image = np.full((H, W, 3), up.BEV_BG, np.uint8)
+    up.draw_clean_lanes_animated(image, 0.0, 0.0)
+    up.draw_fsd_path_gradient(image, 0.0, 0.0)
     for side in (-1, 1):
         pts = []
         for yy in np.linspace(3.0, 64.0, 18):
@@ -297,15 +320,7 @@ def render(up, scene):
                 pts.append(p)
         if len(pts) > 1:
             cv2.polylines(image, [np.asarray(pts, np.int32)], False, (42, 53, 61), 2, cv2.LINE_AA)
-    image[:96, :] = up.BEV_BG
-    image[-50:, :330] = up.BEV_BG
-    image[-50:, 540:] = up.BEV_BG
-    # The Qt overlay owns titles and the "not calibrated" label; keep this
-    # image free of duplicate chrome so the 3D scene can fill the viewport.
-    # Ground texture: only paint pixels that are still empty background, so
-    # lane paint, vehicles and ego are never crossed by debug-looking lines.
-    background = np.all(np.abs(image.astype(np.int16) - np.asarray(up.BEV_BG, np.int16)) < 7, axis=2)
-    detail = np.zeros_like(image)
+    detail = image.copy()
     for yy in np.linspace(5.0, 60.0, 12):
         a, b = _proj(up, -22.0, float(yy), 0.005), _proj(up, 22.0, float(yy), 0.005)
         if a and b:
@@ -318,13 +333,27 @@ def render(up, scene):
                 pts.append(p)
         if len(pts) > 1:
             cv2.polylines(detail, [np.asarray(pts, np.int32)], False, (25, 31, 37), 1, cv2.LINE_AA)
-    image[background] = ((image[background].astype(np.int16) * 3 +
-                          detail[background].astype(np.int16)) // 4).astype(np.uint8)
-    # Soft vignette keeps the eye on the ego/path without changing geometry.
+    # Blend only where the road/lane did not paint, so the grid stays subtle.
+    bg = np.all(np.abs(image.astype(np.int16) - np.asarray(up.BEV_BG, np.int16)) < 7, axis=2)
+    image[bg] = ((image[bg].astype(np.int16) * 3 + detail[bg].astype(np.int16)) // 4).astype(np.uint8)
     yy, xx = np.mgrid[0:H, 0:W]
     radius = np.sqrt(((xx - W * .5) / (W * .62)) ** 2 + ((yy - H * .62) / (H * .72)) ** 2)
     shade = np.clip(1.0 - 0.18 * np.clip(radius - .72, 0.0, 1.0), .78, 1.0)
-    image = np.clip(image.astype(np.float32) * shade[..., None], 0, 255).astype(np.uint8)
+    return np.clip(image.astype(np.float32) * shade[..., None], 0, 255).astype(np.uint8)
+
+
+def render(up, scene):
+    global _BASE
+    if _BASE is None:
+        _BASE = build_base(up)
+    tracked = sorted(scene, key=lambda item: item["ego_y"], reverse=True)
+    image = _BASE.copy()
+    # LOD: distant targets need silhouette only; close targets get glass,
+    # wheels and lamps. This is the main CPU saving for crowded scenes.
+    for obj in tracked:
+        dims = up.DIMS.get(obj["cls"], up.DIMS["car"])
+        draw_vehicle(up, image, (obj["ego_x"], obj["ego_y"], 0), dims, False, obj["cls"])
+    draw_vehicle(up, image, (0, 0, 0), up.DIMS["car"], True, "car")
     return image
 
 
