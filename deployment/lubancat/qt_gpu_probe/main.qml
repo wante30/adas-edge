@@ -29,6 +29,9 @@ Item {
     property bool hudTestOpen: false
     property bool autoHudSend: true
     property int trackingMode: 2  // 0=RAW, 1=FIX4, 2=TIME
+    property int sceneTick: 0
+    property int sceneBuffer: 0
+    property int scenePending: -1
     property int testTraffic: 1
     property int testLaneLeft: 0
     property int testLaneRight: 0
@@ -45,6 +48,7 @@ Item {
 
     onRoadQuadrantChanged: if (video) video.aiRoadQuadrant = roadQuadrant
     onNavQuadrantChanged: if (video) video.aiNavigationQuadrant = navQuadrant
+    onViewModeChanged: if (video) video.spatialViewActive = (viewMode === 2)
 
     Component.onCompleted: {
         video.aiRoadQuadrant = roadQuadrant
@@ -577,14 +581,44 @@ Item {
             }
         }
 
-        AnimatedImage {
-            x: 0; y: 0; width: 720; height: 460
-            source: "assets/tesla_bev_demo.gif"
-            fillMode: Image.PreserveAspectCrop
-            visible: root.viewMode === 2
-            playing: root.viewMode === 2
-            cache: true
+        Image {
+            id: sceneA
+            x: 0; y: 0; width: mainView.width; height: mainView.height
+            source: "file:///dev/shm/tesla_scene_a.png"
+            fillMode: Image.PreserveAspectFit
+            visible: root.viewMode === 2 && root.sceneBuffer === 0
+            cache: false
             smooth: true
+            asynchronous: true
+            onStatusChanged: if (status === Image.Ready && root.scenePending === 0) {
+                root.sceneBuffer = 0; root.scenePending = -1
+            }
+        }
+        Image {
+            id: sceneB
+            x: 0; y: 0; width: mainView.width; height: mainView.height
+            source: "file:///dev/shm/tesla_scene_b.png"
+            fillMode: Image.PreserveAspectFit
+            visible: root.viewMode === 2 && root.sceneBuffer === 1
+            cache: false
+            smooth: true
+            asynchronous: true
+            onStatusChanged: if (status === Image.Ready && root.scenePending === 1) {
+                root.sceneBuffer = 1; root.scenePending = -1
+            }
+        }
+        Timer {
+            interval: 200; repeat: true; running: root.viewMode === 2
+            onTriggered: {
+                if (root.scenePending !== -1) return
+                var next = 1 - root.sceneBuffer
+                root.sceneTick = (root.sceneTick + 1) % 100000
+                root.scenePending = next
+                if (next === 0)
+                    sceneA.source = "file:///dev/shm/tesla_scene_a.png?t=" + root.sceneTick
+                else
+                    sceneB.source = "file:///dev/shm/tesla_scene_b.png?t=" + root.sceneTick
+            }
         }
 
         // Readability gradients.
@@ -1014,16 +1048,16 @@ Item {
                     color: root.cyanHot; font.family: root.num; font.pixelSize: 7; font.weight: Font.DemiBold
                 }
                 Text {
-                    x: 12; y: 27; text: "BEV 视觉演示"
+                    x: 12; y: 27; text: "BEV 空间场景"
                     color: root.inkSoft; font.family: root.cjk; font.pixelSize: 10; font.weight: Font.DemiBold
                 }
                 Rectangle { x: 12; y: 47; width: 194; height: 1; color: "#1D3B46" }
                 Text {
-                    x: 12; y: 55; text: "上游渲染序列 · 非实时几何"
+                    x: 12; y: 55; text: "LIVE TRACKS · 5 Hz · 非实时几何"
                     color: root.amber; font.family: root.cjk; font.pixelSize: 6
                 }
                 Text {
-                    x: 12; y: 72; text: "ADAS 计数来自右侧真实 AI"
+                    x: 12; y: 72; text: "目标来自真实 Track ID · 坐标未标定"
                     color: "#7E9FA9"; font.family: root.cjk; font.pixelSize: 6
                 }
             }

@@ -67,6 +67,8 @@ class VideoItem : public QQuickFramebufferObject {
     Q_PROPERTY(int aiFrameLag READ aiFrameLag NOTIFY aiChanged)
     Q_PROPERTY(int maxTrackPredictionMs READ maxTrackPredictionMs
                WRITE setMaxTrackPredictionMs NOTIFY metricsChanged)
+    Q_PROPERTY(bool spatialViewActive READ spatialViewActive
+               WRITE setSpatialViewActive NOTIFY spatialViewActiveChanged)
     Q_PROPERTY(qulonglong sourceDroppedFrames READ sourceDroppedFrames NOTIFY metricsChanged)
     Q_PROPERTY(qulonglong sourceCrcErrors READ sourceCrcErrors NOTIFY metricsChanged)
     Q_PROPERTY(double npuLoadPercent READ npuLoadPercent NOTIFY metricsChanged)
@@ -185,6 +187,8 @@ public:
     void setMaxTrackPredictionMs(int value) {
         max_track_prediction_ms_.store(std::clamp(value, 50, 1000));
     }
+    bool spatialViewActive() const { return spatial_view_active_.load(); }
+    void setSpatialViewActive(bool value);
     void noteRenderedFrame(qulonglong id, qint64 timestamp_ns) {
         if (id) rendered_frame_id_.store(id);
         if (timestamp_ns > 0) rendered_timestamp_ns_.store(timestamp_ns);
@@ -221,6 +225,7 @@ signals:
     void metricsChanged();
     void aiChanged();
     void frameAdvanced();
+    void spatialViewActiveChanged();
     void sourceViewportChanged();
     void aiSelectionChanged();
 
@@ -228,6 +233,7 @@ private:
     void produceFrame(uint64_t id);
     void runPgvProducer(double fps, QString pgvFile, double aiHz, QString aiFrameFile);
     void runAiBridge(double fps, double aiHz, QString frameFile);
+    void writeTeslaSceneTracks(const QVariantList &boxes, uint64_t frameId, qint64 timestampNs);
 
     std::shared_ptr<DisplayQueue> display_queue_;
     std::mutex ai_frame_mutex_;
@@ -274,6 +280,7 @@ private:
     std::atomic<uint64_t> latest_ai_frame_id_{0};
     std::atomic<int> ai_frame_lag_{0};
     std::atomic<int> max_track_prediction_ms_{250};
+    std::atomic<bool> spatial_view_active_{false};
     std::atomic<uint64_t> rendered_frame_id_{0};
     std::atomic<qint64> rendered_timestamp_ns_{0};
 

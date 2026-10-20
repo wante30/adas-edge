@@ -1,4 +1,4 @@
-﻿import argparse, json, time
+import argparse, json, time
 from collections import defaultdict
 import psutil
 
@@ -24,6 +24,8 @@ while time.monotonic() < end:
                 role = 'ai'
             elif 'spawn_main' in cmd:
                 role = 'ocr'
+            elif 'tesla_scene_renderer.py' in cmd:
+                role = 'scene'
             elif 'qt_gpu_probe' in cmd:
                 role = 'qt'
             else:
