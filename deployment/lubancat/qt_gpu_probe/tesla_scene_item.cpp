@@ -357,7 +357,7 @@ public:
         projection.perspective(52.0f, aspect, 0.08f, 180.0f);
         projection.scale(1.0f, -1.0f, 1.0f);
         QMatrix4x4 view;
-        view.lookAt(QVector3D(0.0f, 8.2f, -13.5f), QVector3D(0.0f, 0.2f, 18.0f), QVector3D(0, 1, 0));
+        view.lookAt(QVector3D(-1.75f, 8.2f, -13.5f), QVector3D(-1.75f, 0.2f, 18.0f), QVector3D(0, 1, 0));
         QMatrix4x4 mvp = projection * view;
         program_->setUniformValue("uMVP", mvp);
         f->glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size() / 6));
@@ -458,7 +458,7 @@ private:
                   b.cls == "person" || b.cls == "motorcycle")) continue;
             const double cx = (b.x + b.w * .5) / 1280.0;
             const double bottom = (b.y + b.h) / 720.0;
-            const float tx = std::clamp(float((cx - .5) * 7.0), -5.4f, 5.4f);
+            const float tx = std::clamp(float(-1.75 + (cx - .5) * 14.0), -6.8f, 6.8f);
             const float tz = std::clamp(float(3.8 + (1.0 - bottom) * 51.0), 3.8f, 55.0f);
             auto it = live_.find(b.id);
             if (it == live_.end()) {
@@ -524,37 +524,43 @@ private:
 
     void buildScene(std::vector<float> &v) {
         billboards_.clear();
-        // Ground, grass shoulders, road bed, path, lane lines, grid.
-        quad(v, -30, -8, 30, 96, 0.0f, .035f, .055f, .060f);
-        quad(v, -28, -6, -4.2f, 92, .006f, .055f, .085f, .075f);
-        quad(v, 4.2f, -6, 28, 92, .006f, .055f, .085f, .075f);
-        quad(v, -4.1f, 0, 4.1f, 88, .018f, .105f, .125f, .135f);
-        quad(v, -3.15f, 0, 3.15f, 86, .024f, .070f, .27f, .42f);
-        // road shoulders
-        quad(v, -3.75f, 0, -3.15f, 86, .028f, .22f, .25f, .26f);
-        quad(v, 3.15f, 0, 3.75f, 86, .028f, .22f, .25f, .26f);
-        quad(v, -3.22f, 0, -3.15f, 86, .031f, .62f, .72f, .76f);
-        quad(v, 3.15f, 0, 3.22f, 86, .031f, .62f, .72f, .76f);
-        for (int i = 0; i < 22; ++i) {
-            const float z0 = i * 4.0f;
-            quad(v, -.055f, z0 + .8f, .055f, z0 + 2.4f, .033f, .48f, .54f, .57f);
-        }
-        for (int i = 0; i < 8; ++i) {
-            const float z = 8.0f + i * 9.0f;
-            quad(v, -28, z, -4.2f, z + .06f, .022f, .085f, .11f, .13f);
-            quad(v, 4.2f, z, 28, z + .06f, .022f, .085f, .11f, .13f);
-        }
-        for (int side = -1; side <= 1; side += 2) {
-            for (int i = 0; i < 7; ++i) {
-                const float x = side * (5.0f + i * 3.0f);
-                quad(v, x, 0, x + .05f, 88, .025f, .065f, .085f, .10f);
+        // Four same-direction lanes, 3.5 m each. The FSD blue path is only
+        // the ego lane (second from the left), not the whole road.
+        const float roadHalf = 7.0f;
+        const float egoX = -1.75f;
+        quad(v, -32, -8, 32, 100, 0.0f, .035f, .055f, .060f);
+        quad(v, -30, -6, -7.8f, 96, .006f, .055f, .085f, .075f);
+        quad(v, 7.8f, -6, 30, 96, .006f, .055f, .085f, .075f);
+        quad(v, -7.5f, 0, 7.5f, 92, .018f, .105f, .125f, .135f);
+        quad(v, -7.25f, 0, 7.25f, 92, .026f, .105f, .115f, .120f);
+        // Ego-lane FSD path.
+        quad(v, egoX - 1.55f, 0, egoX + 1.55f, 90, .028f, .060f, .25f, .40f);
+        // Solid road edges.
+        quad(v, -7.15f, 0, -7.06f, 90, .031f, .65f, .73f, .76f);
+        quad(v, 7.06f, 0, 7.15f, 90, .031f, .65f, .73f, .76f);
+        // Dashed lane boundaries at -3.5, 0, +3.5.
+        for (float laneX : {-3.5f, 0.0f, 3.5f}) {
+            for (int i = 0; i < 22; ++i) {
+                const float z0 = i * 4.0f + .7f;
+                quad(v, laneX - .045f, z0, laneX + .045f, z0 + 2.35f, .032f, .48f, .55f, .58f);
             }
         }
-        // distant city silhouette; purely decorative DEMO/LIVE background
-        for (int i = 0; i < 11; ++i) {
-            const float x = -24.0f + i * 4.8f;
+        // Roadside grid and city silhouettes.
+        for (int i = 0; i < 8; ++i) {
+            const float z = 8.0f + i * 9.0f;
+            quad(v, -30, z, -7.6f, z + .06f, .022f, .085f, .11f, .13f);
+            quad(v, 7.6f, z, 30, z + .06f, .022f, .085f, .11f, .13f);
+        }
+        for (int side = -1; side <= 1; side += 2) {
+            for (int i = 0; i < 8; ++i) {
+                const float x = side * (9.0f + i * 3.0f);
+                quad(v, x, 0, x + .05f, 92, .025f, .065f, .085f, .10f);
+            }
+        }
+        for (int i = 0; i < 13; ++i) {
+            const float x = -30.0f + i * 5.0f;
             const float h = 3.0f + float((i * 7) % 9);
-            box3(v, x, 0.0f, 82.0f + (i % 3) * 2.5f, 3.2f, h, 2.0f,
+            box3(v, x, 0.0f, 86.0f + (i % 3) * 2.5f, 3.4f, h, 2.0f,
                  .045f, .065f, .075f, false);
         }
         if (demo_) addDemo(v); else addLive(v);
