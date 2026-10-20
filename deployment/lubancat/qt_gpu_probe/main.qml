@@ -29,7 +29,6 @@ Item {
     property bool hudTestOpen: false
     property bool autoHudSend: true
     property int trackingMode: 2  // 0=RAW, 1=FIX4, 2=TIME
-    property bool sceneDemo: false
     property int testTraffic: 1
     property int testLaneLeft: 0
     property int testLaneRight: 0
@@ -579,30 +578,11 @@ Item {
             }
         }
 
-        TeslaSceneItem {
+        TeslaBevView {
             id: teslaScene
             x: 0; y: 0; width: mainView.width; height: mainView.height
             visible: root.viewMode === 2
-            boxes: video.aiBoxes
-            online: video.aiOnline
-            sourceKey: video.sourceMode
-            demoMode: root.sceneDemo
-            Timer {
-                interval: 16; repeat: true; running: root.viewMode === 2
-                onTriggered: teslaScene.requestUpdate()
-            }
-        }
-        Image {
-            id: egoOverlay
-            visible: root.viewMode === 2
-            source: "assets/ego_car_rear.png"
-            width: 205
-            height: width * 740.0 / 680.0
-            x: (mainView.width - width) / 2
-            y: mainView.height - height - 2
-            fillMode: Image.PreserveAspectFit
-            smooth: true
-            cache: true
+            compact: false
         }
 
         // Readability gradients.
@@ -772,21 +752,6 @@ Item {
                     root.autoHudSend = false
                     root.hudTestOpen = true
                 }
-            }
-        }
-
-        Rectangle {
-            x: parent.width - 300; y: 44; width: 88; height: 23; radius: 2
-            color: "#C0031118"; border.color: root.sceneDemo ? "#5A4A2C" : "#3F7059"; border.width: 0.7
-            Text {
-                anchors.centerIn: parent
-                text: root.sceneDemo ? "SCENE DEMO" : "SCENE LIVE"
-                color: root.sceneDemo ? root.amber : root.mint
-                font.family: root.num; font.pixelSize: 6
-            }
-            MouseArea {
-                anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                onClicked: root.sceneDemo = !root.sceneDemo
             }
         }
 
@@ -1052,11 +1017,11 @@ Item {
                 }
                 Rectangle { x: 12; y: 47; width: 194; height: 1; color: "#1D3B46" }
                 Text {
-                    x: 12; y: 55; text: root.sceneDemo ? "DEMO · GPU 连续动画" : "LIVE TARGETS · GPU · 非实时几何"
+                    x: 12; y: 55; text: "TESLA-BEVCAM-CLONE · 原版动态 GIF"
                     color: root.amber; font.family: root.cjk; font.pixelSize: 6
                 }
                 Text {
-                    x: 12; y: 72; text: root.sceneDemo ? "演示目标 · 非真实检测" : "真实 Track ID · 坐标未标定"
+                    x: 12; y: 72; text: "DEMO · 非标定空间示意"
                     color: "#7E9FA9"; font.family: root.cjk; font.pixelSize: 6
                 }
             }
@@ -1410,44 +1375,22 @@ Item {
         }
         Image { x: 14; y: 11; width: 15; height: 15; source: "assets/icon_radar.png" }
         Text {
-            x: 35; y: 7; text: "ADAS 空间识别"
+            x: 35; y: 7; text: "Tesla BEV 空间"
             color: root.ink; font.family: root.cjk; font.pixelSize: 10; font.weight: Font.DemiBold
         }
         Rectangle {
             x: parent.width - 72; y: 9; width: 57; height: 16; radius: 2
-            color: "#0B302A"; border.color: "#3F7059"; border.width: 0.6
-            Text { anchors.centerIn: parent; text: "LIVE"; color: root.mint; font.family: root.num; font.pixelSize: 6 }
+            color: "#2B220E"; border.color: "#6B552A"; border.width: 0.6
+            Text { anchors.centerIn: parent; text: "DEMO"; color: root.amber; font.family: root.num; font.pixelSize: 6 }
         }
         Rectangle { x: 14; y: 31; width: parent.width - 28; height: 1; color: "#1A3942" }
-        Column {
-            x: 14; y: 40; spacing: 6
-            Repeater {
-                model: [
-                    { icon: "assets/icon_car.png", value: root.vehicleCount(), name: "车辆" },
-                    { icon: "assets/icon_person.png", value: root.personCount(), name: "行人" },
-                    { icon: "assets/icon_bike.png", value: root.cycleCount(), name: "非机动车" }
-                ]
-                delegate: Item {
-                    width: 105; height: 18
-                    Image { x: 0; y: 2; width: 12; height: 12; source: modelData.icon }
-                    Text { x: 18; y: -1; text: modelData.value; color: root.inkSoft; font.family: root.num; font.pixelSize: 10; font.weight: Font.DemiBold }
-                    Text { x: 38; y: 1; text: modelData.name; color: "#8BA8B1"; font.family: root.cjk; font.pixelSize: 7 }
-                }
-            }
-        }
-        Rectangle {
-            x: 126; y: 36; width: 289; height: 98; radius: 3
-            color: "#70051118"; border.color: "#244653"; border.width: 0.7
-        }
-        LiveBev {
-            x: 130; y: 39; width: 281; height: 92
-            boxes: video.aiBoxes
-            activeQuadrant: root.roadQuadrant
-            online: video.aiOnline
+        TeslaBevView {
+            x: 14; y: 37; width: parent.width - 28; height: 88
+            compact: true
         }
         Text {
-            x: 138; y: parent.height - 18
-            text: "LIVE BEV · 主视 Q" + (root.roadQuadrant + 1) + " · 实时目标投影"
+            x: 16; y: parent.height - 15
+            text: "TESLA-BEVCAM-CLONE · 原版动态演示 · 非标定"
             color: "#7FB3B8"; font.family: root.cjk; font.pixelSize: 6
         }
     }

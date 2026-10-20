@@ -3,6 +3,7 @@
         <file>main.qml</file>
         <file>components/HudPanel.qml</file>
         <file>components/LiveBev.qml</file>
+        <file>components/TeslaBevView.qml</file>
         <file>assets/icon_car.png</file>
         <file>assets/icon_person.png</file>
         <file>assets/icon_bike.png</file>
