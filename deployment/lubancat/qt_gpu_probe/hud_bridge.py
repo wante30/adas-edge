@@ -41,10 +41,12 @@ class Bridge:
     def __init__(self, resource: Path):
         self.fd = os.open(str(resource), os.O_RDWR | getattr(os, "O_SYNC", 0))
         self.mm = mmap.mmap(self.fd, 4096, access=mmap.ACCESS_WRITE)
-        self.ext_seq = 0
-        self.legacy_seq = 0
         if self.rd(OFF_MAGIC) != MAGIC:
             raise SystemExit("HUD magic mismatch; refuse to write BAR1")
+        # BAR1 persists the applied sequence across a bridge restart. Resume
+        # from it; starting at 0 makes every new commit look stale to the FPGA.
+        self.ext_seq = self.rd(OFF_EXT_APPLIED) & 0xFFFF
+        self.legacy_seq = self.ext_seq & 0xFFFF
 
     def rd(self, offset: int) -> int:
         return ctypes.c_uint32.from_buffer(self.mm, offset).value
@@ -149,9 +151,14 @@ class Bridge:
                 break
             time.sleep(0.001)
         applied = self.rd(OFF_EXT_APPLIED)
+        # BAR1 applies the committed word on the following ready edge. The
+        # accepted sequence is therefore allowed to be one behind the current
+        # commit; this is pipeline latency, not a rejected write.
+        lag = (self.ext_seq - applied) & 0xFFFF
         result = {
             "type": "ack",
-            "ok": bool(not (status & 1) and applied == self.ext_seq),
+            "ok": bool(not (status & 1) and (applied == self.ext_seq or lag == 1)),
+            "pipeline_lag": lag,
             "ext_request": ext,
             "ext_seq": self.ext_seq,
             "ext_applied": applied,

@@ -30,6 +30,9 @@ struct SourceBox {
     int id = 0;
     QString cls;
     double x = 0, y = 0, w = 0, h = 0;
+    double confidence = 0;
+    int missed = 0;
+    bool predicted = false;
 };
 
 struct LiveCar {
@@ -306,7 +309,14 @@ public:
             b.y = map.value(QStringLiteral("y")).toDouble();
             b.w = map.value(QStringLiteral("width")).toDouble();
             b.h = map.value(QStringLiteral("height")).toDouble();
-            if (b.id > 0 && b.w > 2 && b.h > 2) next.push_back(b);
+            b.confidence = map.value(QStringLiteral("confidence")).toDouble();
+            b.missed = map.value(QStringLiteral("missed")).toInt();
+            b.predicted = map.value(QStringLiteral("predicted")).toBool();
+            // Stale/predicted tracks are retained by the tracker for continuity,
+            // but must not be drawn as if they were current detections.
+            if (b.id > 0 && b.w > 2 && b.h > 2 && !b.predicted && b.missed == 0 &&
+                b.confidence >= 0.20)
+                next.push_back(b);
         }
         boxes_ = next;
         online_ = scene->online();
@@ -459,7 +469,12 @@ private:
             const double cx = (b.x + b.w * .5) / 1280.0;
             const double bottom = (b.y + b.h) / 720.0;
             const float tx = std::clamp(float(-1.75 + (cx - .5) * 14.0), -6.8f, 6.8f);
-            const float tz = std::clamp(float(3.8 + (1.0 - bottom) * 51.0), 3.8f, 55.0f);
+            // Non-calibrated relative depth: bbox width is a scale cue, not a
+            // metric distance. It separates near/far detections much better
+            // than a constant bottom-to-depth line and never yields metres.
+            const float widthDepth = 2600.0f / std::max(24.0f, float(b.w));
+            const float bottomDepth = 3.8f + float(1.0 - bottom) * 42.0f;
+            const float tz = std::clamp(0.72f * widthDepth + 0.28f * bottomDepth, 4.0f, 62.0f);
             auto it = live_.find(b.id);
             if (it == live_.end()) {
                 live_.insert(b.id, LiveCar{tx, tz, b.cls, now});

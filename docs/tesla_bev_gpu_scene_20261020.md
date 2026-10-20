@@ -72,27 +72,46 @@
 | Mali GPU 负载 | 55% |
 | Qt 进程 CPU（全核百分比） | 26.60% |
 | Qt 进程 RSS | 202.7 MB |
-| 视频唯一帧率 | 0（PCIe 链路掉线，DEMO 不依赖视频） |
+| 视频唯一帧率 | 0（纯 DEMO 测量不依赖视频） |
 | YOLO FPS | 0（同上） |
 
 DEMO 场景由 QSG 每帧驱动；GPU 场景不再受 Python 2–10 Hz 限制。
 
-## 6. 真实 PCIe 状态
+## 6. 真实 PCIe 实测（重启后）
 
-本轮开始前真实 PCIe 是通的：
+按用户要求重启 RK3566 后：
 
-- `01:00.0 [0755:0755]`
-- `pango_video_capture` 约 53 FPS
-- Qt `PCIe LIVE`，AI `PGV_LIVE`，HUD bridge `ext_applied` 递增。
+- PCIe 端点重新枚举：`01:00.0 [0755:0755]`，不再 `rev ff`；
+- 加载 `pango_video.ko`，`/dev/pango_video0` 恢复；
+- `pango_video_capture --continuous --fps 60` 运行，状态 `running`，约 49–53 FPS；
+- Qt 输入 `/dev/shm/pango-video/latest.pgv`，界面显示 `PCIe LIVE`；
+- AI sidecar 使用 `--source PGV_LIVE`，实测 7.8–9.1 FPS；
+- 底部四路缩略图和主视 Q1 都是真实 PCIe 帧；
+- `hud_bridge.py` 运行，BAR1 `ext_applied` 持续递增，`reject_count=0`、`error=0`。
 
-随后 FPGA 端点变为：
+本轮还修复了 HUD bridge 重启后的两个问题：
 
-```text
-01:00.0 ... Device [0755:0755] (rev ff)
-```
+1. bridge 重启后 `ext_seq` 从 0 开始，落后于 BAR1 已保存的 `ext_applied`，新事务被 FPGA 视为旧序列；现在从 `ext_applied` 恢复。
+2. BAR1 在下一个 ready 边沿应用事务，`ext_applied` 会滞后一帧；bridge 现在把“滞后一帧”识别为 accepted，而不是误报 REJECT。
 
-`/dev/pango_video0` 与 `/dev/shm/pango-video` 消失；`pango_video_capture` 报 `capture_io`。尝试卸载驱动、移除设备并 PCIe rescan 后端点没有重新出现。结论：**这是 PCIe 链路/FPGA 侧掉线，不是 Qt/场景代码问题；本轮 LIVE 无法在真实 PCIe 上完成验收。** 没有用本地 PGVF 冒充 PCIe LIVE。
+实测实时空间视图：
 
+| 指标 | 值 |
+|---|---:|
+| QSG render callback FPS | **57.32** |
+| 源视频 FPS（当前窗口） | 25.48 |
+| 唯一源帧上传 FPS 平均 | **14.46** |
+| YOLO FPS | **7.81** |
+| Mali GPU 负载 | 33% |
+| Qt 进程 CPU（全核百分比） | 27.07% |
+| Qt 进程 RSS | 208.5 MB |
+| PCIe 采集 | 49–53 FPS |
+
+LIVE 轨迹现在只画当前未过期、非 predicted 的 track；过期预测不再堆成一团。目标横向分布到四条车道，深度使用非标定的框宽相对尺度，不输出米数。
+
+![真实 PCIe 单路](<C:/Users/JingyuWang/adas-edge/deployment/lubancat/qt_gpu_probe/results/pcie_single_live.png>)
+
+![真实 PCIe GPU 空间视图](<C:/Users/JingyuWang/adas-edge/deployment/lubancat/qt_gpu_probe/results/pcie_live_final.png>)
 ## 7. 验收状态
 
 实现：
@@ -125,7 +144,7 @@ QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl \
   --ai-frame-file /dev/shm/qt_gpu_probe_ai.mfr1 --ai-hz 10
 ```
 
-空间视图右上 `SCENE LIVE / SCENE DEMO` 切换；DEMO 用于视觉验收，LIVE 等待 PCIe 链路恢复。
+空间视图右上 `SCENE LIVE / SCENE DEMO` 切换；DEMO 用于视觉验收，LIVE 使用当前真实 PCIe 输入。
 
 ## 9. 文件
 
