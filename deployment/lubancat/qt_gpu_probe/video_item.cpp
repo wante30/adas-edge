@@ -209,6 +209,12 @@ public:
 
     void render() override {
         metrics_->rendered_frames.fetch_add(1);
+        auto *startContext = QOpenGLContext::currentContext();
+        if (startContext) {
+            GLenum startError = startContext->functions()->glGetError();
+            if (startError != GL_NO_ERROR)
+                qWarning() << "GL error present at VideoItem::render start" << startError;
+        }
         if (!program_) initGL();
         if (!program_) return;
         auto *context = QOpenGLContext::currentContext();
@@ -218,6 +224,13 @@ public:
         if (frame && frame->id != uploaded_id_) {
             QElapsedTimer timer;
             timer.start();
+            f->glActiveTexture(GL_TEXTURE0);
+            GLenum stale = f->glGetError();
+            while (stale != GL_NO_ERROR) {
+                qWarning() << "pre-existing GL error before RGB565 upload" << stale;
+                stale = f->glGetError();
+            }
+            GLenum uploadError = GL_NO_ERROR;
             if (!texture_) {
                 f->glGenTextures(1, &texture_);
                 if (!texture_) {
@@ -230,14 +243,19 @@ public:
                 f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 f->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                f->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, kSourceWidth, kSourceHeight, 0,
+                f->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB565, kSourceWidth, kSourceHeight, 0,
                                 GL_RGB, GL_UNSIGNED_SHORT_5_6_5, frame->pixels.data());
+                uploadError = f->glGetError();
+                if (uploadError != GL_NO_ERROR)
+                    qWarning() << "RGB565 glTexImage2D failed" << uploadError;
             } else {
                 f->glBindTexture(GL_TEXTURE_2D, texture_);
                 f->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, kSourceWidth, kSourceHeight,
                                    GL_RGB, GL_UNSIGNED_SHORT_5_6_5, frame->pixels.data());
+                uploadError = f->glGetError();
+                if (uploadError != GL_NO_ERROR)
+                    qWarning() << "RGB565 glTexSubImage2D failed" << uploadError;
             }
-            const GLenum uploadError = f->glGetError();
             if (uploadError == GL_NO_ERROR) {
                 uploaded_id_ = frame->id;
                 const double uploadMs = static_cast<double>(timer.nsecsElapsed()) / 1.0e6;
@@ -297,6 +315,11 @@ public:
         program_->disableAttributeArray(0);
         program_->disableAttributeArray(1);
         program_->release();
+        {
+            const GLenum endError = f->glGetError();
+            if (endError != GL_NO_ERROR)
+                qWarning() << "GL error at VideoItem::render end" << endError;
+        }
         update();
     }
 

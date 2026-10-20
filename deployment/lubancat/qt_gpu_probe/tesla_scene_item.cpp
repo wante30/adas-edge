@@ -434,24 +434,34 @@ public:
         auto *ctx = QOpenGLContext::currentContext();
         if (!ctx) return;
         auto *f = ctx->functions();
+        auto checkGl = [f](const char *tag) {
+            const GLenum e = f->glGetError();
+            if (e != GL_NO_ERROR) qWarning() << "Tesla GL error" << tag << e;
+        };
+        checkGl("render_start");
         if (!program_) initGL();
         if (!program_) return;
+        checkGl("initGL");
 
         f->glViewport(0, 0, static_cast<GLint>(viewport_.width()), static_cast<GLint>(viewport_.height()));
+        checkGl("viewport");
         f->glDisable(GL_BLEND);
         f->glEnable(GL_DEPTH_TEST);
         f->glDepthFunc(GL_LEQUAL);
         f->glClearColor(0.018f, 0.028f, 0.036f, 1.0f);
         f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        checkGl("clear");
 
         std::vector<float> vertices;
         vertices.reserve(24000);
         buildScene(vertices);
+        checkGl("buildScene");
         if (vertices.empty()) return;
 
         vao_.bind();
         vbo_.bind();
         vbo_.allocate(vertices.data(), static_cast<int>(vertices.size() * sizeof(float)));
+        checkGl("vbo_allocate");
         program_->bind();
         const int pos = program_->attributeLocation("aPos");
         const int col = program_->attributeLocation("aColor");
@@ -471,13 +481,20 @@ public:
             view.lookAt(QVector3D(-1.75f, 8.2f, -13.5f), QVector3D(-1.75f, 0.2f, 18.0f), QVector3D(0, 1, 0));
         QMatrix4x4 mvp = projection * view;
         program_->setUniformValue("uMVP", mvp);
+        checkGl("uniforms");
         f->glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size() / 6));
+        checkGl("draw");
         program_->disableAttributeArray(pos);
         program_->disableAttributeArray(col);
         vbo_.release();
         vao_.release();
         drawBillboards(mvp);
 
+        {
+            const GLenum sceneError = f->glGetError();
+            if (sceneError != GL_NO_ERROR)
+                qWarning() << "GL error at TeslaSceneItem::render end" << sceneError;
+        }
         frames_++;
         if (elapsed_ - last_report_ > 1.0) {
             // Rendering thread only updates an atomic; no QObject signal here.
@@ -506,29 +523,8 @@ private:
         vao_.create();
         vbo_.setUsagePattern(QOpenGLBuffer::DynamicDraw);
 
-        billboard_program_ = std::make_unique<QOpenGLShaderProgram>();
-        const char *bvs = R"(#version 300 es
-        in vec3 aPos; in vec2 aUV; uniform mat4 uMVP; out vec2 vUV;
-        void main(){ vUV=aUV; gl_Position=uMVP*vec4(aPos,1.0); })";
-        const char *bfs = R"(#version 300 es
-        precision mediump float; in vec2 vUV; uniform sampler2D uTex; out vec4 fragColor;
-        void main(){ vec4 t=texture(uTex,vUV); if(t.a<0.04) discard; fragColor=vec4(t.rgb, t.a); })";
-        if (billboard_program_->addShaderFromSourceCode(QOpenGLShader::Vertex, bvs) &&
-            billboard_program_->addShaderFromSourceCode(QOpenGLShader::Fragment, bfs) &&
-            billboard_program_->link()) {
-            billboard_vbo_.create();
-            billboard_vbo_.setUsagePattern(QOpenGLBuffer::DynamicDraw);
-            billboard_vao_.create();
-            QImage image(QStringLiteral(":/assets/ego_car_rear.png"));
-            if (!image.isNull()) {
-                texture_ = new QOpenGLTexture(image.mirrored());
-                texture_->setMinificationFilter(QOpenGLTexture::Linear);
-                texture_->setMagnificationFilter(QOpenGLTexture::Linear);
-            }
-        } else {
-            qWarning("billboard shader failed: %s", qPrintable(billboard_program_->log()));
-            billboard_program_.reset();
-        }
+        // The billboard traffic path is retired: real targets are now 3D
+        // meshes. Do not create its texture/VAO/program.
     }
 
     void addBillboard(float x, float z, const QString &cls) {
