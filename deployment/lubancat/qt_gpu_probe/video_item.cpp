@@ -591,6 +591,10 @@ void VideoItem::runPgvProducer(double fps, QString pgvFile, double aiHz, QString
     (void)aiHz;
     (void)aiFrameFile;
     const std::string path = pgvFile.toStdString();
+    // CRC is mandatory by default. The local PGVF publisher uses atomic
+    // rename, so a faster local-only mode can skip CRC after header/length
+    // validation; real PCIe keeps CRC unless explicitly opted out.
+    const bool verifyCrc = qEnvironmentVariableIntValue("QT_PGVF_SKIP_CRC") == 0;
     std::array<unsigned char, kPgvHeaderBytes> header{};
     struct stat previous {};
     bool havePrevious = false;
@@ -624,13 +628,14 @@ void VideoItem::runPgvProducer(double fps, QString pgvFile, double aiHz, QString
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;
         }
-        std::ifstream input(path, std::ios::binary);
-        if (!input) {
+        const int fd = ::open(path.c_str(), O_RDONLY);
+        if (fd < 0) {
             std::this_thread::sleep_for(std::chrono::milliseconds(3));
             continue;
         }
-        input.read(reinterpret_cast<char *>(header.data()), static_cast<std::streamsize>(header.size()));
-        if (input.gcount() != static_cast<std::streamsize>(header.size())) {
+        const ssize_t headerGot = ::pread(fd, header.data(), header.size(), 0);
+        if (headerGot != static_cast<ssize_t>(header.size())) {
+            ::close(fd);
             source_crc_errors_.fetch_add(1);
             previous = info;
             havePrevious = true;
@@ -654,11 +659,12 @@ void VideoItem::runPgvProducer(double fps, QString pgvFile, double aiHz, QString
             std::this_thread::sleep_for(std::chrono::milliseconds(2));
             continue;
         }
-        input.read(reinterpret_cast<char *>(slot->pixels.data()), static_cast<std::streamsize>(kFrameBytes));
+        const ssize_t payloadGot = ::pread(fd, slot->pixels.data(), kFrameBytes, kPgvHeaderBytes);
+        ::close(fd);
         previous = info;
         havePrevious = true;
-        if (input.gcount() != static_cast<std::streamsize>(kFrameBytes) ||
-            crc32Bytes(slot->pixels.data(), kFrameBytes) != expectedCrc) {
+        if (payloadGot != static_cast<ssize_t>(kFrameBytes) ||
+            (verifyCrc && crc32Bytes(slot->pixels.data(), kFrameBytes) != expectedCrc)) {
             source_crc_errors_.fetch_add(1);
             std::this_thread::sleep_for(std::chrono::milliseconds(2));
             continue;

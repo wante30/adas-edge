@@ -144,3 +144,33 @@ Publisher 从内存 mmap 读取，设置 `--fps 60 --source-fps 30`：
 ## 9. OCR
 
 本轮没有硬编码导航值，也没有通过永久关闭 OCR 达标。D 组保留 OCR 0.1 Hz；B/C 组用 `--no-navigation-ocr` 做隔离对照。OCR 仍是 D 组相对 C 组下降的主要原因之一。未做快速路径重写，因为本轮优先级是先定位视频吞吐瓶颈。
+
+## 10. 本轮热路径代码优化
+
+实际修改：
+
+- `VideoItem::runPgvProducer` 从每帧 `std::ifstream` 改为 `open + pread`，消除流对象构造和重复路径状态。
+- 增加 `QT_PGVF_SKIP_CRC=1`：仅对使用 atomic rename 的本地 PGVF 跳过完整 1.8MB CRC；默认仍校验。保留 header、长度、payload 大小检查，`source_crc_errors` 仍统计。
+- 删除已废弃 billboard GL 初始化，修复 1280。
+- 视频仍 latest-only，不等待 AI。
+
+实测：
+
+| 配置 | 优化前 | 优化后 |
+|---|---:|---:|
+| B YOLO 唯一上传 | 17.63 | **18.07** |
+| D 全功能唯一上传（CRC 开/关） | 14.18 | 13.95 / **14.32** |
+| A 无 AI | 27.54 | 27.54 |
+
+提升很小：B +0.44 FPS，D +0.14 FPS。`source_crc_errors=0`。  
+说明 Qt 读帧/CRC 不是主要瓶颈；剩余主要开销是 AI 预处理、MFR1 全帧传输和 RKNN/OCR 竞争。没有继续用大幅改协议来换取少量 FPS。
+
+## 11. 最佳可用配置
+
+- 本地回放：`pgv_local_publisher.py --fps 30 --source-fps 30`
+- Qt：`QT_PGVF_SKIP_CRC=1` 仅限本地 atomic PGVF
+- AI：YOLO + Specialist + OCR 全部开启
+- Tesla LIVE：开启
+- 最佳全功能唯一上传：约 **14.3 FPS**
+- 仅 YOLO：约 **18.1 FPS**
+- 无 AI：**27.5 FPS**
