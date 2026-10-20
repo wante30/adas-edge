@@ -97,3 +97,50 @@ Tesla GL error initGL 1280
 - 车型为低面数程序化，不是高精模型。
 - 场景独立 FPS 未单独计数；QSG 不是感知更新率。
 - 没有 20 分钟长测。
+
+## 6. P0 四组分级对照（本轮补充）
+
+同一 `local_quad.rgb` → 本地 PGVF（`LOCAL_REPLAY`），Publisher 目标 30 FPS，Qt/Tesla 配置相同，20 s：
+
+| 组 | 配置 | 源 FPS | Qt 唯一上传 FPS | QSG FPS | AI FPS | Qt CPU 全核 | GPU |
+|---|---|---:|---:|---:|---:|---:|---:|
+| A | 无 AI | 30.15 | **27.54** | 60.30 | 0 | 26.38% | 44% |
+| B | YOLO，无 OCR | 30.12 | **17.63** | 66.27 | 9.55 | 33.13% | 21% |
+| C | YOLO + Specialist，无 OCR | 27.40 | **16.68** | 68.49 | 9.41 | 39.38% | 44% |
+| D | YOLO + Specialist + OCR | 23.95 | **14.18** | 53.89 | 9.24 | 31.44% | 48% |
+
+结论：
+
+- **A → B 是最大断点**：只开 YOLO，唯一上传从 27.54 降到 17.63 FPS；
+- Specialist 再降到 16.68；
+- OCR 再降到 14.18；
+- 瓶颈是 AI/OCR 整体与视频线程的资源竞争，不是 Tesla FBO。
+
+AI 端到端结果年龄（capture → result publish）：
+
+| 组 | p50 | p95 |
+|---|---:|---:|
+| B | 109.2 ms | 141.2 ms |
+| C | 125.9 ms | 186.9 ms |
+| D | 121.2 ms | 173.1 ms |
+
+## 7. CPU 亲和性尝试
+
+将 Publisher 固定到 CPU0，AI/OCR 固定到 CPU2–3，Qt 固定到 CPU1：
+
+- D 组唯一上传反而降到 **10.50 FPS**，AI 降到 **5.09 FPS**；
+- 单核 Qt + AI 的隔离方式不适合当前工作负载，已回退，未保留该调度。
+
+## 8. 60 FPS Publisher 试验
+
+Publisher 从内存 mmap 读取，设置 `--fps 60 --source-fps 30`：
+
+- source FPS：22.60；
+- Qt 唯一上传：12.16；
+- AI：3.15 FPS。
+
+说明 Publisher/AI 无法稳定跑到 60 FPS 输入；60 FPS 试验不列入达标数据，保留为压力测试记录。
+
+## 9. OCR
+
+本轮没有硬编码导航值，也没有通过永久关闭 OCR 达标。D 组保留 OCR 0.1 Hz；B/C 组用 `--no-navigation-ocr` 做隔离对照。OCR 仍是 D 组相对 C 组下降的主要原因之一。未做快速路径重写，因为本轮优先级是先定位视频吞吐瓶颈。
