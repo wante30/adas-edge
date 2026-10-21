@@ -523,15 +523,6 @@ Item {
             x: 198; y: 14; width: 5; height: 5; radius: 2.5
             color: video.sourceOnline ? root.mint : root.amber
         }
-        Text {
-            x: 112; y: 24; text: "切换"
-            color: root.cyanHot; font.family: root.cjk; font.pixelSize: 6
-        }
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: sourceSwitch.toggle()
-        }
     }
 
     // Five compact telemetry cells.
@@ -632,9 +623,9 @@ Item {
             clip: true
             visible: root.viewMode === 0 && video.aiOnline && video.aiBoxes.length > 0
             Repeater {
-                model: video.aiBoxes
+                model: video.aiBoxes.length
                 delegate: Item {
-                    property var payload: modelData
+                    property var payload: video.aiBoxes[index]
                     property color tone: root.targetTone(payload.className)
                     property bool hot: index === 0
                     property real predictSeconds: {
