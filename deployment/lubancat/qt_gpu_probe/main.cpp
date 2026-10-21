@@ -3,8 +3,10 @@
 #endif
 
 #include "hud_control.h"
+#include "source_controller.h"
 #include "video_item.h"
 #include "tesla_scene_item.h"
+#include "video_texture_item.h"
 
 #include <QFile>
 #include <QFileInfo>
@@ -115,6 +117,10 @@ int main(int argc, char **argv) {
     const QString pgvFile = stringArg(args, "--pgv-file");
     const QString rawReplay = stringArg(args, "--raw-replay");
     const QString sourceLabel = stringArg(args, "--source-label");
+    QString pciePgvFile = stringArg(args, "--pcie-pgv-file");
+    if (pciePgvFile.isEmpty()) pciePgvFile = QStringLiteral("/dev/shm/pango-video/latest.pgv");
+    QString localPgvFile = stringArg(args, "--local-pgv-file");
+    if (localPgvFile.isEmpty()) localPgvFile = QStringLiteral("/dev/shm/pgv_local/latest.pgv");
     const bool autoCycleCapture = args.contains("--capture-cycle");
     const bool sceneEnabled = !args.contains("--scene-off");
     const QString pgvLayout = stringArg(args, "--pgv-layout");
@@ -130,6 +136,7 @@ int main(int argc, char **argv) {
     }
 
     qmlRegisterType<VideoItem>("QtGpuProbe", 1, 0, "VideoItem");
+    qmlRegisterType<VideoTextureItem>("QtGpuProbe", 1, 0, "VideoTextureItem");
     qmlRegisterType<TeslaSceneItem>("QtGpuProbe", 1, 0, "TeslaSceneItem");
     qmlRegisterType<HudControl>("QtGpuProbe", 1, 0, "HudControl");
     QQuickView view;
@@ -140,12 +147,23 @@ int main(int argc, char **argv) {
     view.rootContext()->setContextProperty(QStringLiteral("initialViewMode"), startMode);
     view.rootContext()->setContextProperty(QStringLiteral("autoCycleCapture"), autoCycleCapture);
     view.rootContext()->setContextProperty(QStringLiteral("sceneEnabled"), sceneEnabled);
-    view.setSource(QUrl(QStringLiteral("qrc:/main.qml")));
+    auto *sourceSwitch = new SourceSwitchController(fps, aiFrameFile, aiHz,
+                                                     pciePgvFile, localPgvFile,
+                                                     view.rootContext());
+    view.rootContext()->setContextProperty(QStringLiteral("sourceSwitch"), sourceSwitch);
+    view.rootContext()->setContextProperty(QStringLiteral("pciePgvFile"), pciePgvFile);
+    view.rootContext()->setContextProperty(QStringLiteral("localPgvFile"), localPgvFile);
+    view.rootContext()->setContextProperty(QStringLiteral("videoBackendSg"),
+                                             qgetenv("QT_VIDEO_RENDER_BACKEND") == "sg");
+    const QString qmlOverride = qEnvironmentVariable("QT_QML_FILE");
+    view.setSource(qmlOverride.isEmpty() ? QUrl(QStringLiteral("qrc:/main.qml"))
+                                         : QUrl::fromLocalFile(qmlOverride));
     auto *video = view.rootObject() ? view.rootObject()->findChild<VideoItem *>(QStringLiteral("videoProbeItem")) : nullptr;
     if (!video) {
         qCritical() << "QML VideoItem was not created";
         return 2;
     }
+    sourceSwitch->setVideo(video);
     QObject::connect(&view, &QQuickWindow::sceneGraphError, &app,
                      [&](QQuickWindow::SceneGraphError error, const QString &message) {
                          qCritical().noquote() << "SCENEGRAPH_ERROR" << error << message;

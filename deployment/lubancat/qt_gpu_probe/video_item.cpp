@@ -1401,6 +1401,31 @@ void VideoItem::updateMetrics() {
     emit metricsChanged();
 }
 
+void VideoItem::recordExternalUpload(const Frame &frame, double uploadMs, double sourceAgeMs) {
+    render_metrics_->upload_ms.store(uploadMs);
+    render_metrics_->source_to_upload_ms.store(sourceAgeMs);
+    render_metrics_->frame_id.store(frame.id);
+    render_metrics_->uploaded_frames.fetch_add(1);
+    {
+        QMutexLocker contentLocker(&render_metrics_->replay_content_mutex);
+        const quint64 sourceIndex = static_cast<quint64>(frame.sourceIndex);
+        if (!render_metrics_->replay_content_indices.contains(sourceIndex)) {
+            render_metrics_->replay_content_indices.insert(sourceIndex);
+            render_metrics_->unique_replay_content_frames.fetch_add(1);
+        }
+    }
+    {
+        QMutexLocker locker(&render_metrics_->upload_mutex);
+        render_metrics_->upload_samples.push_back(uploadMs);
+        if (render_metrics_->upload_samples.size() > 3600)
+            render_metrics_->upload_samples.erase(render_metrics_->upload_samples.begin(), render_metrics_->upload_samples.begin() + 600);
+        render_metrics_->source_age_samples.push_back(sourceAgeMs);
+        if (render_metrics_->source_age_samples.size() > 3600)
+            render_metrics_->source_age_samples.erase(render_metrics_->source_age_samples.begin(), render_metrics_->source_age_samples.begin() + 600);
+    }
+    noteRenderedFrame(frame.id, frame.sourceTimestampNs > 0 ? frame.sourceTimestampNs : frame.producedNs);
+}
+
 double VideoItem::uploadP95Ms() const {
     QMutexLocker locker(&render_metrics_->upload_mutex);
     if (render_metrics_->upload_samples.empty()) return 0.0;

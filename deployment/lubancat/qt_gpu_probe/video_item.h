@@ -155,6 +155,8 @@ public:
     qulonglong queueMaxDepth() const { return display_queue_->maxDepth(); }
     qulonglong queueLastTakeDepth() const { return display_queue_->lastTakeDepth(); }
     qulonglong queueTaken() const { return display_queue_->taken(); }
+    std::shared_ptr<DisplayQueue> displayQueue() const { return display_queue_; }
+    void recordExternalUpload(const Frame &frame, double uploadMs, double sourceAgeMs);
     double renderFps() const { return render_metrics_->render_fps.load(); }
     double synchronizeFps() const { return render_metrics_->synchronize_fps.load(); }
     double cpuPercent() const { return cpu_percent_.load(); }

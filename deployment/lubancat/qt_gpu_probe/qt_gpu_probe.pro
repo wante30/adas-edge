@@ -7,13 +7,17 @@ TARGET = qt_gpu_probe
 SOURCES += \
     main.cpp \
     video_item.cpp \
+    video_texture_item.cpp \
     tesla_scene_item.cpp \
-    hud_control.cpp
+    hud_control.cpp \
+    source_controller.cpp
 
 HEADERS += \
     video_item.h \
+    video_texture_item.h \
     tesla_scene_item.h \
-    hud_control.h
+    hud_control.h \
+    source_controller.h
 
 RESOURCES += qml.qrc
 
