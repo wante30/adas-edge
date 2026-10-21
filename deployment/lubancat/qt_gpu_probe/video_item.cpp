@@ -200,10 +200,10 @@ public:
         auto *video = static_cast<VideoItem *>(item);
         viewport_ = video->sourceViewport();
         pgv_flip_ = video->pgvSource();
-        // The producer marks the item dirty for every accepted frame. Taking
-        // the newest frame during synchronize() is what makes Qt re-upload and
-        // re-composite the FBO; pulling only in render() leaves a stale frame
-        // on this xcb/EGL path even though QML animations continue.
+        metrics_->synchronize_calls.fetch_add(1);
+        // Producer marks the item dirty for every accepted frame. Keep the
+        // existing pending frame until render() uploads it; replacing it in
+        // synchronize() was measured to add work without improving throughput.
         if (!pending_) pending_ = display_->take();
     }
 
@@ -1337,6 +1337,8 @@ void VideoItem::updateMetrics() {
     input_fps_.store((produced - last_produced_for_stats_) / seconds);
     consumed_fps_.store((consumed - last_consumed_for_stats_) / seconds);
     render_metrics_->render_fps.store((rendered - last_rendered_for_stats_) / seconds);
+    render_metrics_->synchronize_fps.store((render_metrics_->synchronize_calls.load() - last_sync_for_stats_) / seconds);
+    last_sync_for_stats_ = render_metrics_->synchronize_calls.load();
     last_produced_for_stats_ = produced;
     last_consumed_for_stats_ = consumed;
     last_rendered_for_stats_ = rendered;

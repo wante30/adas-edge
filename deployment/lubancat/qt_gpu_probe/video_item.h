@@ -116,9 +116,11 @@ public:
         std::atomic<uint64_t> uploaded_frames{0};
         std::atomic<uint64_t> frame_id{0};
         std::atomic<uint64_t> rendered_frames{0};
+        std::atomic<uint64_t> synchronize_calls{0};
         std::atomic<double> upload_ms{0.0};
         std::atomic<double> source_to_upload_ms{0.0};
         std::atomic<double> render_fps{0.0};
+        std::atomic<double> synchronize_fps{0.0};
         std::atomic<bool> hardware_accelerated{false};
         mutable QMutex strings_mutex;
         QString renderer;
@@ -154,6 +156,7 @@ public:
     qulonglong queueLastTakeDepth() const { return display_queue_->lastTakeDepth(); }
     qulonglong queueTaken() const { return display_queue_->taken(); }
     double renderFps() const { return render_metrics_->render_fps.load(); }
+    double synchronizeFps() const { return render_metrics_->synchronize_fps.load(); }
     double cpuPercent() const { return cpu_percent_.load(); }
     double rssMb() const { return rss_mb_.load(); }
     double gpuLoadPercent() const { return gpu_load_percent_.load(); }
@@ -274,6 +277,7 @@ private:
     uint64_t last_produced_for_stats_ = 0;
     uint64_t last_consumed_for_stats_ = 0;
     uint64_t last_rendered_for_stats_ = 0;
+    uint64_t last_sync_for_stats_ = 0;
     uint64_t last_cpu_ticks_ = 0;
     std::thread producer_thread_;
     std::thread ai_thread_;
