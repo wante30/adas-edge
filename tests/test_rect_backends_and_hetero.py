@@ -11,6 +11,7 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -73,6 +74,30 @@ def test_image_listing_is_deterministic_and_capped(tmp_path: Path, source_dump_m
     found = source_dump_module.list_images(tmp_path, 2)
 
     assert [path.name for path in found] == ["a.jpg", "b.jpg"]
+
+
+def test_pytorch_dump_uses_the_requested_nms_iou(monkeypatch, source_dump_module) -> None:
+    import ultralytics
+
+    captured: dict = {}
+    empty_values = SimpleNamespace(cpu=lambda: SimpleNamespace(tolist=lambda: []))
+    result = SimpleNamespace(
+        boxes=SimpleNamespace(xyxy=empty_values, cls=empty_values, conf=empty_values)
+    )
+
+    class FakeModel:
+        def predict(self, source, **kwargs):
+            captured.update(kwargs)
+            return [result]
+
+    monkeypatch.setattr(ultralytics, "YOLO", lambda _: FakeModel())
+
+    rows = source_dump_module.infer_pytorch(
+        Path("model.pt"), Path("frame.jpg"), width=512, height=288, device="cpu", conf=0.25, iou=0.45
+    )
+
+    assert rows == []
+    assert captured["iou"] == 0.45
 
 
 # ------------------------------------------------------- cross-backend routing

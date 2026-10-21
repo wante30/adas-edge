@@ -53,12 +53,14 @@ def restore_boxes(rows: list[list[float]], scale: float, pad_x: float, pad_y: fl
     return out
 
 
-def infer_pytorch(model_path: Path, image_path: Path, width: int, height: int, device: str, conf: float) -> list[tuple[int, float, list[float]]]:
+def infer_pytorch(
+    model_path: Path, image_path: Path, width: int, height: int, device: str, conf: float, iou: float
+) -> list[tuple[int, float, list[float]]]:
     from ultralytics import YOLO
 
     model = YOLO(str(model_path))
     result = model.predict(
-        source=str(image_path), imgsz=(height, width), conf=conf, device=device, rect=False, verbose=False
+        source=str(image_path), imgsz=(height, width), conf=conf, iou=iou, device=device, rect=False, verbose=False
     )[0]
     rows = []
     for box, cls, score in zip(
@@ -113,7 +115,7 @@ def main() -> None:
         if frame is None:
             continue
         if args.backend == "pytorch":
-            rows = infer_pytorch(args.model, path, width, height, args.device, args.conf)
+            rows = infer_pytorch(args.model, path, width, height, args.device, args.conf, args.iou)
         else:
             canvas, scale, pad_x, pad_y = letterbox_bgr(frame, (width, height))
             tensor = np.ascontiguousarray(canvas.transpose(2, 0, 1))[None, ...].astype(np.float32) / 255.0
