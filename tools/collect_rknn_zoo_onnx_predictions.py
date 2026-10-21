@@ -27,6 +27,16 @@ TARGET_COCO_NAMES = {
 }
 
 
+def prepare_model_zoo_onnx_input(
+    frame_bgr: np.ndarray,
+    size: tuple[int, int],
+) -> tuple[np.ndarray, float, int, int]:
+    """Prepare the Rockchip Model Zoo ONNX input and letterbox metadata."""
+    canvas_rgb, scale, pad_x, pad_y = letterbox_bgr(frame_bgr, size, pad_value=0)
+    tensor = canvas_rgb.transpose(2, 0, 1)[None, ...].astype(np.float32) / 255.0
+    return np.ascontiguousarray(tensor), scale, pad_x, pad_y
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", type=Path, required=True)
@@ -152,8 +162,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         frame = cv2.imread(str(path), cv2.IMREAD_COLOR)
         if frame is None:
             raise RuntimeError(f"cannot decode BDD image: {path}")
-        canvas, scale, pad_x, pad_y = letterbox_bgr(frame, (args.width, args.height))
-        tensor = canvas.astype(np.float32).transpose(2, 0, 1)[None, ...] / 255.0
+        tensor, scale, pad_x, pad_y = prepare_model_zoo_onnx_input(frame, (args.width, args.height))
         outputs = session.run(None, {input_info.name: tensor})
         rows = decode_model_zoo_outputs(
             outputs,

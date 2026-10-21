@@ -61,6 +61,7 @@ def collect_predictions(
     device: str,
     score_floor: float,
     max_det: int,
+    nms_iou: float = 0.7,
 ) -> tuple[list[tuple[str, list[tuple[int, float, float, float, float, float]]]], dict]:
     """Run the model over the holdout on a static canvas, one image per forward pass.
 
@@ -79,6 +80,7 @@ def collect_predictions(
         "imgsz": (height, width),
         "conf": score_floor,
         "max_det": max_det,
+        "iou": nms_iou,
         "device": device,
         "rect": False,  # a deployed graph has one frozen canvas, never a dynamic minimum rectangle
         "verbose": False,
@@ -137,6 +139,7 @@ def main() -> None:
     parser.add_argument("--conf", type=float, default=0.25, help="operating confidence for P/R/F1")
     parser.add_argument("--score-floor", type=float, default=0.001, help="detections kept for the mAP sweep")
     parser.add_argument("--max-det", type=int, default=100, help="COCO standard is 100 detections per image")
+    parser.add_argument("--nms-iou", type=float, default=0.7, help="NMS IoU threshold")
     parser.add_argument("--label")
     parser.add_argument("--dump-predictions", type=Path)
     parser.add_argument("--reuse-predictions", action="store_true")
@@ -146,6 +149,8 @@ def main() -> None:
         parser.error(f"canvas must be >=32 and divisible by 32, got {args.width}x{args.height}")
     if args.reuse_predictions and not args.dump_predictions:
         parser.error("--reuse-predictions requires --dump-predictions")
+    if not 0.0 <= args.nms_iou <= 1.0:
+        parser.error("--nms-iou must be in [0, 1]")
 
     image_root = default_image_root(args.bdd_root)
     image_names = [path.name for path in sorted(image_root.glob("*.jpg"))[: args.limit]]
@@ -169,7 +174,7 @@ def main() -> None:
     else:
         per_image, runtime = collect_predictions(
             args.model, image_paths, image_names, args.width, args.height,
-            args.device, args.score_floor, args.max_det,
+            args.device, args.score_floor, args.max_det, args.nms_iou,
         )
         model_names = runtime["model_names"]
         if args.dump_predictions:
@@ -182,6 +187,7 @@ def main() -> None:
                         "height": args.height,
                         "score_floor": args.score_floor,
                         "max_det": args.max_det,
+                        "nms_iou": args.nms_iou,
                         "observed_input_shapes": runtime["observed_input_shapes"],
                         "model_names": {str(key): value for key, value in model_names.items()},
                         "per_image": [{"image": name, "detections": [list(row) for row in rows]} for name, rows in per_image],
@@ -250,6 +256,7 @@ def main() -> None:
             "observed_per_sample_shape": runtime.get("per_sample_shapes"),
             "max_det": args.max_det,
             "score_floor": args.score_floor,
+            "nms_iou": args.nms_iou,
             "operating_conf": args.conf,
             "iou_match_operating_point": 0.5,
             "class_mapping": "BDD100K -> 7 competition classes; rider/traffic sign/train/trailer/other dropped",
@@ -279,6 +286,7 @@ def main() -> None:
         f"- static canvas `{args.width}x{args.height}` ({args.width * args.height} px), "
         f"observed network input `{runtime.get('observed_input_shapes')}`",
         f"- max_det {args.max_det}, score floor {args.score_floor}, operating conf {args.conf}",
+        f"- NMS IoU {args.nms_iou}",
         "",
         "| metric | value |",
         "| --- | ---: |",

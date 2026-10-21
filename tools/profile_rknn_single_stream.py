@@ -80,11 +80,16 @@ def validate_model_shape(shape: int | str | tuple[int, int] | list[int]) -> tupl
     return canonical_validate_model_shape(shape)
 
 
-def letterbox_bgr(image: np.ndarray, size: int | tuple[int, int] | list[int]) -> tuple[np.ndarray, float, int, int]:
+def letterbox_bgr(
+    image: np.ndarray,
+    size: int | tuple[int, int] | list[int],
+    pad_value: int = 114,
+) -> tuple[np.ndarray, float, int, int]:
     """Resize BGR input to an RGB NHWC model input without cropping.
 
     ``size`` is either a square integer or ``(width, height)``. Padding and
-    returned coordinates are in model-space pixels.
+    returned coordinates are in model-space pixels. ``pad_value`` is applied
+    before the BGR-to-RGB conversion; the common deployment default is 114.
     """
     import cv2
 
@@ -93,7 +98,7 @@ def letterbox_bgr(image: np.ndarray, size: int | tuple[int, int] | list[int]) ->
     scale = min(model_width / width, model_height / height)
     resized_width, resized_height = round(width * scale), round(height * scale)
     resized = cv2.resize(image, (resized_width, resized_height), interpolation=cv2.INTER_LINEAR)
-    canvas = np.full((model_height, model_width, 3), 114, dtype=np.uint8)
+    canvas = np.full((model_height, model_width, 3), pad_value, dtype=np.uint8)
     pad_x, pad_y = (model_width - resized_width) // 2, (model_height - resized_height) // 2
     canvas[pad_y : pad_y + resized_height, pad_x : pad_x + resized_width] = resized
     # ONNX from Ultralytics consumes RGB. RKNN input remains uint8 NHWC.
