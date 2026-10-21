@@ -223,6 +223,12 @@ int main(int argc, char **argv) {
     report["texture_upload_cpu_call_ms_last"] = video->uploadMs();
     report["texture_upload_p95_ms"] = video->uploadP95Ms();
     report["source_to_upload_ms_last"] = video->sourceToUploadMs();
+    report["source_to_upload_p50_ms"] = video->sourceToUploadP50Ms();
+    report["source_to_upload_p95_ms"] = video->sourceToUploadP95Ms();
+    report["display_queue_dropped_on_take"] = static_cast<qint64>(video->queueDroppedOnTake());
+    report["display_queue_overwritten"] = static_cast<qint64>(video->queueOverwritten());
+    report["display_queue_max_depth"] = static_cast<qint64>(video->queueMaxDepth());
+    report["display_queue_last_take_depth"] = static_cast<qint64>(video->queueLastTakeDepth());
     report["process_cpu_percent_of_all_cores_last_window"] = video->cpuPercent();
     report["process_rss_mb_last"] = video->rssMb();
     report["mali_gpu_load_percent_last"] = video->gpuLoadPercent();

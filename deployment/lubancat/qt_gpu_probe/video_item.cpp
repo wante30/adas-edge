@@ -261,7 +261,9 @@ public:
                 const double uploadMs = static_cast<double>(timer.nsecsElapsed()) / 1.0e6;
                 const qint64 nowNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
                     std::chrono::steady_clock::now().time_since_epoch()).count();
-                const double sourceAgeMs = std::max<qint64>(0, nowNs - frame->producedNs) / 1.0e6;
+                const qint64 sourceNs = frame->sourceTimestampNs > 0
+                    ? frame->sourceTimestampNs : frame->producedNs;
+                const double sourceAgeMs = std::max<qint64>(0, nowNs - sourceNs) / 1.0e6;
                 metrics_->upload_ms.store(uploadMs);
                 metrics_->source_to_upload_ms.store(sourceAgeMs);
                 metrics_->frame_id.store(uploaded_id_);
@@ -279,6 +281,11 @@ public:
                 if (metrics_->upload_samples.size() > 3600) {
                     metrics_->upload_samples.erase(metrics_->upload_samples.begin(),
                                                    metrics_->upload_samples.begin() + 600);
+                }
+                metrics_->source_age_samples.push_back(sourceAgeMs);
+                if (metrics_->source_age_samples.size() > 3600) {
+                    metrics_->source_age_samples.erase(metrics_->source_age_samples.begin(),
+                                                       metrics_->source_age_samples.begin() + 600);
                 }
             } else {
                 qWarning() << "RGB565 texture upload failed with GL error" << uploadError;
@@ -394,15 +401,25 @@ QQuickFramebufferObject::Renderer *VideoItem::createRenderer() const {
 
 void VideoItem::DisplayQueue::push(const std::shared_ptr<Frame> &frame) {
     QMutexLocker locker(&mutex_);
-    if (frames_.size() >= 4) frames_.pop_front();
+    if (frames_.size() >= 4) {
+        frames_.pop_front();
+        overwritten_.fetch_add(1);
+    }
     frames_.push_back(frame);
+    max_depth_.store(std::max<qulonglong>(max_depth_.load(), frames_.size()));
 }
 
 std::shared_ptr<VideoItem::Frame> VideoItem::DisplayQueue::take() {
     QMutexLocker locker(&mutex_);
     if (frames_.empty()) return {};
-    auto frame = frames_.front();
-    frames_.pop_front();
+    const qulonglong depth = frames_.size();
+    last_take_depth_.store(depth);
+    // Latest-only display semantics: keep the newest complete frame and
+    // discard older queued frames in the same critical section. AI has its
+    // own latest_ai_frame_ slot and is not affected by this consumer.
+    auto frame = std::move(frames_.back());
+    dropped_on_take_.fetch_add(depth > 0 ? depth - 1 : 0);
+    frames_.clear();
     return frame;
 }
 
@@ -548,6 +565,7 @@ void VideoItem::produceFrame(uint64_t id) {
     frame->sourceIndex = replay_frames_.isEmpty() ? id - 1 : (id - 1) % static_cast<uint64_t>(replay_frames_.size());
     frame->producedNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::steady_clock::now().time_since_epoch()).count();
+    frame->sourceTimestampNs = frame->producedNs;
     if (replay_frames_.isEmpty()) {
         fillRoadFrame(frame->pixels, id);
     } else {
@@ -682,6 +700,7 @@ void VideoItem::runPgvProducer(double fps, QString pgvFile, double aiHz, QString
         slot->id = sourceFrame;
         slot->sourceIndex = sourceFrame;
         slot->producedNs = steadyNs();
+        slot->sourceTimestampNs = static_cast<qint64>(timestampNs);
         source_frame_id_.store(sourceFrame);
         last_source_ns_.store(slot->producedNs);
         source_online_.store(true);
@@ -1377,6 +1396,22 @@ double VideoItem::uploadP95Ms() const {
     QMutexLocker locker(&render_metrics_->upload_mutex);
     if (render_metrics_->upload_samples.empty()) return 0.0;
     auto samples = render_metrics_->upload_samples;
+    std::sort(samples.begin(), samples.end());
+    return samples[static_cast<size_t>(0.95 * (samples.size() - 1))];
+}
+
+double VideoItem::sourceToUploadP50Ms() const {
+    QMutexLocker locker(&render_metrics_->age_mutex);
+    if (render_metrics_->source_age_samples.empty()) return 0.0;
+    auto samples = render_metrics_->source_age_samples;
+    std::sort(samples.begin(), samples.end());
+    return samples[static_cast<size_t>(0.50 * (samples.size() - 1))];
+}
+
+double VideoItem::sourceToUploadP95Ms() const {
+    QMutexLocker locker(&render_metrics_->age_mutex);
+    if (render_metrics_->source_age_samples.empty()) return 0.0;
+    auto samples = render_metrics_->source_age_samples;
     std::sort(samples.begin(), samples.end());
     return samples[static_cast<size_t>(0.95 * (samples.size() - 1))];
 }

@@ -84,6 +84,7 @@ public:
         uint64_t id = 0;
         std::vector<unsigned char> pixels;
         qint64 producedNs = 0;
+        qint64 sourceTimestampNs = 0;
         uint64_t sourceIndex = 0;
     };
 
@@ -95,10 +96,18 @@ public:
         void push(const std::shared_ptr<Frame> &frame);
         std::shared_ptr<Frame> take();
         void clear();
+        qulonglong droppedOnTake() const { return dropped_on_take_.load(); }
+        qulonglong overwritten() const { return overwritten_.load(); }
+        qulonglong maxDepth() const { return max_depth_.load(); }
+        qulonglong lastTakeDepth() const { return last_take_depth_.load(); }
 
     private:
         mutable QMutex mutex_;
         std::deque<std::shared_ptr<Frame>> frames_;
+        std::atomic<qulonglong> dropped_on_take_{0};
+        std::atomic<qulonglong> overwritten_{0};
+        std::atomic<qulonglong> max_depth_{0};
+        std::atomic<qulonglong> last_take_depth_{0};
     };
 
     struct RenderMetrics {
@@ -116,6 +125,8 @@ public:
         QString egl_vendor;
         mutable QMutex upload_mutex;
         std::vector<double> upload_samples;
+        mutable QMutex age_mutex;
+        std::vector<double> source_age_samples;
         mutable QMutex replay_content_mutex;
         QSet<quint64> replay_content_indices;
         std::atomic<uint64_t> unique_replay_content_frames{0};
@@ -133,6 +144,12 @@ public:
     double uploadMs() const { return render_metrics_->upload_ms.load(); }
     double uploadP95Ms() const;
     double sourceToUploadMs() const { return render_metrics_->source_to_upload_ms.load(); }
+    double sourceToUploadP50Ms() const;
+    double sourceToUploadP95Ms() const;
+    qulonglong queueDroppedOnTake() const { return display_queue_->droppedOnTake(); }
+    qulonglong queueOverwritten() const { return display_queue_->overwritten(); }
+    qulonglong queueMaxDepth() const { return display_queue_->maxDepth(); }
+    qulonglong queueLastTakeDepth() const { return display_queue_->lastTakeDepth(); }
     double renderFps() const { return render_metrics_->render_fps.load(); }
     double cpuPercent() const { return cpu_percent_.load(); }
     double rssMb() const { return rss_mb_.load(); }
