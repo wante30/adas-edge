@@ -56,6 +56,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-model", type=Path, required=True)
     parser.add_argument("--candidate-model", type=Path, required=True)
+    parser.add_argument("--baseline-kind", choices=("coco", "bdd"), default="coco")
+    parser.add_argument("--candidate-kind", choices=("coco", "bdd"), default="bdd")
+    parser.add_argument("--baseline-label", default="YOLO11n-production")
+    parser.add_argument("--candidate-label", default="BDD-YOLOv8n-INT8")
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--inputs-dir", type=Path, required=True)
     parser.add_argument("--images-dir", type=Path, required=True)
@@ -162,6 +166,7 @@ def _run_model(
     label: str,
     model_path: Path,
     classes: dict[int, str],
+    model_kind: str,
     samples: list[dict[str, object]],
     args: argparse.Namespace,
 ) -> dict[str, object]:
@@ -208,7 +213,7 @@ def _run_model(
         tensor_shapes = [list(np.asarray(output).shape) for output in outputs]
         tensor_dtypes = [str(np.asarray(output).dtype) for output in outputs]
         tensor_finite = [bool(np.isfinite(output).all()) for output in outputs]
-        expected_classes = len(classes) if label == "BDD-YOLOv8n-INT8" else 80
+        expected_classes = len(classes) if model_kind == "bdd" else 80
         if len(outputs) != 2 or tensor_shapes[0] != [1, 4, 3024] or tensor_shapes[1] != [1, expected_classes, 3024]:
             raise ValueError(f"{label}: unexpected split output contract {tensor_shapes}")
         if not all(tensor_finite):
@@ -279,8 +284,7 @@ def _run_model(
         "path": str(model_path),
         "sha256": _sha256(model_path),
         "source_class_names_by_id": {
-            str(key): value
-            for key, value in (BDD_SOURCE_NAMES if label == "BDD-YOLOv8n-INT8" else classes).items()
+            str(key): value for key, value in (BDD_SOURCE_NAMES if model_kind == "bdd" else classes).items()
         },
         "class_names_by_id": {str(key): value for key, value in classes.items()},
         "input": {"shape_nhwc": [1, 288, 512, 3], "dtype": "uint8", "channel_order": "RGB"},
@@ -359,16 +363,18 @@ def main(argv: Sequence[str] | None = None) -> None:
         },
         "models": [
             _run_model(
-                label="YOLO11n-production",
+                label=args.baseline_label,
                 model_path=args.baseline_model,
-                classes=COCO_FOCUS_NAMES,
+                classes=COCO_FOCUS_NAMES if args.baseline_kind == "coco" else BDD_NAMES,
+                model_kind=args.baseline_kind,
                 samples=samples,
                 args=args,
             ),
             _run_model(
-                label="BDD-YOLOv8n-INT8",
+                label=args.candidate_label,
                 model_path=args.candidate_model,
-                classes=BDD_NAMES,
+                classes=BDD_NAMES if args.candidate_kind == "bdd" else COCO_FOCUS_NAMES,
+                model_kind=args.candidate_kind,
                 samples=samples,
                 args=args,
             ),

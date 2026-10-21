@@ -1,0 +1,38 @@
+{
+  "task": "B-03E",
+  "candidate": "BDD-YOLOv8n-INT8-kl",
+  "toolkit": "rknn-toolkit2 2.3.2",
+  "target_platform": "rk3566",
+  "source_onnx": {
+    "path": "D:/Datasets/adas_edge_training/b03c_rknn_validation_20261021/bdd_yolov8n_512x288_split.onnx",
+    "sha256": "ad815ba2b66158f254d59bfec88d387b739ccdd1b9e1a16a848228d6996235bd"
+  },
+  "input_contract": {
+    "shape_onnx": [1, 3, 288, 512],
+    "shape_board_nhwc": [1, 288, 512, 3],
+    "channel_order": "RGB",
+    "dtype_board": "uint8",
+    "mean_values": [[0, 0, 0]],
+    "std_values": [[255, 255, 255]]
+  },
+  "quantization": {
+    "algorithm": "kl_divergence",
+    "method": "channel",
+    "dtype": "w8a8",
+    "calibration_samples": 76,
+    "calibration_sources": [
+      "outputs/traffic_unannotated_source.mp4 (73 sampled frames)",
+      "outputs/road_sample_source.mp4 (3 sampled frames)"
+    ],
+    "frozen_holdout_used": false,
+    "mixed_precision_attempted": false,
+    "mmse_attempted": true,
+    "mmse_status": "stopped during toolkit MMSE search because runtime estimate was excessive"
+  },
+  "artifacts": {
+    "rknn_sha256": "cf56189116c35d7af35b0669221b7e6a2b9f920eab14db45aaf87d318889af5e",
+    "rknn_local_path": "D:/Datasets/adas_edge_training/b03c_rknn_validation_20261021/bdd_yolov8n_512x288_int8_kl.rknn",
+    "conversion_log": "D:/Datasets/adas_edge_training/b03c_rknn_validation_20261021/convert_kl.log",
+    "mmse_log": "D:/Datasets/adas_edge_training/b03c_rknn_validation_20261021/convert_mmse.log"
+  }
+}
