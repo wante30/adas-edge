@@ -21,7 +21,7 @@ from collections import Counter
 from pathlib import Path
 
 CLASS_MAP = {
-    "person": "person", "pedestrian": "person", "rider": "person",
+    "person": "person", "pedestrian": "person",
     "bike": "bicycle", "bicycle": "bicycle", "motor": "motorcycle",
     "motorcycle": "motorcycle", "car": "car", "bus": "bus", "truck": "truck",
     "traffic light": "traffic light",
@@ -88,6 +88,39 @@ def _choose(records: list[dict], limit: int, seed: int) -> list[dict]:
     return list(chosen.values())
 
 
+def _split_records(
+    records: list[dict], val_fraction: float = 0.1, seed: int = 20260916
+) -> tuple[list[dict], list[dict]]:
+    if not 0 < val_fraction < 1:
+        raise ValueError("val_fraction must be between 0 and 1")
+
+    groups: dict[str, list[dict]] = {}
+    for record in records:
+        sequence_id = record["name"].rsplit("-", 1)[0]
+        groups.setdefault(sequence_id, []).append(record)
+    if len(groups) < 2:
+        raise ValueError("at least two BDD video sequences are required for train/val split")
+
+    sequence_ids = list(groups)
+    random.Random(seed).shuffle(sequence_ids)
+    target_val_images = max(1, round(len(records) * val_fraction))
+    val_sequence_ids: set[str] = set()
+    val_image_count = 0
+    for sequence_id in sequence_ids:
+        if val_image_count >= target_val_images:
+            break
+        if val_image_count + len(groups[sequence_id]) >= len(records):
+            continue
+        val_sequence_ids.add(sequence_id)
+        val_image_count += len(groups[sequence_id])
+
+    if not val_sequence_ids:
+        raise ValueError("cannot reserve a validation sequence without emptying the training split")
+    train = [record for record in records if record["name"].rsplit("-", 1)[0] not in val_sequence_ids]
+    val = [record for record in records if record["name"].rsplit("-", 1)[0] in val_sequence_ids]
+    return train, val
+
+
 def main() -> None:
     args = _parse_args()
     image_root = args.bdd_root / "images" / "100k" / "train"
@@ -96,10 +129,8 @@ def main() -> None:
     holdout = _load_holdout(args.holdout_names)
     records = _records(args.labels, holdout)
     selected = _choose(records, args.limit, args.seed)
-    rng = random.Random(args.seed)
-    rng.shuffle(selected)
-    split_at = max(1, round(len(selected) * 0.9))
-    outputs = {"train": selected[:split_at], "val": selected[split_at:]}
+    outputs_list = _split_records(selected, seed=args.seed)
+    outputs = dict(zip(("train", "val"), outputs_list))
     args.output.mkdir(parents=True, exist_ok=True)
     for split, items in outputs.items():
         (args.output / "images" / split).mkdir(parents=True, exist_ok=True)
@@ -119,7 +150,7 @@ def main() -> None:
                     lines.append(f"{CLASSES.index(category)} {xc:.8f} {yc:.8f} {w:.8f} {h:.8f}")
             (args.output / "labels" / split / f"{src.stem}.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
     counts = Counter(label[0] for item in selected for label in item["labels"])
-    manifest = {"source": str(args.labels), "seed": args.seed, "limit": args.limit, "classes": list(CLASSES), "images": {k: [x["name"] for x in v] for k, v in outputs.items()}, "instance_counts": counts}
+    manifest = {"source": str(args.labels), "seed": args.seed, "limit": args.limit, "split_strategy": "bdd_video_prefix", "classes": list(CLASSES), "images": {k: [x["name"] for x in v] for k, v in outputs.items()}, "instance_counts": counts}
     (args.output / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(json.dumps({"selected": len(selected), "splits": {k: len(v) for k, v in outputs.items()}, "instance_counts": counts}, indent=2))
 
