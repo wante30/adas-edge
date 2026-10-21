@@ -380,6 +380,7 @@ private:
 
 VideoItem::VideoItem(QQuickItem *parent) : QQuickFramebufferObject(parent) {
     display_queue_ = std::make_shared<DisplayQueue>();
+    bbox_model_ = std::make_unique<AiBoxModel>();
     const QByteArray timingPath = qgetenv("QT_AI_TIMING_LOG");
     if (!timingPath.isEmpty()) {
         ai_timing_stream_.open(timingPath.constData(), std::ios::app);
@@ -1390,6 +1391,12 @@ void VideoItem::updateMetrics() {
     }
     ai_online_.store(aiOnlineNow);
     if (ai_dirty_.exchange(false)) {
+        QVariantList boxesForModel;
+        {
+            QMutexLocker locker(&ai_metrics_mutex_);
+            boxesForModel = ai_boxes_;
+        }
+        bbox_model_->setBoxes(boxesForModel);
         emit aiChanged();
     }
 

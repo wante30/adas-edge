@@ -11,6 +11,7 @@
 #include <QVariantList>
 #include <QVariantMap>
 #include <QTimer>
+#include "ai_box_model.h"
 #include <QElapsedTimer>
 #include <atomic>
 #include <deque>
@@ -54,6 +55,8 @@ class VideoItem : public QQuickFramebufferObject {
     Q_PROPERTY(int aiDetectionCount READ aiDetectionCount NOTIFY aiChanged)
     Q_PROPERTY(QVariantMap aiDetectionCounts READ aiDetectionCounts NOTIFY aiChanged)
     Q_PROPERTY(QVariantList aiBoxes READ aiBoxes NOTIFY aiChanged)
+    Q_PROPERTY(QAbstractListModel *bboxModel READ bboxModel CONSTANT)
+    Q_PROPERTY(int bboxCount READ bboxCount NOTIFY aiChanged)
     Q_PROPERTY(QVariantList aiHazards READ aiHazards NOTIFY aiChanged)
     Q_PROPERTY(qulonglong aiRequestsSent READ aiRequestsSent NOTIFY metricsChanged)
     Q_PROPERTY(qulonglong aiResultsReceived READ aiResultsReceived NOTIFY metricsChanged)
@@ -190,6 +193,8 @@ public:
     int aiDetectionCount() const;
     QVariantMap aiDetectionCounts() const;
     QVariantList aiBoxes() const;
+    AiBoxModel *bboxModel() const { return bbox_model_.get(); }
+    int bboxCount() const { return bbox_model_ ? bbox_model_->count() : 0; }
     QVariantList aiHazards() const;
     qulonglong aiRequestsSent() const { return ai_requests_sent_.load(); }
     qulonglong aiResultsReceived() const { return ai_results_received_.load(); }
@@ -261,6 +266,7 @@ private:
     void writeTeslaSceneTracks(const QVariantList &boxes, uint64_t frameId, qint64 timestampNs);
 
     std::shared_ptr<DisplayQueue> display_queue_;
+    std::unique_ptr<AiBoxModel> bbox_model_;
     std::mutex ai_frame_mutex_;
     std::shared_ptr<Frame> latest_ai_frame_;
     QStringList replay_frames_;

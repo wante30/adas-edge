@@ -621,39 +621,38 @@ Item {
         Item {
             anchors.fill: parent
             clip: true
-            visible: root.viewMode === 0 && video.aiOnline && video.aiBoxes.length > 0
+            visible: root.viewMode === 0 && video.aiOnline && video.bboxCount > 0
             Repeater {
-                model: video.aiBoxes.length
+                model: video.bboxModel
                 delegate: Item {
-                    property var payload: video.aiBoxes[index]
-                    property color tone: root.targetTone(payload.className)
-                    property bool hot: index === 0
+                    property color tone: root.targetTone(model.className)
+                    property bool hot: model.primary
                     property real predictSeconds: {
                         if (root.trackingMode === 0) return 0
                         var maxSeconds = video.maxTrackPredictionMs / 1000
                         if (root.trackingMode === 1) {
                             var lagFrames = Math.max(0, Number(video.displayFrameId)
-                                                        - Number(payload.frameId || video.displayFrameId))
+                                                        - Number(model.frameId || video.displayFrameId))
                             return Math.min(maxSeconds, Math.min(4, lagFrames)
                                                        / Math.max(1, video.sourceFps))
                         }
                         var displayNs = Number(video.displayTimestampNs)
-                        var detectNs = Number(payload.detectTimestampNs)
+                        var detectNs = Number(model.detectTimestampNs)
                         if (displayNs > 0 && detectNs > 0)
                             return Math.min(maxSeconds, Math.max(0, (displayNs - detectNs) / 1e9))
                         var lag = Math.max(0, Number(video.displayFrameId)
-                                              - Number(payload.frameId || video.displayFrameId))
+                                              - Number(model.frameId || video.displayFrameId))
                         return Math.min(maxSeconds, lag / Math.max(1, video.sourceFps))
                     }
-                    property real predictedWidth: Math.max(1, payload.width + (payload.vw || 0) * predictSeconds)
-                    property real predictedHeight: Math.max(1, payload.height + (payload.vh || 0) * predictSeconds)
-                    x: (payload.x + (payload.vx || 0) * predictSeconds) / 1280 * video.width
-                    y: (payload.y + (payload.vy || 0) * predictSeconds) / 720 * video.height + video.y
+                    property real predictedWidth: Math.max(1, model.width + (model.vw || 0) * predictSeconds)
+                    property real predictedHeight: Math.max(1, model.height + (model.vh || 0) * predictSeconds)
+                    x: (model.x + (model.vx || 0) * predictSeconds) / 1280 * video.width
+                    y: (model.y + (model.vy || 0) * predictSeconds) / 720 * video.height + video.y
                     width: predictedWidth / 1280 * video.width
                     height: predictedHeight / 720 * video.height
                     visible: width > 8 && height > 8
-                    opacity: payload.state === "predicted" ? 0.42
-                             : (payload.state === "tentative" ? 0.62 : 1.0)
+                    opacity: model.state === "predicted" ? 0.42
+                             : (model.state === "tentative" ? 0.62 : 1.0)
                     z: hot ? 4 : 2
 
                     Rectangle {
@@ -662,7 +661,7 @@ Item {
                     }
                     BorderImage {
                         anchors.fill: parent
-                        source: root.targetFrame(payload.className)
+                        source: root.targetFrame(model.className)
                         border.left: 14
                         border.top: 14
                         border.right: 14
@@ -691,8 +690,8 @@ Item {
                         Text {
                             id: labelText
                             x: 7; anchors.verticalCenter: parent.verticalCenter
-                            text: root.compactName(payload.className) + "  "
-                                  + Math.round((payload.confidence || 0) * 100) + "%"
+                            text: root.compactName(model.className) + "  "
+                                  + Math.round((model.confidence || 0) * 100) + "%"
                             color: Qt.rgba(tone.r, tone.g, tone.b, 0.95)
                             font.family: root.num; font.pixelSize: 9; font.weight: Font.DemiBold
                         }

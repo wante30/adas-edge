@@ -10,6 +10,7 @@ SOURCES += \
     video_texture_item.cpp \
     tesla_scene_item.cpp \
     hud_control.cpp \
+    ai_box_model.cpp \
     source_controller.cpp
 
 HEADERS += \
@@ -17,6 +18,7 @@ HEADERS += \
     video_texture_item.h \
     tesla_scene_item.h \
     hud_control.h \
+    ai_box_model.h \
     source_controller.h
 
 RESOURCES += qml.qrc

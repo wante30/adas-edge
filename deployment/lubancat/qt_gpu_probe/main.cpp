@@ -3,10 +3,8 @@
 #endif
 
 #include "hud_control.h"
-#include "source_controller.h"
 #include "video_item.h"
 #include "tesla_scene_item.h"
-#include "video_texture_item.h"
 
 #include <QFile>
 #include <QFileInfo>
@@ -136,7 +134,6 @@ int main(int argc, char **argv) {
     }
 
     qmlRegisterType<VideoItem>("QtGpuProbe", 1, 0, "VideoItem");
-    qmlRegisterType<VideoTextureItem>("QtGpuProbe", 1, 0, "VideoTextureItem");
     qmlRegisterType<TeslaSceneItem>("QtGpuProbe", 1, 0, "TeslaSceneItem");
     qmlRegisterType<HudControl>("QtGpuProbe", 1, 0, "HudControl");
     QQuickView view;
@@ -147,14 +144,8 @@ int main(int argc, char **argv) {
     view.rootContext()->setContextProperty(QStringLiteral("initialViewMode"), startMode);
     view.rootContext()->setContextProperty(QStringLiteral("autoCycleCapture"), autoCycleCapture);
     view.rootContext()->setContextProperty(QStringLiteral("sceneEnabled"), sceneEnabled);
-    auto *sourceSwitch = new SourceSwitchController(fps, aiFrameFile, aiHz,
-                                                     pciePgvFile, localPgvFile,
-                                                     view.rootContext());
-    view.rootContext()->setContextProperty(QStringLiteral("sourceSwitch"), sourceSwitch);
     view.rootContext()->setContextProperty(QStringLiteral("pciePgvFile"), pciePgvFile);
     view.rootContext()->setContextProperty(QStringLiteral("localPgvFile"), localPgvFile);
-    view.rootContext()->setContextProperty(QStringLiteral("videoBackendSg"),
-                                             qgetenv("QT_VIDEO_RENDER_BACKEND") == "sg");
     const QString qmlOverride = qEnvironmentVariable("QT_QML_FILE");
     view.setSource(qmlOverride.isEmpty() ? QUrl(QStringLiteral("qrc:/main.qml"))
                                          : QUrl::fromLocalFile(qmlOverride));
@@ -163,7 +154,6 @@ int main(int argc, char **argv) {
         qCritical() << "QML VideoItem was not created";
         return 2;
     }
-    sourceSwitch->setVideo(video);
     QObject::connect(&view, &QQuickWindow::sceneGraphError, &app,
                      [&](QQuickWindow::SceneGraphError error, const QString &message) {
                          qCritical().noquote() << "SCENEGRAPH_ERROR" << error << message;
@@ -248,6 +238,12 @@ int main(int argc, char **argv) {
     report["display_queue_max_depth"] = static_cast<qint64>(video->queueMaxDepth());
     report["display_queue_last_take_depth"] = static_cast<qint64>(video->queueLastTakeDepth());
     report["display_queue_taken"] = static_cast<qint64>(video->queueTaken());
+    if (video->bboxModel()) {
+        report["bbox_model_resets"] = video->bboxModel()->resetCount();
+        report["bbox_model_inserts"] = video->bboxModel()->insertCount();
+        report["bbox_model_removes"] = video->bboxModel()->removeCount();
+        report["bbox_model_data_changed"] = video->bboxModel()->dataChangedCount();
+    }
     report["process_cpu_percent_of_all_cores_last_window"] = video->cpuPercent();
     report["process_rss_mb_last"] = video->rssMb();
     report["mali_gpu_load_percent_last"] = video->gpuLoadPercent();
