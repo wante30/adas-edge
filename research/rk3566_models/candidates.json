@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "status": "planning_only_no_new_board_benchmark",
+  "device": {
+    "soc": "RK3566",
+    "npu_tops": 1,
+    "known_runtime": "RKNN Toolkit2; version must be recorded at measurement"
+  },
+  "candidate_ranking": [
+    {
+      "id": "yolov6n",
+      "tier": "S1",
+      "source": "https://github.com/airockchip/rknn_model_zoo/tree/main/examples/yolov6",
+      "official_rk3566_int8_fps_640x640": 48.8,
+      "board_benchmark": null,
+      "role": "first deployment candidate"
+    },
+    {
+      "id": "yolov8n",
+      "tier": "S1",
+      "source": "https://github.com/airockchip/rknn_model_zoo/tree/main/examples/yolov8",
+      "official_rk3566_int8_fps_640x640": 34,
+      "board_benchmark": null,
+      "role": "training ecosystem comparison"
+    },
+    {
+      "id": "rtmdet_tiny",
+      "tier": "S2",
+      "source": "https://github.com/open-mmlab/mmdetection",
+      "official_rk3566_int8_fps_640x640": null,
+      "board_benchmark": null,
+      "role": "non-YOLO feasibility research"
+    },
+    {
+      "id": "yolo11n_current",
+      "tier": "BASELINE",
+      "source": "https://github.com/airockchip/rknn_model_zoo/tree/main/examples/yolo11",
+      "official_rk3566_int8_fps_640x640": 20.6,
+      "board_benchmark": null,
+      "role": "existing RKNN project implementation plus TL specialist, not generic official model"
+    },
+    {
+      "id": "yolov5n",
+      "tier": "OPTIONAL",
+      "source": "https://github.com/airockchip/rknn_model_zoo/tree/main/examples/yolov5",
+      "official_rk3566_int8_fps_640x640": 39.7,
+      "board_benchmark": null,
+      "role": "lightweight speed reference"
+    }
+  ],
+  "required_classes": [
+    "person",
+    "bicycle",
+    "motorcycle",
+    "car",
+    "bus",
+    "truck",
+    "red_light",
+    "yellow_light",
+    "green_light",
+    "traffic_light_other",
+    "crosswalk"
+  ],
+  "first_test_canvases": [
+    {
+      "width": 512,
+      "height": 288
+    },
+    {
+      "width": 640,
+      "height": 352
+    }
+  ],
+  "critical_metric_note": "COCO AP50/AP50:95 and fixed-threshold recall are different; original BDD 1000 holdout reused historically; reserve a new untouched sealed test",
+  "source_benchmark_url": "https://github.com/airockchip/rknn_model_zoo",
+  "benchmark_scope": "official single-model inference only, not preprocessing/postprocessing/UI or project measurements"
+}
