@@ -100,6 +100,7 @@ public:
         qulonglong overwritten() const { return overwritten_.load(); }
         qulonglong maxDepth() const { return max_depth_.load(); }
         qulonglong lastTakeDepth() const { return last_take_depth_.load(); }
+        qulonglong taken() const { return taken_.load(); }
 
     private:
         mutable QMutex mutex_;
@@ -108,6 +109,7 @@ public:
         std::atomic<qulonglong> overwritten_{0};
         std::atomic<qulonglong> max_depth_{0};
         std::atomic<qulonglong> last_take_depth_{0};
+        std::atomic<qulonglong> taken_{0};
     };
 
     struct RenderMetrics {
@@ -150,6 +152,7 @@ public:
     qulonglong queueOverwritten() const { return display_queue_->overwritten(); }
     qulonglong queueMaxDepth() const { return display_queue_->maxDepth(); }
     qulonglong queueLastTakeDepth() const { return display_queue_->lastTakeDepth(); }
+    qulonglong queueTaken() const { return display_queue_->taken(); }
     double renderFps() const { return render_metrics_->render_fps.load(); }
     double cpuPercent() const { return cpu_percent_.load(); }
     double rssMb() const { return rss_mb_.load(); }

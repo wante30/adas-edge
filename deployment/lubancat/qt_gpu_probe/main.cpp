@@ -229,6 +229,7 @@ int main(int argc, char **argv) {
     report["display_queue_overwritten"] = static_cast<qint64>(video->queueOverwritten());
     report["display_queue_max_depth"] = static_cast<qint64>(video->queueMaxDepth());
     report["display_queue_last_take_depth"] = static_cast<qint64>(video->queueLastTakeDepth());
+    report["display_queue_taken"] = static_cast<qint64>(video->queueTaken());
     report["process_cpu_percent_of_all_cores_last_window"] = video->cpuPercent();
     report["process_rss_mb_last"] = video->rssMb();
     report["mali_gpu_load_percent_last"] = video->gpuLoadPercent();

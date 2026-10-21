@@ -414,6 +414,7 @@ std::shared_ptr<VideoItem::Frame> VideoItem::DisplayQueue::take() {
     if (frames_.empty()) return {};
     const qulonglong depth = frames_.size();
     last_take_depth_.store(depth);
+    taken_.fetch_add(1);
     // Latest-only display semantics: keep the newest complete frame and
     // discard older queued frames in the same critical section. AI has its
     // own latest_ai_frame_ slot and is not affected by this consumer.
@@ -1327,19 +1328,25 @@ QVariantList VideoItem::aiHazards() const {
 }
 
 void VideoItem::updateMetrics() {
-    const double seconds = std::max(0.001, stats_clock_.elapsed() / 1000.0);
+    // Windowed counters: restart() gives the actual interval since the last
+    // sample. Do not divide cumulative counts by total process uptime.
+    const double seconds = std::max(0.001, stats_clock_.restart() / 1000.0);
     const uint64_t produced = produced_frames_.load();
     const uint64_t consumed = render_metrics_->uploaded_frames.load();
     const uint64_t rendered = render_metrics_->rendered_frames.load();
     input_fps_.store((produced - last_produced_for_stats_) / seconds);
     consumed_fps_.store((consumed - last_consumed_for_stats_) / seconds);
     render_metrics_->render_fps.store((rendered - last_rendered_for_stats_) / seconds);
+    last_produced_for_stats_ = produced;
+    last_consumed_for_stats_ = consumed;
+    last_rendered_for_stats_ = rendered;
     const uint64_t cpuTicks = processCpuTicks();
     const long ticksPerSecond = sysconf(_SC_CLK_TCK);
     const uint64_t cpuDelta = cpuTicks >= last_cpu_ticks_ ? cpuTicks - last_cpu_ticks_ : 0;
     cpu_percent_.store(last_cpu_ticks_ && ticksPerSecond > 0
                            ? 100.0 * cpuDelta / (ticksPerSecond * seconds * std::max(1, QThread::idealThreadCount()))
                            : 0.0);
+    last_cpu_ticks_ = cpuTicks;
     rss_mb_.store(processRssMb());
     double gpuLoad = gpu_load_percent_.load();
     uint64_t gpuFrequency = gpu_frequency_hz_.load();
