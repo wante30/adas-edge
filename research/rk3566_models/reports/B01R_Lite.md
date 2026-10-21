@@ -1,0 +1,55 @@
+# B-01R-Lite：ADAS 候选模型快速筛选
+
+## 判断
+
+**YOLOv6n 值得保留为下一阶段 ADAS 专用训练的主要候选，但目前不能称为综合精度最佳。** 在本轮 50 张 BDD100K 样本上，它的车辆、行人和交通灯召回最高，代价是明显更多误检；YOLOv8n 的 AP50 略高，当前 YOLO11n 的宏平均 F1 和精度更稳。样本量有限，差异只用于筛选方向。
+
+## 预处理核对
+
+- 已确认旧 YOLOv6/YOLOv8 Rockchip Model Zoo ONNX collector 的 letterbox 边缘填充值不符官方示例：评测用了 `114`，Model Zoo 示例使用黑色 `0`。新增专用预处理入口，只让 Model Zoo ONNX 评测走黑边；通用部署 helper 仍默认 114。
+- Rockchip Model Zoo v2.5.0（commit `837db8e992815ff8647eadb709f07067f4bc3a71`）的 YOLOv6/YOLOv8 示例均为 BGR 输入、黑边 letterbox、BGR→RGB、NCHW float32、除以 255。当前 YOLOv8/YOLO11 的 Ultralytics `predict` 路径则保留其官方 114 灰边预处理，没有强行统一。
+- BGR→RGB、`0..1` 归一化和框坐标按 `(coord - pad) / scale` 还原均核对正确。新增测试覆盖黑边、通道顺序、输入布局和归一化；5 张叠框图未见系统性坐标偏移。
+
+## YOLOv6n 矩形导出
+
+- 本机已查路径没有 YOLOv6n `.pt`；本次使用现有官方 Model Zoo 优化 ONNX（640×640），仅将静态输入/输出形状适配为 512×288。节点拓扑和权重 initializer 均与源图一致，没有改网络或训练权重。
+- ONNX Runtime 推理成功，输入为 `[1,3,288,512]`，三层输出网格为 `36×64`、`18×32`、`9×16`，输出为有限值。
+- WSL Python 3.10.20 / RKNN Toolkit2 2.3.2 INT8 转换成功，生成 `yolov6n_512x288_int8.rknn`。校准使用既有 25 张 COCO128 训练图，未使用 BDD 验证图；转换产物和权重均留在本机 `Temp/B01-model-assets`，未加入 Git。
+
+## 50 张样本比较
+
+样本为 BDD100K validation 按文件名排序的前 50 张，三款统一为 512×288、score floor 0.001、运行点置信度 0.25、NMS IoU 0.45、max detections 100。目标类标注共 753 个：车辆 547、行人 76、交通灯 123，另有摩托车 3、自行车 7。样本含 27 张交通灯图。AP50 使用同一标注映射与 COCO 评测器；固定阈值召回/精度按类、IoU≥0.5 一对一匹配。
+
+| 模型 | AP50 | 宏平均召回 @0.25 | 宏平均 F1 @0.25 | 目标类 TP / FP @0.25 |
+| --- | ---: | ---: | ---: | ---: |
+| YOLOv6n Model Zoo ONNX | 0.270 | 0.250 | 0.281 | 282 / 331 |
+| YOLOv8n Ultralytics ONNX | 0.271 | 0.210 | 0.273 | 227 / 54 |
+| 当前 YOLO11n PyTorch | 0.252 | 0.220 | 0.304 | 225 / 48 |
+
+| 模型 | 汽车 P / R | 行人 P / R | 交通灯 P / R |
+| --- | ---: | ---: | ---: |
+| YOLOv6n | 0.515 / 0.472 | 0.571 / 0.316 | 0.111 / 0.049（6/123） |
+| YOLOv8n | 0.831 / 0.383 | 0.889 / 0.211 | 0.750 / 0.024（3/123） |
+| YOLO11n | 0.872 / 0.383 | 0.850 / 0.224 | 0.333 / 0.016（2/123） |
+
+YOLOv6n 在这批图上多检出一些车辆和行人，交通灯召回也略高；但误检数量远高于另外两款，夜景/路面区域可见大框误检。YOLOv8n AP50 仅比 YOLOv6n 高 0.002，不能据此排定最终精度名次。三款在小目标上的召回都弱，交通灯仍是主要短板。
+
+### 代表性可视化
+
+以下对比图包含 BDD 标注及三款模型在 0.25 阈值下的检测框和置信度。BDD 原图的再分发授权尚未核实，因此图片仅保存在本机 `reports/assets/`，没有加入 Git。
+
+![行人和交通灯密集场景](assets/b1ca2e5d-84cf9134_comparison.png)
+
+![远距离交通灯夜景](assets/b1d10d08-743fd86c_comparison.png)
+
+![夜间车流场景](assets/b1d4b62c-d9805029_comparison.png)
+
+## 边界与后续
+
+- 本轮只做 PC ONNX / PyTorch 推理和 WSL 离线 RKNN 转换；**没有 SSH、访问或测试 RK3566，也没有 NPU Benchmark、板端运行验证或速度结论**。
+- 50 张 BDD validation 样本是快速筛选，不是最终精度排名。INT8 校准来自 COCO128，需在后续经批准的阶段用适当道路校准数据复核。
+- 建议保留 YOLOv6n 进入专用训练候选，并在新道路 holdout 上重点检查误检、行人和小交通灯；当前结果不足以替换主线模型。
+
+## Git
+
+- 源码与回归测试 commit：`b38352c2ae99707ff3f17bb6b3c48eeff89eed76`
