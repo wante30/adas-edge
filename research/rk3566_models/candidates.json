@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
-  "status": "planning_only_no_new_board_benchmark",
+  "status": "offline_conversion_complete_board_benchmark_blocked",
+  "report": "reports/B01_model_selection.md",
   "device": {
     "soc": "RK3566",
     "npu_tops": 1,
@@ -11,7 +12,7 @@
       "id": "yolov6n",
       "tier": "S1",
       "source": "https://github.com/airockchip/rknn_model_zoo/tree/main/examples/yolov6",
-      "official_rk3566_int8_fps_640x640": 48.8,
+      "official_rk3566_int8_fps_640x640": 49.9,
       "board_benchmark": null,
       "role": "first deployment candidate"
     },
@@ -19,7 +20,7 @@
       "id": "yolov8n",
       "tier": "S1",
       "source": "https://github.com/airockchip/rknn_model_zoo/tree/main/examples/yolov8",
-      "official_rk3566_int8_fps_640x640": 34,
+      "official_rk3566_int8_fps_640x640": 35.1,
       "board_benchmark": null,
       "role": "training ecosystem comparison"
     },
@@ -35,7 +36,7 @@
       "id": "yolo11n_current",
       "tier": "BASELINE",
       "source": "https://github.com/airockchip/rknn_model_zoo/tree/main/examples/yolo11",
-      "official_rk3566_int8_fps_640x640": 20.6,
+      "official_rk3566_int8_fps_640x640": 22.6,
       "board_benchmark": null,
       "role": "existing RKNN project implementation plus TL specialist, not generic official model"
     },
@@ -43,7 +44,7 @@
       "id": "yolov5n",
       "tier": "OPTIONAL",
       "source": "https://github.com/airockchip/rknn_model_zoo/tree/main/examples/yolov5",
-      "official_rk3566_int8_fps_640x640": 39.7,
+      "official_rk3566_int8_fps_640x640": 41.7,
       "board_benchmark": null,
       "role": "lightweight speed reference"
     }
@@ -72,6 +73,7 @@
     }
   ],
   "critical_metric_note": "COCO AP50/AP50:95 and fixed-threshold recall are different; original BDD 1000 holdout reused historically; reserve a new untouched sealed test",
-  "source_benchmark_url": "https://github.com/airockchip/rknn_model_zoo",
+  "official_source_commit": "837db8e992815ff8647eadb709f07067f4bc3a71",
+  "source_benchmark_url": "https://github.com/airockchip/rknn_model_zoo/blob/837db8e992815ff8647eadb709f07067f4bc3a71/README.md#model-performance-benchmarkfps",
   "benchmark_scope": "official single-model inference only, not preprocessing/postprocessing/UI or project measurements"
 }

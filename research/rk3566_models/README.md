@@ -1,6 +1,6 @@
 # 支线 B：RK3566 ADAS 专用模型研发
 
-状态：**S0 已建立研究基线；尚未训练、未完成新候选板端测试。**
+状态：**S1 离线 ONNX/RKNN 转换已完成；目标 RK3566 板端测试因 SSH 公钥认证被阻塞。**
 独立于 Qt/Tesla/PCIe 主线；禁止直接覆盖生产权重或修改正式部署分支。
 
 ## 研究问题与先验
@@ -14,7 +14,7 @@
 - 历史1000图BDD holdout已被多轮调参/方法选择反复查看，**只能做历史可比诊断，不能再宣称是完全未触碰的最终测试集**。正式胜负判定必须新建封存测试集。
 
 参考源：
-- Rockchip 官方性能表 https://github.com/airockchip/rknn_model_zoo （官方640方画布INT8、仅模型推理：v6n 48.8 FPS、v8n 34.0 FPS、yolo11n 20.6 FPS；**非本项目实测**）
+- Rockchip 官方性能表固定到 commit `837db8e992815ff8647eadb709f07067f4bc3a71` 的 [Model Zoo README](https://github.com/airockchip/rknn_model_zoo/blob/837db8e992815ff8647eadb709f07067f4bc3a71/README.md#model-performance-benchmarkfps)：RK3566/RK3568 合并列给出 640×640 INT8 YOLOv6n **49.9 FPS**、YOLOv8n **35.1 FPS**、YOLO11n **22.6 FPS**、YOLOv5n **41.7 FPS**。原先记为 v6n 的 48.8 来自 YOLOv5n 的 RK3562 列；这些均是官方特定优化模型的 FPS，不是本项目实测，也不能替代端到端延迟。
 - Rockchip yolov6 example https://github.com/airockchip/rknn_model_zoo/tree/main/examples/yolov6
 - Rockchip yolov8 example https://github.com/airockchip/rknn_model_zoo/tree/main/examples/yolov8
 - RTMDet https://github.com/open-mmlab/mmdetection （转换/实测仍待验证）
@@ -54,6 +54,6 @@
 
 ## 分工与当前阻塞
 
-本分支只包含研究计划与数据审计工具；真实模型、视频、标注、标定集和RKNN模型均不提交到公开GitHub（文件体积和许可约束）。当前桌面设备离线，无法直接操作本机/鲁班猫，因此S1板端测试和S2素材核查仍需设备可访问后执行。
+本分支包含研究资料、审计/评测源码与板端基准工具；真实模型、视频、标注、标定集和RKNN模型均不提交到公开GitHub（文件体积和许可约束）。本轮离线转换和历史BDD诊断结论见 [B-01 模型选型报告](reports/B01_model_selection.md)。目标RK3566可达SSH端口但公钥认证失败，候选板端测量仍待恢复访问后执行。
 
-下次按序执行：先获取板端环境和目前的512×288导出设置 → 下载官方优化过的v6n/v8n权重并跑同条件模型基准 → 编制新独立sealed测试样本和类别覆盖审计 → 决定4090训练。
+本轮已从 Model Zoo v2.5.0 获取 YOLOv6n/YOLOv8n 优化 ONNX，完成 640×640 INT8 与 YOLOv8n 512×288 split INT8 离线构建，并在历史 BDD holdout 上做 CPU 诊断；所有权重与预测保存在本机 Temp，不进入 Git。板端 benchmark 与 RKNN INT8 输出质量比较仍 BLOCKED。重新取得 LubanCat SSH key access 后，先执行 `deployment/rknn/benchmark_candidate.py` 的 NPU-only 测试和 512×288 split pipeline，再建立全新视频级 sealed test，最后决定是否进入 4090 pilot。
