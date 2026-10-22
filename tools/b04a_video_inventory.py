@@ -126,6 +126,9 @@ def inventory(registry: Path, gap_s: float = 5.0, max_total: int = 800, max_per_
         for candidates in choices:
             if k < len(candidates) and len(proposals) < max_total:
                 proposals.append(candidates[k])
+    if report["errors"]:
+        # Never provide actionable frame proposals when any source or split is invalid.
+        proposals = []
     counts = Counter(item["split"] for item in proposals)
     report["summary"] = {"registry_videos": len(rows),
                          "timestamp_proposals": len(proposals),
