@@ -98,6 +98,8 @@ def inventory(registry: Path, gap_s: float = 5.0, max_total: int = 800, max_per_
         duration, probe_status = (inspect_video(path) if not errors else (None, "skipped"))
         if ok and duration is None:
             errors.append(probe_status)
+        if errors:
+            ok = False
         report["videos"].append({"registry_line": i, "source_id": row["source_id"],
                                  "source_kind": row["source_kind"], "permission": row["permission"],
                                  "split": row["split"], "video_path": str(path),
@@ -106,7 +108,7 @@ def inventory(registry: Path, gap_s: float = 5.0, max_total: int = 800, max_per_
                                  "probe_status": probe_status, "errors": errors})
         report["errors"].extend(f"row {i}: {e}" for e in errors)
         if not ok:
-            report["warnings"].append(f"row {i}: excluded ({reason})")
+            report["warnings"].append(f"row {i}: excluded ({reason}; row errors={len(errors)})")
             choices.append([])
         else:
             choices.append([{"source_id": row["source_id"], "video_path": str(path),
