@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>main.qml</file>
+        <file>ProtocolTestPanel.qml</file>
         <file>components/HudPanel.qml</file>
         <file>components/LiveBev.qml</file>
         <file>components/TeslaBevView.qml</file>

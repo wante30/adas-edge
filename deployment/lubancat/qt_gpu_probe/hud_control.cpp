@@ -57,6 +57,36 @@ void HudControl::sendPerception(bool perception_enable, int traffic, bool pedest
     sendCommand(object);
 }
 
+void HudControl::sendNavigation(bool enabled, const QString &direction, int distanceM) {
+    QJsonObject object;
+    object.insert(QStringLiteral("type"), QStringLiteral("nav"));
+    object.insert(QStringLiteral("action"), QStringLiteral("apply"));
+    object.insert(QStringLiteral("enabled"), enabled);
+    object.insert(QStringLiteral("direction"), direction);
+    object.insert(QStringLiteral("distance_m"), std::clamp(distanceM, 0, 65535));
+    sendCommand(object);
+}
+
+void HudControl::queryNav() {
+    QJsonObject object;
+    object.insert(QStringLiteral("type"), QStringLiteral("nav"));
+    object.insert(QStringLiteral("action"), QStringLiteral("status"));
+    sendCommand(object);
+}
+
+void HudControl::queryProtocol() {
+    QJsonObject object;
+    object.insert(QStringLiteral("type"), QStringLiteral("protocol"));
+    sendCommand(object);
+}
+
+void HudControl::queryIsp() {
+    QJsonObject object;
+    object.insert(QStringLiteral("type"), QStringLiteral("isp"));
+    object.insert(QStringLiteral("action"), QStringLiteral("query"));
+    sendCommand(object);
+}
+
 void HudControl::readPending() {
     while (socket_.hasPendingDatagrams()) {
         const QNetworkDatagram datagram = socket_.receiveDatagram();
@@ -67,6 +97,20 @@ void HudControl::readPending() {
         last_applied_seq_ = reply.value(QStringLiteral("ext_applied")).toInt(last_applied_seq_);
         last_error_ = reply.value(QStringLiteral("error")).toInt(0);
         const bool ok = reply.value(QStringLiteral("ok")).toBool(false);
+        const QString type = reply.value(QStringLiteral("type")).toString();
+        if (type == QStringLiteral("nav")) {
+            nav_status_ = ok ? QStringLiteral("OK") : QStringLiteral("UNCONFIRMED");
+        } else if (type == QStringLiteral("isp")) {
+            isp_status_ = ok ? QStringLiteral("OK") : QStringLiteral("UNSUPPORTED");
+        } else if (type == QStringLiteral("protocol")) {
+            protocol_summary_ = reply.value(QStringLiteral("summary")).toString();
+            protocol_lines_.clear();
+            for (const QString &line : protocol_summary_.split(QLatin1Char('\n'))) {
+                if (line.isEmpty()) continue;
+                for (int i = 0; i < line.size(); i += 110)
+                    protocol_lines_.append(line.mid(i, 110));
+            }
+        }
         QString status = ok ? QStringLiteral("ONLINE") : QStringLiteral("REJECT");
         if (reply.value(QStringLiteral("type")).toString() == QStringLiteral("status"))
             status = QStringLiteral("ONLINE");

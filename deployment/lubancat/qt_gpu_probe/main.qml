@@ -1620,4 +1620,16 @@ Item {
         font.family: root.num; font.pixelSize: 6
         horizontalAlignment: Text.AlignRight
     }
+
+    Loader {
+        id: protocolLoader
+        anchors.fill: parent
+        active: root.hudTestOpen
+        source: "ProtocolTestPanel.qml"
+        z: 500
+        onLoaded: {
+            item.hud = pcieHud
+            item.closeRequested.connect(function() { root.hudTestOpen = false })
+        }
+    }
 }

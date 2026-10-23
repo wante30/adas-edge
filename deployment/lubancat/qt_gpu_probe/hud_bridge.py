@@ -35,6 +35,16 @@ OFF_TIME1 = 0x640
 OFF_EXT_COMMIT = 0x644
 OFF_EXT_STATUS = 0x648
 OFF_EXT_APPLIED = 0x64C
+OFF_NAV_SHADOW = 0x670
+OFF_NAV_CONTROL = 0x674
+OFF_NAV_STATUS = 0x678
+OFF_NAV_ACTIVE = 0x67C
+OFF_ISP_MAGIC = 0x700
+OFF_ISP_VERSION = 0x704
+OFF_ISP_CAPS = 0x708
+OFF_ISP_GLOBAL = 0x70C
+OFF_ISP_STATUS = 0x754
+OFF_ISP_RESULT = 0x758
 
 
 class Bridge:
@@ -93,6 +103,102 @@ class Bridge:
             "legacy_rk_state": self.rd(OFF_RK_STATE),
             "legacy_effective": self.rd(OFF_EFFECTIVE),
         }
+
+    def nav(self, request: dict) -> dict:
+        action = str(request.get("action", "apply"))
+        if action in ("status", "query"):
+            status = self.rd(OFF_NAV_STATUS)
+            control = self.rd(OFF_NAV_CONTROL)
+            return {"type": "nav", "ok": True, "status": status,
+                    "accepted_seq": (control >> 16) & 0xFFFF,
+                    "applied_seq": control & 0xFFFF,
+                    "active": self.rd(OFF_NAV_ACTIVE)}
+        if action != "apply":
+            raise ValueError("nav action must be apply or status")
+        enabled = 1 if request.get("enabled", False) else 0
+        direction = str(request.get("direction", "straight"))
+        dirs = {"straight": 0, "left": 1, "right": 2}
+        if direction not in dirs:
+            raise ValueError("direction must be straight/left/right")
+        distance = int(request.get("distance_m", 0))
+        if not 0 <= distance <= 65535:
+            raise ValueError("distance_m out of range")
+        status = self.rd(OFF_NAV_STATUS)
+        if not (status & 8) or (status & 1):
+            return {"type": "nav", "ok": False, "reason": "not ready/busy", "status": status}
+        shadow = (enabled & 1) | (dirs[direction] << 1) | (distance << 16)
+        accepted = (self.rd(OFF_NAV_CONTROL) >> 16) & 0xFFFF
+        seq = (accepted + 1) & 0xFFFF
+        self.wr(OFF_NAV_CONTROL, 2)
+        self.wr(OFF_NAV_SHADOW, shadow)
+        self.wr(OFF_NAV_CONTROL, (seq << 16) | 1)
+        deadline = time.monotonic() + 0.2
+        while time.monotonic() < deadline:
+            status = self.rd(OFF_NAV_STATUS)
+            control = self.rd(OFF_NAV_CONTROL)
+            active = self.rd(OFF_NAV_ACTIVE)
+            if (not (status & 1) and (status & 2) and
+                    ((control >> 16) & 0xFFFF) == seq and
+                    (control & 0xFFFF) == seq and active == shadow and
+                    not (status & 0x20)):
+                return {"type": "nav", "ok": True, "sequence": seq,
+                        "shadow": shadow, "status": status,
+                        "accepted_seq": (control >> 16) & 0xFFFF,
+                        "applied_seq": control & 0xFFFF,
+                        "active": active}
+            if status & 0x20:
+                break
+            time.sleep(0.002)
+        return {"type": "nav", "ok": False, "reason": "unconfirmed",
+                "sequence": seq, "shadow": shadow,
+                "status": self.rd(OFF_NAV_STATUS),
+                "active": self.rd(OFF_NAV_ACTIVE)}
+
+    def protocol(self, request: dict) -> dict:
+        ranges = [
+            ("DMA", 0x100, 0x144), ("VIDEO", 0x400, 0x428),
+            ("DESC", 0x500, 0x580), ("HUD", 0x600, 0x634),
+            ("SCENE", 0x638, 0x64C), ("DIAG", 0x658, 0x664),
+            ("NAV", 0x670, 0x67C), ("FIBER", 0x680, 0x68C),
+            ("ISP", 0x700, 0x78C),
+        ]
+        lines = []
+        for label, start, end in ranges:
+            words = " ".join(f"{off:03x}={self.rd(off):08x}" for off in range(start, end, 4))
+            lines.append(f"{label}: {words}")
+        return {"type": "protocol", "ok": True, "summary": "\n".join(lines),
+                "caps": self.rd(0x630), "video": self.rd(0x408),
+                "nav": self.rd(0x678), "isp": self.rd(0x708)}
+
+    def mmio(self, request: dict) -> dict:
+        offset = int(str(request.get("offset", "0")), 0)
+        if offset % 4 or not 0x100 <= offset <= 0x7FC:
+            raise ValueError("offset must be aligned and inside BAR1 control windows")
+        op = str(request.get("action", "read"))
+        if op == "read":
+            return {"type": "mmio", "ok": True, "offset": offset,
+                    "value": self.rd(offset)}
+        if op != "write":
+            raise ValueError("action must be read or write")
+        allowed = (0x600 <= offset <= 0x64C or 0x670 <= offset <= 0x67C
+                   or 0x700 <= offset <= 0x7FC)
+        if not allowed:
+            raise ValueError("write offset is outside writable control windows")
+        value = int(str(request.get("value", "0")), 0) & 0xFFFFFFFF
+        self.wr(offset, value)
+        return {"type": "mmio", "ok": True, "offset": offset,
+                "value": value, "readback": self.rd(offset)}
+
+    def isp(self, request: dict) -> dict:
+        if str(request.get("action", "query")) != "query":
+            raise ValueError("ISP writes are disabled in this bridge")
+        magic = self.rd(OFF_ISP_MAGIC)
+        return {"type": "isp", "ok": magic == 0x31435049,
+                "magic": magic, "version": self.rd(OFF_ISP_VERSION),
+                "caps": self.rd(OFF_ISP_CAPS),
+                "global_shadow": self.rd(OFF_ISP_GLOBAL),
+                "status": self.rd(OFF_ISP_STATUS),
+                "result": self.rd(OFF_ISP_RESULT)}
 
     def set(self, request: dict) -> dict:
         def flag(name: str) -> bool:
@@ -206,6 +312,14 @@ def main() -> int:
                 raise ValueError("JSON object required")
             if request.get("type") == "status":
                 reply = bridge.status()
+            elif request.get("type") == "nav":
+                reply = bridge.nav(request)
+            elif request.get("type") == "isp":
+                reply = bridge.isp(request)
+            elif request.get("type") == "protocol":
+                reply = bridge.protocol(request)
+            elif request.get("type") == "mmio":
+                reply = bridge.mmio(request)
             elif request.get("type") == "set":
                 reply = bridge.set(request)
             else:

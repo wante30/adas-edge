@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QJsonObject>
+#include <QVariantList>
 #include <QObject>
 #include <QTimer>
 #include <QUdpSocket>
@@ -14,6 +15,10 @@ class HudControl : public QObject {
     Q_PROPERTY(bool bridgeOnline READ bridgeOnline NOTIFY statusChanged)
     Q_PROPERTY(int lastAppliedSeq READ lastAppliedSeq NOTIFY statusChanged)
     Q_PROPERTY(int lastError READ lastError NOTIFY statusChanged)
+    Q_PROPERTY(QString navStatus READ navStatus NOTIFY statusChanged)
+    Q_PROPERTY(QString ispStatus READ ispStatus NOTIFY statusChanged)
+    Q_PROPERTY(QString protocolSummary READ protocolSummary NOTIFY statusChanged)
+    Q_PROPERTY(QVariantList protocolLines READ protocolLines NOTIFY statusChanged)
 
 public:
     explicit HudControl(QObject *parent = nullptr);
@@ -24,6 +29,10 @@ public:
     bool bridgeOnline() const { return bridge_online_; }
     int lastAppliedSeq() const { return last_applied_seq_; }
     int lastError() const { return last_error_; }
+    QString navStatus() const { return nav_status_; }
+    QString ispStatus() const { return isp_status_; }
+    QString protocolSummary() const { return protocol_summary_; }
+    QVariantList protocolLines() const { return protocol_lines_; }
 
     Q_INVOKABLE void sendPerception(bool perception_enable, int traffic,
                                     bool pedestrian, bool static_target,
@@ -31,6 +40,10 @@ public:
                                     bool lka_warning, bool time_enable,
                                     bool legacy_enable, int legacy_state = 0x101);
     Q_INVOKABLE void ping();
+    Q_INVOKABLE void sendNavigation(bool enabled, const QString &direction, int distanceM);
+    Q_INVOKABLE void queryNav();
+    Q_INVOKABLE void queryIsp();
+    Q_INVOKABLE void queryProtocol();
 
 signals:
     void statusChanged();
@@ -53,4 +66,8 @@ private:
     bool bridge_online_ = false;
     int last_applied_seq_ = 0;
     int last_error_ = 0;
+    QString nav_status_ = QStringLiteral("UNKNOWN");
+    QString isp_status_ = QStringLiteral("UNKNOWN");
+    QString protocol_summary_ = QStringLiteral("按 T 打开后点击 READ ALL");
+    QVariantList protocol_lines_;
 };

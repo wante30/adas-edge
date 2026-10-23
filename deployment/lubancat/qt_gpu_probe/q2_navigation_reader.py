@@ -23,12 +23,14 @@ import numpy as np
 from tools.competition_console.navigation_reader import (
     NavigationObservation,
     NavigationReader,
+    classify_arrow,
     parse_distance,
 )
 
 # Broad card crop at 960x540; detection returns line boxes, so no fixed text ROI
 # is assumed.  It covers the moving card positions seen on the current feed.
 CARD_ROI = (45, 105, 460, 300)
+ARROW_ROI = (18, 130, 180, 290)
 DISTANCE_RE = re.compile(r"^\s*(\d{1,4}(?:\.\d+)?)\s*(公里|千米|km|米|m)", re.I)
 OCR_FIXES = (
     ("械助", "辅助"),
@@ -75,6 +77,39 @@ class Q2NavigationReader(NavigationReader):
         """Load the OCR detection model before READY (about 6 s on RK3566)."""
         engine = self._engine()
         engine(np.full((120, 320, 3), 255, np.uint8), use_det=True, use_cls=True)
+
+    @staticmethod
+    def _card_arrow(nav_bgr):
+        """Classify the instruction arrow inside the Q2 card.
+
+        The Q2 card uses a graphical arrow; OCR only returns the distance and
+        road name.  Keep the search inside CARD_ROI and require a compact glyph
+        so lane arrows/map ink are not mistaken for the main instruction.
+        """
+        x0, y0, x1, y1 = ARROW_ROI
+        card = nav_bgr[y0:y1, x0:x1]
+        if card.size == 0:
+            return None
+        gray = cv2.cvtColor(card, cv2.COLOR_BGR2GRAY)
+        found = []
+        for offset in (17, 27):
+            binary = cv2.adaptiveThreshold(
+                gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                cv2.THRESH_BINARY_INV, 41, offset)
+            _, labels, stats, _ = cv2.connectedComponentsWithStats(binary)
+            for label, (x, y, w, h, area) in enumerate(stats[1:], 1):
+                if (area < 45 or not 20 <= h <= 115 or not 10 <= w <= 110
+                        or x >= card.shape[1] * 0.45 or y >= card.shape[0] * 0.85
+                        or not 0.22 <= w / max(1, h) <= 1.65):
+                    continue
+                mask = np.uint8(labels[y:y+h, x:x+w] == label) * 255
+                direction, confidence = classify_arrow(mask)
+                if direction != "none":
+                    found.append((int(area), float(confidence), direction,
+                                  (int(x + x0), int(y + y0), int(w), int(h))))
+        if not found:
+            return None
+        return sorted(found, key=lambda item: (item[0], item[1]), reverse=True)[0]
 
     @staticmethod
     def _center(box):
@@ -237,12 +272,17 @@ class Q2NavigationReader(NavigationReader):
             if token in instruction_text:
                 direction = value
                 break
+        arrow_confidence = 0.0
+        if direction == "none":
+            arrow = self._card_arrow(nav_bgr)
+            if arrow is not None:
+                _, arrow_confidence, direction, _ = arrow
         return finish(
             direction=direction,
             distance_m=distance,
             road_name=instruction_text,
             valid=True,
-            confidence=min(distance_score, instruction[2]),
+            confidence=min(distance_score, instruction[2], arrow_confidence) if arrow_confidence else min(distance_score, instruction[2]),
             raw_text=raw_text,
-            reason="Q2_CARD_OCR_RECOGNITION_CACHE",
+            reason="Q2_CARD_OCR_ARROW" if arrow_confidence else "Q2_CARD_OCR_RECOGNITION_CACHE",
         )

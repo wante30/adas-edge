@@ -3,6 +3,7 @@
 #endif
 
 #include "hud_control.h"
+#include "nav_bridge.h"
 #include "video_item.h"
 #include "tesla_scene_item.h"
 
@@ -146,10 +147,17 @@ int main(int argc, char **argv) {
     view.rootContext()->setContextProperty(QStringLiteral("sceneEnabled"), sceneEnabled);
     view.rootContext()->setContextProperty(QStringLiteral("pciePgvFile"), pciePgvFile);
     view.rootContext()->setContextProperty(QStringLiteral("localPgvFile"), localPgvFile);
+    const bool protocolPanelTest = qEnvironmentVariableIsSet("QT_PROTOCOL_PANEL_TEST");
+    view.rootContext()->setContextProperty(QStringLiteral("protocolPanelTest"), protocolPanelTest);
     const QString qmlOverride = qEnvironmentVariable("QT_QML_FILE");
     view.setSource(qmlOverride.isEmpty() ? QUrl(QStringLiteral("qrc:/main.qml"))
                                          : QUrl::fromLocalFile(qmlOverride));
     auto *video = view.rootObject() ? view.rootObject()->findChild<VideoItem *>(QStringLiteral("videoProbeItem")) : nullptr;
+    auto *navBridge = new NavBridge(&app);
+    QObject::connect(video, &VideoItem::aiChanged, navBridge, [video, navBridge] {
+        navBridge->updateNav(video->aiNavigationDirection(),
+                             video->aiNavigationDistanceM());
+    });
     if (!video) {
         qCritical() << "QML VideoItem was not created";
         return 2;
