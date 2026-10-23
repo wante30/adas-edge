@@ -6,6 +6,7 @@ import numpy as np
 from .types import Detection, FrameResult
 
 COCO_NAMES = ("person","bicycle","car","motorcycle","airplane","bus","train","truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird","cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork","knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza","donut","cake","chair","couch","potted plant","bed","dining table","toilet","tv","laptop","mouse","remote","keyboard","cell phone","microwave","oven"," toaster","sink","refrigerator","book","clock","vase","scissors","teddy bear","hair drier","toothbrush")
+BDD_NAMES = ("pedestrian","rider","car","truck","bus","train","motorcycle","bicycle","traffic light","traffic sign")
 COMPETITION_CLASSES = {"person","bicycle","car","motorcycle","bus","truck","traffic light","stop sign"}
 
 class CompetitionDetector:
@@ -40,7 +41,8 @@ class CompetitionDetector:
         else:
             detections = decode_yolo11_raw(outputs, self.input_size, self.conf_threshold, self.nms_threshold, scale, px, py)
         elapsed = (time.perf_counter() - started) * 1000
-        result = [Detection(int(row[5]), COCO_NAMES[int(row[5])] if 0 <= int(row[5]) < len(COCO_NAMES) else f"class_{int(row[5])}", float(row[4]), *map(float, row[:4])) for row in detections]
+        names = BDD_NAMES if "bdd" in self.model_path.name.lower() else COCO_NAMES
+        result = [Detection(int(row[5]), names[int(row[5])] if 0 <= int(row[5]) < len(names) else f"class_{int(row[5])}", float(row[4]), *map(float, row[:4])) for row in detections]
         return FrameResult(stream_id, int(frame_id), timestamp_ns, elapsed, result)
 
     def close(self):
