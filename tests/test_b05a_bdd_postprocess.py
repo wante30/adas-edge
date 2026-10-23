@@ -1,3 +1,4 @@
+from competition_ai.model_profiles import BDD10, get_profile, validate_classes
 from competition_ai.b05a_postprocess import (
     BDD_NAMES,
     bdd_class_name,
@@ -19,7 +20,7 @@ def test_bdd_class_ids_are_not_coco_ids():
 
 def test_bdd_aliases_normalize_to_ui_vocabulary():
     assert normalize_ui_class("pedestrian") == "person"
-    assert normalize_ui_class("rider") == "person"
+    assert normalize_ui_class("rider") == "rider"
     assert normalize_ui_class("motor") == "motorcycle"
     assert normalize_ui_class("bike") == "bicycle"
     assert normalize_ui_class("traffic sign") is None
@@ -42,8 +43,29 @@ def test_main_model_keeps_vehicles_and_people():
     assert keep_main_detection("truck", 0.25) is True
     assert keep_main_detection("bus", 0.25) is True
     assert keep_main_detection("pedestrian", 0.25) is True
+    assert keep_main_detection("rider", 0.25) is True
 
 
 def test_specialist_keeps_traffic_light_hypotheses():
     assert keep_specialist_detection(0.05) is True
     assert keep_specialist_detection(0.04) is False
+
+
+def test_explicit_bdd_profile_is_complete_and_ordered():
+    names = get_profile("bdd10")
+    assert names == BDD10
+    assert len(names) == 10
+    assert names[3] == "truck"
+    assert names[6] == "motorcycle"
+    assert names[7] == "bicycle"
+    assert names[8] == "traffic light"
+    assert names[9] == "traffic sign"
+
+
+def test_profile_validation_rejects_wrong_count():
+    try:
+        validate_classes(["car", "truck"], 10)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("wrong class count must fail")

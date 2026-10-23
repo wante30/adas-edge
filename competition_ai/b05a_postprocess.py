@@ -15,7 +15,7 @@ BDD_NAMES = (
 # Classes that the competition UI can render; BDD aliases are normalized
 # first, then this set is checked.
 COMPETITION_CLASSES = {
-    "person", "bicycle", "car", "motorcycle", "bus", "truck",
+    "person", "rider", "bicycle", "car", "motorcycle", "bus", "truck",
     "traffic light", "stop sign",
 }
 
@@ -33,8 +33,12 @@ def bdd_class_name(class_id: int) -> str | None:
 
 def normalize_ui_class(name: str) -> str | None:
     """Map BDD names to the small UI vocabulary; None means do not draw."""
-    if name in ("pedestrian", "rider"):
+    if name == "pedestrian":
         return "person"
+    if name == "rider":
+        # Keep rider distinct; it is not safe to treat it as an ordinary
+        # pedestrian for hazard decisions.
+        return "rider"
     if name in ("motor", "motorcycle"):
         return "motorcycle"
     if name in ("bike", "bicycle"):

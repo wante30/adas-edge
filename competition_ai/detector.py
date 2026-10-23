@@ -4,14 +4,24 @@ from pathlib import Path
 from typing import Any
 import numpy as np
 from .types import Detection, FrameResult
+from .model_profiles import get_profile, validate_classes
+from .model_profiles import get_profile, validate_classes
 
 COCO_NAMES = ("person","bicycle","car","motorcycle","airplane","bus","train","truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird","cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork","knife","spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza","donut","cake","chair","couch","potted plant","bed","dining table","toilet","tv","laptop","mouse","remote","keyboard","cell phone","microwave","oven"," toaster","sink","refrigerator","book","clock","vase","scissors","teddy bear","hair drier","toothbrush")
 BDD_NAMES = ("pedestrian","rider","car","truck","bus","train","motorcycle","bicycle","traffic light","traffic sign")
 COMPETITION_CLASSES = {"person","bicycle","car","motorcycle","bus","truck","traffic light","stop sign"}
 
 class CompetitionDetector:
-    def __init__(self, model_path: str | Path, input_size: int | tuple[int, int] = 320, conf_threshold: float = .25, nms_threshold: float = .45, runner: Any = None):
+    def __init__(self, model_path: str | Path, input_size: int | tuple[int, int] = 320, conf_threshold: float = .25, nms_threshold: float = .45, runner: Any = None, class_names=None, class_profile: str | None = None):
         self.model_path = Path(model_path)
+        if class_names is not None:
+            self.class_names = validate_classes(class_names, len(class_names))
+        elif class_profile:
+            self.class_names = get_profile(class_profile)
+        elif "bdd" in self.model_path.name.lower():
+            self.class_names = BDD_NAMES
+        else:
+            self.class_names = COCO_NAMES
         self.input_size = input_size if isinstance(input_size, int) else (int(input_size[0]), int(input_size[1]))
         self.conf_threshold, self.nms_threshold = float(conf_threshold), float(nms_threshold)
         self._runner = runner
@@ -41,7 +51,7 @@ class CompetitionDetector:
         else:
             detections = decode_yolo11_raw(outputs, self.input_size, self.conf_threshold, self.nms_threshold, scale, px, py)
         elapsed = (time.perf_counter() - started) * 1000
-        names = BDD_NAMES if "bdd" in self.model_path.name.lower() else COCO_NAMES
+        names = self.class_names
         result = [Detection(int(row[5]), names[int(row[5])] if 0 <= int(row[5]) < len(names) else f"class_{int(row[5])}", float(row[4]), *map(float, row[:4])) for row in detections]
         return FrameResult(stream_id, int(frame_id), timestamp_ns, elapsed, result)
 
