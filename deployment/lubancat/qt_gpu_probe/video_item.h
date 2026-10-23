@@ -104,6 +104,7 @@ public:
         qulonglong maxDepth() const { return max_depth_.load(); }
         qulonglong lastTakeDepth() const { return last_take_depth_.load(); }
         qulonglong taken() const { return taken_.load(); }
+        qulonglong pushed() const { return pushed_.load(); }
 
     private:
         mutable QMutex mutex_;
@@ -113,6 +114,7 @@ public:
         std::atomic<qulonglong> max_depth_{0};
         std::atomic<qulonglong> last_take_depth_{0};
         std::atomic<qulonglong> taken_{0};
+        std::atomic<qulonglong> pushed_{0};
     };
 
     struct RenderMetrics {
@@ -120,6 +122,11 @@ public:
         std::atomic<uint64_t> frame_id{0};
         std::atomic<uint64_t> rendered_frames{0};
         std::atomic<uint64_t> synchronize_calls{0};
+        std::atomic<uint64_t> render_without_new{0};
+        std::atomic<uint64_t> render_same_id{0};
+        std::atomic<uint64_t> take_empty{0};
+        std::atomic<uint64_t> update_requests{0};
+        std::atomic<uint64_t> update_handled{0};
         std::atomic<double> upload_ms{0.0};
         std::atomic<double> source_to_upload_ms{0.0};
         std::atomic<double> render_fps{0.0};
@@ -158,6 +165,12 @@ public:
     qulonglong queueMaxDepth() const { return display_queue_->maxDepth(); }
     qulonglong queueLastTakeDepth() const { return display_queue_->lastTakeDepth(); }
     qulonglong queueTaken() const { return display_queue_->taken(); }
+    qulonglong queuePushed() const { return display_queue_->pushed(); }
+    qulonglong renderWithoutNew() const { return render_metrics_->render_without_new.load(); }
+    qulonglong renderSameId() const { return render_metrics_->render_same_id.load(); }
+    qulonglong takeEmpty() const { return render_metrics_->take_empty.load(); }
+    qulonglong updateRequests() const { return render_metrics_->update_requests.load(); }
+    qulonglong updateHandled() const { return render_metrics_->update_handled.load(); }
     std::shared_ptr<DisplayQueue> displayQueue() const { return display_queue_; }
     void recordExternalUpload(const Frame &frame, double uploadMs, double sourceAgeMs);
     double renderFps() const { return render_metrics_->render_fps.load(); }

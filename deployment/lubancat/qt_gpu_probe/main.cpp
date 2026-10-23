@@ -238,6 +238,15 @@ int main(int argc, char **argv) {
     report["display_queue_max_depth"] = static_cast<qint64>(video->queueMaxDepth());
     report["display_queue_last_take_depth"] = static_cast<qint64>(video->queueLastTakeDepth());
     report["display_queue_taken"] = static_cast<qint64>(video->queueTaken());
+    report["frame_push_total"] = static_cast<qint64>(video->queuePushed());
+    report["frame_update_request_total"] = static_cast<qint64>(video->updateRequests());
+    report["frame_update_handled_total"] = static_cast<qint64>(video->updateHandled());
+    report["frame_take_total"] = static_cast<qint64>(video->queueTaken());
+    report["frame_upload_total"] = static_cast<qint64>(video->consumedFrames());
+    report["frame_drop_total"] = static_cast<qint64>(video->queueDroppedOnTake() + video->queueOverwritten());
+    report["render_without_new_frame_total"] = static_cast<qint64>(video->renderWithoutNew());
+    report["render_same_id_total"] = static_cast<qint64>(video->renderSameId());
+    report["take_empty_total"] = static_cast<qint64>(video->takeEmpty());
     if (video->bboxModel()) {
         report["bbox_model_resets"] = video->bboxModel()->resetCount();
         report["bbox_model_inserts"] = video->bboxModel()->insertCount();

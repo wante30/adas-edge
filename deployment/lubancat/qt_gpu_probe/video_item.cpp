@@ -204,7 +204,10 @@ public:
         // Producer marks the item dirty for every accepted frame. Keep the
         // existing pending frame until render() uploads it; replacing it in
         // synchronize() was measured to add work without improving throughput.
-        if (!pending_) pending_ = display_->take();
+        if (!pending_) {
+            pending_ = display_->take();
+            if (!pending_) metrics_->take_empty.fetch_add(1);
+        }
     }
 
     void render() override {
@@ -221,6 +224,12 @@ public:
         if (!context) return;
         auto *f = context->functions();
         const auto frame = pending_;
+        if (!frame) {
+            metrics_->render_without_new.fetch_add(1);
+        } else if (frame->id == uploaded_id_) {
+            metrics_->render_without_new.fetch_add(1);
+            metrics_->render_same_id.fetch_add(1);
+        }
         if (frame && frame->id != uploaded_id_) {
             QElapsedTimer timer;
             timer.start();
@@ -327,7 +336,8 @@ public:
             if (endError != GL_NO_ERROR)
                 qWarning() << "GL error at VideoItem::render end" << endError;
         }
-        update();
+        // New frames schedule update() from the Producer. Idle self-scheduling
+        // produced mostly empty render callbacks (542 in the 30s baseline).
     }
 
 private:
@@ -407,6 +417,7 @@ void VideoItem::DisplayQueue::push(const std::shared_ptr<Frame> &frame) {
         overwritten_.fetch_add(1);
     }
     frames_.push_back(frame);
+    pushed_.fetch_add(1);
     max_depth_.store(std::max<qulonglong>(max_depth_.load(), frames_.size()));
 }
 
@@ -711,6 +722,7 @@ void VideoItem::runPgvProducer(double fps, QString pgvFile, double aiHz, QString
         haveFrame = true;
         produced_frames_.fetch_add(1);
         display_queue_->push(slot);
+        render_metrics_->update_requests.fetch_add(1);
         if (ai_running_.load()) {
             std::lock_guard<std::mutex> locker(ai_frame_mutex_);
             latest_ai_frame_ = slot;
@@ -718,10 +730,10 @@ void VideoItem::runPgvProducer(double fps, QString pgvFile, double aiHz, QString
         // Mark the QQuickFramebufferObject dirty once per accepted frame. The
         // renderer takes the newest queued frame in synchronize() and uploads
         // it; without this event the compositor keeps reusing the old texture.
-        if (!update_queued_.exchange(true) &&
-            !QMetaObject::invokeMethod(this, "requestFrameUpdate", Qt::QueuedConnection)) {
+        // Keep one GUI update per accepted frame. Coalescing was measured to
+        // drop update handling below the producer rate and returned here.
+        if (!QMetaObject::invokeMethod(this, "requestFrameUpdate", Qt::QueuedConnection))
             update_queued_.store(false);
-        }
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }
@@ -1128,6 +1140,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
 }
 
 void VideoItem::requestFrameUpdate() {
+    render_metrics_->update_handled.fetch_add(1);
     update_queued_.store(false);
     emit frameAdvanced();
     update();

@@ -1007,6 +1007,7 @@ class AiReplayBridge:
                  submitted_fps=None, ai_fps=None):
         if full_frame is None:
             full_frame = self.frames[frame_id % len(self.frames)]
+        decode_start_ns = time.perf_counter_ns()
         if isinstance(full_frame, PackedRgb565):
             if self.args.layout == "quad":
                 road = full_frame.quadrant_bgr(self.args.road_quadrant)
@@ -1020,8 +1021,11 @@ class AiReplayBridge:
         else:
             road = full_frame
             navigation_image = full_frame
+        self._last_decode_ms = (time.perf_counter_ns() - decode_start_ns) / 1e6
         self.latest_source_timestamp_ns = int(timestamp_ns)
+        pipeline_start_ns = time.perf_counter_ns()
         self.pipeline.advance(road, int(frame_id), int(timestamp_ns))
+        self._last_pipeline_ms = (time.perf_counter_ns() - pipeline_start_ns) / 1e6
         self._poll_navigation_ocr()
         if (self.navigation is not None and
                 (self.navigation_last_update_ns is None or
@@ -1134,6 +1138,9 @@ class AiReplayBridge:
                         "ai_receive_timestamp_ns": int(ai_recv_ns),
                         "infer_start_ns": int(infer_start_ns),
                         "infer_end_ns": int(infer_end_ns),
+                        "decode_ms": getattr(self, "_last_decode_ms", None),
+                        "pipeline_ms": getattr(self, "_last_pipeline_ms", None),
+                        "main_ms": (self.pipeline.main_timings[-1] if self.pipeline.main_timings else None),
                         "result_publish_timestamp_ns": int(publish_ns),
                         "boxes": int(struct.unpack_from("<I", packet, 20)[0]),
                         "traffic": self.latest_dynamic_status.get("traffic"),
