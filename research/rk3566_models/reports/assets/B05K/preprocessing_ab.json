@@ -1,0 +1,263 @@
+{
+  "schema": "B05K-preprocessing-ab-v1",
+  "input": {
+    "source_roi": "top 60%",
+    "network": [
+      512,
+      192
+    ],
+    "coordinate_space": "original image pixels",
+    "thresholds": {
+      "conf": 0.25,
+      "nms_iou": 0.5,
+      "ap_floor": 0.001
+    }
+  },
+  "dataset": {
+    "images": 50,
+    "all_gt": 154,
+    "roi_gt": 150,
+    "outside_roi_gt": 4,
+    "crossing_roi_gt": 0,
+    "roi_coverage": 0.974025974025974,
+    "roi_top_fraction": 0.6,
+    "coordinate_space": "original BDD image pixels",
+    "images_dir": "D:\\Datasets\\adas_edge_training\\b03c_rknn_validation_20261021\\board_holdout50",
+    "human_gt_dir": "D:\\Datasets\\adas_edge_training\\b03d_gt_hf_20261021"
+  },
+  "variants": {
+    "source_specialist_pytorch": {
+      "letterbox": {
+        "preprocess": "letterbox",
+        "metrics": {
+          "ap50": 0.38789262769453775,
+          "ap_conf_floor": 0.001,
+          "operating_point": {
+            "conf": 0.25,
+            "iou": 0.5
+          },
+          "tp": 59,
+          "fp": 42,
+          "fn": 91,
+          "precision": 0.5841584158415841,
+          "recall": 0.3933333333333333,
+          "size_groups": {
+            "<8": {
+              "gt": 17,
+              "tp": 1,
+              "fn": 16
+            },
+            "8-16": {
+              "gt": 80,
+              "tp": 26,
+              "fn": 54
+            },
+            "16-32": {
+              "gt": 47,
+              "tp": 28,
+              "fn": 19
+            },
+            ">32": {
+              "gt": 6,
+              "tp": 4,
+              "fn": 2
+            }
+          }
+        },
+        "runtime": {
+          "images": 50,
+          "mean_preprocess_ms": 1.0636479999084258,
+          "mean_inference_ms": 12.838979999578441,
+          "p95_inference_ms": 17.6118299988957
+        }
+      },
+      "resize": {
+        "preprocess": "resize",
+        "metrics": {
+          "ap50": 0.3778897255107376,
+          "ap_conf_floor": 0.001,
+          "operating_point": {
+            "conf": 0.25,
+            "iou": 0.5
+          },
+          "tp": 62,
+          "fp": 47,
+          "fn": 88,
+          "precision": 0.5688073394495413,
+          "recall": 0.41333333333333333,
+          "size_groups": {
+            "<8": {
+              "gt": 17,
+              "tp": 1,
+              "fn": 16
+            },
+            "8-16": {
+              "gt": 80,
+              "tp": 27,
+              "fn": 53
+            },
+            "16-32": {
+              "gt": 47,
+              "tp": 29,
+              "fn": 18
+            },
+            ">32": {
+              "gt": 6,
+              "tp": 5,
+              "fn": 1
+            }
+          }
+        },
+        "runtime": {
+          "images": 50,
+          "mean_preprocess_ms": 2.177785999738262,
+          "mean_inference_ms": 12.630390000049374,
+          "p95_inference_ms": 16.81873500074289
+        }
+      }
+    },
+    "source_specialist_onnx_letterbox": {
+      "preprocess": "letterbox",
+      "metrics": {
+        "ap50": 0.3878954968880573,
+        "ap_conf_floor": 0.001,
+        "operating_point": {
+          "conf": 0.25,
+          "iou": 0.5
+        },
+        "tp": 59,
+        "fp": 42,
+        "fn": 91,
+        "precision": 0.5841584158415841,
+        "recall": 0.3933333333333333,
+        "size_groups": {
+          "<8": {
+            "gt": 17,
+            "tp": 1,
+            "fn": 16
+          },
+          "8-16": {
+            "gt": 80,
+            "tp": 26,
+            "fn": 54
+          },
+          "16-32": {
+            "gt": 47,
+            "tp": 28,
+            "fn": 19
+          },
+          ">32": {
+            "gt": 6,
+            "tp": 4,
+            "fn": 2
+          }
+        }
+      },
+      "runtime": {
+        "images": 50,
+        "mean_preprocess_ms": 1.2326940000639297,
+        "mean_inference_ms": 7.99317399993015,
+        "p95_inference_ms": 9.680690000641334
+      }
+    },
+    "candidate_clean_pytorch": {
+      "letterbox": {
+        "preprocess": "letterbox",
+        "metrics": {
+          "ap50": 0.38618387459829334,
+          "ap_conf_floor": 0.001,
+          "operating_point": {
+            "conf": 0.25,
+            "iou": 0.5
+          },
+          "tp": 58,
+          "fp": 45,
+          "fn": 92,
+          "precision": 0.5631067961165048,
+          "recall": 0.38666666666666666,
+          "size_groups": {
+            "<8": {
+              "gt": 17,
+              "tp": 1,
+              "fn": 16
+            },
+            "8-16": {
+              "gt": 80,
+              "tp": 23,
+              "fn": 57
+            },
+            "16-32": {
+              "gt": 47,
+              "tp": 30,
+              "fn": 17
+            },
+            ">32": {
+              "gt": 6,
+              "tp": 4,
+              "fn": 2
+            }
+          }
+        },
+        "runtime": {
+          "images": 50,
+          "mean_preprocess_ms": 1.0511100002622698,
+          "mean_inference_ms": 12.626733999932185,
+          "p95_inference_ms": 17.22495000285562
+        }
+      },
+      "resize": {
+        "preprocess": "resize",
+        "metrics": {
+          "ap50": 0.3978915891405115,
+          "ap_conf_floor": 0.001,
+          "operating_point": {
+            "conf": 0.25,
+            "iou": 0.5
+          },
+          "tp": 65,
+          "fp": 47,
+          "fn": 85,
+          "precision": 0.5803571428571429,
+          "recall": 0.43333333333333335,
+          "size_groups": {
+            "<8": {
+              "gt": 17,
+              "tp": 1,
+              "fn": 16
+            },
+            "8-16": {
+              "gt": 80,
+              "tp": 26,
+              "fn": 54
+            },
+            "16-32": {
+              "gt": 47,
+              "tp": 34,
+              "fn": 13
+            },
+            ">32": {
+              "gt": 6,
+              "tp": 4,
+              "fn": 2
+            }
+          }
+        },
+        "runtime": {
+          "images": 50,
+          "mean_preprocess_ms": 2.160363999719266,
+          "mean_inference_ms": 13.023993999886443,
+          "p95_inference_ms": 16.99551999954565
+        }
+      }
+    }
+  },
+  "video_reference": {
+    "video": "video_20260929_113421.mp4",
+    "trusted_green_first_seconds": {
+      "pytorch_letterbox": 1.8,
+      "pytorch_resize": 0.833,
+      "onnx_letterbox": 1.8
+    },
+    "note": "This is a visual timing comparison, not a video recall metric; no frame-level video GT was created."
+  }
+}

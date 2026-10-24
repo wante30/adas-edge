@@ -1,0 +1,53 @@
+{
+  "video": "D:\\BaiduNetdiskDownload\\\u7d2b\u5149\u540c\u521b\u676f\u8d5b\u9898\u4e09\u53c2\u8003\u7d20\u6750\\video_20260929_113421.mp4",
+  "video_name": "video_20260929_113421.mp4",
+  "source_size": [
+    1920,
+    1080
+  ],
+  "source_fps": 30.0,
+  "metadata_frame_count_hint": 392,
+  "processed_frames": 392,
+  "preprocess": "letterbox",
+  "input_size": [
+    192,
+    512
+  ],
+  "same_tensor_instance_sent_to_both_backends": true,
+  "unique_input_hashes": 392,
+  "pytorch": {
+    "model": "D:\\Datasets\\adas_edge_training\\tl_specialist\\tl-512x192\\weights\\best.pt",
+    "sha256": "f5fc9c2b1220d55c4a49c09ec929b0c977b680ed8a84faf64d471d15feb6ce2c",
+    "device": "cuda:0",
+    "providers": [
+      "PyTorch:cuda:0"
+    ],
+    "mean_inference_ms": 15.34170561220964
+  },
+  "onnx": {
+    "model": "D:\\Datasets\\adas_edge_training\\tl_specialist\\tl_specialist_512x192.onnx",
+    "sha256": "7188a00d543781f63c79dd0119ef04cb7848d0fcaf653eb63a03391e63da4ca4",
+    "device": "CPUExecutionProvider",
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "mean_inference_ms": 8.400684948866205
+  },
+  "raw_output": {
+    "max_abs_difference": 0.7401123046875,
+    "mean_abs_at_max_frame": 0.0025644260458648205,
+    "max_difference_frame": 162
+  },
+  "decoded_boxes": {
+    "matched_pairs_iou_ge": 0.5,
+    "matched_pairs": 1300,
+    "mean_iou": 0.9997344161239201,
+    "mean_coordinate_abs_error_px": 0.003277359902858734,
+    "mean_confidence_abs_error": 0.00011048125532957224,
+    "unmatched_pytorch": 0,
+    "unmatched_onnx": 0
+  },
+  "failure_tolerance": 1.0,
+  "diagnostics_saved_for_frames_over_tolerance": true,
+  "schema": "B05K-backend-parity-summary-v1"
+}

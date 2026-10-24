@@ -1,0 +1,84 @@
+{
+  "dataset": {
+    "images": 50,
+    "all_gt": 154,
+    "roi_gt": 150,
+    "outside_roi_gt": 4,
+    "crossing_roi_gt": 0,
+    "roi_coverage": 0.974025974025974,
+    "roi_top_fraction": 0.6,
+    "coordinate_space": "original BDD image pixels",
+    "images_dir": "D:\\Datasets\\adas_edge_training\\b03c_rknn_validation_20261021\\board_holdout50",
+    "human_gt_dir": "D:\\Datasets\\adas_edge_training\\b03d_gt_hf_20261021"
+  },
+  "model": {
+    "path": "D:\\Datasets\\adas_edge_training\\tl_specialist\\tl_specialist_512x192.onnx",
+    "sha256": "7188a00d543781f63c79dd0119ef04cb7848d0fcaf653eb63a03391e63da4ca4"
+  },
+  "backend": "onnx",
+  "runtime_providers": [
+    "CPUExecutionProvider"
+  ],
+  "device": "CPUExecutionProvider",
+  "input": {
+    "width": 512,
+    "height": 192,
+    "rgb": true,
+    "layout": "NCHW",
+    "dtype": "float32",
+    "scale": "1/255"
+  },
+  "thresholds": {
+    "ap_floor": 0.001,
+    "operating_conf": 0.25,
+    "nms_iou": 0.5,
+    "match_iou": 0.5
+  },
+  "variants": {
+    "letterbox": {
+      "preprocess": "letterbox",
+      "metrics": {
+        "ap50": 0.3878954968880573,
+        "ap_conf_floor": 0.001,
+        "operating_point": {
+          "conf": 0.25,
+          "iou": 0.5
+        },
+        "tp": 59,
+        "fp": 42,
+        "fn": 91,
+        "precision": 0.5841584158415841,
+        "recall": 0.3933333333333333,
+        "size_groups": {
+          "<8": {
+            "gt": 17,
+            "tp": 1,
+            "fn": 16
+          },
+          "8-16": {
+            "gt": 80,
+            "tp": 26,
+            "fn": 54
+          },
+          "16-32": {
+            "gt": 47,
+            "tp": 28,
+            "fn": 19
+          },
+          ">32": {
+            "gt": 6,
+            "tp": 4,
+            "fn": 2
+          }
+        }
+      },
+      "runtime": {
+        "images": 50,
+        "mean_preprocess_ms": 1.2326940000639297,
+        "mean_inference_ms": 7.99317399993015,
+        "p95_inference_ms": 9.680690000641334
+      }
+    }
+  },
+  "schema": "B05K-BDD50-summary-v1"
+}

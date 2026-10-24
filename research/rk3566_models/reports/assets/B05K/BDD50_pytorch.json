@@ -1,0 +1,128 @@
+{
+  "dataset": {
+    "images": 50,
+    "all_gt": 154,
+    "roi_gt": 150,
+    "outside_roi_gt": 4,
+    "crossing_roi_gt": 0,
+    "roi_coverage": 0.974025974025974,
+    "roi_top_fraction": 0.6,
+    "coordinate_space": "original BDD image pixels",
+    "images_dir": "D:\\Datasets\\adas_edge_training\\b03c_rknn_validation_20261021\\board_holdout50",
+    "human_gt_dir": "D:\\Datasets\\adas_edge_training\\b03d_gt_hf_20261021"
+  },
+  "model": {
+    "path": "D:\\Datasets\\adas_edge_training\\tl_specialist\\tl-512x192\\weights\\best.pt",
+    "sha256": "f5fc9c2b1220d55c4a49c09ec929b0c977b680ed8a84faf64d471d15feb6ce2c"
+  },
+  "backend": "pytorch",
+  "runtime_providers": [
+    "PyTorch:cuda:0"
+  ],
+  "device": "cuda:0",
+  "input": {
+    "width": 512,
+    "height": 192,
+    "rgb": true,
+    "layout": "NCHW",
+    "dtype": "float32",
+    "scale": "1/255"
+  },
+  "thresholds": {
+    "ap_floor": 0.001,
+    "operating_conf": 0.25,
+    "nms_iou": 0.5,
+    "match_iou": 0.5
+  },
+  "variants": {
+    "letterbox": {
+      "preprocess": "letterbox",
+      "metrics": {
+        "ap50": 0.38789262769453775,
+        "ap_conf_floor": 0.001,
+        "operating_point": {
+          "conf": 0.25,
+          "iou": 0.5
+        },
+        "tp": 59,
+        "fp": 42,
+        "fn": 91,
+        "precision": 0.5841584158415841,
+        "recall": 0.3933333333333333,
+        "size_groups": {
+          "<8": {
+            "gt": 17,
+            "tp": 1,
+            "fn": 16
+          },
+          "8-16": {
+            "gt": 80,
+            "tp": 26,
+            "fn": 54
+          },
+          "16-32": {
+            "gt": 47,
+            "tp": 28,
+            "fn": 19
+          },
+          ">32": {
+            "gt": 6,
+            "tp": 4,
+            "fn": 2
+          }
+        }
+      },
+      "runtime": {
+        "images": 50,
+        "mean_preprocess_ms": 1.0636479999084258,
+        "mean_inference_ms": 12.838979999578441,
+        "p95_inference_ms": 17.6118299988957
+      }
+    },
+    "resize": {
+      "preprocess": "resize",
+      "metrics": {
+        "ap50": 0.3778897255107376,
+        "ap_conf_floor": 0.001,
+        "operating_point": {
+          "conf": 0.25,
+          "iou": 0.5
+        },
+        "tp": 62,
+        "fp": 47,
+        "fn": 88,
+        "precision": 0.5688073394495413,
+        "recall": 0.41333333333333333,
+        "size_groups": {
+          "<8": {
+            "gt": 17,
+            "tp": 1,
+            "fn": 16
+          },
+          "8-16": {
+            "gt": 80,
+            "tp": 27,
+            "fn": 53
+          },
+          "16-32": {
+            "gt": 47,
+            "tp": 29,
+            "fn": 18
+          },
+          ">32": {
+            "gt": 6,
+            "tp": 5,
+            "fn": 1
+          }
+        }
+      },
+      "runtime": {
+        "images": 50,
+        "mean_preprocess_ms": 2.177785999738262,
+        "mean_inference_ms": 12.630390000049374,
+        "p95_inference_ms": 16.81873500074289
+      }
+    }
+  },
+  "schema": "B05K-BDD50-summary-v1"
+}

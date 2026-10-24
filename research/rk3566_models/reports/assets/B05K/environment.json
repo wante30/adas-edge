@@ -1,0 +1,53 @@
+{
+  "python": "3.10.20 | packaged by Anaconda, Inc. | (main, Jun 11 2026, 15:13:20) [MSC v.1942 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "opencv": "4.13.0",
+  "pytorch": "2.5.1+cu121",
+  "cuda_available": true,
+  "cuda_version": "12.1",
+  "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "onnxruntime": "1.23.2",
+  "onnxruntime_available_providers": [
+    "AzureExecutionProvider",
+    "CPUExecutionProvider"
+  ],
+  "models": {
+    "pytorch": "f5fc9c2b1220d55c4a49c09ec929b0c977b680ed8a84faf64d471d15feb6ce2c",
+    "onnx": "7188a00d543781f63c79dd0119ef04cb7848d0fcaf653eb63a03391e63da4ca4"
+  },
+  "measured_runs": {
+    "pytorch_letterbox": {
+      "device": "cuda:0",
+      "providers": [
+        "PyTorch:cuda:0"
+      ],
+      "conf": 0.05,
+      "nms_iou": 0.7
+    },
+    "onnx_letterbox": {
+      "device": "CPUExecutionProvider",
+      "providers": [
+        "CPUExecutionProvider"
+      ],
+      "conf": 0.05,
+      "nms_iou": 0.7
+    },
+    "pytorch_resize": {
+      "device": "cuda:0",
+      "providers": [
+        "PyTorch:cuda:0"
+      ],
+      "conf": 0.05,
+      "nms_iou": 0.7
+    },
+    "pytorch_1hz": {
+      "device": "cuda:0",
+      "providers": [
+        "PyTorch:cuda:0"
+      ],
+      "conf": 0.25,
+      "nms_iou": 0.7
+    }
+  },
+  "note": "ONNX Runtime had CPUExecutionProvider only on this Windows environment; PyTorch used the RTX 4060 Laptop GPU."
+}
