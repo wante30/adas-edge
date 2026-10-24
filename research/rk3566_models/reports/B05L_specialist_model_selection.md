@@ -477,3 +477,10 @@ research/rk3566_models/reports/assets/B05L/
 - P2 预训练迁移不完整（219/437 层精确同值），且 4 尺度 RKNN 路径未验证。
 - ONNX Runtime 只有 CPU provider；PC 延迟不能外推为 RK3566 NPU 延迟。
 - 训练/评测期间临时切到 ASUS Performance 电源模式；完成后已恢复 Silent。
+
+## 13. Git 提交与推送
+
+- B-05K：`c99b154`（本轮开始时已存在，未推送；本轮一并推送）。
+- B-05L 主交付：`2f38fa74b143387d1a7d23217560af0a62a9f727`（代码、报告、JSON、关键帧）。
+- 远程分支：`origin/research/rk3566-adas-models` 已包含上述两个提交；用 `git ls-remote` 核对到 `2f38fa7`。
+- 完整 MP4、逐帧 JSON、训练权重、RKNN/ONNX 大文件保留在 Windows 本地，不进入 GitHub。
