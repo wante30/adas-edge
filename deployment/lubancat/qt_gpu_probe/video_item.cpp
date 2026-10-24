@@ -208,6 +208,8 @@ public:
         if (!pending_) {
             pending_ = display_->take();
             if (!pending_) metrics_->take_empty.fetch_add(1);
+        } else {
+            metrics_->pending_skipped.fetch_add(1);
         }
     }
 
@@ -649,6 +651,79 @@ void VideoItem::produceFrame(uint64_t id) {
     }
 }
 
+void VideoItem::startInprocRamProducer(double fps, const QString &rawFile,
+                                        const QString &aiFrameFile, double aiHz,
+                                        const QString &sourceLabel) {
+    stopProducer();
+    display_queue_->clear();
+    replay_frames_.clear();
+    inproc_frames_.clear();
+    pgv_source_ = true;
+    source_mode_ = sourceLabel.isEmpty() ? QStringLiteral("inproc-ram") : sourceLabel;
+    source_online_.store(false);
+    last_source_ns_.store(steadyNs());
+    QFile input(rawFile);
+    if (!input.open(QIODevice::ReadOnly)) {
+        qWarning().noquote() << "Cannot open inproc RAM source" << rawFile << input.errorString();
+        return;
+    }
+    for (int i = 0; i < 120; ++i) {
+        auto frame = std::make_shared<Frame>();
+        frame->pixels.resize(kFrameBytes);
+        if (input.read(reinterpret_cast<char *>(frame->pixels.data()), kFrameBytes) !=
+            static_cast<qint64>(kFrameBytes)) {
+            break;
+        }
+        frame->id = uint64_t(i + 1);
+        frame->sourceIndex = uint64_t(i);
+        inproc_frames_.push_back(std::move(frame));
+    }
+    if (inproc_frames_.empty()) {
+        qWarning() << "inproc RAM source has no frames";
+        return;
+    }
+    update();
+    producer_running_.store(true);
+    producer_thread_ = std::thread(&VideoItem::runInprocRamProducer, this, fps,
+                                   rawFile, aiHz, aiFrameFile);
+    if (!aiFrameFile.isEmpty()) {
+        ai_running_.store(true);
+        ai_thread_ = std::thread(&VideoItem::runAiBridge, this, fps, aiHz, aiFrameFile);
+    }
+}
+
+void VideoItem::runInprocRamProducer(double fps, QString rawFile, double aiHz,
+                                     QString aiFrameFile) {
+    (void)rawFile; (void)aiHz; (void)aiFrameFile;
+    const auto period = std::chrono::nanoseconds(
+        static_cast<int64_t>(1000000000.0 / std::max(1.0, fps)));
+    auto next = std::chrono::steady_clock::now();
+    uint64_t id = 0;
+    while (producer_running_.load()) {
+        if (std::chrono::steady_clock::now() < next) std::this_thread::sleep_until(next);
+        const auto &source = inproc_frames_[id % inproc_frames_.size()];
+        auto frame = std::make_shared<Frame>(*source);
+        frame->id = ++id;
+        frame->producedNs = steadyNs();
+        frame->sourceTimestampNs = frame->producedNs;
+        source_frame_id_.store(frame->id);
+        last_source_ns_.store(frame->producedNs);
+        source_online_.store(true);
+        produced_frames_.fetch_add(1);
+        display_queue_->push(frame);
+        if (qsg_target_) QMetaObject::invokeMethod(qsg_target_, "requestFrame", Qt::QueuedConnection);
+        if (ai_running_.load()) {
+            std::lock_guard<std::mutex> locker(ai_frame_mutex_);
+            latest_ai_frame_ = frame;
+        }
+        if (!QMetaObject::invokeMethod(this, "requestFrameUpdate", Qt::QueuedConnection))
+            update_queued_.store(false);
+        next += period;
+        auto after = std::chrono::steady_clock::now();
+        if (next <= after) next = after + period;
+    }
+}
+
 void VideoItem::startPgvRingProducer(double fps, const QString &ringFile,
                                         const QString &aiFrameFile, double aiHz,
                                         const QString &sourceLabel) {
@@ -699,11 +774,13 @@ void VideoItem::runPgvRingProducer(double fps, QString ringFile, double aiHz,
             std::this_thread::sleep_for(std::chrono::microseconds(250));
             continue;
         }
+        ring_reader_attempted_.fetch_add(1);
         const uint32_t slot = *reinterpret_cast<uint32_t *>(map + 32);
         if (slot >= uint32_t(kSlots)) { std::this_thread::sleep_for(std::chrono::microseconds(250)); continue; }
         const uint64_t slotSeq = __atomic_load_n(
             reinterpret_cast<uint64_t *>(map + 40 + slot * 8), __ATOMIC_ACQUIRE);
         if (slotSeq == 0 || slotSeq > latest) {
+            ring_slot_conflict_.fetch_add(1);
             std::this_thread::sleep_for(std::chrono::microseconds(250));
             continue;
         }
@@ -712,6 +789,7 @@ void VideoItem::runPgvRingProducer(double fps, QString ringFile, double aiHz,
             if (candidate.use_count() == 1) { frame = candidate; break; }
         }
         if (!frame) {
+            ring_pool_no_free_.fetch_add(1);
             source_dropped_frames_.fetch_add(1);
             lastSeq = latest;
             continue;
@@ -725,6 +803,7 @@ void VideoItem::runPgvRingProducer(double fps, QString ringFile, double aiHz,
         const uint64_t afterSeq = __atomic_load_n(
             reinterpret_cast<uint64_t *>(map + 40 + slot * 8), __ATOMIC_ACQUIRE);
         if (afterSeq != slotSeq || slotSeq > latest) {
+            ring_slot_conflict_.fetch_add(1);
             source_dropped_frames_.fetch_add(1);
             continue;
         }
@@ -732,11 +811,13 @@ void VideoItem::runPgvRingProducer(double fps, QString ringFile, double aiHz,
         frame->sourceIndex = frameId;
         frame->producedNs = steadyNs();
         frame->sourceTimestampNs = static_cast<qint64>(timestampNs);
+        if (frameId == source_frame_id_.load()) ring_frame_unchanged_.fetch_add(1);
         source_frame_id_.store(frameId);
         last_source_ns_.store(frame->producedNs);
         source_online_.store(true);
         lastSeq = latest;
         produced_frames_.fetch_add(1);
+        ring_enqueued_.fetch_add(1);
         display_queue_->push(frame);
         if (qsg_target_) QMetaObject::invokeMethod(qsg_target_, "requestFrame", Qt::QueuedConnection);
         render_metrics_->update_requests.fetch_add(1);

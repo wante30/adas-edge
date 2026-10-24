@@ -132,6 +132,9 @@ public:
         std::atomic<double> source_to_upload_ms{0.0};
         std::atomic<double> render_fps{0.0};
         std::atomic<double> synchronize_fps{0.0};
+        std::atomic<qulonglong> pending_skipped{0};
+        std::atomic<double> pending_hold_ms{0.0};
+        std::atomic<double> sync_to_upload_ms{0.0};
         std::atomic<bool> hardware_accelerated{false};
         mutable QMutex strings_mutex;
         QString renderer;
@@ -238,6 +241,15 @@ public:
         if (timestamp_ns > 0) rendered_timestamp_ns_.store(timestamp_ns);
     }
     qulonglong sourceDroppedFrames() const { return source_dropped_frames_.load(); }
+    qulonglong ringReaderAttempted() const { return ring_reader_attempted_.load(); }
+    qulonglong ringSlotConflict() const { return ring_slot_conflict_.load(); }
+    qulonglong ringFrameUnchanged() const { return ring_frame_unchanged_.load(); }
+    qulonglong ringPoolNoFree() const { return ring_pool_no_free_.load(); }
+    qulonglong ringEnqueued() const { return ring_enqueued_.load(); }
+    qulonglong rendererPendingSkipped() const { return render_metrics_->pending_skipped.load(); }
+    double rendererPendingHoldMs() const { return render_metrics_->pending_hold_ms.load(); }
+    double syncToUploadMs() const { return render_metrics_->sync_to_upload_ms.load(); }
+    qulonglong renderNewFrames() const { return render_metrics_->uploaded_frames.load(); }
     qulonglong sourceCrcErrors() const { return source_crc_errors_.load(); }
     double npuLoadPercent() const { return npu_load_percent_.load(); }
     QRectF sourceViewport() const;
@@ -247,6 +259,7 @@ public:
     QObject *qsgTarget() const { return qsg_target_; }
     void setQsgTarget(QObject *target);
     std::shared_ptr<Frame> takeDisplayFrame();
+    std::shared_ptr<Frame> takeDisplayFrameForProducer();
     void recordQsgUpload(const Frame &frame, double uploadMs);
     bool qsgMode() const { return qsg_target_ != nullptr; }
     void setAiRoadQuadrant(int quadrant);
@@ -268,6 +281,10 @@ public:
                               const QString &aiFrameFile = QString(),
                               double aiHz = 10.0,
                               const QString &sourceLabel = QStringLiteral("pgv-local"));
+    void startInprocRamProducer(double fps, const QString &rawFile,
+                                const QString &aiFrameFile = QString(),
+                                double aiHz = 10.0,
+                                const QString &sourceLabel = QStringLiteral("inproc-ram"));
     void stopProducer();
     void updateMetrics();
 
@@ -287,6 +304,7 @@ private:
     void produceFrame(uint64_t id);
     void runPgvProducer(double fps, QString pgvFile, double aiHz, QString aiFrameFile);
     void runPgvRingProducer(double fps, QString ringFile, double aiHz, QString aiFrameFile);
+    void runInprocRamProducer(double fps, QString rawFile, double aiHz, QString aiFrameFile);
     void runAiBridge(double fps, double aiHz, QString frameFile);
     void writeTeslaSceneTracks(const QVariantList &boxes, uint64_t frameId, qint64 timestampNs);
 
@@ -295,6 +313,7 @@ private:
     std::mutex ai_frame_mutex_;
     std::shared_ptr<Frame> latest_ai_frame_;
     QStringList replay_frames_;
+    std::vector<std::shared_ptr<Frame>> inproc_frames_;
     std::atomic<uint64_t> produced_frames_{0};
     std::atomic<double> input_fps_{0.0};
     std::atomic<double> consumed_fps_{0.0};
@@ -385,6 +404,11 @@ private:
     std::atomic<qint64> last_source_ns_{0};
     std::atomic<qulonglong> source_frame_id_{0};
     std::atomic<qulonglong> source_dropped_frames_{0};
+    std::atomic<qulonglong> ring_reader_attempted_{0};
+    std::atomic<qulonglong> ring_slot_conflict_{0};
+    std::atomic<qulonglong> ring_frame_unchanged_{0};
+    std::atomic<qulonglong> ring_pool_no_free_{0};
+    std::atomic<qulonglong> ring_enqueued_{0};
     std::atomic<qulonglong> source_crc_errors_{0};
     std::atomic<double> npu_load_percent_{0.0};
     std::vector<std::shared_ptr<Frame>> pgv_pool_;

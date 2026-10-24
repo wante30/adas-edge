@@ -120,6 +120,7 @@ int main(int argc, char **argv) {
     const double aiHz = std::max(0.1, static_cast<double>(intArg(args, "--ai-hz", 10)));
     const QString pgvFile = stringArg(args, "--pgv-file");
     const QString pgvRing = stringArg(args, "--pgv-ring");
+    const QString inprocRam = stringArg(args, "--inproc-ram");
     const QString rawReplay = stringArg(args, "--raw-replay");
     const QString sourceLabel = stringArg(args, "--source-label");
     QString pciePgvFile = stringArg(args, "--pcie-pgv-file");
@@ -194,6 +195,9 @@ int main(int argc, char **argv) {
     view.showFullScreen();
     if (!rawReplay.isEmpty()) {
         video->startRawReplay(fps, rawReplay, aiFrameFile, aiHz);
+    } else if (!inprocRam.isEmpty()) {
+        video->startInprocRamProducer(fps, inprocRam, aiFrameFile, aiHz,
+                                      sourceLabel.isEmpty() ? QStringLiteral("inproc-ram") : sourceLabel);
     } else if (!pgvRing.isEmpty()) {
         video->startPgvRingProducer(fps, pgvRing, aiFrameFile, aiHz,
                                     sourceLabel.isEmpty() ? QStringLiteral("pgv-local") : sourceLabel);
@@ -224,6 +228,15 @@ int main(int argc, char **argv) {
     report["frame_source"] = video->sourceMode();
     report["pgv_file"] = pgvFile;
     report["pgv_ring"] = pgvRing;
+    report["inproc_ram"] = inprocRam;
+    report["ring_reader_attempted"] = static_cast<qint64>(video->ringReaderAttempted());
+    report["ring_slot_conflict"] = static_cast<qint64>(video->ringSlotConflict());
+    report["ring_frame_unchanged"] = static_cast<qint64>(video->ringFrameUnchanged());
+    report["ring_pool_no_free"] = static_cast<qint64>(video->ringPoolNoFree());
+    report["ring_enqueued"] = static_cast<qint64>(video->ringEnqueued());
+    report["renderer_pending_skipped"] = static_cast<qint64>(video->rendererPendingSkipped());
+    report["renderer_pending_hold_ms_last"] = video->rendererPendingHoldMs();
+    report["sync_to_upload_ms_last"] = video->syncToUploadMs();
     report["video_renderer"] = videoQsg ? "QSG" : "FBO";
     report["raw_replay"] = rawReplay;
     report["pgv_layout"] = effectiveLayout;

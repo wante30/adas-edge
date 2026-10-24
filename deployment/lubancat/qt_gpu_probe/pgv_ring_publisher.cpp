@@ -24,9 +24,9 @@ int64_t now_ns() {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::steady_clock::now().time_since_epoch()).count();
 }
-uint64_t load64(unsigned char *p) { uint64_t v; std::memcpy(&v, p, 8); return v; }
-void store64(unsigned char *p, uint64_t v) { std::memcpy(p, &v, 8); }
-void store32(unsigned char *p, uint32_t v) { std::memcpy(p, &v, 4); }
+uint64_t load64(unsigned char *p) { return __atomic_load_n(reinterpret_cast<uint64_t *>(p), __ATOMIC_ACQUIRE); }
+void store64(unsigned char *p, uint64_t v) { __atomic_store_n(reinterpret_cast<uint64_t *>(p), v, __ATOMIC_RELEASE); }
+void store32(unsigned char *p, uint32_t v) { __atomic_store_n(reinterpret_cast<uint32_t *>(p), v, __ATOMIC_RELEASE); }
 }
 
 int main(int argc, char **argv) {
@@ -74,11 +74,14 @@ int main(int argc, char **argv) {
     auto next = std::chrono::steady_clock::now();
     const auto begin = next;
     uint64_t seq = 0;
+    uint64_t deadline_missed = 0;
     FILE *log = stats.empty() ? nullptr : std::fopen(stats.c_str(), "a");
     std::puts("READY");
     std::fflush(stdout);
     while (seconds <= 0 || std::chrono::duration<double>(std::chrono::steady_clock::now() - begin).count() < seconds) {
-        if (std::chrono::steady_clock::now() < next) std::this_thread::sleep_until(next);
+        const auto now0 = std::chrono::steady_clock::now();
+        if (now0 < next) std::this_thread::sleep_until(next);
+        else if (seq > 0) ++deadline_missed;
         const uint32_t slot = uint32_t(seq % kSlots);
         unsigned char *meta = map + 40;
         store64(meta + slot * 8, 0);           // invalidate slot before payload
@@ -96,12 +99,14 @@ int main(int argc, char **argv) {
         if (next <= now) next = now + period;
         if (log && seq % uint64_t(std::max(1.0, fps)) == 0) {
             const double elapsed = std::chrono::duration<double>(now - begin).count();
-            std::fprintf(log, "%.3f published=%llu fps=%.3f\n", elapsed,
-                         (unsigned long long)seq, seq / elapsed);
+            std::fprintf(log, "%.3f published=%llu fps=%.3f deadline_missed=%llu\n", elapsed,
+                         (unsigned long long)seq, seq / elapsed,
+                         (unsigned long long)deadline_missed);
             std::fflush(log);
         }
     }
     if (log) std::fclose(log);
-    std::printf("DONE published=%llu\n", (unsigned long long)seq);
+    std::printf("DONE published=%llu deadline_missed=%llu\n",
+                (unsigned long long)seq, (unsigned long long)deadline_missed);
     return 0;
 }
