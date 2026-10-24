@@ -1,4 +1,4 @@
-"""Build B-05I ROI training/domain and fixed BDD50 evaluation sets."""
+﻿"""Build B-05I ROI training/domain and fixed BDD50 evaluation sets."""
 from pathlib import Path
 import json, cv2, shutil
 
@@ -18,7 +18,7 @@ def main():
         (OUT / sub).mkdir(parents=True, exist_ok=True)
     # Domain: accepted clean pseudo images, converted to the Specialist canvas.
     n = 0
-    for img_path in sorted((CLEAN / "pseudo_A" / "images").rglob("*.jpg")):
+    for img_path in sorted((CLEAN / "pseudo_A" / "images" / "train").glob("*.jpg")):
         split = img_path.parent.name
         label = CLEAN / "pseudo_A" / "labels" / split / f"{img_path.stem}.txt"
         if not label.exists():
@@ -85,3 +85,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

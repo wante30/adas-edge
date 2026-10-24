@@ -1,0 +1,88 @@
+{
+  "model_hashes": {
+    "pt": "F5FC9C2B1220D55C4A49C09EC929B0C977B680ED8A84FAF64D471D15FEB6CE2C",
+    "onnx": "7188A00D543781F63C79DD0119EF04CB7848D0FCAF653EB63A03391E63DA4CA4",
+    "rknn": "BECFAADA5DA49C4DD6C143E815F8F957FB7B7ED759040D4E18C685A9C434E6F8"
+  },
+  "gt": {
+    "all": 154,
+    "roi_top60": 150,
+    "outside_top60": 4
+  },
+  "pytorch": {
+    "model": "tl_specialist/tl-512x192/weights/best.pt",
+    "metrics": {
+      "metrics/precision(B)": 0.6261682242990654,
+      "metrics/recall(B)": 0.44666666666666666,
+      "metrics/mAP50(B)": 0.36808403695763525,
+      "metrics/mAP50-95(B)": 0.11539530231610591,
+      "fitness": 0.11539530231610591
+    }
+  },
+  "rknn": {
+    "model": "tl_specialist_512x192_hybrid2.rknn",
+    "ap50": 0.24036315342205009,
+    "conf025": {
+      "tp": 49,
+      "fp": 85,
+      "fn": 101,
+      "precision": 0.3656716417910448,
+      "recall": 0.32666666666666666
+    },
+    "size": {
+      "<8": {
+        "gt": 17,
+        "tp": 1,
+        "fp": 0,
+        "fn": 16,
+        "recall": 0.058823529411764705
+      },
+      "8-16": {
+        "gt": 80,
+        "tp": 26,
+        "fp": 0,
+        "fn": 54,
+        "recall": 0.325
+      },
+      "16-32": {
+        "gt": 47,
+        "tp": 28,
+        "fp": 0,
+        "fn": 19,
+        "recall": 0.5957446808510638
+      },
+      ">32": {
+        "gt": 6,
+        "tp": 5,
+        "fp": 0,
+        "fn": 1,
+        "recall": 0.8333333333333334
+      }
+    }
+  },
+  "onnx": {
+    "status": "not_evaluated",
+    "reason": "fixed 1x3x192x512 input; current Ultralytics square wrapper mismatch"
+  },
+  "candidate_clean": {
+    "model": "D:\\Datasets\\adas_edge_training\\b05i_runs\\candidate_clean\\weights\\best.pt",
+    "metrics": {
+      "metrics/precision(B)": 0.6237623762376238,
+      "metrics/recall(B)": 0.42,
+      "metrics/mAP50(B)": 0.3611863717427607,
+      "metrics/mAP50-95(B)": 0.10615764620346532,
+      "fitness": 0.10615764620346532
+    },
+    "note": "trained after domain leakage fix; still below source"
+  },
+  "leak_fix": {
+    "domain_train_images": 7,
+    "source": "only pseudo_A/images/train",
+    "bdd50_in_training": false
+  },
+  "b05g": {
+    "root_cause": "AI Bridge --layout quad vs Qt front",
+    "fixed": "--layout front",
+    "valid_green_records": 31
+  }
+}
