@@ -1,0 +1,47 @@
+{
+  "source": {
+    "metrics": {
+      "metrics/precision(B)": 0.6439339522172988,
+      "metrics/recall(B)": 0.43333333333333335,
+      "metrics/mAP50(B)": 0.4021013163749299,
+      "metrics/mAP50-95(B)": 0.12601970535686627,
+      "fitness": 0.12601970535686627
+    },
+    "speed": {
+      "preprocess": 0.12202400001115166,
+      "inference": 2.283912000057171,
+      "loss": 0.0004459999763639644,
+      "postprocess": 0.6481999999959953
+    }
+  },
+  "baseline": {
+    "metrics": {
+      "metrics/precision(B)": 0.4797282775571697,
+      "metrics/recall(B)": 0.38666666666666666,
+      "metrics/mAP50(B)": 0.36812590856684957,
+      "metrics/mAP50-95(B)": 0.11548663575437852,
+      "fitness": 0.11548663575437852
+    },
+    "speed": {
+      "preprocess": 0.07387599995126948,
+      "inference": 0.8509380000032252,
+      "loss": 0.00034399992728140205,
+      "postprocess": 0.5494639999960782
+    }
+  },
+  "candidate": {
+    "metrics": {
+      "metrics/precision(B)": 0.5759384259316128,
+      "metrics/recall(B)": 0.4266666666666667,
+      "metrics/mAP50(B)": 0.4190810841183229,
+      "metrics/mAP50-95(B)": 0.1390000154860544,
+      "fitness": 0.1390000154860544
+    },
+    "speed": {
+      "preprocess": 0.06119999998190905,
+      "inference": 0.7498019999911776,
+      "loss": 0.00034199998481199145,
+      "postprocess": 0.5448780000006082
+    }
+  }
+}

@@ -1,0 +1,6 @@
+path: D:\Datasets\adas_edge_training\b05i_clean_20261024\pseudo_A
+train: images/train
+val: images/val
+test: images/test
+names:
+  0: traffic light

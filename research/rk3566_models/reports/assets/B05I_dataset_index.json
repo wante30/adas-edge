@@ -1,0 +1,37 @@
+{
+  "clean_dataset": "D:\\Datasets\\adas_edge_training\\b05i_clean_20261024",
+  "reviewed_boxes": 30,
+  "reviewed_images": 15,
+  "B_reviewed": 43,
+  "B_accept": 26,
+  "B_reject": 17,
+  "C_confirmed_negatives": 0,
+  "splits": {
+    "train": 11,
+    "val": 10,
+    "test": 9
+  },
+  "sizes": {
+    "<8": 0,
+    "8-16": 5,
+    "16-32": 14,
+    ">32": 11
+  },
+  "colors_hsv_unverified": {
+    "GREEN": 25,
+    "RED": 4,
+    "UNKNOWN": 1
+  },
+  "original_human_specialist_train_images": 8513,
+  "original_human_specialist_val_images": 487,
+  "bdd50_independent_eval": {
+    "images": 50,
+    "boxes": 154,
+    "in_training": false
+  },
+  "source_checkpoint": "D:\\Datasets\\adas_edge_training\\tl_specialist\\tl-512x192\\weights\\best.pt",
+  "candidate_checkpoint": "D:\\Datasets\\adas_edge_training\\b05i_runs\\candidate\\weights\\best.pt",
+  "training": "1 epoch, imgsz 512, rect, batch 16, seed 0, RTX 4060",
+  "teacher": "Specialist+BDD candidates; B review by agent image understanding; Grounding DINO/Florence not run",
+  "training_ready": "pilot only"
+}
