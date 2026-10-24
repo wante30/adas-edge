@@ -1,0 +1,21 @@
+{
+  "run": "B05G board tracked mode, 113421 3s front Local Replay",
+  "source": "LOCAL_REPLAY",
+  "video": "video_20260929_113421.mp4, t=2..5s, 90 frames, 1280x720 front",
+  "mode": "tracked",
+  "specialist_hz": 1,
+  "main_hz": 10,
+  "log_lines": 604,
+  "events": {"detection": 69, "frame": 535},
+  "frame_id_range": [0, 1756],
+  "track_ids": [1],
+  "records": 6,
+  "effective_colors": {"UNKNOWN": 6},
+  "color_valid_records": 0,
+  "detection_records": 69,
+  "auto_specialist_detection_seen": true,
+  "tracker_called_from_ai_bridge": true,
+  "valid_color_output_seen": false,
+  "note": "AI Bridge integration executed; Specialist provided auto boxes; the only admitted track remained UNKNOWN, so B05G PASS condition was not met.",
+  "rollback": "adas-ai-bridge.service TL_MODE removed; service active legacy"
+}
