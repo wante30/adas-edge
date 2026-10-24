@@ -7,6 +7,13 @@ Item {
     width: 1280
     height: 720
     focus: true
+    Rectangle {
+        id: fpgaEntry
+        x: 740; y: 76; width: 112; height: 24; z: 900
+        color: "#0B2630"; border.color: root.cyan; border.width: 0.8; radius: 2
+        Text { anchors.centerIn: parent; text: "FPGA CTRL"; color: root.cyanHot; font.family: root.num; font.pixelSize: 7 }
+        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.fpgaOpen = true }
+    }
 
     property string cjk: "Noto Sans CJK SC"
     property string num: "DejaVu Sans"
@@ -27,6 +34,7 @@ Item {
     property bool autoCycle: (typeof autoCycleCapture !== "undefined" ? autoCycleCapture : false)
     property var now: new Date()
     property bool hudTestOpen: false
+    property bool fpgaOpen: false
     property bool autoHudSend: true
     property bool sceneEnabled: (typeof sceneEnabled !== "undefined" ? sceneEnabled : true)
     property int trackingMode: 2  // 0=RAW, 1=FIX4, 2=TIME
@@ -43,6 +51,7 @@ Item {
     })
 
     HudControl { id: pcieHud }
+    PcieIspControl { id: fpgaIsp }
 
     onRoadQuadrantChanged: if (video) video.aiRoadQuadrant = roadQuadrant
     onNavQuadrantChanged: if (video) video.aiNavigationQuadrant = navQuadrant
@@ -105,8 +114,9 @@ Item {
         else if (event.key === Qt.Key_2) { root.viewMode = 1; event.accepted = true }
         else if (event.key === Qt.Key_3) { root.viewMode = 2; event.accepted = true }
         else if (event.key === Qt.Key_T) { root.hudTestOpen = !root.hudTestOpen; event.accepted = true }
+        else if (event.key === Qt.Key_I) { root.fpgaOpen = !root.fpgaOpen; event.accepted = true }
         else if (event.key === Qt.Key_L) { root.trackingMode = (root.trackingMode + 1) % 3; event.accepted = true }
-        else if (event.key === Qt.Key_Escape) { root.hudTestOpen = false; event.accepted = true }
+        else if (event.key === Qt.Key_Escape) { root.hudTestOpen = false; root.fpgaOpen = false; event.accepted = true }
         else if (event.key === Qt.Key_Q) { Qt.quit() }
     }
 
@@ -1630,6 +1640,16 @@ Item {
         onLoaded: {
             item.hud = pcieHud
             item.closeRequested.connect(function() { root.hudTestOpen = false })
+        }
+    }
+    Loader {
+        anchors.fill: parent
+        active: root.fpgaOpen
+        source: "FpgaControlPanel.qml"
+        z: 520
+        onLoaded: {
+            item.control = fpgaIsp
+            item.closeRequested.connect(function() { root.fpgaOpen = false })
         }
     }
 }
