@@ -5,6 +5,7 @@
 #include "hud_control.h"
 #include "nav_bridge.h"
 #include "pcie_isp_control.h"
+#include "qsg_video_item.h"
 #include "video_item.h"
 #include "tesla_scene_item.h"
 
@@ -146,6 +147,7 @@ int main(int argc, char **argv) {
     qmlRegisterType<TeslaSceneItem>("QtGpuProbe", 1, 0, "TeslaSceneItem");
     qmlRegisterType<HudControl>("QtGpuProbe", 1, 0, "HudControl");
     qmlRegisterType<PcieIspControl>("QtGpuProbe", 1, 0, "PcieIspControl");
+    qmlRegisterType<QsgVideoItem>("QtGpuProbe", 1, 0, "QsgVideoItem");
     QQuickView view;
     view.setTitle(QStringLiteral("Qt Quick GPU Probe - RK3566"));
     view.setResizeMode(QQuickView::SizeRootObjectToView);
@@ -157,7 +159,10 @@ int main(int argc, char **argv) {
     view.rootContext()->setContextProperty(QStringLiteral("pciePgvFile"), pciePgvFile);
     view.rootContext()->setContextProperty(QStringLiteral("localPgvFile"), localPgvFile);
     const bool protocolPanelTest = qEnvironmentVariableIsSet("QT_PROTOCOL_PANEL_TEST");
+    const bool videoQsg = args.contains("--video-qsg") ||
+                          qEnvironmentVariableIsSet("QT_VIDEO_QSG");
     view.rootContext()->setContextProperty(QStringLiteral("protocolPanelTest"), protocolPanelTest);
+    view.rootContext()->setContextProperty(QStringLiteral("videoQsgMode"), videoQsg);
     auto *ispControl = new PcieIspControl(&app);
     g_ispControl = ispControl;
     view.rootContext()->setContextProperty(QStringLiteral("fpgaIsp"), ispControl);
@@ -219,6 +224,7 @@ int main(int argc, char **argv) {
     report["frame_source"] = video->sourceMode();
     report["pgv_file"] = pgvFile;
     report["pgv_ring"] = pgvRing;
+    report["video_renderer"] = videoQsg ? "QSG" : "FBO";
     report["raw_replay"] = rawReplay;
     report["pgv_layout"] = effectiveLayout;
     report["pgv_road_quadrant"] = roadQuadrant;

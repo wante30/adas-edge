@@ -35,6 +35,7 @@ Item {
     property var now: new Date()
     property bool hudTestOpen: false
     property bool fpgaOpen: false
+    property bool videoQsg: typeof videoQsgMode !== "undefined" ? videoQsgMode : false
     property var fpgaControl: fpgaIsp
     property bool autoHudSend: true
     property bool sceneEnabled: (typeof sceneEnabled !== "undefined" ? sceneEnabled : true)
@@ -594,13 +595,24 @@ Item {
             y: (mainView.height - height) / 2
             width: mainView.width
             height: width * 9.0 / 16.0
-            visible: root.viewMode !== 2
+            visible: root.viewMode !== 2 && !root.videoQsg
+            qsgTarget: qsgVideo
             sourceViewport: {
                 if (root.viewMode === 1 || root.inputLayout !== "quad")
                     return Qt.rect(0, 0, 1, 1)
                 var q = root.roadQuadrant
                 return Qt.rect((q % 2) * 0.5, Math.floor(q / 2) * 0.5, 0.5, 0.5)
             }
+        }
+
+        QsgVideoItem {
+            id: qsgVideo
+            x: video.x
+            y: video.y
+            width: video.width
+            height: video.height
+            visible: root.viewMode !== 2 && root.videoQsg
+            source: video
         }
 
         Item {

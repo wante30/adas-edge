@@ -81,6 +81,7 @@ class VideoItem : public QQuickFramebufferObject {
                NOTIFY aiSelectionChanged)
     Q_PROPERTY(int aiNavigationQuadrant READ aiNavigationQuadrant WRITE setAiNavigationQuadrant
                NOTIFY aiSelectionChanged)
+    Q_PROPERTY(QObject *qsgTarget READ qsgTarget WRITE setQsgTarget NOTIFY qsgTargetChanged)
 
 public:
     struct Frame {
@@ -243,6 +244,11 @@ public:
     void setSourceViewport(const QRectF &viewport);
     int aiRoadQuadrant() const { return ai_road_quadrant_.load(); }
     int aiNavigationQuadrant() const { return ai_navigation_quadrant_.load(); }
+    QObject *qsgTarget() const { return qsg_target_; }
+    void setQsgTarget(QObject *target);
+    std::shared_ptr<Frame> takeDisplayFrame();
+    void recordQsgUpload(const Frame &frame, double uploadMs);
+    bool qsgMode() const { return qsg_target_ != nullptr; }
     void setAiRoadQuadrant(int quadrant);
     void setAiNavigationQuadrant(int quadrant);
     qulonglong uniqueReplayContentFramesUploaded() const {
@@ -275,6 +281,7 @@ signals:
     void spatialViewActiveChanged();
     void sourceViewportChanged();
     void aiSelectionChanged();
+    void qsgTargetChanged();
 
 private:
     void produceFrame(uint64_t id);
@@ -370,6 +377,7 @@ private:
     uint64_t next_track_id_ = 1;
     std::ofstream ai_timing_stream_;
 
+    QObject *qsg_target_ = nullptr;
     QString source_mode_ = QStringLiteral("generated");
     bool pgv_source_ = false;
     std::atomic<bool> source_online_{true};

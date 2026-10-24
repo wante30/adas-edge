@@ -407,6 +407,37 @@ VideoItem::VideoItem(QQuickItem *parent) : QQuickFramebufferObject(parent) {
 
 VideoItem::~VideoItem() { stopProducer(); }
 
+void VideoItem::setQsgTarget(QObject *target) {
+    if (qsg_target_ == target) return;
+    qsg_target_ = target;
+    emit qsgTargetChanged();
+}
+
+std::shared_ptr<VideoItem::Frame> VideoItem::takeDisplayFrame() {
+    if (!display_queue_) return {};
+    return display_queue_->take();
+}
+
+void VideoItem::recordQsgUpload(const Frame &frame, double uploadMs) {
+    const qint64 nowNs = steadyNs();
+    const qint64 sourceNs = frame.sourceTimestampNs > 0 ? frame.sourceTimestampNs : frame.producedNs;
+    const double ageMs = std::max<qint64>(0, nowNs - sourceNs) / 1.0e6;
+    render_metrics_->upload_ms.store(uploadMs);
+    render_metrics_->source_to_upload_ms.store(ageMs);
+    render_metrics_->frame_id.store(frame.id);
+    render_metrics_->uploaded_frames.fetch_add(1);
+    QMutexLocker locker(&render_metrics_->upload_mutex);
+    render_metrics_->upload_samples.push_back(uploadMs);
+    render_metrics_->source_age_samples.push_back(ageMs);
+    if (render_metrics_->upload_samples.size() > 3600) {
+        render_metrics_->upload_samples.erase(render_metrics_->upload_samples.begin(),
+                                               render_metrics_->upload_samples.begin() + 600);
+        render_metrics_->source_age_samples.erase(render_metrics_->source_age_samples.begin(),
+                                                   render_metrics_->source_age_samples.begin() + 600);
+    }
+}
+
+
 QQuickFramebufferObject::Renderer *VideoItem::createRenderer() const {
     return new Renderer(display_queue_, render_metrics_);
 }
@@ -707,6 +738,7 @@ void VideoItem::runPgvRingProducer(double fps, QString ringFile, double aiHz,
         lastSeq = latest;
         produced_frames_.fetch_add(1);
         display_queue_->push(frame);
+        if (qsg_target_) QMetaObject::invokeMethod(qsg_target_, "requestFrame", Qt::QueuedConnection);
         render_metrics_->update_requests.fetch_add(1);
         if (ai_running_.load()) {
             std::lock_guard<std::mutex> locker(ai_frame_mutex_);
