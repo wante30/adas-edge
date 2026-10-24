@@ -1,0 +1,70 @@
+{
+  "primary_data": "D:\\Datasets\\adas_edge_training\\tl_specialist\\data_512x192",
+  "validation": {
+    "train": {
+      "images": 8513,
+      "labels": 8513,
+      "empty_label_images": 3794,
+      "boxes": 22283,
+      "invalid": [],
+      "invalid_count": 0
+    },
+    "val": {
+      "images": 487,
+      "labels": 487,
+      "empty_label_images": 238,
+      "boxes": 1185,
+      "invalid": [],
+      "invalid_count": 0
+    }
+  },
+  "clean_validation": {
+    "threshold": 3,
+    "val_images": 487,
+    "kept": 482,
+    "excluded": [
+      {
+        "image": "b56a0885-1c282ea8.jpg",
+        "nearest_train": "b4c89ab1-5c72cd7d",
+        "dhash_distance": 3
+      },
+      {
+        "image": "b842809b-ae95b9bc.jpg",
+        "nearest_train": "bc83797e-8a4b2d6a",
+        "dhash_distance": 2
+      },
+      {
+        "image": "b92c4dd3-856ff7b7.jpg",
+        "nearest_train": "b747b30e-991436c7",
+        "dhash_distance": 1
+      },
+      {
+        "image": "b979217b-09ba51bd.jpg",
+        "nearest_train": "b979217b-53523d64",
+        "dhash_distance": 2
+      },
+      {
+        "image": "ca0f0248-0d55e8dd.jpg",
+        "nearest_train": "c45b2e04-fb920e89",
+        "dhash_distance": 3
+      }
+    ],
+    "rule": "exclude val images with dHash distance <= threshold to any train image"
+  },
+  "domain": {
+    "images": 15,
+    "splits": {
+      "train": 7,
+      "val": 3,
+      "test": 5
+    },
+    "boxes": 30
+  },
+  "yaml": {
+    "primary": "D:\\Datasets\\adas_edge_training\\b05l_data\\primary.yaml",
+    "primary_clean": "D:\\Datasets\\adas_edge_training\\b05l_data\\primary_clean.yaml",
+    "domain": "D:\\Datasets\\adas_edge_training\\b05l_data\\domain_finetune.yaml",
+    "primary_plus_domain": "D:\\Datasets\\adas_edge_training\\b05l_data\\primary_plus_domain.yaml"
+  },
+  "fairness_note": "Primary comparison uses the same 8513/487 split that trained the production YOLO11n. The 15 video-domain images are a separate adaptation experiment, not part of the primary comparison."
+}

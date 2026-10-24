@@ -1,0 +1,69 @@
+{
+  "run": "D:\\Datasets\\adas_edge_training\\b05l_runs\\v8n",
+  "arch": "yolov8n",
+  "epochs_requested": 60,
+  "epochs_completed": 60,
+  "batch": 32,
+  "imgsz": 512,
+  "seed": 0,
+  "parameters": 3167849,
+  "transfer": {
+    "source": "C:\\Users\\JingyuWang\\adas-edge\\yolov8n.pt",
+    "source_sha256": "f59b3d833e2ff32e194b5bb8e08d211dc7c5bdf144b90d2c8412c47ccfc83b36",
+    "destination_layers": 355,
+    "matched_layers": 355,
+    "destination_parameters": 3167849,
+    "matched_parameter_fraction": 1.0,
+    "unmatched_examples": [],
+    "note": "Exact key+shape matches before Ultralytics class-head remapping.",
+    "after_load": {
+      "matched_layers": 355,
+      "destination_layers": 355,
+      "matched_parameters": 3167849,
+      "destination_parameters": 3167849,
+      "matched_parameter_fraction": 1.0,
+      "unmatched_layers": []
+    }
+  },
+  "best_epoch": 56,
+  "best_fitness": 0.15784,
+  "best_metrics": {
+    "metrics/precision(B)": 0.61087,
+    "metrics/recall(B)": 0.44992,
+    "metrics/mAP50(B)": 0.47602,
+    "metrics/mAP50-95(B)": 0.15784
+  },
+  "final_metrics": {
+    "metrics/precision(B)": 0.60832,
+    "metrics/recall(B)": 0.45331,
+    "metrics/mAP50(B)": 0.47498,
+    "metrics/mAP50-95(B)": 0.15678
+  },
+  "train_seconds": 3753.26,
+  "best": "D:\\Datasets\\adas_edge_training\\b05l_runs\\v8n\\weights\\best.pt",
+  "best_sha256": "d6222711beddf45cd6bad5f17b87980aa6d0179eb588478213a914364d315097",
+  "onnx": {
+    "path": "D:\\Datasets\\adas_edge_training\\b05l_runs\\v8n\\weights\\best.onnx",
+    "sha256": "0c041aa4e5953a05b5df33b8beebede75e2b035b61734b724a4e102ab95294e3",
+    "size_bytes": 12137580,
+    "input": {
+      "name": "images",
+      "shape": [
+        1,
+        3,
+        192,
+        512
+      ]
+    },
+    "output": {
+      "name": "output0",
+      "shape": [
+        1,
+        5,
+        2016
+      ]
+    }
+  },
+  "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "torch": "2.12.1+cu126"
+}

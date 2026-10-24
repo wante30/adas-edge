@@ -1,0 +1,66 @@
+{
+  "model": "D:\\Datasets\\adas_edge_training\\b05l_runs\\v8n_p2\\weights\\best.onnx",
+  "size_bytes": 11937968,
+  "ir_version": 7,
+  "opset": [
+    {
+      "domain": "ai.onnx",
+      "version": 12
+    }
+  ],
+  "checker": "passed",
+  "inputs": [
+    {
+      "name": "images",
+      "shape": [
+        1,
+        3,
+        192,
+        512
+      ],
+      "dtype": 1
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output0",
+      "shape": [
+        1,
+        5,
+        8160
+      ],
+      "dtype": 1
+    }
+  ],
+  "nodes": 282,
+  "initializers": 170,
+  "operators": {
+    "Add": 8,
+    "Concat": 21,
+    "Conv": 79,
+    "Div": 1,
+    "MaxPool": 3,
+    "Mul": 70,
+    "Reshape": 10,
+    "Resize": 3,
+    "Sigmoid": 70,
+    "Slice": 2,
+    "Softmax": 1,
+    "Split": 10,
+    "Sub": 2,
+    "Transpose": 2
+  },
+  "dynamic_dimensions": [
+    {
+      "name": "images",
+      "shape": [
+        1,
+        3,
+        192,
+        512
+      ]
+    }
+  ],
+  "rknn_conversion": "not_executed",
+  "rknn_note": "RKNN Toolkit2 2.3.2 exists in a WSL venv, but its ONNX package is broken (onnx_cpp2py_export has no extension). No conversion result is claimed."
+}

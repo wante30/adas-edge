@@ -1,0 +1,138 @@
+{
+  "video_20260929_112507": {
+    "0.1": {
+      "conf": 0.1,
+      "frames": 1349,
+      "detection_frames": 447,
+      "frames_percent": 0.3313565604151223,
+      "first_frame": 0,
+      "first_seconds": 0.0,
+      "runs": 96,
+      "longest_run_frames": 82,
+      "colors": {
+        "RED": 16,
+        "GREEN": 704,
+        "YELLOW": 6,
+        "UNKNOWN": 572
+      }
+    },
+    "0.15": {
+      "conf": 0.15,
+      "frames": 1349,
+      "detection_frames": 350,
+      "frames_percent": 0.25945144551519644,
+      "first_frame": 0,
+      "first_seconds": 0.0,
+      "runs": 74,
+      "longest_run_frames": 82,
+      "colors": {
+        "RED": 13,
+        "GREEN": 524,
+        "YELLOW": 3,
+        "UNKNOWN": 356
+      }
+    }
+  },
+  "video_20260929_112739": {
+    "0.1": {
+      "conf": 0.1,
+      "frames": 2776,
+      "detection_frames": 668,
+      "frames_percent": 0.24063400576368876,
+      "first_frame": 180,
+      "first_seconds": 6.0,
+      "runs": 133,
+      "longest_run_frames": 82,
+      "colors": {
+        "RED": 572,
+        "GREEN": 439,
+        "YELLOW": 42,
+        "UNKNOWN": 609
+      }
+    },
+    "0.15": {
+      "conf": 0.15,
+      "frames": 2776,
+      "detection_frames": 478,
+      "frames_percent": 0.17219020172910662,
+      "first_frame": 223,
+      "first_seconds": 7.433,
+      "runs": 120,
+      "longest_run_frames": 54,
+      "colors": {
+        "RED": 367,
+        "GREEN": 314,
+        "YELLOW": 17,
+        "UNKNOWN": 304
+      }
+    }
+  },
+  "video_20260929_113421": {
+    "0.1": {
+      "conf": 0.1,
+      "frames": 392,
+      "detection_frames": 344,
+      "frames_percent": 0.8775510204081632,
+      "first_frame": 3,
+      "first_seconds": 0.1,
+      "runs": 18,
+      "longest_run_frames": 307,
+      "colors": {
+        "RED": 3,
+        "GREEN": 723,
+        "YELLOW": 98,
+        "UNKNOWN": 357
+      }
+    },
+    "0.15": {
+      "conf": 0.15,
+      "frames": 392,
+      "detection_frames": 325,
+      "frames_percent": 0.8290816326530612,
+      "first_frame": 3,
+      "first_seconds": 0.1,
+      "runs": 19,
+      "longest_run_frames": 295,
+      "colors": {
+        "RED": 1,
+        "GREEN": 623,
+        "YELLOW": 51,
+        "UNKNOWN": 180
+      }
+    }
+  },
+  "video_20260929_113539": {
+    "0.1": {
+      "conf": 0.1,
+      "frames": 2315,
+      "detection_frames": 1230,
+      "frames_percent": 0.531317494600432,
+      "first_frame": 26,
+      "first_seconds": 0.867,
+      "runs": 167,
+      "longest_run_frames": 198,
+      "colors": {
+        "RED": 695,
+        "GREEN": 1127,
+        "YELLOW": 538,
+        "UNKNOWN": 963
+      }
+    },
+    "0.15": {
+      "conf": 0.15,
+      "frames": 2315,
+      "detection_frames": 1043,
+      "frames_percent": 0.4505399568034557,
+      "first_frame": 80,
+      "first_seconds": 2.667,
+      "runs": 124,
+      "longest_run_frames": 126,
+      "colors": {
+        "RED": 492,
+        "GREEN": 863,
+        "YELLOW": 412,
+        "UNKNOWN": 462
+      }
+    }
+  }
+}

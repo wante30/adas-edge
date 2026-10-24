@@ -1,0 +1,4855 @@
+{
+  "models": {
+    "yolo11n": {
+      "label": "yolo11n",
+      "conf": 0.25,
+      "fp": {
+        "total": 42,
+        "by_overlap_category": {
+          "background/no_non_tl_gt": 39,
+          "traffic sign": 3
+        },
+        "by_contained_category": {
+          "background/no_non_tl_gt": 35,
+          "traffic sign": 3,
+          "car": 4
+        },
+        "mean_confidence": 0.36179717168921516,
+        "examples": [
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              704.8692321777344,
+              306.1274719238281,
+              718.2627868652344,
+              326.9361877441406
+            ],
+            "confidence": 0.40186557173728943,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              265.9525489807129,
+              235.4031753540039,
+              282.82209396362305,
+              259.63130950927734
+            ],
+            "confidence": 0.3975737690925598,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1d0a191-5490450b",
+            "bbox": [
+              645.0859069824219,
+              217.9199981689453,
+              656.4149475097656,
+              236.72500610351562
+            ],
+            "confidence": 0.4358976483345032,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1d0a191-5490450b",
+            "bbox": [
+              569.9735260009766,
+              213.64501953125,
+              585.5356597900391,
+              231.9089126586914
+            ],
+            "confidence": 0.3468218743801117,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1d0a191-5490450b",
+            "bbox": [
+              408.9723205566406,
+              194.15225982666016,
+              425.2839660644531,
+              218.17214965820312
+            ],
+            "confidence": 0.25232774019241333,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              673.9589691162109,
+              147.00233459472656,
+              690.0246429443359,
+              171.7133331298828
+            ],
+            "confidence": 0.3600206673145294,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              344.57115173339844,
+              170.15024185180664,
+              356.70677185058594,
+              190.15432357788086
+            ],
+            "confidence": 0.25284454226493835,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              122.96295166015625,
+              267.7098083496094,
+              139.39483642578125,
+              290.37750244140625
+            ],
+            "confidence": 0.37148892879486084,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              82.70870208740234,
+              262.3337936401367,
+              111.77398681640625,
+              288.7360382080078
+            ],
+            "confidence": 0.2628183662891388,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b202cae2-672e61c5",
+            "bbox": [
+              465.99334716796875,
+              232.00124740600586,
+              477.58514404296875,
+              253.37224960327148
+            ],
+            "confidence": 0.46949154138565063,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2080dc7-f9b98a5f",
+            "bbox": [
+              1222.7703094482422,
+              55.57086944580078,
+              1264.6233367919922,
+              132.01377868652344
+            ],
+            "confidence": 0.27784913778305054,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b23adb0d-8a7aaced",
+            "bbox": [
+              833.8548278808594,
+              171.53160095214844,
+              854.6525573730469,
+              197.8668212890625
+            ],
+            "confidence": 0.6266124844551086,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b23adb0d-8a7aaced",
+            "bbox": [
+              597.676887512207,
+              177.81862258911133,
+              612.4869155883789,
+              195.53590774536133
+            ],
+            "confidence": 0.29453787207603455,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b24380ab-855e9c00",
+            "bbox": [
+              535.7675170898438,
+              269.53250885009766,
+              551.78466796875,
+              287.88387298583984
+            ],
+            "confidence": 0.2983582019805908,
+            "overlap_category": "traffic sign",
+            "overlap_iou": 0.6776529618049316,
+            "contained_in_category": "traffic sign",
+            "contained_fraction": 0.6776529618049316
+          },
+          {
+            "image": "b258d359-49a3ad31",
+            "bbox": [
+              703.7159729003906,
+              347.20245361328125,
+              716.6966247558594,
+              364.31846618652344
+            ],
+            "confidence": 0.34882861375808716,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b26610ce-083c3bd1",
+            "bbox": [
+              400.23799896240234,
+              88.47150802612305,
+              421.0708236694336,
+              134.55278396606445
+            ],
+            "confidence": 0.6692660450935364,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b26610ce-083c3bd1",
+            "bbox": [
+              639.3158721923828,
+              324.3442916870117,
+              654.1417694091797,
+              341.2173080444336
+            ],
+            "confidence": 0.3891107439994812,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.06762692667246835,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b268bb58-5ead8a56",
+            "bbox": [
+              709.8381042480469,
+              288.3283233642578,
+              724.3885803222656,
+              317.45147705078125
+            ],
+            "confidence": 0.355069637298584,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b268bb58-5ead8a56",
+            "bbox": [
+              607.0041275024414,
+              368.0030059814453,
+              620.2779006958008,
+              389.6062469482422
+            ],
+            "confidence": 0.33109650015830994,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b277a772-08d8d7ad",
+            "bbox": [
+              800.9353637695312,
+              197.5855255126953,
+              816.5933227539062,
+              227.6551055908203
+            ],
+            "confidence": 0.3910151720046997,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b277a772-08d8d7ad",
+            "bbox": [
+              494.8882293701172,
+              233.70384216308594,
+              510.00694274902344,
+              249.67269897460938
+            ],
+            "confidence": 0.34097278118133545,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b277a772-08d8d7ad",
+            "bbox": [
+              461.38572692871094,
+              232.98992156982422,
+              474.59327697753906,
+              249.39876556396484
+            ],
+            "confidence": 0.2719431519508362,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b277a772-08d8d7ad",
+            "bbox": [
+              429.95361328125,
+              223.0794906616211,
+              446.4701843261719,
+              239.3399429321289
+            ],
+            "confidence": 0.25953301787376404,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2828509-133b042d",
+            "bbox": [
+              0.0,
+              281.2574577331543,
+              21.31307601928711,
+              316.3946533203125
+            ],
+            "confidence": 0.4222012162208557,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2828509-133b042d",
+            "bbox": [
+              0.2248084545135498,
+              195.42877197265625,
+              14.806767702102661,
+              231.90078735351562
+            ],
+            "confidence": 0.41669023036956787,
+            "overlap_category": "traffic sign",
+            "overlap_iou": 0.4176718698710358,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.42101975554821053
+          },
+          {
+            "image": "b2828509-133b042d",
+            "bbox": [
+              703.6436462402344,
+              235.20158767700195,
+              725.6523132324219,
+              267.3629570007324
+            ],
+            "confidence": 0.3468555808067322,
+            "overlap_category": "traffic sign",
+            "overlap_iou": 0.7167717300233357,
+            "contained_in_category": "traffic sign",
+            "contained_fraction": 0.7387860985486221
+          },
+          {
+            "image": "b28cb5d3-9ff4ab4a",
+            "bbox": [
+              975.2593231201172,
+              132.8390407562256,
+              1018.1911468505859,
+              208.2513427734375
+            ],
+            "confidence": 0.4400119483470917,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b28cb5d3-9ff4ab4a",
+            "bbox": [
+              16.90882682800293,
+              268.07186126708984,
+              47.70510196685791,
+              338.17737579345703
+            ],
+            "confidence": 0.43031835556030273,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              563.3927154541016,
+              186.67659759521484,
+              575.9928131103516,
+              206.1599349975586
+            ],
+            "confidence": 0.3157062828540802,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2939bf0-221e1dfb",
+            "bbox": [
+              488.12679290771484,
+              334.69879150390625,
+              503.8850784301758,
+              354.58465576171875
+            ],
+            "confidence": 0.36198148131370544,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2a4bc4d-b251ccb1",
+            "bbox": [
+              111.9487190246582,
+              235.48521041870117,
+              137.16608047485352,
+              273.24872970581055
+            ],
+            "confidence": 0.4163736402988434,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.014105179430502253,
+            "contained_in_category": "car",
+            "contained_fraction": 1.0
+          },
+          {
+            "image": "b2a4bc4d-b251ccb1",
+            "bbox": [
+              287.6426315307617,
+              248.1588363647461,
+              308.6185836791992,
+              273.17249298095703
+            ],
+            "confidence": 0.2859347462654114,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.09821517109699324,
+            "contained_in_category": "car",
+            "contained_fraction": 1.0
+          },
+          {
+            "image": "b2ae0446-4b0bfda7",
+            "bbox": [
+              446.3671875,
+              317.2559356689453,
+              459.82025146484375,
+              340.88096618652344
+            ],
+            "confidence": 0.28687578439712524,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              106.98383331298828,
+              354.55535888671875,
+              126.80572509765625,
+              393.07586669921875
+            ],
+            "confidence": 0.35097816586494446,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.003828064945058122,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              349.7924041748047,
+              346.61468505859375,
+              365.95802307128906,
+              372.60101318359375
+            ],
+            "confidence": 0.273837149143219,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0975427678799864,
+            "contained_in_category": "car",
+            "contained_fraction": 1.0
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              465.1392364501953,
+              320.58738708496094,
+              482.2875213623047,
+              344.4329071044922
+            ],
+            "confidence": 0.4926333427429199,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              647.5733947753906,
+              313.55884552001953,
+              664.2567443847656,
+              336.20174407958984
+            ],
+            "confidence": 0.34560009837150574,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.015856731262860177,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              660.6549835205078,
+              345.39119720458984,
+              676.4746856689453,
+              363.5367965698242
+            ],
+            "confidence": 0.33264967799186707,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.02666439050910546,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              689.8440551757812,
+              312.8727722167969,
+              705.509033203125,
+              338.51806640625
+            ],
+            "confidence": 0.26608750224113464,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.21067307507149088,
+            "contained_in_category": "traffic sign",
+            "contained_fraction": 0.6471956329935916
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              173.32990646362305,
+              183.30196380615234,
+              203.84519577026367,
+              217.9877471923828
+            ],
+            "confidence": 0.43734118342399597,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              909.1712951660156,
+              261.33949279785156,
+              927.7293395996094,
+              284.2942810058594
+            ],
+            "confidence": 0.30060631036758423,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.1895758924357026,
+            "contained_in_category": "car",
+            "contained_fraction": 1.0
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              571.3341522216797,
+              62.073707580566406,
+              605.3177642822266,
+              130.93189239501953
+            ],
+            "confidence": 0.26745450496673584,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          }
+        ]
+      },
+      "fn": {
+        "total": 91,
+        "by_size_group": {
+          "8-16": 54,
+          "<8": 16,
+          "16-32": 19,
+          ">32": 2
+        },
+        "by_color": {
+          "green": 42,
+          "none": 30,
+          "red": 17,
+          "yellow": 2
+        },
+        "by_occluded": {
+          "False": 86,
+          "True": 5
+        },
+        "by_truncated": {
+          "False": 88,
+          "True": 3
+        },
+        "examples": [
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              707.476543,
+              311.93851,
+              716.210821,
+              328.159313
+            ],
+            "color": "green",
+            "width_px": 8.734278000000018,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              316.929527,
+              289.478938,
+              329.407067,
+              306.947495
+            ],
+            "color": "none",
+            "width_px": 12.477539999999976,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              712.467558,
+              336.893592,
+              726.192853,
+              353.114395
+            ],
+            "color": "none",
+            "width_px": 13.72529499999996,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              602.665203,
+              340.636854,
+              610.151727,
+              353.114395
+            ],
+            "color": "green",
+            "width_px": 7.486524000000031,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              591.435416,
+              328.159313,
+              597.674186,
+              341.884608
+            ],
+            "color": "green",
+            "width_px": 6.238769999999931,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              529.047714,
+              331.902575,
+              536.534238,
+              341.884608
+            ],
+            "color": "green",
+            "width_px": 7.486523999999918,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1ceb32e-51852abe",
+            "bbox": [
+              461.263894,
+              240.299916,
+              469.363892,
+              252.449913
+            ],
+            "color": "red",
+            "width_px": 8.099998000000028,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d0a191-5490450b",
+            "bbox": [
+              577.356629,
+              212.962349,
+              584.106626,
+              226.462339
+            ],
+            "color": "red",
+            "width_px": 6.749997000000008,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d0a191-5490450b",
+            "bbox": [
+              646.544082,
+              221.399843,
+              653.294077,
+              236.587332
+            ],
+            "color": "red",
+            "width_px": 6.749995000000013,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d0a191-5490450b",
+            "bbox": [
+              482.856694,
+              246.712325,
+              503.10668,
+              260.212317
+            ],
+            "color": "none",
+            "width_px": 20.24998599999998,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              673.787183,
+              148.482731,
+              682.521461,
+              168.446796
+            ],
+            "color": "green",
+            "width_px": 8.734278000000018,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              343.132362,
+              172.190058,
+              351.86664,
+              187.163107
+            ],
+            "color": "green",
+            "width_px": 8.734278000000018,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              666.30066,
+              152.225993,
+              675.034938,
+              168.446796
+            ],
+            "color": "none",
+            "width_px": 8.734278000000018,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              222.100219,
+              202.136155,
+              250.798562,
+              222.100219
+            ],
+            "color": "none",
+            "width_px": 28.698342999999994,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              333.150329,
+              217.109203,
+              350.618887,
+              227.091236
+            ],
+            "color": "red",
+            "width_px": 17.468557999999973,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              125.10694,
+              270.337309,
+              148.731924,
+              288.899796
+            ],
+            "color": "red",
+            "width_px": 23.624983999999998,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              766.356499,
+              282.149801,
+              783.231488,
+              299.024789
+            ],
+            "color": "green",
+            "width_px": 16.874989000000028,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              314.10681,
+              293.962293,
+              327.606801,
+              309.149782
+            ],
+            "color": "green",
+            "width_px": 13.499991000000023,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              327.606801,
+              293.962293,
+              337.731794,
+              307.462283
+            ],
+            "color": "red",
+            "width_px": 10.12499299999996,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1f4491b-9958bd99",
+            "bbox": [
+              651.613829,
+              0.0,
+              675.913821,
+              36.449987
+            ],
+            "color": "none",
+            "width_px": 24.299991999999975,
+            "occluded": false,
+            "truncated": true
+          },
+          {
+            "image": "b1f4491b-9958bd99",
+            "bbox": [
+              855.463757,
+              167.399941,
+              885.163746,
+              195.749931
+            ],
+            "color": "green",
+            "width_px": 29.69998899999996,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b202cae2-672e61c5",
+            "bbox": [
+              472.898782,
+              234.827307,
+              477.889797,
+              249.800356
+            ],
+            "color": "none",
+            "width_px": 4.991015000000004,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b202cae2-672e61c5",
+            "bbox": [
+              465.412259,
+              237.322815,
+              469.15552,
+              247.304847
+            ],
+            "color": "none",
+            "width_px": 3.743261000000018,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              774.890912,
+              243.874297,
+              783.631925,
+              259.608123
+            ],
+            "color": "green",
+            "width_px": 8.741013000000066,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              867.545661,
+              268.349137,
+              876.286675,
+              285.831164
+            ],
+            "color": "green",
+            "width_px": 8.74101399999995,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              932.884718,
+              268.224257,
+              941.625732,
+              283.958083
+            ],
+            "color": "green",
+            "width_px": 8.74101399999995,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              700.37374,
+              222.770983,
+              712.611158,
+              245.49762
+            ],
+            "color": "none",
+            "width_px": 12.237418000000048,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              654.920467,
+              226.267389,
+              667.157885,
+              247.245822
+            ],
+            "color": "none",
+            "width_px": 12.237417999999934,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              618.208206,
+              228.015589,
+              630.445626,
+              248.994024
+            ],
+            "color": "none",
+            "width_px": 12.23741999999993,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              733.589593,
+              242.001213,
+              742.330607,
+              257.735038
+            ],
+            "color": "none",
+            "width_px": 8.74101399999995,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              395.106755,
+              83.024939,
+              413.669242,
+              123.524911
+            ],
+            "color": "yellow",
+            "width_px": 18.562486999999976,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              629.669093,
+              98.212426,
+              651.606578,
+              133.649902
+            ],
+            "color": "yellow",
+            "width_px": 21.937485000000038,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              378.231766,
+              287.212296,
+              395.106755,
+              304.087286
+            ],
+            "color": "red",
+            "width_px": 16.874989000000028,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b23adb0d-8a7aaced",
+            "bbox": [
+              1230.674918,
+              219.825203,
+              1279.140315,
+              278.099066
+            ],
+            "color": "green",
+            "width_px": 48.465397000000166,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b23adb0d-8a7aaced",
+            "bbox": [
+              602.355647,
+              180.591295,
+              610.433213,
+              192.707645
+            ],
+            "color": "green",
+            "width_px": 8.077566000000047,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b23adb0d-8a7aaced",
+            "bbox": [
+              648.128522,
+              181.937556,
+              653.513566,
+              195.400167
+            ],
+            "color": "green",
+            "width_px": 5.3850439999999935,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b23adb0d-8a7aaced",
+            "bbox": [
+              837.951327,
+              177.898773,
+              851.413938,
+              198.092689
+            ],
+            "color": "green",
+            "width_px": 13.462611000000038,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b250fb0c-01a1b8d3",
+            "bbox": [
+              616.138976,
+              222.619385,
+              625.545427,
+              241.43229
+            ],
+            "color": "none",
+            "width_px": 9.406451000000061,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b255cd6c-6502a28c",
+            "bbox": [
+              534.344198,
+              283.926316,
+              544.575777,
+              313.342107
+            ],
+            "color": "green",
+            "width_px": 10.23157900000001,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b255cd6c-6502a28c",
+            "bbox": [
+              754.323146,
+              360.66316,
+              761.996831,
+              370.894739
+            ],
+            "color": "green",
+            "width_px": 7.673685000000091,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b255cd6c-6502a28c",
+            "bbox": [
+              988.221202,
+              281.992414,
+              999.450988,
+              303.204232
+            ],
+            "color": "none",
+            "width_px": 11.229786000000104,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b268bb58-5ead8a56",
+            "bbox": [
+              606.160798,
+              375.023726,
+              616.875762,
+              387.269399
+            ],
+            "color": "green",
+            "width_px": 10.714964000000009,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b268bb58-5ead8a56",
+            "bbox": [
+              618.406471,
+              385.73869,
+              629.121434,
+              397.984362
+            ],
+            "color": "green",
+            "width_px": 10.714963000000012,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b268bb58-5ead8a56",
+            "bbox": [
+              658.204907,
+              381.146562,
+              670.450582,
+              393.392235
+            ],
+            "color": "green",
+            "width_px": 12.245675000000006,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b277a772-08d8d7ad",
+            "bbox": [
+              424.236375,
+              167.199042,
+              436.713915,
+              190.90637
+            ],
+            "color": "none",
+            "width_px": 12.477539999999976,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b277a772-08d8d7ad",
+            "bbox": [
+              495.358355,
+              227.091235,
+              504.092634,
+              242.064283
+            ],
+            "color": "green",
+            "width_px": 8.734278999999958,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b277a772-08d8d7ad",
+            "bbox": [
+              431.722899,
+              227.091235,
+              444.200439,
+              237.073267
+            ],
+            "color": "green",
+            "width_px": 12.477540000000033,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b27cd403-f2d087cc",
+            "bbox": [
+              580.20563,
+              359.60271,
+              585.196646,
+              373.328006
+            ],
+            "color": "green",
+            "width_px": 4.991015999999945,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2828509-133b042d",
+            "bbox": [
+              506.233661,
+              0.0,
+              532.33791,
+              14.51249
+            ],
+            "color": "green",
+            "width_px": 26.10424899999998,
+            "occluded": false,
+            "truncated": true
+          },
+          {
+            "image": "b2828509-133b042d",
+            "bbox": [
+              0.0,
+              283.051938,
+              10.252946,
+              318.369449
+            ],
+            "color": "green",
+            "width_px": 10.252946,
+            "occluded": false,
+            "truncated": true
+          },
+          {
+            "image": "b28cb5d3-9ff4ab4a",
+            "bbox": [
+              51.712638,
+              221.118338,
+              76.28134,
+              274.862378
+            ],
+            "color": "none",
+            "width_px": 24.568702000000002,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b28cb5d3-9ff4ab4a",
+            "bbox": [
+              11.788491,
+              288.682273,
+              42.499373,
+              347.032945
+            ],
+            "color": "none",
+            "width_px": 30.710881999999998,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              565.232581,
+              192.154123,
+              571.471354,
+              202.136154
+            ],
+            "color": "green",
+            "width_px": 6.238773000000037,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              490.36734,
+              195.897385,
+              496.606109,
+              207.127172
+            ],
+            "color": "green",
+            "width_px": 6.238768999999991,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              378.069474,
+              177.181074,
+              386.803752,
+              190.906369
+            ],
+            "color": "none",
+            "width_px": 8.73427799999996,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              464.164504,
+              214.613694,
+              466.660013,
+              227.091235
+            ],
+            "color": "none",
+            "width_px": 2.49550899999997,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              346.875625,
+              210.870434,
+              356.857656,
+              228.338992
+            ],
+            "color": "red",
+            "width_px": 9.982031000000006,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2939bf0-221e1dfb",
+            "bbox": [
+              492.288233,
+              342.266089,
+              499.474921,
+              353.94446
+            ],
+            "color": "green",
+            "width_px": 7.186688000000004,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2939bf0-221e1dfb",
+            "bbox": [
+              1142.674332,
+              296.192208,
+              1157.981423,
+              319.152844
+            ],
+            "color": "red",
+            "width_px": 15.3070909999999,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2939bf0-221e1dfb",
+            "bbox": [
+              998.787678,
+              311.499299,
+              1007.971933,
+              329.867808
+            ],
+            "color": "red",
+            "width_px": 9.184255000000007,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29f09ea-ecd5304b",
+            "bbox": [
+              14.973049,
+              358.354957,
+              33.68936,
+              374.57576
+            ],
+            "color": "red",
+            "width_px": 18.716311,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              671.856563,
+              339.524761,
+              687.044053,
+              351.337253
+            ],
+            "color": "red",
+            "width_px": 15.187489999999912,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              108.231952,
+              358.08725,
+              116.669445,
+              373.274738
+            ],
+            "color": "red",
+            "width_px": 8.43749299999999,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              114.981947,
+              374.962236,
+              128.481938,
+              388.462228
+            ],
+            "color": "red",
+            "width_px": 13.499991000000009,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              114.981947,
+              354.712251,
+              125.10694,
+              373.274738
+            ],
+            "color": "none",
+            "width_px": 10.12499299999999,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              44.106997,
+              300.712288,
+              54.23199,
+              324.337271
+            ],
+            "color": "none",
+            "width_px": 10.124993000000003,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              651.606578,
+              312.52478,
+              665.10657,
+              334.462265
+            ],
+            "color": "none",
+            "width_px": 13.49999200000002,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              401.856751,
+              327.71227,
+              415.356742,
+              341.21226
+            ],
+            "color": "none",
+            "width_px": 13.499991000000023,
+            "occluded": true,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              528.419164,
+              324.337271,
+              540.231655,
+              337.837263
+            ],
+            "color": "none",
+            "width_px": 11.812491000000023,
+            "occluded": true,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              472.898782,
+              326.911559,
+              479.137551,
+              344.380117
+            ],
+            "color": "green",
+            "width_px": 6.238768999999991,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              672.539429,
+              338.141345,
+              681.273708,
+              353.114393
+            ],
+            "color": "green",
+            "width_px": 8.734279000000015,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              662.557397,
+              351.86664,
+              671.291675,
+              363.096426
+            ],
+            "color": "green",
+            "width_px": 8.734278000000018,
+            "occluded": true,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              648.832102,
+              319.425036,
+              661.309643,
+              334.398084
+            ],
+            "color": "green",
+            "width_px": 12.477541000000087,
+            "occluded": true,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              462.916751,
+              326.911559,
+              471.65103,
+              341.884609
+            ],
+            "color": "none",
+            "width_px": 8.734279000000015,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              476.642043,
+              326.911559,
+              485.376324,
+              341.884609
+            ],
+            "color": "none",
+            "width_px": 8.73428100000001,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              396.785786,
+              378.069474,
+              406.767818,
+              393.042522
+            ],
+            "color": "green",
+            "width_px": 9.982032000000004,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              746.156918,
+              371.830705,
+              757.386704,
+              381.812738
+            ],
+            "color": "green",
+            "width_px": 11.22978599999999,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              517.817928,
+              348.123378,
+              527.79996,
+              361.848672
+            ],
+            "color": "none",
+            "width_px": 9.982032000000004,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              635.106808,
+              381.812738,
+              642.593331,
+              391.79477
+            ],
+            "color": "green",
+            "width_px": 7.486523000000034,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              825.204504,
+              247.118597,
+              843.875686,
+              265.78978
+            ],
+            "color": "none",
+            "width_px": 18.67118199999993,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              616.892674,
+              252.610122,
+              632.268942,
+              265.78978
+            ],
+            "color": "green",
+            "width_px": 15.376267999999982,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              694.87232,
+              261.396561,
+              713.543503,
+              274.576219
+            ],
+            "color": "green",
+            "width_px": 18.671183000000042,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              748.689259,
+              258.101646,
+              771.753661,
+              278.969438
+            ],
+            "color": "green",
+            "width_px": 23.064401999999973,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              440.694832,
+              278.420285,
+              449.48127,
+              294.894859
+            ],
+            "color": "none",
+            "width_px": 8.786437999999976,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              595.481569,
+              70.677335,
+              618.208206,
+              123.12342
+            ],
+            "color": "none",
+            "width_px": 22.726636999999982,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              866.453011,
+              228.015589,
+              878.690431,
+              261.231444
+            ],
+            "color": "red",
+            "width_px": 12.237420000000043,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              467.862761,
+              229.763792,
+              485.344788,
+              247.245821
+            ],
+            "color": "green",
+            "width_px": 17.482027000000016,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              147.94164,
+              179.06591,
+              195.143115,
+              221.022779
+            ],
+            "color": "red",
+            "width_px": 47.20147499999999,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              460.86995,
+              294.4473,
+              474.855572,
+              308.432922
+            ],
+            "color": "red",
+            "width_px": 13.985621999999978,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2eed8fa-cf59a253",
+            "bbox": [
+              624.665118,
+              234.249419,
+              632.742684,
+              245.019507
+            ],
+            "color": "green",
+            "width_px": 8.077566000000047,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2eed8fa-cf59a253",
+            "bbox": [
+              677.169298,
+              232.903158,
+              687.939386,
+              245.019507
+            ],
+            "color": "green",
+            "width_px": 10.770087999999987,
+            "occluded": true,
+            "truncated": false
+          }
+        ]
+      }
+    },
+    "v8n": {
+      "label": "v8n",
+      "conf": 0.25,
+      "fp": {
+        "total": 32,
+        "by_overlap_category": {
+          "background/no_non_tl_gt": 29,
+          "traffic sign": 3
+        },
+        "by_contained_category": {
+          "background/no_non_tl_gt": 29,
+          "traffic sign": 2,
+          "car": 1
+        },
+        "mean_confidence": 0.3521378943696618,
+        "examples": [
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              629.1817474365234,
+              297.7947235107422,
+              638.6958312988281,
+              315.15892028808594
+            ],
+            "confidence": 0.5037602782249451,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1d0a191-5490450b",
+            "bbox": [
+              577.2705841064453,
+              215.07028579711914,
+              590.0031280517578,
+              228.10422897338867
+            ],
+            "confidence": 0.2524792551994324,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              664.4004058837891,
+              147.14109420776367,
+              672.8050994873047,
+              170.75139999389648
+            ],
+            "confidence": 0.36886247992515564,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              674.5055389404297,
+              147.26335525512695,
+              690.0060272216797,
+              171.58445358276367
+            ],
+            "confidence": 0.289887934923172,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              223.2843780517578,
+              204.9771499633789,
+              240.06973266601562,
+              219.51068878173828
+            ],
+            "confidence": 0.261779248714447,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              322.7162170410156,
+              295.20708084106445,
+              336.2413024902344,
+              308.5758972167969
+            ],
+            "confidence": 0.38746485114097595,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              438.7318420410156,
+              263.09593200683594,
+              450.126953125,
+              277.06207275390625
+            ],
+            "confidence": 0.41958194971084595,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b255cd6c-6502a28c",
+            "bbox": [
+              303.01950454711914,
+              358.60572814941406,
+              319.644718170166,
+              375.98411560058594
+            ],
+            "confidence": 0.501551628112793,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b255cd6c-6502a28c",
+            "bbox": [
+              1265.641860961914,
+              322.1015167236328,
+              1279.3531036376953,
+              340.54237365722656
+            ],
+            "confidence": 0.3569449484348297,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b258d359-49a3ad31",
+            "bbox": [
+              705.5418395996094,
+              347.48844146728516,
+              714.3583679199219,
+              362.45960235595703
+            ],
+            "confidence": 0.33404865860939026,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b26610ce-083c3bd1",
+            "bbox": [
+              402.3217010498047,
+              88.81637573242188,
+              421.9414520263672,
+              132.19364166259766
+            ],
+            "confidence": 0.5998013615608215,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b26610ce-083c3bd1",
+            "bbox": [
+              621.8738555908203,
+              339.07997131347656,
+              631.8485260009766,
+              348.90472412109375
+            ],
+            "confidence": 0.29519975185394287,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b268bb58-5ead8a56",
+            "bbox": [
+              609.2132568359375,
+              367.4452209472656,
+              617.5025939941406,
+              384.88800048828125
+            ],
+            "confidence": 0.3434686064720154,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b26f9b1e-09c56a3c",
+            "bbox": [
+              581.0861206054688,
+              304.9962615966797,
+              590.8460998535156,
+              314.9359130859375
+            ],
+            "confidence": 0.2938920855522156,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b277a772-08d8d7ad",
+            "bbox": [
+              685.8334350585938,
+              240.15987396240234,
+              704.207763671875,
+              253.62545013427734
+            ],
+            "confidence": 0.398413747549057,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b277a772-08d8d7ad",
+            "bbox": [
+              415.3534698486328,
+              167.11345672607422,
+              430.1814270019531,
+              190.31261444091797
+            ],
+            "confidence": 0.34882426261901855,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b277a772-08d8d7ad",
+            "bbox": [
+              496.7475128173828,
+              233.8280487060547,
+              505.3739929199219,
+              246.571044921875
+            ],
+            "confidence": 0.33746424317359924,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b277a772-08d8d7ad",
+            "bbox": [
+              497.9645538330078,
+              235.5914306640625,
+              510.01731872558594,
+              247.70523071289062
+            ],
+            "confidence": 0.31372788548469543,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2828509-133b042d",
+            "bbox": [
+              540.8725738525391,
+              0.2719402313232422,
+              570.3488922119141,
+              25.678510665893555
+            ],
+            "confidence": 0.3682388365268707,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2828509-133b042d",
+            "bbox": [
+              413.7261199951172,
+              355.15419006347656,
+              424.8693084716797,
+              368.9887237548828
+            ],
+            "confidence": 0.36474594473838806,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2828509-133b042d",
+            "bbox": [
+              705.3584289550781,
+              236.01383209228516,
+              724.3998718261719,
+              267.50450134277344
+            ],
+            "confidence": 0.34421175718307495,
+            "overlap_category": "traffic sign",
+            "overlap_iou": 0.8018026613219216,
+            "contained_in_category": "traffic sign",
+            "contained_fraction": 0.8492176937283948
+          },
+          {
+            "image": "b2828509-133b042d",
+            "bbox": [
+              0.0,
+              192.49351501464844,
+              13.860647678375244,
+              230.96595764160156
+            ],
+            "confidence": 0.2648349106311798,
+            "overlap_category": "traffic sign",
+            "overlap_iou": 0.38796835404208024,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.3991282578258297
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              564.8651885986328,
+              191.93218231201172,
+              572.8665924072266,
+              207.51667022705078
+            ],
+            "confidence": 0.29981064796447754,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2939bf0-221e1dfb",
+            "bbox": [
+              489.37660217285156,
+              337.5579833984375,
+              501.7779541015625,
+              353.48236083984375
+            ],
+            "confidence": 0.42696356773376465,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2ae0446-4b0bfda7",
+            "bbox": [
+              447.3295593261719,
+              318.4967803955078,
+              456.9940185546875,
+              339.6106719970703
+            ],
+            "confidence": 0.2655174732208252,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              207.04410552978516,
+              340.0909423828125,
+              216.6415786743164,
+              356.07025146484375
+            ],
+            "confidence": 0.361298531293869,
+            "overlap_category": "traffic sign",
+            "overlap_iou": 0.34285793824469485,
+            "contained_in_category": "traffic sign",
+            "contained_fraction": 0.8242215853784296
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              109.65019226074219,
+              357.48207092285156,
+              120.69107055664062,
+              375.4063415527344
+            ],
+            "confidence": 0.25485438108444214,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              465.035400390625,
+              323.7039566040039,
+              475.22125244140625,
+              342.2421646118164
+            ],
+            "confidence": 0.48742416501045227,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              660.9089660644531,
+              346.52942657470703,
+              672.7133178710938,
+              362.3555374145508
+            ],
+            "confidence": 0.26318827271461487,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.01201216264284097,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              457.63954162597656,
+              259.0280342102051,
+              470.02281188964844,
+              269.6746253967285
+            ],
+            "confidence": 0.3970656991004944,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              911.7381286621094,
+              262.7534866333008,
+              930.0625610351562,
+              283.0664825439453
+            ],
+            "confidence": 0.29342424869537354,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.1655695171807729,
+            "contained_in_category": "car",
+            "contained_fraction": 1.0
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              469.2176818847656,
+              219.7694969177246,
+              483.3692932128906,
+              244.94932174682617
+            ],
+            "confidence": 0.26968100666999817,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          }
+        ]
+      },
+      "fn": {
+        "total": 80,
+        "by_size_group": {
+          "8-16": 47,
+          "<8": 15,
+          "16-32": 17,
+          ">32": 1
+        },
+        "by_color": {
+          "green": 39,
+          "none": 27,
+          "red": 12,
+          "yellow": 2
+        },
+        "by_occluded": {
+          "False": 75,
+          "True": 5
+        },
+        "by_truncated": {
+          "False": 79,
+          "True": 1
+        },
+        "examples": [
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              626.37253,
+              295.717708,
+              636.354562,
+              316.929527
+            ],
+            "color": "green",
+            "width_px": 9.982032000000004,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              316.929527,
+              289.478938,
+              329.407067,
+              306.947495
+            ],
+            "color": "none",
+            "width_px": 12.477539999999976,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              712.467558,
+              336.893592,
+              726.192853,
+              353.114395
+            ],
+            "color": "none",
+            "width_px": 13.72529499999996,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              602.665203,
+              340.636854,
+              610.151727,
+              353.114395
+            ],
+            "color": "green",
+            "width_px": 7.486524000000031,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              591.435416,
+              328.159313,
+              597.674186,
+              341.884608
+            ],
+            "color": "green",
+            "width_px": 6.238769999999931,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              529.047714,
+              331.902575,
+              536.534238,
+              341.884608
+            ],
+            "color": "green",
+            "width_px": 7.486523999999918,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1ceb32e-51852abe",
+            "bbox": [
+              461.263894,
+              240.299916,
+              469.363892,
+              252.449913
+            ],
+            "color": "red",
+            "width_px": 8.099998000000028,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d0a191-5490450b",
+            "bbox": [
+              577.356629,
+              212.962349,
+              584.106626,
+              226.462339
+            ],
+            "color": "red",
+            "width_px": 6.749997000000008,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d0a191-5490450b",
+            "bbox": [
+              482.856694,
+              246.712325,
+              503.10668,
+              260.212317
+            ],
+            "color": "none",
+            "width_px": 20.24998599999998,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d0a191-5490450b",
+            "bbox": [
+              727.544026,
+              246.712325,
+              746.106513,
+              260.212317
+            ],
+            "color": "none",
+            "width_px": 18.56248699999992,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              673.787183,
+              148.482731,
+              682.521461,
+              168.446796
+            ],
+            "color": "green",
+            "width_px": 8.734278000000018,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              343.132362,
+              172.190058,
+              351.86664,
+              187.163107
+            ],
+            "color": "green",
+            "width_px": 8.734278000000018,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              666.30066,
+              152.225993,
+              675.034938,
+              168.446796
+            ],
+            "color": "none",
+            "width_px": 8.734278000000018,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              222.100219,
+              202.136155,
+              250.798562,
+              222.100219
+            ],
+            "color": "none",
+            "width_px": 28.698342999999994,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              333.150329,
+              217.109203,
+              350.618887,
+              227.091236
+            ],
+            "color": "red",
+            "width_px": 17.468557999999973,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              724.508961,
+              276.431105,
+              744.467886,
+              294.394137
+            ],
+            "color": "green",
+            "width_px": 19.958925000000022,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              766.356499,
+              282.149801,
+              783.231488,
+              299.024789
+            ],
+            "color": "green",
+            "width_px": 16.874989000000028,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              314.10681,
+              293.962293,
+              327.606801,
+              309.149782
+            ],
+            "color": "green",
+            "width_px": 13.499991000000023,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              327.606801,
+              293.962293,
+              337.731794,
+              307.462283
+            ],
+            "color": "red",
+            "width_px": 10.12499299999996,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b202cae2-672e61c5",
+            "bbox": [
+              472.898782,
+              234.827307,
+              477.889797,
+              249.800356
+            ],
+            "color": "none",
+            "width_px": 4.991015000000004,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b202cae2-672e61c5",
+            "bbox": [
+              465.412259,
+              237.322815,
+              469.15552,
+              247.304847
+            ],
+            "color": "none",
+            "width_px": 3.743261000000018,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              774.890912,
+              243.874297,
+              783.631925,
+              259.608123
+            ],
+            "color": "green",
+            "width_px": 8.741013000000066,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              867.545661,
+              268.349137,
+              876.286675,
+              285.831164
+            ],
+            "color": "green",
+            "width_px": 8.74101399999995,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              932.884718,
+              268.224257,
+              941.625732,
+              283.958083
+            ],
+            "color": "green",
+            "width_px": 8.74101399999995,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              700.37374,
+              222.770983,
+              712.611158,
+              245.49762
+            ],
+            "color": "none",
+            "width_px": 12.237418000000048,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              654.920467,
+              226.267389,
+              667.157885,
+              247.245822
+            ],
+            "color": "none",
+            "width_px": 12.237417999999934,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              618.208206,
+              228.015589,
+              630.445626,
+              248.994024
+            ],
+            "color": "none",
+            "width_px": 12.23741999999993,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              733.589593,
+              242.001213,
+              742.330607,
+              257.735038
+            ],
+            "color": "none",
+            "width_px": 8.74101399999995,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              395.106755,
+              83.024939,
+              413.669242,
+              123.524911
+            ],
+            "color": "yellow",
+            "width_px": 18.562486999999976,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              629.669093,
+              98.212426,
+              651.606578,
+              133.649902
+            ],
+            "color": "yellow",
+            "width_px": 21.937485000000038,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              437.294226,
+              256.837318,
+              449.106718,
+              280.462302
+            ],
+            "color": "green",
+            "width_px": 11.81249200000002,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              378.231766,
+              287.212296,
+              395.106755,
+              304.087286
+            ],
+            "color": "red",
+            "width_px": 16.874989000000028,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b23adb0d-8a7aaced",
+            "bbox": [
+              1230.674918,
+              219.825203,
+              1279.140315,
+              278.099066
+            ],
+            "color": "green",
+            "width_px": 48.465397000000166,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b23adb0d-8a7aaced",
+            "bbox": [
+              602.355647,
+              180.591295,
+              610.433213,
+              192.707645
+            ],
+            "color": "green",
+            "width_px": 8.077566000000047,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b23adb0d-8a7aaced",
+            "bbox": [
+              648.128522,
+              181.937556,
+              653.513566,
+              195.400167
+            ],
+            "color": "green",
+            "width_px": 5.3850439999999935,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b250fb0c-01a1b8d3",
+            "bbox": [
+              616.138976,
+              222.619385,
+              625.545427,
+              241.43229
+            ],
+            "color": "none",
+            "width_px": 9.406451000000061,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b255cd6c-6502a28c",
+            "bbox": [
+              754.323146,
+              360.66316,
+              761.996831,
+              370.894739
+            ],
+            "color": "green",
+            "width_px": 7.673685000000091,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b255cd6c-6502a28c",
+            "bbox": [
+              988.221202,
+              281.992414,
+              999.450988,
+              303.204232
+            ],
+            "color": "none",
+            "width_px": 11.229786000000104,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b268bb58-5ead8a56",
+            "bbox": [
+              606.160798,
+              375.023726,
+              616.875762,
+              387.269399
+            ],
+            "color": "green",
+            "width_px": 10.714964000000009,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b268bb58-5ead8a56",
+            "bbox": [
+              618.406471,
+              385.73869,
+              629.121434,
+              397.984362
+            ],
+            "color": "green",
+            "width_px": 10.714963000000012,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b277a772-08d8d7ad",
+            "bbox": [
+              424.236375,
+              167.199042,
+              436.713915,
+              190.90637
+            ],
+            "color": "none",
+            "width_px": 12.477539999999976,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b277a772-08d8d7ad",
+            "bbox": [
+              495.358355,
+              227.091235,
+              504.092634,
+              242.064283
+            ],
+            "color": "green",
+            "width_px": 8.734278999999958,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b27cd403-f2d087cc",
+            "bbox": [
+              580.20563,
+              359.60271,
+              585.196646,
+              373.328006
+            ],
+            "color": "green",
+            "width_px": 4.991015999999945,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2828509-133b042d",
+            "bbox": [
+              506.233661,
+              0.0,
+              532.33791,
+              14.51249
+            ],
+            "color": "green",
+            "width_px": 26.10424899999998,
+            "occluded": false,
+            "truncated": true
+          },
+          {
+            "image": "b28cb5d3-9ff4ab4a",
+            "bbox": [
+              11.788491,
+              288.682273,
+              42.499373,
+              347.032945
+            ],
+            "color": "none",
+            "width_px": 30.710881999999998,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              565.232581,
+              192.154123,
+              571.471354,
+              202.136154
+            ],
+            "color": "green",
+            "width_px": 6.238773000000037,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              490.36734,
+              195.897385,
+              496.606109,
+              207.127172
+            ],
+            "color": "green",
+            "width_px": 6.238768999999991,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              378.069474,
+              177.181074,
+              386.803752,
+              190.906369
+            ],
+            "color": "none",
+            "width_px": 8.73427799999996,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              464.164504,
+              214.613694,
+              466.660013,
+              227.091235
+            ],
+            "color": "none",
+            "width_px": 2.49550899999997,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              346.875625,
+              210.870434,
+              356.857656,
+              228.338992
+            ],
+            "color": "red",
+            "width_px": 9.982031000000006,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2939bf0-221e1dfb",
+            "bbox": [
+              492.288233,
+              342.266089,
+              499.474921,
+              353.94446
+            ],
+            "color": "green",
+            "width_px": 7.186688000000004,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2939bf0-221e1dfb",
+            "bbox": [
+              998.787678,
+              311.499299,
+              1007.971933,
+              329.867808
+            ],
+            "color": "red",
+            "width_px": 9.184255000000007,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29f09ea-ecd5304b",
+            "bbox": [
+              14.973049,
+              358.354957,
+              33.68936,
+              374.57576
+            ],
+            "color": "red",
+            "width_px": 18.716311,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              671.856563,
+              339.524761,
+              687.044053,
+              351.337253
+            ],
+            "color": "red",
+            "width_px": 15.187489999999912,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              108.231952,
+              358.08725,
+              116.669445,
+              373.274738
+            ],
+            "color": "red",
+            "width_px": 8.43749299999999,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              114.981947,
+              374.962236,
+              128.481938,
+              388.462228
+            ],
+            "color": "red",
+            "width_px": 13.499991000000009,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              114.981947,
+              354.712251,
+              125.10694,
+              373.274738
+            ],
+            "color": "none",
+            "width_px": 10.12499299999999,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              651.606578,
+              312.52478,
+              665.10657,
+              334.462265
+            ],
+            "color": "none",
+            "width_px": 13.49999200000002,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              401.856751,
+              327.71227,
+              415.356742,
+              341.21226
+            ],
+            "color": "none",
+            "width_px": 13.499991000000023,
+            "occluded": true,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              528.419164,
+              324.337271,
+              540.231655,
+              337.837263
+            ],
+            "color": "none",
+            "width_px": 11.812491000000023,
+            "occluded": true,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              472.898782,
+              326.911559,
+              479.137551,
+              344.380117
+            ],
+            "color": "green",
+            "width_px": 6.238768999999991,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              672.539429,
+              338.141345,
+              681.273708,
+              353.114393
+            ],
+            "color": "green",
+            "width_px": 8.734279000000015,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              662.557397,
+              351.86664,
+              671.291675,
+              363.096426
+            ],
+            "color": "green",
+            "width_px": 8.734278000000018,
+            "occluded": true,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              648.832102,
+              319.425036,
+              661.309643,
+              334.398084
+            ],
+            "color": "green",
+            "width_px": 12.477541000000087,
+            "occluded": true,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              462.916751,
+              326.911559,
+              471.65103,
+              341.884609
+            ],
+            "color": "none",
+            "width_px": 8.734279000000015,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              476.642043,
+              326.911559,
+              485.376324,
+              341.884609
+            ],
+            "color": "none",
+            "width_px": 8.73428100000001,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              396.785786,
+              378.069474,
+              406.767818,
+              393.042522
+            ],
+            "color": "green",
+            "width_px": 9.982032000000004,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              746.156918,
+              371.830705,
+              757.386704,
+              381.812738
+            ],
+            "color": "green",
+            "width_px": 11.22978599999999,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              517.817928,
+              348.123378,
+              527.79996,
+              361.848672
+            ],
+            "color": "none",
+            "width_px": 9.982032000000004,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              635.106808,
+              381.812738,
+              642.593331,
+              391.79477
+            ],
+            "color": "green",
+            "width_px": 7.486523000000034,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              825.204504,
+              247.118597,
+              843.875686,
+              265.78978
+            ],
+            "color": "none",
+            "width_px": 18.67118199999993,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              454.343551,
+              258.101646,
+              471.91643,
+              274.576219
+            ],
+            "color": "green",
+            "width_px": 17.572879,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              616.892674,
+              252.610122,
+              632.268942,
+              265.78978
+            ],
+            "color": "green",
+            "width_px": 15.376267999999982,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              694.87232,
+              261.396561,
+              713.543503,
+              274.576219
+            ],
+            "color": "green",
+            "width_px": 18.671183000000042,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              748.689259,
+              258.101646,
+              771.753661,
+              278.969438
+            ],
+            "color": "green",
+            "width_px": 23.064401999999973,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              440.694832,
+              278.420285,
+              449.48127,
+              294.894859
+            ],
+            "color": "none",
+            "width_px": 8.786437999999976,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              866.453011,
+              228.015589,
+              878.690431,
+              261.231444
+            ],
+            "color": "red",
+            "width_px": 12.237420000000043,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              467.862761,
+              229.763792,
+              485.344788,
+              247.245821
+            ],
+            "color": "green",
+            "width_px": 17.482027000000016,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2eed8fa-cf59a253",
+            "bbox": [
+              624.665118,
+              234.249419,
+              632.742684,
+              245.019507
+            ],
+            "color": "green",
+            "width_px": 8.077566000000047,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2eed8fa-cf59a253",
+            "bbox": [
+              677.169298,
+              232.903158,
+              687.939386,
+              245.019507
+            ],
+            "color": "green",
+            "width_px": 10.770087999999987,
+            "occluded": true,
+            "truncated": false
+          }
+        ]
+      }
+    },
+    "v8n_p2": {
+      "label": "v8n_p2",
+      "conf": 0.25,
+      "fp": {
+        "total": 31,
+        "by_overlap_category": {
+          "background/no_non_tl_gt": 30,
+          "traffic sign": 1
+        },
+        "by_contained_category": {
+          "background/no_non_tl_gt": 30,
+          "traffic sign": 1
+        },
+        "mean_confidence": 0.3962394739350965,
+        "examples": [
+          {
+            "image": "b1d0a191-5490450b",
+            "bbox": [
+              574.69482421875,
+              215.38619995117188,
+              583.4264373779297,
+              229.22943115234375
+            ],
+            "confidence": 0.39456039667129517,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              676.1924743652344,
+              149.3352508544922,
+              686.041259765625,
+              171.23741149902344
+            ],
+            "confidence": 0.40811318159103394,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              126.45732879638672,
+              269.9313735961914,
+              139.67172622680664,
+              287.07218170166016
+            ],
+            "confidence": 0.5095486640930176,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              729.3193054199219,
+              275.77056884765625,
+              740.2738952636719,
+              291.7511749267578
+            ],
+            "confidence": 0.3986990451812744,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b1f4491b-9958bd99",
+            "bbox": [
+              866.595458984375,
+              167.71121978759766,
+              889.2904663085938,
+              191.1385726928711
+            ],
+            "confidence": 0.47768548130989075,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              491.83990478515625,
+              267.53055572509766,
+              502.41790771484375,
+              280.36808013916016
+            ],
+            "confidence": 0.4611404538154602,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              439.26422119140625,
+              263.84033203125,
+              449.9561309814453,
+              278.4211730957031
+            ],
+            "confidence": 0.414127916097641,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              473.54053497314453,
+              285.6057357788086,
+              482.96199798583984,
+              297.4128723144531
+            ],
+            "confidence": 0.3210389018058777,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b23adb0d-8a7aaced",
+            "bbox": [
+              574.4325256347656,
+              185.25175094604492,
+              584.5053863525391,
+              196.57686233520508
+            ],
+            "confidence": 0.48598822951316833,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b255cd6c-6502a28c",
+            "bbox": [
+              1263.2667541503906,
+              324.1554641723633,
+              1278.5426330566406,
+              339.51915740966797
+            ],
+            "confidence": 0.6808193325996399,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b255cd6c-6502a28c",
+            "bbox": [
+              304.4834518432617,
+              357.5817108154297,
+              320.4799270629883,
+              375.1435089111328
+            ],
+            "confidence": 0.5260130167007446,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b258d359-49a3ad31",
+            "bbox": [
+              705.6171417236328,
+              351.21177673339844,
+              715.4630279541016,
+              362.66395568847656
+            ],
+            "confidence": 0.3445700705051422,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b258d359-49a3ad31",
+            "bbox": [
+              749.8394775390625,
+              352.76561737060547,
+              758.6300659179688,
+              363.8473892211914
+            ],
+            "confidence": 0.3228036165237427,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b26610ce-083c3bd1",
+            "bbox": [
+              400.30189514160156,
+              88.21352005004883,
+              420.8855438232422,
+              134.83972549438477
+            ],
+            "confidence": 0.5986793041229248,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b268bb58-5ead8a56",
+            "bbox": [
+              661.2302398681641,
+              379.27207946777344,
+              669.3378448486328,
+              391.05323791503906
+            ],
+            "confidence": 0.34144535660743713,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b268bb58-5ead8a56",
+            "bbox": [
+              608.8668823242188,
+              368.37589263916016,
+              618.3164978027344,
+              384.6140670776367
+            ],
+            "confidence": 0.2547737956047058,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b26f9b1e-09c56a3c",
+            "bbox": [
+              581.2752532958984,
+              305.12184143066406,
+              591.5505218505859,
+              316.1974334716797
+            ],
+            "confidence": 0.35310986638069153,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b277a772-08d8d7ad",
+            "bbox": [
+              685.8619689941406,
+              240.3399658203125,
+              703.8545227050781,
+              253.95038604736328
+            ],
+            "confidence": 0.2783261239528656,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b27cd403-f2d087cc",
+            "bbox": [
+              577.1022033691406,
+              362.88604736328125,
+              586.148681640625,
+              375.05828857421875
+            ],
+            "confidence": 0.3112785220146179,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2828509-133b042d",
+            "bbox": [
+              540.4852294921875,
+              0.0,
+              570.030517578125,
+              27.79285430908203
+            ],
+            "confidence": 0.4417318105697632,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2828509-133b042d",
+            "bbox": [
+              413.9793395996094,
+              354.9626159667969,
+              425.4838562011719,
+              369.5355224609375
+            ],
+            "confidence": 0.2870941162109375,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2828509-133b042d",
+            "bbox": [
+              504.2311096191406,
+              0.0,
+              537.3778533935547,
+              35.170302391052246
+            ],
+            "confidence": 0.2718706727027893,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b28cb5d3-9ff4ab4a",
+            "bbox": [
+              8.663339614868164,
+              268.8228416442871,
+              52.85133361816406,
+              342.9523468017578
+            ],
+            "confidence": 0.3002382218837738,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2939bf0-221e1dfb",
+            "bbox": [
+              488.7826919555664,
+              337.54539489746094,
+              501.78516387939453,
+              353.91273498535156
+            ],
+            "confidence": 0.47334030270576477,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              543.4482574462891,
+              244.88685607910156,
+              553.8449859619141,
+              257.46543884277344
+            ],
+            "confidence": 0.48898637294769287,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              512.1596527099609,
+              245.01440048217773,
+              522.2681427001953,
+              258.5109519958496
+            ],
+            "confidence": 0.4641163647174835,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              457.9167938232422,
+              258.4615707397461,
+              467.54417419433594,
+              270.92308044433594
+            ],
+            "confidence": 0.36269617080688477,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              616.2105941772461,
+              251.47918701171875,
+              625.8182144165039,
+              264.0693664550781
+            ],
+            "confidence": 0.2901940643787384,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              663.2133483886719,
+              302.4018096923828,
+              673.0131530761719,
+              313.9136505126953
+            ],
+            "confidence": 0.38918012380599976,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              168.1791114807129,
+              182.18994140625,
+              212.57490158081055,
+              219.15664672851562
+            ],
+            "confidence": 0.3520023822784424,
+            "overlap_category": "background/no_non_tl_gt",
+            "overlap_iou": 0.0,
+            "contained_in_category": "background/no_non_tl_gt",
+            "contained_fraction": 0.0
+          },
+          {
+            "image": "b2eed8fa-cf59a253",
+            "bbox": [
+              629.3859100341797,
+              173.43521118164062,
+              639.1356658935547,
+              190.5547332763672
+            ],
+            "confidence": 0.2792518138885498,
+            "overlap_category": "traffic sign",
+            "overlap_iou": 0.3718238854948055,
+            "contained_in_category": "traffic sign",
+            "contained_fraction": 0.906763412445225
+          }
+        ]
+      },
+      "fn": {
+        "total": 79,
+        "by_size_group": {
+          "8-16": 46,
+          "<8": 14,
+          "16-32": 18,
+          ">32": 1
+        },
+        "by_color": {
+          "none": 24,
+          "green": 38,
+          "red": 15,
+          "yellow": 2
+        },
+        "by_occluded": {
+          "False": 76,
+          "True": 3
+        },
+        "by_truncated": {
+          "False": 78,
+          "True": 1
+        },
+        "examples": [
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              316.929527,
+              289.478938,
+              329.407067,
+              306.947495
+            ],
+            "color": "none",
+            "width_px": 12.477539999999976,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              712.467558,
+              336.893592,
+              726.192853,
+              353.114395
+            ],
+            "color": "none",
+            "width_px": 13.72529499999996,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              602.665203,
+              340.636854,
+              610.151727,
+              353.114395
+            ],
+            "color": "green",
+            "width_px": 7.486524000000031,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              591.435416,
+              328.159313,
+              597.674186,
+              341.884608
+            ],
+            "color": "green",
+            "width_px": 6.238769999999931,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1c66a42-6f7d68ca",
+            "bbox": [
+              529.047714,
+              331.902575,
+              536.534238,
+              341.884608
+            ],
+            "color": "green",
+            "width_px": 7.486523999999918,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1ceb32e-51852abe",
+            "bbox": [
+              461.263894,
+              240.299916,
+              469.363892,
+              252.449913
+            ],
+            "color": "red",
+            "width_px": 8.099998000000028,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d0a191-5490450b",
+            "bbox": [
+              577.356629,
+              212.962349,
+              584.106626,
+              226.462339
+            ],
+            "color": "red",
+            "width_px": 6.749997000000008,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d0a191-5490450b",
+            "bbox": [
+              646.544082,
+              221.399843,
+              653.294077,
+              236.587332
+            ],
+            "color": "red",
+            "width_px": 6.749995000000013,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d0a191-5490450b",
+            "bbox": [
+              482.856694,
+              246.712325,
+              503.10668,
+              260.212317
+            ],
+            "color": "none",
+            "width_px": 20.24998599999998,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d0a191-5490450b",
+            "bbox": [
+              727.544026,
+              246.712325,
+              746.106513,
+              260.212317
+            ],
+            "color": "none",
+            "width_px": 18.56248699999992,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              673.787183,
+              148.482731,
+              682.521461,
+              168.446796
+            ],
+            "color": "green",
+            "width_px": 8.734278000000018,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              343.132362,
+              172.190058,
+              351.86664,
+              187.163107
+            ],
+            "color": "green",
+            "width_px": 8.734278000000018,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1d22ed6-f1cac061",
+            "bbox": [
+              333.150329,
+              217.109203,
+              350.618887,
+              227.091236
+            ],
+            "color": "red",
+            "width_px": 17.468557999999973,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              724.508961,
+              276.431105,
+              744.467886,
+              294.394137
+            ],
+            "color": "green",
+            "width_px": 19.958925000000022,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              125.10694,
+              270.337309,
+              148.731924,
+              288.899796
+            ],
+            "color": "red",
+            "width_px": 23.624983999999998,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              810.231469,
+              268.64981,
+              832.168954,
+              285.524799
+            ],
+            "color": "red",
+            "width_px": 21.937485000000038,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              766.356499,
+              282.149801,
+              783.231488,
+              299.024789
+            ],
+            "color": "green",
+            "width_px": 16.874989000000028,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              314.10681,
+              293.962293,
+              327.606801,
+              309.149782
+            ],
+            "color": "green",
+            "width_px": 13.499991000000023,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b1f20aa0-3401c3bf",
+            "bbox": [
+              327.606801,
+              293.962293,
+              337.731794,
+              307.462283
+            ],
+            "color": "red",
+            "width_px": 10.12499299999996,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b202cae2-672e61c5",
+            "bbox": [
+              472.898782,
+              234.827307,
+              477.889797,
+              249.800356
+            ],
+            "color": "none",
+            "width_px": 4.991015000000004,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b202cae2-672e61c5",
+            "bbox": [
+              465.412259,
+              237.322815,
+              469.15552,
+              247.304847
+            ],
+            "color": "none",
+            "width_px": 3.743261000000018,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              774.890912,
+              243.874297,
+              783.631925,
+              259.608123
+            ],
+            "color": "green",
+            "width_px": 8.741013000000066,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              867.545661,
+              268.349137,
+              876.286675,
+              285.831164
+            ],
+            "color": "green",
+            "width_px": 8.74101399999995,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              932.884718,
+              268.224257,
+              941.625732,
+              283.958083
+            ],
+            "color": "green",
+            "width_px": 8.74101399999995,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              700.37374,
+              222.770983,
+              712.611158,
+              245.49762
+            ],
+            "color": "none",
+            "width_px": 12.237418000000048,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              654.920467,
+              226.267389,
+              667.157885,
+              247.245822
+            ],
+            "color": "none",
+            "width_px": 12.237417999999934,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              618.208206,
+              228.015589,
+              630.445626,
+              248.994024
+            ],
+            "color": "none",
+            "width_px": 12.23741999999993,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2169b74-fa197951",
+            "bbox": [
+              733.589593,
+              242.001213,
+              742.330607,
+              257.735038
+            ],
+            "color": "none",
+            "width_px": 8.74101399999995,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              395.106755,
+              83.024939,
+              413.669242,
+              123.524911
+            ],
+            "color": "yellow",
+            "width_px": 18.562486999999976,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              629.669093,
+              98.212426,
+              651.606578,
+              133.649902
+            ],
+            "color": "yellow",
+            "width_px": 21.937485000000038,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              489.60669,
+              265.274813,
+              499.731684,
+              282.149801
+            ],
+            "color": "green",
+            "width_px": 10.124993999999958,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              471.044202,
+              280.462302,
+              482.856694,
+              295.649793
+            ],
+            "color": "green",
+            "width_px": 11.81249200000002,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              437.294226,
+              256.837318,
+              449.106718,
+              280.462302
+            ],
+            "color": "green",
+            "width_px": 11.81249200000002,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b230a7b2-c881c382",
+            "bbox": [
+              378.231766,
+              287.212296,
+              395.106755,
+              304.087286
+            ],
+            "color": "red",
+            "width_px": 16.874989000000028,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b23adb0d-8a7aaced",
+            "bbox": [
+              1230.674918,
+              219.825203,
+              1279.140315,
+              278.099066
+            ],
+            "color": "green",
+            "width_px": 48.465397000000166,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b23adb0d-8a7aaced",
+            "bbox": [
+              574.084165,
+              180.591295,
+              584.854253,
+              202.131472
+            ],
+            "color": "green",
+            "width_px": 10.770087999999987,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b23adb0d-8a7aaced",
+            "bbox": [
+              648.128522,
+              181.937556,
+              653.513566,
+              195.400167
+            ],
+            "color": "green",
+            "width_px": 5.3850439999999935,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b250fb0c-01a1b8d3",
+            "bbox": [
+              616.138976,
+              222.619385,
+              625.545427,
+              241.43229
+            ],
+            "color": "none",
+            "width_px": 9.406451000000061,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b255cd6c-6502a28c",
+            "bbox": [
+              754.323146,
+              360.66316,
+              761.996831,
+              370.894739
+            ],
+            "color": "green",
+            "width_px": 7.673685000000091,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b255cd6c-6502a28c",
+            "bbox": [
+              988.221202,
+              281.992414,
+              999.450988,
+              303.204232
+            ],
+            "color": "none",
+            "width_px": 11.229786000000104,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b268bb58-5ead8a56",
+            "bbox": [
+              618.406471,
+              385.73869,
+              629.121434,
+              397.984362
+            ],
+            "color": "green",
+            "width_px": 10.714963000000012,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b268bb58-5ead8a56",
+            "bbox": [
+              658.204907,
+              381.146562,
+              670.450582,
+              393.392235
+            ],
+            "color": "green",
+            "width_px": 12.245675000000006,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b27cd403-f2d087cc",
+            "bbox": [
+              580.20563,
+              359.60271,
+              585.196646,
+              373.328006
+            ],
+            "color": "green",
+            "width_px": 4.991015999999945,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2828509-133b042d",
+            "bbox": [
+              506.233661,
+              0.0,
+              532.33791,
+              14.51249
+            ],
+            "color": "green",
+            "width_px": 26.10424899999998,
+            "occluded": false,
+            "truncated": true
+          },
+          {
+            "image": "b28cb5d3-9ff4ab4a",
+            "bbox": [
+              11.788491,
+              288.682273,
+              42.499373,
+              347.032945
+            ],
+            "color": "none",
+            "width_px": 30.710881999999998,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              490.36734,
+              195.897385,
+              496.606109,
+              207.127172
+            ],
+            "color": "green",
+            "width_px": 6.238768999999991,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              378.069474,
+              177.181074,
+              386.803752,
+              190.906369
+            ],
+            "color": "none",
+            "width_px": 8.73427799999996,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              464.164504,
+              214.613694,
+              466.660013,
+              227.091235
+            ],
+            "color": "none",
+            "width_px": 2.49550899999997,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b29026f0-d5a5ee8c",
+            "bbox": [
+              346.875625,
+              210.870434,
+              356.857656,
+              228.338992
+            ],
+            "color": "red",
+            "width_px": 9.982031000000006,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2939bf0-221e1dfb",
+            "bbox": [
+              492.288233,
+              342.266089,
+              499.474921,
+              353.94446
+            ],
+            "color": "green",
+            "width_px": 7.186688000000004,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2939bf0-221e1dfb",
+            "bbox": [
+              1142.674332,
+              296.192208,
+              1157.981423,
+              319.152844
+            ],
+            "color": "red",
+            "width_px": 15.3070909999999,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2939bf0-221e1dfb",
+            "bbox": [
+              998.787678,
+              311.499299,
+              1007.971933,
+              329.867808
+            ],
+            "color": "red",
+            "width_px": 9.184255000000007,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              671.856563,
+              339.524761,
+              687.044053,
+              351.337253
+            ],
+            "color": "red",
+            "width_px": 15.187489999999912,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              108.231952,
+              358.08725,
+              116.669445,
+              373.274738
+            ],
+            "color": "red",
+            "width_px": 8.43749299999999,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              114.981947,
+              374.962236,
+              128.481938,
+              388.462228
+            ],
+            "color": "red",
+            "width_px": 13.499991000000009,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              114.981947,
+              354.712251,
+              125.10694,
+              373.274738
+            ],
+            "color": "none",
+            "width_px": 10.12499299999999,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              651.606578,
+              312.52478,
+              665.10657,
+              334.462265
+            ],
+            "color": "none",
+            "width_px": 13.49999200000002,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              401.856751,
+              327.71227,
+              415.356742,
+              341.21226
+            ],
+            "color": "none",
+            "width_px": 13.499991000000023,
+            "occluded": true,
+            "truncated": false
+          },
+          {
+            "image": "b2b70230-c43553a9",
+            "bbox": [
+              528.419164,
+              324.337271,
+              540.231655,
+              337.837263
+            ],
+            "color": "none",
+            "width_px": 11.812491000000023,
+            "occluded": true,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              672.539429,
+              338.141345,
+              681.273708,
+              353.114393
+            ],
+            "color": "green",
+            "width_px": 8.734279000000015,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              462.916751,
+              326.911559,
+              471.65103,
+              341.884609
+            ],
+            "color": "none",
+            "width_px": 8.734279000000015,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              476.642043,
+              326.911559,
+              485.376324,
+              341.884609
+            ],
+            "color": "none",
+            "width_px": 8.73428100000001,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              396.785786,
+              378.069474,
+              406.767818,
+              393.042522
+            ],
+            "color": "green",
+            "width_px": 9.982032000000004,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              746.156918,
+              371.830705,
+              757.386704,
+              381.812738
+            ],
+            "color": "green",
+            "width_px": 11.22978599999999,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              517.817928,
+              348.123378,
+              527.79996,
+              361.848672
+            ],
+            "color": "none",
+            "width_px": 9.982032000000004,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2c5110e-ef7e4997",
+            "bbox": [
+              635.106808,
+              381.812738,
+              642.593331,
+              391.79477
+            ],
+            "color": "green",
+            "width_px": 7.486523000000034,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              825.204504,
+              247.118597,
+              843.875686,
+              265.78978
+            ],
+            "color": "none",
+            "width_px": 18.67118199999993,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              541.109637,
+              247.118597,
+              557.584211,
+              259.199951
+            ],
+            "color": "green",
+            "width_px": 16.47457399999996,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              511.455406,
+              248.216902,
+              525.73337,
+              261.396561
+            ],
+            "color": "green",
+            "width_px": 14.277964000000054,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              454.343551,
+              258.101646,
+              471.91643,
+              274.576219
+            ],
+            "color": "green",
+            "width_px": 17.572879,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              616.892674,
+              252.610122,
+              632.268942,
+              265.78978
+            ],
+            "color": "green",
+            "width_px": 15.376267999999982,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              694.87232,
+              261.396561,
+              713.543503,
+              274.576219
+            ],
+            "color": "green",
+            "width_px": 18.671183000000042,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              748.689259,
+              258.101646,
+              771.753661,
+              278.969438
+            ],
+            "color": "green",
+            "width_px": 23.064401999999973,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e2f4ed-6ba045d0",
+            "bbox": [
+              440.694832,
+              278.420285,
+              449.48127,
+              294.894859
+            ],
+            "color": "none",
+            "width_px": 8.786437999999976,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              866.453011,
+              228.015589,
+              878.690431,
+              261.231444
+            ],
+            "color": "red",
+            "width_px": 12.237420000000043,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              467.862761,
+              229.763792,
+              485.344788,
+              247.245821
+            ],
+            "color": "green",
+            "width_px": 17.482027000000016,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2e63097-51c16783",
+            "bbox": [
+              661.913276,
+              299.691907,
+              677.647102,
+              313.677531
+            ],
+            "color": "green",
+            "width_px": 15.733826000000022,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2eed8fa-cf59a253",
+            "bbox": [
+              624.665118,
+              234.249419,
+              632.742684,
+              245.019507
+            ],
+            "color": "green",
+            "width_px": 8.077566000000047,
+            "occluded": false,
+            "truncated": false
+          },
+          {
+            "image": "b2eed8fa-cf59a253",
+            "bbox": [
+              677.169298,
+              232.903158,
+              687.939386,
+              245.019507
+            ],
+            "color": "green",
+            "width_px": 10.770087999999987,
+            "occluded": true,
+            "truncated": false
+          }
+        ]
+      }
+    }
+  }
+}

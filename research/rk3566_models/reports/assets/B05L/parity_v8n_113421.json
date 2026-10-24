@@ -1,0 +1,765 @@
+{
+  "video": "D:\\BaiduNetdiskDownload\\\u7d2b\u5149\u540c\u521b\u676f\u8d5b\u9898\u4e09\u53c2\u8003\u7d20\u6750\\video_20260929_113421.mp4",
+  "video_name": "video_20260929_113421.mp4",
+  "source_size": [
+    1920,
+    1080
+  ],
+  "source_fps": 30.0,
+  "metadata_frame_count_hint": 392,
+  "processed_frames": 79,
+  "preprocess": "letterbox",
+  "input_size": [
+    192,
+    512
+  ],
+  "same_tensor_instance_sent_to_both_backends": true,
+  "unique_input_hashes": 79,
+  "pytorch": {
+    "model": "D:\\Datasets\\adas_edge_training\\b05l_runs\\v8n\\weights\\best.pt",
+    "sha256": "d6222711beddf45cd6bad5f17b87980aa6d0179eb588478213a914364d315097",
+    "device": "cuda:0",
+    "providers": [
+      "PyTorch:cuda:0"
+    ],
+    "mean_inference_ms": 39.7532202533293
+  },
+  "onnx": {
+    "model": "D:\\Datasets\\adas_edge_training\\b05l_runs\\v8n\\weights\\best.onnx",
+    "sha256": "0c041aa4e5953a05b5df33b8beebede75e2b035b61734b724a4e102ab95294e3",
+    "device": "CPUExecutionProvider",
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "mean_inference_ms": 191.66974683505515
+  },
+  "raw_output": {
+    "max_abs_difference": 0.5495147705078125,
+    "mean_abs_at_max_frame": 0.0022718359250575304,
+    "max_difference_frame": 90
+  },
+  "decoded_boxes": {
+    "matched_pairs_iou_ge": 0.5,
+    "matched_pairs": 393,
+    "mean_iou": 0.9996864244743975,
+    "mean_coordinate_abs_error_px": 0.00251766265803621,
+    "mean_confidence_abs_error": 9.709516061474652e-05,
+    "unmatched_pytorch": 0,
+    "unmatched_onnx": 0
+  },
+  "failure_tolerance": 1.0,
+  "diagnostics_saved_for_frames_over_tolerance": false,
+  "frames": [
+    {
+      "frame": 0,
+      "input_sha256": "23f34480649652f5af98c6e4238afb54d4e6409a987342a7dd175741e90284ab",
+      "raw_max_abs": 0.1494903564453125,
+      "raw_mean_abs": 0.0017127101309597492,
+      "pytorch_detections": 4,
+      "onnx_detections": 4,
+      "matched_boxes": 4
+    },
+    {
+      "frame": 5,
+      "input_sha256": "3e10f959d00b87932a7c847e82ff766d830b03a7dc56c330c9d3e4a2281572ca",
+      "raw_max_abs": 0.117156982421875,
+      "raw_mean_abs": 0.0017230159137398005,
+      "pytorch_detections": 1,
+      "onnx_detections": 1,
+      "matched_boxes": 1
+    },
+    {
+      "frame": 10,
+      "input_sha256": "86caefa93a2add1bc423b49e31a2fad81621a657f7cc78740dda433d3d14783a",
+      "raw_max_abs": 0.12235260009765625,
+      "raw_mean_abs": 0.0018462901934981346,
+      "pytorch_detections": 1,
+      "onnx_detections": 1,
+      "matched_boxes": 1
+    },
+    {
+      "frame": 15,
+      "input_sha256": "2059a48553d6d6e2277f94d1afa328ff95912974ab140bfe0be7055353d2a84c",
+      "raw_max_abs": 0.11773681640625,
+      "raw_mean_abs": 0.001805068226531148,
+      "pytorch_detections": 1,
+      "onnx_detections": 1,
+      "matched_boxes": 1
+    },
+    {
+      "frame": 20,
+      "input_sha256": "f568868866ef3b70ffe5a79674b843c6f041390ad602ba62139f87ad3e74527b",
+      "raw_max_abs": 0.13668060302734375,
+      "raw_mean_abs": 0.0018999016610905528,
+      "pytorch_detections": 1,
+      "onnx_detections": 1,
+      "matched_boxes": 1
+    },
+    {
+      "frame": 25,
+      "input_sha256": "d2216175529ef73ab34fe743fce106e355dbd447cda4fc8b447c725246a28f39",
+      "raw_max_abs": 0.11016845703125,
+      "raw_mean_abs": 0.0019770441576838493,
+      "pytorch_detections": 6,
+      "onnx_detections": 6,
+      "matched_boxes": 6
+    },
+    {
+      "frame": 30,
+      "input_sha256": "eb9c4687c97e9b71c6d109a1618ba228fd07fce4252419da730b13f97aa137c7",
+      "raw_max_abs": 0.113433837890625,
+      "raw_mean_abs": 0.0018419882981106639,
+      "pytorch_detections": 3,
+      "onnx_detections": 3,
+      "matched_boxes": 3
+    },
+    {
+      "frame": 35,
+      "input_sha256": "e134d74e2ddfbcba30cfadb3b7416b19d1dfb008f31920abb19abe7635fe0bbd",
+      "raw_max_abs": 0.1844024658203125,
+      "raw_mean_abs": 0.0021523756440728903,
+      "pytorch_detections": 5,
+      "onnx_detections": 5,
+      "matched_boxes": 5
+    },
+    {
+      "frame": 40,
+      "input_sha256": "ce8b65855cf68186032e9285d2215f3ea634b236ed3018d2875abc2c990baabd",
+      "raw_max_abs": 0.2073974609375,
+      "raw_mean_abs": 0.0020435559563338757,
+      "pytorch_detections": 4,
+      "onnx_detections": 4,
+      "matched_boxes": 4
+    },
+    {
+      "frame": 45,
+      "input_sha256": "582805fafff500fc79a8495008e47b70bb56f51f6c512d6b5964e0efe782cb25",
+      "raw_max_abs": 0.20941162109375,
+      "raw_mean_abs": 0.0018072255188599229,
+      "pytorch_detections": 4,
+      "onnx_detections": 4,
+      "matched_boxes": 4
+    },
+    {
+      "frame": 50,
+      "input_sha256": "dd25b09381376fa7cb2ecc6abd50effadc8d5a9f90dd1b44955e80ec388ea57e",
+      "raw_max_abs": 0.3939056396484375,
+      "raw_mean_abs": 0.0022515214513987303,
+      "pytorch_detections": 2,
+      "onnx_detections": 2,
+      "matched_boxes": 2
+    },
+    {
+      "frame": 55,
+      "input_sha256": "56bca4ecc1fc8e6f94bf8872c902082114063e593cc2f5f75647cbeae135c1ea",
+      "raw_max_abs": 0.122100830078125,
+      "raw_mean_abs": 0.0017938201781362295,
+      "pytorch_detections": 3,
+      "onnx_detections": 3,
+      "matched_boxes": 3
+    },
+    {
+      "frame": 60,
+      "input_sha256": "2f7f272d84c98d081a2c05aa3b0a6326c86a967e58e95b5f1b679bc5b8b7ef6b",
+      "raw_max_abs": 0.12579345703125,
+      "raw_mean_abs": 0.0017636364791542292,
+      "pytorch_detections": 5,
+      "onnx_detections": 5,
+      "matched_boxes": 5
+    },
+    {
+      "frame": 65,
+      "input_sha256": "d2e06ceecd0eb4d1bd594fcb597db217baa67a83ae18934a989967094c7323e1",
+      "raw_max_abs": 0.22058868408203125,
+      "raw_mean_abs": 0.0019618337973952293,
+      "pytorch_detections": 6,
+      "onnx_detections": 6,
+      "matched_boxes": 6
+    },
+    {
+      "frame": 70,
+      "input_sha256": "990ab8ac5464bc70efcc02bc83205f0ffba3e404011e553a23340485fce3e9ad",
+      "raw_max_abs": 0.2930908203125,
+      "raw_mean_abs": 0.002234583953395486,
+      "pytorch_detections": 5,
+      "onnx_detections": 5,
+      "matched_boxes": 5
+    },
+    {
+      "frame": 75,
+      "input_sha256": "20b9b183cd7cc75bd3a167133de234202cf46ae0bbee546e4bfdcef6c30e03cb",
+      "raw_max_abs": 0.360595703125,
+      "raw_mean_abs": 0.0020998732652515173,
+      "pytorch_detections": 5,
+      "onnx_detections": 5,
+      "matched_boxes": 5
+    },
+    {
+      "frame": 80,
+      "input_sha256": "f918cb160c93c570b8c6a8915682b07ea85aed8d84ba1c0b4d9becfe10ef3658",
+      "raw_max_abs": 0.38482666015625,
+      "raw_mean_abs": 0.002118846634402871,
+      "pytorch_detections": 10,
+      "onnx_detections": 10,
+      "matched_boxes": 10
+    },
+    {
+      "frame": 85,
+      "input_sha256": "8bca4408f8d97caae624ce8ff9c3318fe32ca5c69c7278559d1be431389b35a7",
+      "raw_max_abs": 0.1811065673828125,
+      "raw_mean_abs": 0.0019344508182257414,
+      "pytorch_detections": 6,
+      "onnx_detections": 6,
+      "matched_boxes": 6
+    },
+    {
+      "frame": 90,
+      "input_sha256": "fa80993282f005e344c399c68192d1b81839578acb1cd65973905eab232eea64",
+      "raw_max_abs": 0.5495147705078125,
+      "raw_mean_abs": 0.0022718359250575304,
+      "pytorch_detections": 7,
+      "onnx_detections": 7,
+      "matched_boxes": 7
+    },
+    {
+      "frame": 95,
+      "input_sha256": "1fcb4457fcce754df9f53d8c3fff46bfc366b93f11df7f0127728c2addfdf597",
+      "raw_max_abs": 0.1108551025390625,
+      "raw_mean_abs": 0.0019481724593788385,
+      "pytorch_detections": 1,
+      "onnx_detections": 1,
+      "matched_boxes": 1
+    },
+    {
+      "frame": 100,
+      "input_sha256": "cd511f6ae1700c4be84fd62131d440f222b88da0d0e9e2fb807b6bbd66422964",
+      "raw_max_abs": 0.2242279052734375,
+      "raw_mean_abs": 0.002044907072558999,
+      "pytorch_detections": 3,
+      "onnx_detections": 3,
+      "matched_boxes": 3
+    },
+    {
+      "frame": 105,
+      "input_sha256": "70ffe43220d8a5861b3c1e7b7cbc7fad686ea5050288a69d2ae38419653159a9",
+      "raw_max_abs": 0.485321044921875,
+      "raw_mean_abs": 0.0025069070979952812,
+      "pytorch_detections": 2,
+      "onnx_detections": 2,
+      "matched_boxes": 2
+    },
+    {
+      "frame": 110,
+      "input_sha256": "efaf88dcd35962083a7d4e32eab93a034c683bf47430b02fb969bdf83554b21e",
+      "raw_max_abs": 0.1112823486328125,
+      "raw_mean_abs": 0.0017747734673321247,
+      "pytorch_detections": 6,
+      "onnx_detections": 6,
+      "matched_boxes": 6
+    },
+    {
+      "frame": 115,
+      "input_sha256": "8945a85f072d0bf27e947e96167a8dfec9f7c08e39da14270ab10cd5320b3bc4",
+      "raw_max_abs": 0.363677978515625,
+      "raw_mean_abs": 0.002547226147726178,
+      "pytorch_detections": 5,
+      "onnx_detections": 5,
+      "matched_boxes": 5
+    },
+    {
+      "frame": 120,
+      "input_sha256": "22a35175e4458d6ef9969ece6105b24bee2337301299cd8bf12ba7b7cda27866",
+      "raw_max_abs": 0.2402191162109375,
+      "raw_mean_abs": 0.0020564852748066187,
+      "pytorch_detections": 5,
+      "onnx_detections": 5,
+      "matched_boxes": 5
+    },
+    {
+      "frame": 125,
+      "input_sha256": "505fae6cca3d52baa8be16bb5d92d37202bdb02a4c98af08899f97a8df449143",
+      "raw_max_abs": 0.1160736083984375,
+      "raw_mean_abs": 0.0018294932087883353,
+      "pytorch_detections": 9,
+      "onnx_detections": 9,
+      "matched_boxes": 9
+    },
+    {
+      "frame": 130,
+      "input_sha256": "b0e6abac406d75e5eb29f6ddc8e97076ac87087a2d6664b49b63642dd0401162",
+      "raw_max_abs": 0.091064453125,
+      "raw_mean_abs": 0.0018171155825257301,
+      "pytorch_detections": 9,
+      "onnx_detections": 9,
+      "matched_boxes": 9
+    },
+    {
+      "frame": 135,
+      "input_sha256": "e5ccd10a3aa24028be7f85568eab442bf4adb6bbf3662a992a641eb6b15d655d",
+      "raw_max_abs": 0.23565673828125,
+      "raw_mean_abs": 0.0023394182790070772,
+      "pytorch_detections": 4,
+      "onnx_detections": 4,
+      "matched_boxes": 4
+    },
+    {
+      "frame": 140,
+      "input_sha256": "d7cc37d07ba4cdc4078fd423b389f0a74d5710a247efcd7830254409bae5dc8e",
+      "raw_max_abs": 0.10028076171875,
+      "raw_mean_abs": 0.0019476047018542886,
+      "pytorch_detections": 3,
+      "onnx_detections": 3,
+      "matched_boxes": 3
+    },
+    {
+      "frame": 145,
+      "input_sha256": "affc68e5e489777dcf83bdb465e996d7be1d171beb130d82b6ba28d939278940",
+      "raw_max_abs": 0.2487335205078125,
+      "raw_mean_abs": 0.002317950828000903,
+      "pytorch_detections": 4,
+      "onnx_detections": 4,
+      "matched_boxes": 4
+    },
+    {
+      "frame": 150,
+      "input_sha256": "93fa960b01701aab921685f73da6d94e52131ed1b1dc91ceedc35b83ed8ffad1",
+      "raw_max_abs": 0.2173919677734375,
+      "raw_mean_abs": 0.001920645940117538,
+      "pytorch_detections": 2,
+      "onnx_detections": 2,
+      "matched_boxes": 2
+    },
+    {
+      "frame": 155,
+      "input_sha256": "8fa40f84fdddf3e9f43cab715ed09e656532a6cd3bfbf42257d6fbf71c1dab11",
+      "raw_max_abs": 0.17425537109375,
+      "raw_mean_abs": 0.0021921314764767885,
+      "pytorch_detections": 7,
+      "onnx_detections": 7,
+      "matched_boxes": 7
+    },
+    {
+      "frame": 160,
+      "input_sha256": "1129e9da66d2593a0ca4f64bc90a5d8a0f10e2340d2bc116f4c48fd6e1fda38f",
+      "raw_max_abs": 0.2794189453125,
+      "raw_mean_abs": 0.002434489782899618,
+      "pytorch_detections": 8,
+      "onnx_detections": 8,
+      "matched_boxes": 8
+    },
+    {
+      "frame": 165,
+      "input_sha256": "879241363085d69549e8fcb2e98ca66eab9bab07268c547f53163cd615743a87",
+      "raw_max_abs": 0.1697845458984375,
+      "raw_mean_abs": 0.0022360358852893114,
+      "pytorch_detections": 13,
+      "onnx_detections": 13,
+      "matched_boxes": 13
+    },
+    {
+      "frame": 170,
+      "input_sha256": "fb8d8cc6397d93400495cff93e770c11240e953c2dfc8b853622aabb0a19613c",
+      "raw_max_abs": 0.170654296875,
+      "raw_mean_abs": 0.0019123614765703678,
+      "pytorch_detections": 4,
+      "onnx_detections": 4,
+      "matched_boxes": 4
+    },
+    {
+      "frame": 175,
+      "input_sha256": "c2181c7885cd98ba1a36bd06b24219c45a1c1e2fd35ee0ce160b6e9f8ddc91af",
+      "raw_max_abs": 0.1571807861328125,
+      "raw_mean_abs": 0.0023517245426774025,
+      "pytorch_detections": 4,
+      "onnx_detections": 4,
+      "matched_boxes": 4
+    },
+    {
+      "frame": 180,
+      "input_sha256": "a2b90fdc5b3887a464f4067f43ebf1ffb660c7cab88f3e8dafae2e5f3580951d",
+      "raw_max_abs": 0.22711181640625,
+      "raw_mean_abs": 0.00220790458843112,
+      "pytorch_detections": 11,
+      "onnx_detections": 11,
+      "matched_boxes": 11
+    },
+    {
+      "frame": 185,
+      "input_sha256": "2b650de28d8d0f5c9ef13763c7492e544b761a4ac42c59b2a1deecfc15241292",
+      "raw_max_abs": 0.135955810546875,
+      "raw_mean_abs": 0.001972738653421402,
+      "pytorch_detections": 8,
+      "onnx_detections": 8,
+      "matched_boxes": 8
+    },
+    {
+      "frame": 190,
+      "input_sha256": "b98b06e40a8819c4a736d31d5d3843c1641922933a5861f3693a1b5b4506d2d8",
+      "raw_max_abs": 0.23797607421875,
+      "raw_mean_abs": 0.002198208589106798,
+      "pytorch_detections": 5,
+      "onnx_detections": 5,
+      "matched_boxes": 5
+    },
+    {
+      "frame": 195,
+      "input_sha256": "922c6f20a284fd781996f7db11f12549de43c942fddcbedb781c03a69e0ee13c",
+      "raw_max_abs": 0.12270355224609375,
+      "raw_mean_abs": 0.0017630187794566154,
+      "pytorch_detections": 12,
+      "onnx_detections": 12,
+      "matched_boxes": 12
+    },
+    {
+      "frame": 200,
+      "input_sha256": "f16ae5e7fd947dc57319875b8688ac7ebf87e8d2c8e25d9c5fabdadb90e8fa1c",
+      "raw_max_abs": 0.1923065185546875,
+      "raw_mean_abs": 0.002198305446654558,
+      "pytorch_detections": 7,
+      "onnx_detections": 7,
+      "matched_boxes": 7
+    },
+    {
+      "frame": 205,
+      "input_sha256": "a95ca7253e1dce8490d7693a22e8c1f932aa81c4e708066fe507eb44fd366544",
+      "raw_max_abs": 0.26168060302734375,
+      "raw_mean_abs": 0.002316008321940899,
+      "pytorch_detections": 16,
+      "onnx_detections": 16,
+      "matched_boxes": 16
+    },
+    {
+      "frame": 210,
+      "input_sha256": "7147855898fd576324463075d1c3cc15fcff079087b3a5c171e807c38c4952e7",
+      "raw_max_abs": 0.15732574462890625,
+      "raw_mean_abs": 0.001973621780052781,
+      "pytorch_detections": 5,
+      "onnx_detections": 5,
+      "matched_boxes": 5
+    },
+    {
+      "frame": 215,
+      "input_sha256": "5cdb42ee7981b90f1a5d9b8695dc3c566055d4b3816f90a35ff2bff3b830a864",
+      "raw_max_abs": 0.335845947265625,
+      "raw_mean_abs": 0.0022804702166467905,
+      "pytorch_detections": 7,
+      "onnx_detections": 7,
+      "matched_boxes": 7
+    },
+    {
+      "frame": 220,
+      "input_sha256": "6bc8ead2cdd46d38313529920e18bb18d120f8a4a59c098e2465fb01db4e3083",
+      "raw_max_abs": 0.25125885009765625,
+      "raw_mean_abs": 0.0020164104644209146,
+      "pytorch_detections": 2,
+      "onnx_detections": 2,
+      "matched_boxes": 2
+    },
+    {
+      "frame": 225,
+      "input_sha256": "05ce22b906f1a4aff5716b8b527fa5dddc93f8f20728c30a6815895a73ff7b29",
+      "raw_max_abs": 0.20679473876953125,
+      "raw_mean_abs": 0.002207872224971652,
+      "pytorch_detections": 8,
+      "onnx_detections": 8,
+      "matched_boxes": 8
+    },
+    {
+      "frame": 230,
+      "input_sha256": "50431d16f7b3aafc3b7519216ffe21e741442b1800613742561458be141a5cf0",
+      "raw_max_abs": 0.3050537109375,
+      "raw_mean_abs": 0.002572381403297186,
+      "pytorch_detections": 4,
+      "onnx_detections": 4,
+      "matched_boxes": 4
+    },
+    {
+      "frame": 235,
+      "input_sha256": "2bdea7f0f2d774bf55c732827e985eaf7767bae48cf628fb32046d371415d4bc",
+      "raw_max_abs": 0.2031402587890625,
+      "raw_mean_abs": 0.00226513366214931,
+      "pytorch_detections": 10,
+      "onnx_detections": 10,
+      "matched_boxes": 10
+    },
+    {
+      "frame": 240,
+      "input_sha256": "2be4e3829bddefac9c5265bf8de9731a3f5f9d28da44ec72e0ece81a26420714",
+      "raw_max_abs": 0.307525634765625,
+      "raw_mean_abs": 0.002211198443546891,
+      "pytorch_detections": 6,
+      "onnx_detections": 6,
+      "matched_boxes": 6
+    },
+    {
+      "frame": 245,
+      "input_sha256": "745b335e330a3005eba2534dc525a85c8403ac1beaca5399445e4bca107465f4",
+      "raw_max_abs": 0.0792999267578125,
+      "raw_mean_abs": 0.0018300843657925725,
+      "pytorch_detections": 7,
+      "onnx_detections": 7,
+      "matched_boxes": 7
+    },
+    {
+      "frame": 250,
+      "input_sha256": "07d6ea63cd713b364ff319772d1b7b7aec49ac8d4e8147ab3ab646d01b4737fd",
+      "raw_max_abs": 0.20641326904296875,
+      "raw_mean_abs": 0.002387029118835926,
+      "pytorch_detections": 5,
+      "onnx_detections": 5,
+      "matched_boxes": 5
+    },
+    {
+      "frame": 255,
+      "input_sha256": "808b97a24449cba0572eccdc369d8f2eec980b40a933e8d874cda96369d99b0c",
+      "raw_max_abs": 0.08343505859375,
+      "raw_mean_abs": 0.0018736078636720777,
+      "pytorch_detections": 8,
+      "onnx_detections": 8,
+      "matched_boxes": 8
+    },
+    {
+      "frame": 260,
+      "input_sha256": "329517f797c7333ff31bfafb047a195238b8cd3dec6d26c4a17206b4cb3442d5",
+      "raw_max_abs": 0.264617919921875,
+      "raw_mean_abs": 0.002228684024885297,
+      "pytorch_detections": 7,
+      "onnx_detections": 7,
+      "matched_boxes": 7
+    },
+    {
+      "frame": 265,
+      "input_sha256": "48b6c0ad79eb53baa50b36ad90d00c7d4458688eb4a555afc62660bbdf1bd1d8",
+      "raw_max_abs": 0.21576690673828125,
+      "raw_mean_abs": 0.0023763030767440796,
+      "pytorch_detections": 6,
+      "onnx_detections": 6,
+      "matched_boxes": 6
+    },
+    {
+      "frame": 270,
+      "input_sha256": "1d674a2f0b161f640ddf6fbfc6c8402a3f0dd723ee7506dec9e02683a107ed3b",
+      "raw_max_abs": 0.1409759521484375,
+      "raw_mean_abs": 0.0018207288812845945,
+      "pytorch_detections": 12,
+      "onnx_detections": 12,
+      "matched_boxes": 12
+    },
+    {
+      "frame": 275,
+      "input_sha256": "c618545cf5ba29f3ad86fc50e50fec9d7097a603de8419250b1bbcfc550d58fb",
+      "raw_max_abs": 0.107574462890625,
+      "raw_mean_abs": 0.002003710251301527,
+      "pytorch_detections": 8,
+      "onnx_detections": 8,
+      "matched_boxes": 8
+    },
+    {
+      "frame": 280,
+      "input_sha256": "1b9c0be5876c8162f9f5a2fa9647211864cf412b8370a7eb544281f1b323bdf5",
+      "raw_max_abs": 0.2050323486328125,
+      "raw_mean_abs": 0.002226935001090169,
+      "pytorch_detections": 11,
+      "onnx_detections": 11,
+      "matched_boxes": 11
+    },
+    {
+      "frame": 285,
+      "input_sha256": "8384a924ab3a59973a9c0a4c7e825d0d42aa5583cfad43ef8ca0b894e91918dd",
+      "raw_max_abs": 0.1484375,
+      "raw_mean_abs": 0.0019903879147022963,
+      "pytorch_detections": 7,
+      "onnx_detections": 7,
+      "matched_boxes": 7
+    },
+    {
+      "frame": 290,
+      "input_sha256": "195fa89b1cda2a5711c9644e22a0e097c054f396259245c795f1bd01dee87bd7",
+      "raw_max_abs": 0.082061767578125,
+      "raw_mean_abs": 0.0018814196810126305,
+      "pytorch_detections": 8,
+      "onnx_detections": 8,
+      "matched_boxes": 8
+    },
+    {
+      "frame": 295,
+      "input_sha256": "18eaa5cc349720bee613ec8177a6c33570738341018acb5585b379e0b20f9ff1",
+      "raw_max_abs": 0.3101806640625,
+      "raw_mean_abs": 0.002528388751670718,
+      "pytorch_detections": 8,
+      "onnx_detections": 8,
+      "matched_boxes": 8
+    },
+    {
+      "frame": 300,
+      "input_sha256": "10f810c40efd0f8e4ce2de3d3b9ba2f840a22afe5fca33069cc5b87e7aba2c95",
+      "raw_max_abs": 0.30328369140625,
+      "raw_mean_abs": 0.002363943262025714,
+      "pytorch_detections": 4,
+      "onnx_detections": 4,
+      "matched_boxes": 4
+    },
+    {
+      "frame": 305,
+      "input_sha256": "58a5486251c4664ab7fbc89ec9cfe9d495ed3ee7f9d090529fe9d8a93d72de47",
+      "raw_max_abs": 0.1976165771484375,
+      "raw_mean_abs": 0.001910789287649095,
+      "pytorch_detections": 6,
+      "onnx_detections": 6,
+      "matched_boxes": 6
+    },
+    {
+      "frame": 310,
+      "input_sha256": "3bb6eee5b1bbfacf4c02b21c66494da73c0d0892052fb361e42e5838e9a130ef",
+      "raw_max_abs": 0.11719512939453125,
+      "raw_mean_abs": 0.002190986881032586,
+      "pytorch_detections": 2,
+      "onnx_detections": 2,
+      "matched_boxes": 2
+    },
+    {
+      "frame": 315,
+      "input_sha256": "45f6e6bbad5f2eb2255320f6fdc2dc43df263fe35a51179d5ceecad6689756d7",
+      "raw_max_abs": 0.1537322998046875,
+      "raw_mean_abs": 0.0021815462969243526,
+      "pytorch_detections": 7,
+      "onnx_detections": 7,
+      "matched_boxes": 7
+    },
+    {
+      "frame": 320,
+      "input_sha256": "b6a028068522670d7071daedd96208ea169b1fc1886b7c6d98ae57a5b1822740",
+      "raw_max_abs": 0.3464813232421875,
+      "raw_mean_abs": 0.0021815726067870855,
+      "pytorch_detections": 7,
+      "onnx_detections": 7,
+      "matched_boxes": 7
+    },
+    {
+      "frame": 325,
+      "input_sha256": "51c873851c0da511be2a23d0b10e6a809c4d2a6ad1a1831c0f4004565fe64cba",
+      "raw_max_abs": 0.393218994140625,
+      "raw_mean_abs": 0.0028595246840268373,
+      "pytorch_detections": 2,
+      "onnx_detections": 2,
+      "matched_boxes": 2
+    },
+    {
+      "frame": 330,
+      "input_sha256": "e9782be2707de4289101912371994163ec8db453f581d9c1317d172229357751",
+      "raw_max_abs": 0.33583831787109375,
+      "raw_mean_abs": 0.002813804429024458,
+      "pytorch_detections": 0,
+      "onnx_detections": 0,
+      "matched_boxes": 0
+    },
+    {
+      "frame": 335,
+      "input_sha256": "3b78d8a09102d3b46813af8fe394e04b142bd41639741af5e7457980501fd1f1",
+      "raw_max_abs": 0.2958831787109375,
+      "raw_mean_abs": 0.0025077590253204107,
+      "pytorch_detections": 1,
+      "onnx_detections": 1,
+      "matched_boxes": 1
+    },
+    {
+      "frame": 340,
+      "input_sha256": "0735d30367dff8f9269ba49aef60a8b9904e5290e3edc88363c82104c423d7f8",
+      "raw_max_abs": 0.2983245849609375,
+      "raw_mean_abs": 0.0027436460368335247,
+      "pytorch_detections": 2,
+      "onnx_detections": 2,
+      "matched_boxes": 2
+    },
+    {
+      "frame": 345,
+      "input_sha256": "ebd4d6521f48634718cc1548057805d6e03c63c273f64d167509eba60d409392",
+      "raw_max_abs": 0.1840057373046875,
+      "raw_mean_abs": 0.0022803035099059343,
+      "pytorch_detections": 0,
+      "onnx_detections": 0,
+      "matched_boxes": 0
+    },
+    {
+      "frame": 350,
+      "input_sha256": "f167c48f6f8a148c8b83ae8219f1d05bd4ba426cbe756254123eab72fa7dacdb",
+      "raw_max_abs": 0.09454345703125,
+      "raw_mean_abs": 0.0020175178069621325,
+      "pytorch_detections": 2,
+      "onnx_detections": 2,
+      "matched_boxes": 2
+    },
+    {
+      "frame": 355,
+      "input_sha256": "ddae75a2585af178a9940d8768e17a748ce0c845d5fbc191554e4c8f6fb2a7d5",
+      "raw_max_abs": 0.13482666015625,
+      "raw_mean_abs": 0.0022560623474419117,
+      "pytorch_detections": 1,
+      "onnx_detections": 1,
+      "matched_boxes": 1
+    },
+    {
+      "frame": 360,
+      "input_sha256": "7c4c7003b5f15ad6977d5971a154a19d4b79b951e59d46eb4c06bed314b00614",
+      "raw_max_abs": 0.39005279541015625,
+      "raw_mean_abs": 0.002594873309135437,
+      "pytorch_detections": 0,
+      "onnx_detections": 0,
+      "matched_boxes": 0
+    },
+    {
+      "frame": 365,
+      "input_sha256": "e4aff0919fea31d12771b7760fa26a2d1523f515c1a8cacca783253654874aef",
+      "raw_max_abs": 0.254852294921875,
+      "raw_mean_abs": 0.0024463844019919634,
+      "pytorch_detections": 0,
+      "onnx_detections": 0,
+      "matched_boxes": 0
+    },
+    {
+      "frame": 370,
+      "input_sha256": "f6d6d7d569181556f1cbdbffbefadf3c4963949f7b4a50167e8a78a43a74e99a",
+      "raw_max_abs": 0.2210540771484375,
+      "raw_mean_abs": 0.0024848091416060925,
+      "pytorch_detections": 0,
+      "onnx_detections": 0,
+      "matched_boxes": 0
+    },
+    {
+      "frame": 375,
+      "input_sha256": "8f509a5c2c85f0b9f606b4e1a63f33dc2fb647e17643d6a7582fde50dd253829",
+      "raw_max_abs": 0.28326416015625,
+      "raw_mean_abs": 0.0029441791120916605,
+      "pytorch_detections": 2,
+      "onnx_detections": 2,
+      "matched_boxes": 2
+    },
+    {
+      "frame": 380,
+      "input_sha256": "16b4212e0defb762c643347aa493b1fda2963c5489c45f35723a4aed2cce7564",
+      "raw_max_abs": 0.20298004150390625,
+      "raw_mean_abs": 0.002503936644643545,
+      "pytorch_detections": 0,
+      "onnx_detections": 0,
+      "matched_boxes": 0
+    },
+    {
+      "frame": 385,
+      "input_sha256": "317a37d30b664cba9e22c714b2038b6d8e397367b83ed5b4d2bb2d1d05315e48",
+      "raw_max_abs": 0.4100189208984375,
+      "raw_mean_abs": 0.0026462494861334562,
+      "pytorch_detections": 0,
+      "onnx_detections": 0,
+      "matched_boxes": 0
+    },
+    {
+      "frame": 390,
+      "input_sha256": "163256d5d32ffc36e31325f51b51ccef7e24f0e2632c41210d70c1984c8b538f",
+      "raw_max_abs": 0.21445465087890625,
+      "raw_mean_abs": 0.002584561938419938,
+      "pytorch_detections": 1,
+      "onnx_detections": 1,
+      "matched_boxes": 1
+    }
+  ]
+}

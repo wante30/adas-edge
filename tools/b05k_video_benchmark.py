@@ -212,7 +212,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             raise RuntimeError(f"cannot create annotated video: {output_path}")
 
     tracker = TrafficLightTracker() if args.schedule == "1hz" else None
-    model_label = model_path.parent.parent.name if model_path.parent.name.lower() == "weights" else model_path.stem
+    model_label = getattr(args, "model_label", None) or (
+        model_path.parent.parent.name if model_path.parent.name.lower() == "weights" else model_path.stem
+    )
     rows: list[dict[str, Any]] = []
     presence: list[bool] = []
     inference_ms: list[float] = []
@@ -433,6 +435,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--json-path", help="optional JSON destination; defaults beside --output")
     parser.add_argument("--runtime-csv", help="optional per-frame runtime CSV destination")
     parser.add_argument("--environment-json", help="write Python, CUDA, OpenCV and ONNX Runtime versions")
+    parser.add_argument("--model-label", help="display label written into the annotated video")
     parser.add_argument("--keyframes-dir", help="save first-detection, multi-light, and UNKNOWN keyframes")
     parser.add_argument("--schedule", choices=("every-frame", "1hz"), default="every-frame")
     parser.add_argument("--device", default="auto", help="PyTorch device, or cpu for ONNX Runtime")

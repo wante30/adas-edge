@@ -1,0 +1,40 @@
+{
+  "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "torch": "2.12.1+cu126",
+  "cuda": "12.6",
+  "batch": 16,
+  "clocks_before": "2370 MHz, 14.90 W, 53",
+  "models": {
+    "yolo11n": {
+      "path": "D:\\Datasets\\adas_edge_training\\tl_specialist\\tl-512x192\\weights\\best.pt",
+      "parameters": 2605492,
+      "single_frame_ms_mean": 40.397807999834185,
+      "single_frame_ms_p50": 41.30309999891324,
+      "single_frame_ms_p95": 45.19498500121699,
+      "batch_ms_mean": 42.42806999973254,
+      "batch_per_image_ms": 2.651754374983284,
+      "batch_images_per_second": 377.10883384751793
+    },
+    "v8n": {
+      "path": "D:\\Datasets\\adas_edge_training\\b05l_runs\\v8n\\weights\\best.pt",
+      "parameters": 3021500,
+      "single_frame_ms_mean": 29.19807700011006,
+      "single_frame_ms_p50": 31.210999997711042,
+      "single_frame_ms_p95": 39.81553500016162,
+      "batch_ms_mean": 32.3458800008666,
+      "batch_per_image_ms": 2.0216175000541625,
+      "batch_images_per_second": 494.65341488842887
+    },
+    "v8n_p2": {
+      "path": "D:\\Datasets\\adas_edge_training\\b05l_runs\\v8n_p2\\weights\\best.pt",
+      "parameters": 2937802,
+      "single_frame_ms_mean": 38.21158100006869,
+      "single_frame_ms_p50": 39.299650001339614,
+      "single_frame_ms_p95": 48.71852000032959,
+      "batch_ms_mean": 34.14296499940974,
+      "batch_per_image_ms": 2.133935312463109,
+      "batch_images_per_second": 468.61776650846247
+    }
+  },
+  "clocks_after": "2490 MHz, 41.60 W, 57"
+}

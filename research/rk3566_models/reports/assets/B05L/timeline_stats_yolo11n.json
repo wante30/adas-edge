@@ -1,0 +1,202 @@
+{
+  "video_20260929_112507": {
+    "0.05": {
+      "conf": 0.05,
+      "frames": 1349,
+      "detection_frames": 763,
+      "frames_percent": 0.5656041512231282,
+      "first_frame": 0,
+      "first_seconds": 0.0,
+      "runs": 154,
+      "longest_run_frames": 169,
+      "colors": {
+        "RED": 95,
+        "GREEN": 1085,
+        "YELLOW": 26,
+        "UNKNOWN": 1271
+      }
+    },
+    "0.25": {
+      "conf": 0.25,
+      "frames": 1349,
+      "detection_frames": 313,
+      "frames_percent": 0.23202372127501852,
+      "first_frame": 0,
+      "first_seconds": 0.0,
+      "runs": 104,
+      "longest_run_frames": 48,
+      "colors": {
+        "RED": 11,
+        "GREEN": 342,
+        "YELLOW": 5,
+        "UNKNOWN": 198
+      }
+    },
+    "0.5": {
+      "conf": 0.5,
+      "frames": 1349,
+      "detection_frames": 59,
+      "frames_percent": 0.04373610081541883,
+      "first_frame": 111,
+      "first_seconds": 3.7,
+      "runs": 31,
+      "longest_run_frames": 10,
+      "colors": {
+        "RED": 0,
+        "GREEN": 43,
+        "YELLOW": 0,
+        "UNKNOWN": 23
+      }
+    }
+  },
+  "video_20260929_112739": {
+    "0.05": {
+      "conf": 0.05,
+      "frames": 2776,
+      "detection_frames": 2124,
+      "frames_percent": 0.7651296829971181,
+      "first_frame": 0,
+      "first_seconds": 0.0,
+      "runs": 271,
+      "longest_run_frames": 292,
+      "colors": {
+        "RED": 1554,
+        "GREEN": 1533,
+        "YELLOW": 284,
+        "UNKNOWN": 4024
+      }
+    },
+    "0.25": {
+      "conf": 0.25,
+      "frames": 2776,
+      "detection_frames": 591,
+      "frames_percent": 0.21289625360230546,
+      "first_frame": 0,
+      "first_seconds": 0.0,
+      "runs": 152,
+      "longest_run_frames": 80,
+      "colors": {
+        "RED": 406,
+        "GREEN": 294,
+        "YELLOW": 17,
+        "UNKNOWN": 182
+      }
+    },
+    "0.5": {
+      "conf": 0.5,
+      "frames": 2776,
+      "detection_frames": 32,
+      "frames_percent": 0.011527377521613832,
+      "first_frame": 9,
+      "first_seconds": 0.3,
+      "runs": 26,
+      "longest_run_frames": 2,
+      "colors": {
+        "RED": 10,
+        "GREEN": 15,
+        "YELLOW": 1,
+        "UNKNOWN": 6
+      }
+    }
+  },
+  "video_20260929_113421": {
+    "0.05": {
+      "conf": 0.05,
+      "frames": 392,
+      "detection_frames": 359,
+      "frames_percent": 0.9158163265306123,
+      "first_frame": 7,
+      "first_seconds": 0.233,
+      "runs": 14,
+      "longest_run_frames": 273,
+      "colors": {
+        "RED": 47,
+        "GREEN": 778,
+        "YELLOW": 77,
+        "UNKNOWN": 398
+      }
+    },
+    "0.25": {
+      "conf": 0.25,
+      "frames": 392,
+      "detection_frames": 211,
+      "frames_percent": 0.5382653061224489,
+      "first_frame": 54,
+      "first_seconds": 1.8,
+      "runs": 38,
+      "longest_run_frames": 77,
+      "colors": {
+        "RED": 13,
+        "GREEN": 285,
+        "YELLOW": 10,
+        "UNKNOWN": 42
+      }
+    },
+    "0.5": {
+      "conf": 0.5,
+      "frames": 392,
+      "detection_frames": 24,
+      "frames_percent": 0.061224489795918366,
+      "first_frame": 150,
+      "first_seconds": 5.0,
+      "runs": 9,
+      "longest_run_frames": 6,
+      "colors": {
+        "RED": 0,
+        "GREEN": 24,
+        "YELLOW": 0,
+        "UNKNOWN": 1
+      }
+    }
+  },
+  "video_20260929_113539": {
+    "0.05": {
+      "conf": 0.05,
+      "frames": 2315,
+      "detection_frames": 1707,
+      "frames_percent": 0.7373650107991361,
+      "first_frame": 0,
+      "first_seconds": 0.0,
+      "runs": 206,
+      "longest_run_frames": 238,
+      "colors": {
+        "RED": 847,
+        "GREEN": 1261,
+        "YELLOW": 793,
+        "UNKNOWN": 1912
+      }
+    },
+    "0.25": {
+      "conf": 0.25,
+      "frames": 2315,
+      "detection_frames": 570,
+      "frames_percent": 0.24622030237580994,
+      "first_frame": 2,
+      "first_seconds": 0.067,
+      "runs": 226,
+      "longest_run_frames": 15,
+      "colors": {
+        "RED": 167,
+        "GREEN": 259,
+        "YELLOW": 117,
+        "UNKNOWN": 168
+      }
+    },
+    "0.5": {
+      "conf": 0.5,
+      "frames": 2315,
+      "detection_frames": 81,
+      "frames_percent": 0.03498920086393088,
+      "first_frame": 116,
+      "first_seconds": 3.867,
+      "runs": 55,
+      "longest_run_frames": 4,
+      "colors": {
+        "RED": 17,
+        "GREEN": 39,
+        "YELLOW": 15,
+        "UNKNOWN": 13
+      }
+    }
+  }
+}

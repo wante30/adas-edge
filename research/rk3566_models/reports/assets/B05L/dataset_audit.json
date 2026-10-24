@@ -1,0 +1,94 @@
+{
+  "dataset_yaml": "D:\\Datasets\\adas_edge_training\\tl_specialist\\data_512x192\\dataset.yaml",
+  "dataset_declared": {
+    "path": "D:/Datasets/adas_edge_training/tl_specialist/data_512x192",
+    "train": "images/train",
+    "val": "images/val",
+    "names": {
+      "0": "traffic light"
+    }
+  },
+  "train": {
+    "images": 8513,
+    "labeled_images": 4719,
+    "empty_label_images": 3794,
+    "missing_label_files": 0,
+    "boxes": 22283,
+    "boxes_per_labeled_image_mean": 4.721974994702268,
+    "boxes_per_labeled_image_max": 18,
+    "size_groups_original_width": {
+      "8-16": 11286,
+      "<8": 3195,
+      "16-32": 6496,
+      ">32": 1306
+    },
+    "width_original_px": {
+      "min": 3.000319999999874,
+      "p50": 12.999680000000069,
+      "p95": 33.99935999999997,
+      "max": 120.99968000000004
+    },
+    "exact_duplicate_image_groups": 2
+  },
+  "val": {
+    "images": 487,
+    "labeled_images": 249,
+    "empty_label_images": 238,
+    "missing_label_files": 0,
+    "boxes": 1185,
+    "boxes_per_labeled_image_mean": 4.759036144578313,
+    "boxes_per_labeled_image_max": 19,
+    "size_groups_original_width": {
+      "8-16": 600,
+      "16-32": 330,
+      "<8": 181,
+      ">32": 74
+    },
+    "width_original_px": {
+      "min": 4.000000000000057,
+      "p50": 12.999680000000069,
+      "p95": 34.800383999999966,
+      "max": 79.0003200000001
+    },
+    "exact_duplicate_image_groups": 0
+  },
+  "bdd50": {
+    "images": 50,
+    "all_gt": 154,
+    "roi_gt": 150,
+    "outside_roi_gt": 4,
+    "crossing_roi_gt": 0,
+    "roi_coverage": 0.974025974025974,
+    "colors_all": {
+      "green": 81,
+      "none": 37,
+      "red": 33,
+      "yellow": 3
+    },
+    "roi_size_groups": {
+      "8-16": 80,
+      "<8": 17,
+      "16-32": 47,
+      ">32": 6
+    },
+    "roi_top_fraction": 0.6,
+    "image_size": [
+      [
+        1280,
+        720
+      ]
+    ]
+  },
+  "leakage_checks": {
+    "bdd50_names_in_train": [],
+    "bdd50_names_in_val": [],
+    "bdd50_names_not_in_declared_holdout": [],
+    "train_val_name_overlap": [],
+    "declared_holdout_names_file": "D:\\Datasets\\adas_edge_training\\bdd_holdout_1000_names.txt"
+  },
+  "notes": [
+    "Training canvases are 512x192 direct ROI resizes; original width = canvas width * 2.5.",
+    "Empty-label images are BDD frames with no traffic-light annotation in the top ROI; they are not counted as proven hard negatives.",
+    "BDD50 is a fixed human-GT holdout used only for evaluation; it is excluded from the training split."
+  ]
+}

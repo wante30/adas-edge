@@ -1,0 +1,67 @@
+{
+  "model": "D:\\Datasets\\adas_edge_training\\tl_specialist\\tl_specialist_512x192.onnx",
+  "size_bytes": 10476332,
+  "ir_version": 7,
+  "opset": [
+    {
+      "domain": "ai.onnx",
+      "version": 12
+    }
+  ],
+  "checker": "passed",
+  "inputs": [
+    {
+      "name": "images",
+      "shape": [
+        1,
+        3,
+        192,
+        512
+      ],
+      "dtype": 1
+    }
+  ],
+  "outputs": [
+    {
+      "name": "output0",
+      "shape": [
+        1,
+        5,
+        2016
+      ],
+      "dtype": 1
+    }
+  ],
+  "nodes": 319,
+  "initializers": 192,
+  "operators": {
+    "Add": 16,
+    "Concat": 21,
+    "Conv": 88,
+    "Div": 1,
+    "MatMul": 2,
+    "MaxPool": 3,
+    "Mul": 78,
+    "Reshape": 11,
+    "Resize": 2,
+    "Sigmoid": 77,
+    "Slice": 2,
+    "Softmax": 2,
+    "Split": 10,
+    "Sub": 2,
+    "Transpose": 4
+  },
+  "dynamic_dimensions": [
+    {
+      "name": "images",
+      "shape": [
+        1,
+        3,
+        192,
+        512
+      ]
+    }
+  ],
+  "rknn_conversion": "not_executed",
+  "rknn_note": "RKNN Toolkit2 2.3.2 exists in a WSL venv, but its ONNX package is broken (onnx_cpp2py_export has no extension). No conversion result is claimed."
+}
