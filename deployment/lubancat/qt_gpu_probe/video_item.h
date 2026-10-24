@@ -258,6 +258,10 @@ public:
                           const QString &aiFrameFile = QString(),
                           double aiHz = 10.0,
                           const QString &sourceLabel = QStringLiteral("pgv-live"));
+    void startPgvRingProducer(double fps, const QString &ringFile,
+                              const QString &aiFrameFile = QString(),
+                              double aiHz = 10.0,
+                              const QString &sourceLabel = QStringLiteral("pgv-local"));
     void stopProducer();
     void updateMetrics();
 
@@ -275,6 +279,7 @@ signals:
 private:
     void produceFrame(uint64_t id);
     void runPgvProducer(double fps, QString pgvFile, double aiHz, QString aiFrameFile);
+    void runPgvRingProducer(double fps, QString ringFile, double aiHz, QString aiFrameFile);
     void runAiBridge(double fps, double aiHz, QString frameFile);
     void writeTeslaSceneTracks(const QVariantList &boxes, uint64_t frameId, qint64 timestampNs);
 
