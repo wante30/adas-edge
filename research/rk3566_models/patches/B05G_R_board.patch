@@ -1,0 +1,116 @@
+--- qt_gpu_probe_ai_20261019/ai_bridge.py.bak-b05g	2024-06-19 06:10:01.525914104 +0800
++++ qt_gpu_probe_ai_20261019/ai_bridge.py	2024-06-19 06:16:29.488761290 +0800
+@@ -10,6 +10,8 @@
+ import os
+ import queue
+ import signal
++import os
++import json
+ from pathlib import Path
+ import socket
+ import struct
+@@ -40,6 +42,7 @@
+ from tools.competition_console.navigation_reader import NavigationObservation
+ from tools.competition_console.pipeline import FrontPipeline
+ from tools.competition_console.rknn_detector import RknnConsoleDetector
++from competition_ai.traffic_light_async import AsyncTrafficLightTracker
+ from competition_ai.model_profiles import get_profile
+ from tools.competition_console.latest_frame_slot import LatestFrameSlot
+ 
+@@ -788,6 +791,15 @@
+             main, specialist, main_hz=args.main_hz,
+             specialist_hz=args.specialist_hz, hazards=True,
+         )
++        self.tl_mode = os.environ.get("TL_MODE", "legacy").strip().lower()
++        self.tl_tracker = None
++        self.tl_last_specialist_frame = -1
++        self.tl_log = None
++        if self.tl_mode == "tracked":
++            self.tl_tracker = AsyncTrafficLightTracker(
++                detection_ttl_ms=1200, color_ttl_ms=500, confirm_updates=2
++            )
++            self.tl_log = open("/dev/shm/b05g_tracker.jsonl", "a", buffering=1)
+         self.navigation = None
+         self.nav_request = None
+         self.nav_result = None
+@@ -1060,6 +1072,44 @@
+                 self.nav_ocr_skipped += 1
+         lane = next(iter(Lane))
+         snapshot = self.pipeline.snapshot(lane, int(timestamp_ns))
++        if self.tl_tracker is not None:
++            tracker_record = {"mode": self.tl_mode, "frame_id": int(frame_id),
++                              "timestamp_ns": int(timestamp_ns),
++                              "specialist_frame_id": int(snapshot.specialist_frame_id),
++                              "specialist": [
++                                  {"bbox": item.get("bbox"),
++                                   "confidence": item.get("confidence")}
++                                  for item in (snapshot.specialist or ())
++                                  if isinstance(item, dict)
++                              ]}
++            if snapshot.specialist_frame_id > self.tl_last_specialist_frame and snapshot.specialist_frame_id > 0:
++                # Detection branch must cache the current frame before the
++                # late-detection association.  Frame branch calls update_frame
++                # directly; pushing here first would make it a duplicate.
++                self.tl_tracker.push_frame(
++                    road, source_frame_id=int(frame_id), timestamp_ns=int(timestamp_ns),
++                    source_id=self.args.source,
++                )
++                self.tl_last_specialist_frame = int(snapshot.specialist_frame_id)
++                result = self.tl_tracker.update_detections(
++                    snapshot.specialist,
++                    detection_frame_id=int(snapshot.specialist_frame_id),
++                    detection_timestamp_ns=int(snapshot.specialist_timestamp_ns),
++                    current_frame_id=int(frame_id),
++                    current_timestamp_ns=int(timestamp_ns),
++                    source_id=self.args.source,
++                )
++                tracker_record["event"] = "detection"
++                tracker_record["rejected"] = result.get("rejected", [])
++                tracker_record["records"] = result.get("records", [])
++            else:
++                tracker_record["event"] = "frame"
++                tracker_record["records"] = self.tl_tracker.update_frame(
++                    road, source_frame_id=int(frame_id), timestamp_ns=int(timestamp_ns),
++                    source_id=self.args.source,
++                )
++            if self.tl_log is not None:
++                self.tl_log.write(json.dumps(tracker_record, separators=(",", ":")) + "\n")
+         nav = self.navigation.current(int(timestamp_ns)).to_dict() if self.navigation else {}
+         hud = build_hud_perception(road, snapshot)
+         flags = 0
+--- competition_cockpit_port_20261018/tools/competition_console/pipeline.py.bak-b05g	2024-06-19 06:10:01.515914288 +0800
++++ competition_cockpit_port_20261018/tools/competition_console/pipeline.py	2024-06-19 06:10:01.875907651 +0800
+@@ -17,6 +17,8 @@
+     specialist_age_ms: float | None
+     binding_source: str
+     hazards: HazardObservation = HazardObservation()
++    specialist_frame_id: int = 0
++    specialist_timestamp_ns: int = 0
+ 
+     def as_perception(self):
+         return Perception(self.signal.light,self.signal.associated,self.signal.timestamp_ns,
+@@ -38,6 +40,8 @@
+     def reset(self):
+         self.main, self.specialist = [],[]
+         self.last_main, self.last_specialist, self.last_frame = None,None,None
++        self.specialist_frame_id = 0
++        self.specialist_timestamp_ns = 0
+         self.bindings = {}
+         if self.hazard_engine is not None:
+             self.hazard_engine.reset()
+@@ -73,6 +77,8 @@
+             self.specialist,elapsed = self.specialist_detector.detect(frame[:round(height*.60)])
+             self.specialist_timings.append(elapsed)
+             self.last_specialist = now
++            self.specialist_frame_id = int(frame_id)
++            self.specialist_timestamp_ns = int(timestamp_ns)
+         seen = set()
+         for signal,_ in self.bindings.values():
+             if id(signal) in seen:
+@@ -90,4 +96,5 @@
+         return FrontSnapshot(self.main if ma is not None and 0 <= ma < 750 else [],
+                              self.specialist if sa is not None and 0 <= sa < 1200 else [],
+                              signal,ma,sa,binding[1] if binding else 'UNBOUND',
+-                             self.hazard_engine.current(now_ns) if self.hazard_engine else HazardObservation())
++                             self.hazard_engine.current(now_ns) if self.hazard_engine else HazardObservation(),
++                             self.specialist_frame_id, self.specialist_timestamp_ns)
