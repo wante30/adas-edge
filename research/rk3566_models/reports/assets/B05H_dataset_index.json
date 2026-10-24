@@ -1,0 +1,40 @@
+{
+  "dataset_root": "D:\\Datasets\\adas_edge_training\\b05h_auto_annotation_20261024",
+  "pseudo_A": "D:\\Datasets\\adas_edge_training\\b05h_auto_annotation_20261024\\pseudo",
+  "pending_B": "D:\\Datasets\\adas_edge_training\\b05h_auto_annotation_20261024\\pseudo\\pending",
+  "negatives_C": "none (no confirmed C candidates)",
+  "human_gt_BDD": "D:\\Datasets\\adas_edge_training\\b05h_auto_annotation_20261024\\real_gt",
+  "videos": 4,
+  "frames": 62,
+  "pseudo_labels": 47,
+  "A": 4,
+  "B": 43,
+  "C": 0,
+  "sizes": {
+    "<8": 0,
+    "8-16": 8,
+    "16-32": 26,
+    ">32": 13
+  },
+  "colors": {
+    "GREEN": 26,
+    "RED": 6,
+    "YELLOW": 4,
+    "UNKNOWN": 11
+  },
+  "splits": {
+    "train": 23,
+    "val": 13,
+    "test": 11
+  },
+  "color_source": "HSV_UNVERIFIED",
+  "human_gt_boxes": 154,
+  "human_gt_colors": {
+    "green": 81,
+    "red": 33,
+    "yellow": 3,
+    "none": 37
+  },
+  "training_ready": false,
+  "reason": "A group has only 4 boxes; B pending; no C negatives"
+}

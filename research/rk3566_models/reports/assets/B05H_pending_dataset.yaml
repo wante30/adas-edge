@@ -1,0 +1,6 @@
+path: D:\Datasets\adas_edge_training\b05h_auto_annotation_20261024\pseudo\pending
+train: images/train
+val: images/val
+test: images/test
+names:
+  0: traffic light
