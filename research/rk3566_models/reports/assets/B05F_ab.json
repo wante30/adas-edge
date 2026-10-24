@@ -1,0 +1,12 @@
+{
+  "source": "video_20260929_113421.mp4 @2.0s, 30 frames, 1280x720",
+  "specialist_auto_bbox": [565.7, 367.0, 582.8, 395.4],
+  "specialist_confidence": 0.318,
+  "frames": 30,
+  "old_hsv_color_at_detection": "GREEN",
+  "new_track_ok_frames": 30,
+  "new_first_valid_color_frame_index": 1,
+  "new_color_counts": {"GREEN": 29, "UNKNOWN": 1},
+  "note": "single static green light, no red/green transition; no reliable color GT beyond manual inspection",
+  "backend": "PC offline LK on real frames; not RK3566 runtime integration"
+}
