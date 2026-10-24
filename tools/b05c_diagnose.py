@@ -47,29 +47,34 @@ def load_gt(json_dir):
 
 
 def ap50(by_image, gt):
+    # AP must rank every prediction globally by confidence.  A per-image sort
+    # changes the precision/recall envelope and is not COCO-style AP50.
     records = []
     for name, preds in by_image.items():
-        gts = gt.get(name, [])
-        used = set()
-        for pred in sorted(preds, key=lambda item: item["confidence"], reverse=True):
-            best, index = 0.0, None
-            for i, gt_box in enumerate(gts):
-                if i in used:
-                    continue
-                overlap = iou(pred["bbox"], gt_box["bbox"])
-                if overlap > best:
-                    best, index = overlap, i
-            records.append((float(pred["confidence"]), index is not None and best >= 0.5))
-            if index is not None and best >= 0.5:
-                used.add(index)
+        for pred in preds:
+            records.append((float(pred["confidence"]), name, pred["bbox"]))
+    records.sort(key=lambda item: item[0], reverse=True)
+    used = {name: set() for name in gt}
     total_gt = sum(len(rows) for rows in gt.values())
     if not records or total_gt == 0:
         return {"ap50": 0.0, "tp": 0, "fp": 0, "fn": total_gt}
     tp = fp = 0
     points = []
-    for rank, (_, hit) in enumerate(records, 1):
-        tp += int(hit)
-        fp += int(not hit)
+    for _, name, bbox in records:
+        gts = gt.get(name, [])
+        best, index = 0.0, None
+        for i, gt_box in enumerate(gts):
+            if i in used[name]:
+                continue
+            overlap = iou(bbox, gt_box["bbox"])
+            if overlap > best:
+                best, index = overlap, i
+        hit = index is not None and best >= 0.5
+        if hit:
+            used[name].add(index)
+            tp += 1
+        else:
+            fp += 1
         points.append((tp / total_gt, tp / max(1, tp + fp)))
     # 101-point interpolated AP, matching the B-03D style.
     aps = []

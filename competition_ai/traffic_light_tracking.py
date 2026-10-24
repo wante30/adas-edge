@@ -19,6 +19,7 @@ import numpy as np
 from .traffic_light import TrafficLightState
 
 DEFAULT_TTL_MS = 1200
+DEFAULT_COLOR_TTL_MS = 500
 CONFIRM_UPDATES = 2
 MIN_TRACK_IOU = 0.30
 COLOR_RATIO_THRESHOLD = 0.06
@@ -113,33 +114,47 @@ class TrafficLightTrack:
     candidate: TrafficLightState = TrafficLightState.UNKNOWN
     candidate_count: int = 0
     last_seen_ns: int = 0
+    detection_frame_id: int = 0
+    color_timestamp_ns: int = 0
+    color_frame_id: int = 0
 
-    def update(self, bbox, confidence: float, observation: LampColor, now_ns: int) -> None:
+    def update(self, bbox, confidence: float, observation: LampColor, now_ns: int,
+               frame_id: int = 0, confirm_updates: int = CONFIRM_UPDATES) -> None:
         self.bbox = bbox
         self.detection_confidence = confidence
         self.last_seen_ns = now_ns
+        self.detection_frame_id = int(frame_id)
         if observation.color == TrafficLightState.UNKNOWN:
             self.color = TrafficLightState.UNKNOWN
             self.color_confidence = 0.0
             self.candidate = TrafficLightState.UNKNOWN
             self.candidate_count = 0
+            self.color_timestamp_ns = 0
+            self.color_frame_id = 0
             return
         self.color_confidence = observation.confidence
+        self.color_timestamp_ns = now_ns
+        self.color_frame_id = int(frame_id)
         if observation.color == self.candidate:
             self.candidate_count += 1
         else:
+            # A new colour is not allowed to keep the old colour valid.  The
+            # HUD must show UNKNOWN until the new colour is confirmed.
             self.candidate = observation.color
             self.candidate_count = 1
-        if self.candidate_count >= CONFIRM_UPDATES:
+            self.color = TrafficLightState.UNKNOWN
+        if self.candidate_count >= max(1, int(confirm_updates)):
             self.color = observation.color
 
 
 class TrafficLightTracker:
     """Associate detections to physical lights and keep per-light state."""
 
-    def __init__(self, ttl_ms: int = DEFAULT_TTL_MS, confirm_updates: int = CONFIRM_UPDATES):
+    def __init__(self, ttl_ms: int = DEFAULT_TTL_MS, confirm_updates: int = CONFIRM_UPDATES,
+                 color_ttl_ms: int = DEFAULT_COLOR_TTL_MS):
         self.ttl_ms = max(1, int(ttl_ms))
         self.confirm_updates = max(1, int(confirm_updates))
+        self.color_ttl_ms = max(1, int(color_ttl_ms))
         self._tracks: list[TrafficLightTrack] = []
         self._next_id = 1
 
@@ -179,11 +194,12 @@ class TrafficLightTracker:
             if best_index is None:
                 track = TrafficLightTrack(self._next_id, bbox, confidence, last_seen_ns=now_ns)
                 self._next_id += 1
-                track.update(bbox, confidence, observation, now_ns)
+                track.update(bbox, confidence, observation, now_ns, source_frame_id, self.confirm_updates)
                 self._tracks.append(track)
                 used.add(len(self._tracks) - 1)
             else:
-                self._tracks[best_index].update(bbox, confidence, observation, now_ns)
+                self._tracks[best_index].update(bbox, confidence, observation, now_ns,
+                                                 source_frame_id, self.confirm_updates)
                 used.add(best_index)
 
         cutoff = now_ns - self.ttl_ms * 1_000_000
@@ -191,6 +207,10 @@ class TrafficLightTracker:
         records = []
         for track in self._tracks:
             age_ms = max(0.0, (now_ns - track.last_seen_ns) / 1_000_000)
+            color_age_ms = (max(0.0, (now_ns - track.color_timestamp_ns) / 1_000_000)
+                            if track.color_timestamp_ns else 1e9)
+            color_valid = (track.color != TrafficLightState.UNKNOWN
+                           and color_age_ms <= self.color_ttl_ms)
             records.append({
                 "source_id": str(source_id),
                 "source_frame_id": int(source_frame_id),
@@ -199,8 +219,12 @@ class TrafficLightTracker:
                 "confidence": round(float(track.detection_confidence), 4),
                 "color": track.color.value,
                 "color_confidence": round(float(track.color_confidence), 4),
-                "valid": bool(track.color != TrafficLightState.UNKNOWN and age_ms <= self.ttl_ms),
+                "valid": bool(color_valid),
                 "ttl_ms": self.ttl_ms,
+                "color_ttl_ms": self.color_ttl_ms,
+                "color_age_ms": round(color_age_ms, 1),
+                "detection_frame_id": track.detection_frame_id,
+                "color_frame_id": track.color_frame_id,
                 "track_id": track.track_id,
                 "age_ms": round(age_ms, 1),
             })

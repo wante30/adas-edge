@@ -69,3 +69,32 @@ def test_expired_track_is_dropped():
     tracker.update(frame, [_detection()], source_id="pgv", source_frame_id=2, timestamp_ns=1_100_000_000)
     records = tracker.update(frame, [], source_id="pgv", source_frame_id=3, timestamp_ns=2_500_000_000)
     assert records == []
+
+
+def test_new_red_does_not_keep_old_green_valid():
+    tracker = TrafficLightTracker(ttl_ms=1200, color_ttl_ms=500)
+    green = _lamp_frame(60)
+    red = _lamp_frame(0)
+    tracker.update(green, [_detection()], source_id="pgv", source_frame_id=1, timestamp_ns=1_000_000_000)
+    rows = tracker.update(green, [_detection()], source_id="pgv", source_frame_id=2, timestamp_ns=1_100_000_000)
+    assert rows[0]["color"] == "GREEN"
+    assert rows[0]["valid"] is True
+    rows = tracker.update(red, [_detection()], source_id="pgv", source_frame_id=3, timestamp_ns=1_200_000_000)
+    assert rows[0]["color"] == "UNKNOWN"
+    assert rows[0]["valid"] is False
+    rows = tracker.update(red, [_detection()], source_id="pgv", source_frame_id=4, timestamp_ns=1_300_000_000)
+    assert rows[0]["color"] == "RED"
+    assert rows[0]["valid"] is True
+
+
+def test_color_evidence_expires_even_if_track_is_held():
+    tracker = TrafficLightTracker(ttl_ms=1200, color_ttl_ms=500)
+    frame = _lamp_frame(60)
+    tracker.update(frame, [_detection()], source_id="pgv", source_frame_id=1, timestamp_ns=1_000_000_000)
+    rows = tracker.update(frame, [_detection()], source_id="pgv", source_frame_id=2, timestamp_ns=1_100_000_000)
+    assert rows[0]["valid"] is True
+    rows = tracker.update(frame, [], source_id="pgv", source_frame_id=3, timestamp_ns=1_700_000_000)
+    assert len(rows) == 1
+    assert rows[0]["color"] == "GREEN"
+    assert rows[0]["valid"] is False
+    assert rows[0]["color_age_ms"] == 600.0
