@@ -19,15 +19,19 @@ constexpr quint32 kTileReset[4][4] = {
 PcieIspControl::PcieIspControl(QObject *parent) : QObject(parent) {
     socket_.bind(QHostAddress(QHostAddress::LocalHost), 0);
     connect(&socket_, &QUdpSocket::readyRead, this, [this] {
+        char buffer[65536];
         while (socket_.hasPendingDatagrams()) {
-            const QByteArray data = socket_.receiveDatagram().data();
+            const qint64 length = socket_.readDatagram(buffer, sizeof(buffer));
+            if (length <= 0) continue;
+            const QByteArray data(buffer, static_cast<int>(length));
             const QJsonObject reply = QJsonDocument::fromJson(data).object();
             if (reply.isEmpty()) continue;
             status_ = reply.value(QStringLiteral("state")).toString(
                 reply.value(QStringLiteral("ok")).toBool() ? QStringLiteral("OK")
                                                            : QStringLiteral("REJECT"));
+            mode_ = reply.value(QStringLiteral("mode")).toString(QStringLiteral("UNKNOWN"));
             summary_ = QString::fromUtf8(QJsonDocument(reply).toJson(QJsonDocument::Indented));
-            emit replyChanged();
+            emit replyArrived(summary_, status_, mode_);
         }
     });
 }
@@ -39,7 +43,7 @@ void PcieIspControl::send(const QJsonObject &object) {
 
 void PcieIspControl::query() {
     status_ = QStringLiteral("QUERY...");
-    emit replyChanged();
+    emit replyArrived(summary_, status_, mode_);
     QJsonObject o;
     o.insert(QStringLiteral("type"), QStringLiteral("query"));
     send(o);
@@ -58,7 +62,7 @@ void PcieIspControl::applyIspReset() {
     o.insert(QStringLiteral("global"), QStringLiteral("0x1e"));
     o.insert(QStringLiteral("tiles"), tiles);
     status_ = QStringLiteral("APPLY ISP...");
-    emit replyChanged();
+    emit replyArrived(summary_, status_, mode_);
     send(o);
 }
 
@@ -75,7 +79,7 @@ void PcieIspControl::applyIspMaster(bool enabled) {
     o.insert(QStringLiteral("global"), enabled ? QStringLiteral("0x1f") : QStringLiteral("0x1e"));
     o.insert(QStringLiteral("tiles"), tiles);
     status_ = enabled ? QStringLiteral("ISP MASTER ON") : QStringLiteral("ISP MASTER OFF");
-    emit replyChanged();
+    emit replyArrived(summary_, status_, mode_);
     send(o);
 }
 
@@ -91,6 +95,6 @@ void PcieIspControl::applyAlgo(bool dehaze, bool gaussian, bool median, bool sob
     o.insert(QStringLiteral("type"), QStringLiteral("apply_algo"));
     o.insert(QStringLiteral("value"), QStringLiteral("0x") + QString::number(cfg, 16));
     status_ = QStringLiteral("APPLY ALGO...");
-    emit replyChanged();
+    emit replyArrived(summary_, status_, mode_);
     send(o);
 }

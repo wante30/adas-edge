@@ -35,6 +35,7 @@ Item {
     property var now: new Date()
     property bool hudTestOpen: false
     property bool fpgaOpen: false
+    property var fpgaControl: fpgaIsp
     property bool autoHudSend: true
     property bool sceneEnabled: (typeof sceneEnabled !== "undefined" ? sceneEnabled : true)
     property int trackingMode: 2  // 0=RAW, 1=FIX4, 2=TIME
@@ -51,7 +52,6 @@ Item {
     })
 
     HudControl { id: pcieHud }
-    PcieIspControl { id: fpgaIsp }
 
     onRoadQuadrantChanged: if (video) video.aiRoadQuadrant = roadQuadrant
     onNavQuadrantChanged: if (video) video.aiNavigationQuadrant = navQuadrant
@@ -1648,7 +1648,7 @@ Item {
         source: "FpgaControlPanel.qml"
         z: 520
         onLoaded: {
-            item.control = fpgaIsp
+            item.control = root.fpgaControl
             item.closeRequested.connect(function() { root.fpgaOpen = false })
         }
     }

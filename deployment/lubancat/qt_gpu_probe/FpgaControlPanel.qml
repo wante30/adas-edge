@@ -1,9 +1,21 @@
 import QtQuick 2.12
+import QtGpuProbe 1.0
 
 Item {
     id: panel
-    property var control
+    property var control: PcieControl
+    property string summaryText: "按 READ 查询"
+    property string statusText: "OFFLINE"
+    property string modeText: "UNKNOWN"
     signal closeRequested
+    Connections {
+        target: panel.control
+        function onReplyArrived(summary, status, mode) {
+            panel.summaryText = summary
+            panel.statusText = status
+            panel.modeText = mode
+        }
+    }
 
     Rectangle { anchors.fill: parent; color: "#E6030A0E" }
     Rectangle {
@@ -23,7 +35,7 @@ Item {
     }
     Text {
         x: 64; y: 114; width: 1120; height: 390
-        text: control ? control.summary : "NO SERVICE"
+        text: panel.summaryText
         color: "#B7D4DC"; font.family: "DejaVu Sans"; font.pixelSize: 7
         wrapMode: Text.WrapAnywhere
     }
@@ -66,7 +78,7 @@ Item {
         }
     }
     Text {
-        x: 64; y: 625; text: "STATUS: " + (control ? control.status : "NO SERVICE")
+        x: 64; y: 625; text: "STATUS: " + panel.modeText + " / " + panel.statusText
         color: "#8EAAB3"; font.family: "DejaVu Sans"; font.pixelSize: 7
     }
 }

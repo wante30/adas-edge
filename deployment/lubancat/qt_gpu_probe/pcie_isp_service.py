@@ -61,14 +61,23 @@ class State:
 
 
 class Backend:
-    def __init__(self, resource: str):
+    def __init__(self, resource: str, allow_simulation: bool = False):
         self.resource = resource
         self.fd = None
         self.mm = None
-        self.sim = True
+        self.sim = False
+        self.available = False
+        self.mode = "DISCONNECTED"
         self.error = ""
         self.simstate = State()
-        self._open()
+        self._allow_simulation = bool(allow_simulation)
+        if self._allow_simulation:
+            self.sim = True
+            self.available = True
+            self.mode = "SIMULATION"
+            self.error = "explicit simulation mode"
+        else:
+            self._open()
 
     def _open(self) -> None:
         try:
@@ -77,11 +86,16 @@ class Backend:
             self.mm = mmap.mmap(self.fd, 4096, access=mmap.ACCESS_WRITE)
             if self.rd(0x700) == MAGIC:
                 self.sim = False
+                self.available = True
+                self.mode = "HARDWARE"
             else:
-                self.error = "BAR1 magic mismatch; simulation"
+                self.available = False
+                self.mode = "DISCONNECTED"
+                self.error = "BAR1 magic mismatch"
         except Exception as exc:
-            self.error = f"{type(exc).__name__}: {exc}; simulation"
-            self.sim = True
+            self.available = False
+            self.mode = "DISCONNECTED"
+            self.error = f"{type(exc).__name__}: {exc}"
 
     def rd(self, off: int) -> int:
         if self.mm is None:
@@ -95,9 +109,11 @@ class Backend:
 
     def caps(self) -> dict:
         if self.sim:
-            return {"simulation": True, "error": self.error,
+            return {"mode": self.mode, "available": True, "error": self.error,
                     "magic": f"0x{MAGIC:08x}", "version": 1, "caps": "0x0000000f"}
-        return {"simulation": False, "error": "",
+        if not self.available:
+            return {"mode": self.mode, "available": False, "error": self.error}
+        return {"mode": self.mode, "available": True, "error": "",
                 "magic": f"0x{self.rd(0x700):08x}", "version": self.rd(0x704),
                 "caps": f"0x{self.rd(0x708):08x}"}
 
@@ -145,7 +161,13 @@ class Backend:
         return {"ok": False, "state": "timeout_unconfirmed", "sequence": seq,
                 "status": self.rd(status)}
 
+    def _unavailable(self) -> dict:
+        return {"ok": False, "state": "disconnected", "mode": self.mode,
+                "error": self.error or "BAR1 unavailable"}
+
     def query(self) -> dict:
+        if not self.available:
+            return self._unavailable()
         if self.sim:
             return {"ok": True, "state": "applied", **self.simstate.snapshot()}
         # QUERY is a write transaction followed by shadow/snapshot reads.
@@ -157,6 +179,8 @@ class Backend:
         return tx
 
     def apply_isp(self, payload: dict) -> dict:
+        if not self.available:
+            return self._unavailable()
         global_value = int(str(payload.get("global", "0x1e")), 0) & 0xFF
         tiles = payload.get("tiles")
         if not isinstance(tiles, list) or len(tiles) != 4:
@@ -181,6 +205,8 @@ class Backend:
         return tx
 
     def apply_algo(self, payload: dict) -> dict:
+        if not self.available:
+            return self._unavailable()
         value = int(str(payload.get("value", hex(ALGO_RESET))), 0) & ((1 << 64) - 1)
         if self.sim:
             self.simstate.algo = value
@@ -194,11 +220,13 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--bar1", default="/sys/bus/pci/devices/0000:01:00.0/resource1")
     parser.add_argument("--port", type=int, default=38264)
+    parser.add_argument("--simulation", action="store_true",
+                        help="explicitly enable simulated ISP/ALGO backend")
     args = parser.parse_args()
-    backend = Backend(args.bar1)
+    backend = Backend(args.bar1, allow_simulation=args.simulation)
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(("127.0.0.1", args.port))
-    print(f"READY simulation={backend.sim} error={backend.error}", flush=True)
+    print(f"READY mode={backend.mode} available={backend.available} error={backend.error}", flush=True)
     while True:
         ready, _, _ = select.select([sock], [], [], 1.0)
         if not ready:
@@ -220,6 +248,8 @@ def main() -> int:
         except Exception as exc:
             reply = {"type": "error", "ok": False, "state": "rejected",
                      "error": f"{type(exc).__name__}: {exc}"}
+        reply.setdefault("mode", backend.mode)
+        reply.setdefault("available", backend.available)
         sock.sendto(json.dumps(reply).encode(), peer)
 
 

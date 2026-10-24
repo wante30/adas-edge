@@ -77,6 +77,9 @@ static int collectGraphicsLibrary(struct dl_phdr_info *info, size_t, void *data)
     return 0;
 }
 
+static PcieIspControl *g_ispControl = nullptr;
+static QObject *ispControlSingleton(QQmlEngine *, QJSEngine *) { return g_ispControl; }
+
 static QJsonArray loadedGraphicsLibraries() {
     QJsonArray libraries;
     QSet<QString> paths;
@@ -151,9 +154,17 @@ int main(int argc, char **argv) {
     view.rootContext()->setContextProperty(QStringLiteral("localPgvFile"), localPgvFile);
     const bool protocolPanelTest = qEnvironmentVariableIsSet("QT_PROTOCOL_PANEL_TEST");
     view.rootContext()->setContextProperty(QStringLiteral("protocolPanelTest"), protocolPanelTest);
+    auto *ispControl = new PcieIspControl(&app);
+    g_ispControl = ispControl;
+    view.rootContext()->setContextProperty(QStringLiteral("fpgaIsp"), ispControl);
+    qmlRegisterSingletonType<PcieIspControl>("QtGpuProbe", 1, 0, "PcieControl",
+        &ispControlSingleton);
     const QString qmlOverride = qEnvironmentVariable("QT_QML_FILE");
     view.setSource(qmlOverride.isEmpty() ? QUrl(QStringLiteral("qrc:/main.qml"))
                                          : QUrl::fromLocalFile(qmlOverride));
+    if (auto *rootObject = view.rootObject()) {
+        rootObject->setProperty("fpgaControl", QVariant::fromValue(static_cast<QObject *>(ispControl)));
+    }
     auto *video = view.rootObject() ? view.rootObject()->findChild<VideoItem *>(QStringLiteral("videoProbeItem")) : nullptr;
     auto *navBridge = new NavBridge(&app);
     QObject::connect(video, &VideoItem::aiChanged, navBridge, [video, navBridge] {

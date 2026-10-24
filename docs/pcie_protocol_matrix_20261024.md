@@ -3,14 +3,17 @@
 依据：`rk3566_pcie_complete_handoff_20261023.json`  
 基线：`isp_base_hud_only_20261023`
 
-## 实板状态（2026-10-24）
+## 实板状态（2026-10-24，重启恢复后）
 
 ```text
-01:00.0 [0755:0755] (rev ff)
-/dev/pango_pci_driver       不存在
-/sys/.../resource1          FFFFFFFF
-pango capture               invalid_frame
+01:00.0 [0755:0755]        配置可读，Link up 4.0 Gb/s x1
+pango_video                bound，/dev/pango_video0
+pango capture              running ~59 FPS
+ISP/ALGO HARDWARE          magic=0x31435049 version=1 caps=0xf
 ```
+
+失效时曾出现：`rev ff`、BAR1=0xffffffff、capture invalid_frame。  
+一次受控重启恢复；根因 UNKNOWN（无 AER/panic 记录）。
 
 结论：当前实板 PCIe 链路不可用，不能把 BAR1 读成功当作已完成验收。  
 以下“实板”列在没有链路时必须为 NO/UNVERIFIED。
@@ -24,8 +27,8 @@ pango capture               invalid_frame
 | DIAG 0x658–0x664 | `protocol()` 只读 | 是 | 是 | 否 | 否 | 否 |
 | NAV 0x670–0x67C | `hud_bridge.py nav()` | 是 | 是 | 是 | 是（历史） | 历史通过，当前不可测 |
 | FIBER 0x680–0x68C | `protocol()` 只读 | 是 | 是 | 否 | 否 | 否 |
-| ISP 0x700–0x75C | `pcie_isp_service.py` | 模拟/正常链路 | 是 | 是 | 模拟 | 否 |
-| ALGO 0x760–0x77C | `pcie_isp_service.py` | 模拟/正常链路 | 是 | 是 | 模拟 | 否 |
+| ISP 0x700–0x75C | `pcie_isp_service.py` | HARDWARE | 是 | 是 | 是 | 是（同值 APPLY/QUERY） |
+| ALGO 0x760–0x77C | `pcie_isp_service.py` | HARDWARE | 是 | 是 | 是 | 是（dehaze on/off + 恢复） |
 | ISP/ALGO snapshot 0x780–0x78C | 服务已读 | 是 | 是 | 索引写 | 否 | 否 |
 | VIDEO 采集 CSR 0x400–0x428 | pango_video/capture | 否（当前） | 只读代码 | 否 | 否 | 否 |
 | 4×DMA descriptor 0x500–0x57C | pango_video | 否（当前） | 是 | 否 | 否 | 否 |
