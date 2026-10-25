@@ -161,7 +161,7 @@ async function refreshLog(){const x=await api('/api/log');document.getElementByI
 async function exportReport(){const x=await api('/api/report');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(x,null,2)],{type:'application/json'}));a.download='pcie_report.json';a.click()}
 async function refreshState(){try{const x=await api('/api/state');const c=x.caps||{};document.getElementById('mode').textContent=c.mode||'?';document.getElementById('mode').className='pill '+(c.available?'ok':'bad');document.getElementById('device').textContent=JSON.stringify(c);if(x.hud&&x.hud.ok){document.getElementById('hud_seq').placeholder=String((x.hud.accepted+1)&0xffff)}}catch(e){document.getElementById('mode').textContent='DISCONNECTED';document.getElementById('mode').className='pill bad'}}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('section').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');if(b.dataset.tab==='raw')refreshLog()});
-ispBuild();refreshState();setInterval(refreshState,3000);
+ispBuild();refreshState();refreshLog();op({op:'hud_read'});setInterval(refreshState,3000);
 </script>
 </body>
 </html>
