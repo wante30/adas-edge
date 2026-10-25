@@ -72,6 +72,10 @@ Item {
             Text { anchors.centerIn: parent; text: "ALGO EDGE"; color: "#8CF5FF"; font.family: "DejaVu Sans"; font.pixelSize: 9 }
             MouseArea { anchors.fill: parent; onClicked: if (panel.control) panel.control.applyAlgo(false, false, false, true) }
         }
+        Rectangle { width: 150; height: 34; color: "#10202A"; border.color: "#3CE3FF"
+            Text { anchors.centerIn: parent; text: "WEB DEBUG"; color: "#8CF5FF"; font.family: "DejaVu Sans"; font.pixelSize: 9 }
+            MouseArea { anchors.fill: parent; onClicked: Qt.openUrlExternally("http://127.0.0.1:8080/") }
+        }
         Rectangle { width: 150; height: 34; color: "#2B1016"; border.color: "#FF5064"
             Text { anchors.centerIn: parent; text: "CLOSE"; color: "#FF8A96"; font.family: "DejaVu Sans"; font.pixelSize: 9 }
             MouseArea { anchors.fill: parent; onClicked: panel.closeRequested() }

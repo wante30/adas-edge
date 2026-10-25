@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>RK3566 PCIe V1.0.1 Console</title>
+<style>
+:root{--bg:#071018;--panel:#0c1b24;--line:#20434f;--ink:#bfe7ee;--dim:#6f98a4;--hot:#45f3b0;--warn:#ffb454;--bad:#ff5b6e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 Consolas,"DejaVu Sans",monospace}
+header{display:flex;gap:14px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:#09141b}
+header h1{font-size:16px;margin:0;color:#8cf5ff} .pill{border:1px solid var(--line);padding:3px 8px;border-radius:3px;color:var(--dim)}
+#mode{margin-left:auto} #mode.ok{color:var(--hot);border-color:var(--hot)} #mode.bad{color:var(--bad);border-color:var(--bad)}
+main{display:grid;grid-template-columns:190px 1fr 380px;height:calc(100vh - 55px)}
+nav{border-right:1px solid var(--line);padding:10px;background:#09141b}
+nav button{display:block;width:100%;margin:4px 0;text-align:left;background:transparent;border:1px solid var(--line);color:var(--ink);padding:7px}
+nav button.active{border-color:var(--hot);color:var(--hot)}
+#work{padding:14px 18px;overflow:auto} #side{border-left:1px solid var(--line);padding:10px;overflow:auto;background:#09141b}
+section{display:none} section.active{display:block} h2{font-size:14px;color:#8cf5ff;border-bottom:1px solid var(--line);padding-bottom:6px}
+fieldset{border:1px solid var(--line);margin:10px 0;padding:10px} legend{color:var(--dim);padding:0 5px}
+label{display:inline-flex;align-items:center;gap:5px;margin:3px 12px 3px 0;color:var(--ink)}
+input,select{background:#061017;border:1px solid var(--line);color:var(--ink);padding:3px 5px;font:inherit}
+input[type=number]{width:90px} input[type=checkbox]{accent-color:#45f3b0}
+button{background:#0b2630;border:1px solid #3ce3ff;color:#8cf5ff;padding:6px 11px;margin:4px 5px 4px 0;cursor:pointer;font:inherit}
+button.good{border-color:var(--hot);color:var(--hot)} button.bad{border-color:var(--bad);color:var(--bad)}
+table{border-collapse:collapse;width:100%;margin:6px 0;font-size:12px} td,th{border:1px solid var(--line);padding:3px 5px;text-align:left} th{color:var(--dim)}
+.mono{word-break:break-all;color:#9ed8e2}.log{white-space:pre-wrap;font-size:11px;border-bottom:1px solid #15313a;padding:3px 0}
+#result{white-space:pre-wrap;font-size:11px;color:#9ed8e2;min-height:140px}
+.note{color:var(--warn);font-size:12px}.muted{color:var(--dim);font-size:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.tile{border:1px solid var(--line);padding:6px;margin:5px 0}
+.tile h4{margin:2px 0 6px;color:#8cf5ff}
+</style>
+</head>
+<body>
+<header><h1>RK3566 PCIe V1.0.1</h1><span class="pill">LOCAL CONSOLE</span><span id="mode" class="pill">connecting</span><span id="station" class="muted"></span></header>
+<main>
+<nav>
+<button data-tab="hud" class="active">HUD</button>
+<button data-tab="scene">SCENE</button>
+<button data-tab="nav">NAV</button>
+<button data-tab="isp">ISP ×4</button>
+<button data-tab="algo">ALGO</button>
+<button data-tab="diag">DIAG / HSST / DMA</button>
+<button data-tab="raw">RAW LOG / REPORT</button>
+</nav>
+<div id="work">
+<section id="hud" class="active"><h2>HUD 0x600–0x634</h2>
+<div class="muted">REQUEST 32bit：sequence[31:16]，blink[11:9]，takeover[12]，基础灯位[8:0]。只有一次完整 DWORD 写 0x608。</div>
+<fieldset><legend>States</legend>
+<label><input id="hud_hud_enable" type="checkbox">HUD</label>
+<label><input id="hud_left" type="checkbox">左转</label><label><input id="hud_right" type="checkbox">右转</label>
+<label><input id="hud_hazard" type="checkbox">双闪</label><label><input id="hud_low_beam" type="checkbox">近光</label>
+<label><input id="hud_high_beam" type="checkbox">远光</label><label><input id="hud_front_fog" type="checkbox">前雾</label>
+<label><input id="hud_position" type="checkbox">示廓</label><label><input id="hud_adas" type="checkbox">ADAS</label>
+<label><input id="hud_left_blink" type="checkbox">左闪</label><label><input id="hud_right_blink" type="checkbox">右闪</label>
+<label><input id="hud_hazard_blink" type="checkbox">双闪闪烁</label><label><input id="hud_takeover" type="checkbox">RK接管</label>
+<label>seq <input id="hud_seq" type="number" min="0" max="65535" value="0" placeholder="auto"></label>
+<button class="good" onclick="hudApply()">APPLY 0x608</button><button onclick="op({op:'hud_read'})">READ</button>
+<button class="bad" onclick="op({op:'hud_raw',value:0x00020000})">释放接管 W32 0x00020000</button>
+<button onclick="op({op:'hud_raw',value:0x00011103})">向量 W32 0x00011103</button>
+</fieldset><div id="hud_out"></div>
+</section>
+
+<section id="scene"><h2>SCENE 0x638–0x64C</h2>
+<fieldset><legend>Shadow</legend>
+<label>valid <input id="sc_valid" type="checkbox" checked></label>
+<label>traffic <select id="sc_traffic"><option value="0">未知</option><option value="1">红灯</option><option value="2">绿灯</option></select></label>
+<label><input id="sc_person" type="checkbox">person</label><label><input id="sc_obstacle" type="checkbox">obstacle</label>
+<label><input id="sc_speed" type="checkbox">speed_limit</label><label><input id="sc_warning" type="checkbox">warning</label>
+<label><input id="sc_show_time" type="checkbox" checked>show_time</label>
+<label>left_lane <select id="sc_left"><option value="0">未知</option><option value="1">实线</option><option value="2">虚线</option></select></label>
+<label>right_lane <select id="sc_right"><option value="0">未知</option><option value="1">实线</option><option value="2">虚线</option></select></label>
+<label>seq <input id="sc_seq" type="number" min="0" max="65535" value="0" placeholder="auto"></label>
+<label>time <input id="sc_time" type="datetime-local" step="1"></label>
+<button class="good" onclick="sceneApply()">SEND (shadow→time→commit)</button><button onclick="op({op:'scene_read'})">READ</button>
+<button onclick="sceneVector()">向量 seq42</button><button class="bad" onclick="sceneClear()">valid=0 CLEAR</button>
+<label><input id="sc_timer_on" type="checkbox" onchange="sceneTimer()">auto</label><label>interval ms <input id="sc_interval" type="number" value="500" min="200"></label>
+</fieldset><div id="scene_out"></div>
+</section>
+
+<section id="nav"><h2>NAV 0x670–0x67C</h2>
+<div class="muted">sequence 位于 CONTROL[31:16]，允许 0；NAV 没有 500ms 过期机制。</div>
+<fieldset><legend>Nav</legend>
+<label><input id="nav_enable" type="checkbox" checked>enable</label>
+<label>direction <select id="nav_dir"><option value="0">直行</option><option value="1">左转</option><option value="2">右转</option></select></label>
+<label>distance m <input id="nav_dist" type="number" value="120" min="0" max="65535"></label>
+<label>seq <input id="nav_seq" type="number" value="1" min="0" max="65535"></label>
+<button class="good" onclick="navApply()">APPLY</button><button onclick="op({op:'nav_read'})">READ ACTIVE</button>
+<button onclick="navClear()">CLEAR_ERRORS</button><button onclick="navVector()">左转120m 向量</button>
+</fieldset><div id="nav_out"></div>
+</section>
+
+<section id="isp"><h2>ISP 0x700–0x75C</h2>
+<div class="muted">四宫格 tile0..3 = 左上/右上/左下/右下。字段来自协议 JSON，低位到高位 DWORD 写入；APPLY 前写完整 shadow、CLEAR、COMMIT。</div>
+<fieldset><legend>Global / actions</legend><label>global 0x70C <input id="isp_global" type="number" value="30" min="0" max="255"></label>
+<button class="good" onclick="ispApplyAll()">APPLY ALL 4</button><button onclick="op({op:'isp_query'})">QUERY</button>
+<button onclick="ispDefault()">恢复默认</button><button onclick="ispExport()">导出配置</button>
+<label>导入 <input id="isp_import" type="file" accept=".json" onchange="ispImport(event)"></label>
+</fieldset><div id="isp_tiles"></div><div id="isp_out"></div>
+</section>
+
+<section id="algo"><h2>ALGO 0x760–0x78C</h2>
+<div class="muted">stage bit56=DEHAZE，57=GAUSSIAN，58=MEDIAN，59=SOBEL。其他字段保留；每次修改只改目标字段。</div>
+<fieldset><legend>Stages</legend>
+<label><input id="al_dehaze" type="checkbox">DEHAZE (PCIe/算法四宫格)</label>
+<label><input id="al_gaussian" type="checkbox">GAUSSIAN (HDMI后级)</label>
+<label><input id="al_median" type="checkbox">MEDIAN (HDMI后级)</label>
+<label><input id="al_sobel" type="checkbox">SOBEL (HDMI后级)</label>
+<label>tile mask <input id="al_mask" type="number" value="15" min="0" max="15"></label>
+<label>W <input id="al_w" type="number" value="230" min="0" max="255"></label>
+<label>t_min <input id="al_tmin" type="number" value="25" min="1" max="255"></label>
+<label>atmosphere_a <input id="al_a" type="number" value="220" min="1" max="250"></label>
+<label><input id="al_autoA" type="checkbox" checked>autoA</label>
+<label>threshold <input id="al_threshold" type="number" value="128" min="0" max="1443"></label>
+<button class="good" onclick="algoApply()">APPLY</button><button onclick="op({op:'algo_query'})">QUERY</button><button onclick="algoDehazeOnly()">DEHAZE ONLY</button>
+</fieldset><div id="algo_out"></div><div class="note">去雾与 ISP master 独立；高斯/中值/Sobel 仅影响 HDMI 后级，PCIe 采集不含 HUD/导航叠加。</div>
+</section>
+
+<section id="diag"><h2>DIAG / HSST / DMA</h2>
+<button onclick="diagRead()">READ DIAGNOSTICS</button>
+<div id="diag_out"></div>
+<div class="note">传统 DMA 与视频 DMA 写控制：VIDEO_DMA_CONTROL_UNAVAILABLE。未取得驱动 coherent 缓冲/所有权接口前，本页只读。0x130/0x230 DONE 为读清，服务不后台轮询。</div>
+</section>
+
+<section id="raw"><h2>Transaction log / export</h2>
+<button onclick="refreshLog()">REFRESH</button><button onclick="exportReport()">EXPORT JSON REPORT</button>
+<div id="logs"></div>
+</section>
+</div>
+<aside id="side"><h3 style="margin-top:0;color:#8cf5ff">Last transaction</h3><div id="result">—</div><h3 style="color:#8cf5ff">Device</h3><div id="device" class="mono">—</div></aside>
+</main>
+<script>
+let SCHEMA=null, ISP_FIELDS=[], tileValues=[[],[],[],[]], timer=null;
+async function api(path,opt={}){const r=await fetch(path,opt); if(!r.ok) throw new Error(await r.text()); return r.json();}
+function esc(x){return String(x).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function show(id,o){const e=document.getElementById(id||'result');if(e)e.innerHTML='<pre>'+esc(JSON.stringify(o,null,2))+'</pre>';document.getElementById('result').textContent=JSON.stringify(o,null,2);}
+function currentOut(){const t=document.querySelector('nav button.active');return ({hud:'hud_out',scene:'scene_out',nav:'nav_out',isp:'isp_out',algo:'algo_out',diag:'diag_out'}[t?t.dataset.tab:''])||'result'}
+async function op(body){try{const p=await api('/api/op',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});show(currentOut(),p); if(p.state||p.mode)refreshState(); return p;}catch(e){show(currentOut(),{error:String(e)})}}
+function v(id){const e=document.getElementById(id);return e?e.value:''}function c(id){return document.getElementById(id).checked}
+function num(id){return Number(v(id)||0)}
+function hudApply(){const f={};['hud_enable','left','right','hazard','low_beam','high_beam','front_fog','position','adas','left_blink','right_blink','hazard_blink','takeover'].forEach(k=>f[k]=c('hud_'+k)?1:0);op({op:'hud_apply',fields:f,sequence:num('hud_seq')})}
+function scenePayload(){return {op:'scene_apply',sequence:num('sc_seq'),time:v('sc_time'),fields:{valid:c('sc_valid')?1:0,traffic:num('sc_traffic'),person:c('sc_person')?1:0,obstacle:c('sc_obstacle')?1:0,speed_limit:c('sc_speed')?1:0,left_lane:num('sc_left'),right_lane:num('sc_right'),warning:c('sc_warning')?1:0,show_time:c('sc_show_time')?1:0}}}
+function sceneApply(){op(scenePayload())}
+function sceneClear(){op({op:'scene_apply',sequence:0,fields:{valid:0}})}
+function sceneVector(){op({op:'scene_raw',writes:{'0x638':0x00000985,'0x63c':0x10242026,'0x640':0x00053014,'0x644':0x0000002a}})}
+function sceneTimer(){const on=c('sc_timer_on');if(!on){clearInterval(timer);timer=null;return;}clearInterval(timer);timer=setInterval(()=>op(scenePayload()),Math.max(200,num('sc_interval')));}
+function navApply(){op({op:'nav_apply',enable:c('nav_enable'),direction:num('nav_dir'),distance:num('nav_dist'),sequence:num('nav_seq')})}
+function navClear(){op({op:'nav_clear'})}
+function navVector(){op({op:'nav_apply',enable:1,direction:1,distance:120,sequence:1})}
+async function ispBuild(){if(!SCHEMA)SCHEMA=await api('/api/schema'); ISP_FIELDS=SCHEMA.image_control.isp_configuration.tile_fields;const host=document.getElementById('isp_tiles');host.innerHTML=''; for(let t=0;t<4;t++){let h='<fieldset class="tile"><legend>tile '+(t+1)+' '+['左上','右上','左下','右下'][t]+'</legend>';ISP_FIELDS.forEach(f=>{const id='isp_'+t+'_'+f.name;const min=f.minimum??0,max=f.maximum??((1<<f.width_bits)-1); if(f.width_bits===1)h+='<label><input id="'+id+'" type="checkbox">'+f.name+'</label>';else h+='<label>'+f.name+' <input id="'+id+'" type="number" min="'+min+'" max="'+max+'" value="'+(f.reset_value??0)+'"></label>';});h+='<button onclick="ispApplyTile('+t+')">APPLY TILE</button></fieldset>';host.insertAdjacentHTML('beforeend',h);} }
+function ispFields(t){const f={};ISP_FIELDS.forEach(x=>{const e=document.getElementById('isp_'+t+'_'+x.name);f[x.name]=x.width_bits===1?(e.checked?1:0):Number(e.value||0)});return f}
+function ispApplyAll(){op({op:'isp_apply',global:num('isp_global'),tiles:[ispFields(0),ispFields(1),ispFields(2),ispFields(3)]})}
+function ispApplyTile(t){const tiles=[{},{},{},{}];tiles[t]=ispFields(t);op({op:'isp_apply',global:num('isp_global'),tiles})}
+function ispDefault(){ISP_FIELDS.forEach((x,t)=>{for(let i=0;i<4;i++){const e=document.getElementById('isp_'+i+'_'+x.name);if(x.width_bits===1)e.checked=!!x.reset_value;else e.value=x.reset_value??0}});document.getElementById('isp_global').value=30}
+function ispExport(){const out={global:num('isp_global'),tiles:[0,1,2,3].map(t=>ispFields(t))};const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}));a.download='isp_config.json';a.click()}
+function ispImport(e){const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);document.getElementById('isp_global').value=d.global??30;d.tiles.forEach((tile,i)=>ISP_FIELDS.forEach(f=>{const e=document.getElementById('isp_'+i+'_'+f.name);if(f.width_bits===1)e.checked=!!tile[f.name];else e.value=tile[f.name]??0}))}catch(x){alert(x)}};r.readAsText(e.target.files[0])}
+function algoFields(){const f={stage_mask:(c('al_dehaze')?1:0)|(c('al_gaussian')?2:0)|(c('al_median')?4:0)|(c('al_sobel')?8:0),tile_mask:num('al_mask'),w:num('al_w'),t_min:num('al_tmin'),atmosphere_a:num('al_a'),flags:c('al_autoA')?1:0,threshold:num('al_threshold')};return f}
+function algoApply(){op({op:'algo_apply',fields:algoFields()})}
+function algoDehazeOnly(){document.getElementById('al_dehaze').checked=true;document.getElementById('al_gaussian').checked=false;document.getElementById('al_median').checked=false;document.getElementById('al_sobel').checked=false;algoApply()}
+async function diagRead(){show('diag_out',await api('/api/op',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({op:'diag'})}))}
+async function refreshLog(){const x=await api('/api/log');document.getElementById('logs').innerHTML=x.logs.slice().reverse().map(l=>'<div class="log">'+esc(JSON.stringify(l))+'</div>').join('')}
+async function exportReport(){const x=await api('/api/report');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(x,null,2)],{type:'application/json'}));a.download='pcie_report.json';a.click()}
+async function refreshState(){try{const x=await api('/api/state');const c=x.caps||{};document.getElementById('mode').textContent=c.mode||'?';document.getElementById('mode').className='pill '+(c.available?'ok':'bad');document.getElementById('device').textContent=JSON.stringify(c);if(x.hud&&x.hud.ok){document.getElementById('hud_seq').placeholder=String((x.hud.accepted+1)&0xffff)}}catch(e){document.getElementById('mode').textContent='DISCONNECTED';document.getElementById('mode').className='pill bad'}}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('section').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');if(b.dataset.tab==='raw')refreshLog()});
+ispBuild();refreshState();setInterval(refreshState,3000);
+</script>
+</body>
+</html>
