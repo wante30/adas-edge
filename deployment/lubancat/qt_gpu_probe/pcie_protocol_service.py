@@ -151,7 +151,7 @@ class Backend:
             self.fd = os.open(self.resource, os.O_RDWR | getattr(os, "O_SYNC", 0))
             import mmap
             self.mm = mmap.mmap(self.fd, 4096, access=mmap.ACCESS_WRITE)
-            if self.rd(ISP["global"]) != MAGIC:
+            if self.rd(0x700) != MAGIC:
                 self.mode = "DISCONNECTED"
                 self.error = "BAR1 magic mismatch"
                 return
@@ -639,6 +639,9 @@ class Backend:
                 tx = self._transaction("isp", 2)
                 if not tx.get("ok") and tx.get("state") != "APPLIED":
                     return tx
+                result = self.rd(ISP["result"])
+                self.isp_epoch = result & 0xFFFF
+                self.isp_source = (result >> 16) & 3
             values = self._read_tiles()
             return {"ok": True, "state": "READ", "global": hex32(self.isp_global),
                     "tiles": [[hex32(v) for v in tile] for tile in values],
@@ -695,6 +698,9 @@ class Backend:
                 return self._unavailable()
             if not self.sim:
                 self._transaction("algo", 2)
+                result = self.rd(ALGO["result"])
+                self.isp_epoch = result & 0xFFFF
+                self.isp_source = (result >> 16) & 3
             fields = SPEC["image_control"]["algo_configuration"]["fields"]
             return {"ok": True, "state": "READ", "value": hex64(self.algo),
                     "fields": decode_fields(self.algo, fields),

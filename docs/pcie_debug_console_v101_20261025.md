@@ -17,9 +17,13 @@ and `RK3566_PCIe协议开发交接.md`.
 | PIO BAR0 | not implemented | BLOCKED |
 | Ethernet action mailbox | not present in this repo | BLOCKED |
 | Real BAR1 windows | cannot open without PCIe | HARDWARE_NOT_TESTED |
-| Board service (SIMULATION) | deployed on RK3566 | SIMULATION_PASS |
-| Board web UI | LAN 200, HUD/SCENE/NAV/ISP/ALGO API exercised | SIMULATION_PASS |
-| Board real BAR1 | PCIe unavailable; service explicitly --simulation | HARDWARE_NOT_TESTED |
+| Board service (HARDWARE) | deployed on RK3566, root worker | HARDWARE_PASS |
+| Board web UI | LAN 200, Windows Chrome screenshot | HARDWARE_PASS |
+| HUD hardware write | 0x608=0x00011103 → accepted=1/applied=1/effective=0x103 | HW_APPLIED_PASS |
+| SCENE hardware | seq42 → applied=42 | HW_APPLIED_PASS |
+| NAV hardware | left 120m → active=0x00780003 | HW_APPLIED_PASS |
+| ISP hardware | no-op APPLY seq2 → APPLIED READ | HW_APPLIED_PASS |
+| ALGO hardware | no-op APPLY seq2 → APPLIED READ | HW_APPLIED_PASS |
 
 `HARDWARE_PASS` is intentionally not claimed.
 
@@ -55,11 +59,12 @@ old and new service cannot both own BAR1.
 http://192.168.137.2:8080/?token=rk3566-debug-2026
 ```
 
-The service is running on the board with `--simulation --web-host 0.0.0.0`.
-Windows Chrome loaded the page from the LAN, and HUD/SCENE/NAV/ISP/ALGO
-simulation operations returned APPLIED/READ through the board service.
-The Qt binary was rebuilt with the `WEB DEBUG` button; the old FPGA page's
-control-object injection remains a separate UI issue and was not used as proof.
+The service is now running in HARDWARE mode on the recovered PCIe endpoint.
+Windows Chrome loaded the page from the LAN; the page badge is `HARDWARE`.
+Actual register readbacks: HUD accepted/applied/effective 1/1/0x103; SCENE
+applied sequence 42; NAV active 0x00780003; ISP/ALGO no-op APPLY returned
+status 0x00020002 and READ. The Qt binary was rebuilt with the `WEB DEBUG`
+button; the old FPGA page's control-object injection remains separate.
 
 ## UI
 
