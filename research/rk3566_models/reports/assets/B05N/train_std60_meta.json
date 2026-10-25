@@ -1,0 +1,58 @@
+{
+  "arch": "yolov8n",
+  "init": "bdd",
+  "init_path": "weights/bdd100k-yolov8n-best.pt",
+  "data": "/root/autodl-tmp/adas-edge-b05n/datasets/b05n_bdd_multiclass/data.yaml",
+  "epochs": 60,
+  "batch": 32,
+  "imgsz": 512,
+  "seed": 0,
+  "gpu": "NVIDIA GeForce RTX 3080 Ti",
+  "torch": "2.5.1+cu124",
+  "cuda": "12.4",
+  "python": "3.12.3 | packaged by Anaconda, Inc. | (main, May  6 2024, 19:46:43) [GCC 11.2.0]",
+  "platform": "Linux-5.15.0-78-generic-x86_64-with-glibc2.35",
+  "parameters": 3023255,
+  "transfer": {
+    "source": "weights/bdd100k-yolov8n-best.pt",
+    "source_sha256": "acd17780b331c3970e22faf3c6f123eae8b8c4abcc736ad5ef38ff28ecd72fb2",
+    "source_classes": 10,
+    "destination_classes": 10,
+    "matched_layers": 355,
+    "destination_layers": 355,
+    "matched_parameter_fraction": 1.0,
+    "unmatched_examples": []
+  },
+  "save_dir": "/root/autodl-tmp/adas-edge-b05n/runs/b05n_std_bdd_full60",
+  "best": "/root/autodl-tmp/adas-edge-b05n/runs/b05n_std_bdd_full60/weights/best.pt",
+  "best_sha256": "65d400a4b1d1bf5735a3823eba39353d467c0df3f32979c14b596d778d62bb8b",
+  "results_dict": {
+    "metrics/precision(B)": 0.6466230532882838,
+    "metrics/recall(B)": 0.3306444758784597,
+    "metrics/mAP50(B)": 0.3706406101135217,
+    "metrics/mAP50-95(B)": 0.2052338207670626,
+    "fitness": 0.2052338207670626
+  },
+  "onnx": {
+    "path": "/root/autodl-tmp/adas-edge-b05n/runs/b05n_std_bdd_full60/weights/best.onnx",
+    "sha256": "a94b85cb5ac76048fe7283cafba8888ef7e1fd526f38a28cb985c6a361b1d1c9",
+    "size_bytes": 12164865,
+    "input": {
+      "name": "images",
+      "shape": [
+        1,
+        3,
+        288,
+        512
+      ]
+    },
+    "output": {
+      "name": "output0",
+      "shape": [
+        1,
+        14,
+        3024
+      ]
+    }
+  }
+}

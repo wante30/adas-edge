@@ -1,0 +1,151 @@
+{
+  "model": "/root/autodl-tmp/adas-edge-b05n/runs/b05n_p2_bdd_full/weights/best.pt",
+  "model_sha256": "cac9a46bb75a8d4898cb7b34c4630f01aeb8b47952f9699a96f568f7f353a6e8",
+  "input": {
+    "width": 512,
+    "height": 288,
+    "full_frame": true,
+    "rgb": true,
+    "scale": "1/255"
+  },
+  "dataset": {
+    "all_gt": 154,
+    "roi_gt": 150,
+    "outside_roi_gt": 4,
+    "images": 50,
+    "roi_height": 432
+  },
+  "thresholds": {
+    "conf": 0.25,
+    "ap_floor": 0.001,
+    "nms_iou": 0.5,
+    "match_iou": 0.5
+  },
+  "metrics_roi": {
+    "ap50": 0.49548837033231335,
+    "ap_conf_floor": 0.001,
+    "operating_point": {
+      "conf": 0.25,
+      "iou": 0.5
+    },
+    "tp": 68,
+    "fp": 24,
+    "fn": 82,
+    "precision": 0.7391304347826086,
+    "recall": 0.4533333333333333,
+    "size_groups": {
+      "<8": {
+        "gt": 17,
+        "tp": 1,
+        "fn": 16
+      },
+      "8-16": {
+        "gt": 80,
+        "tp": 31,
+        "fn": 49
+      },
+      "16-32": {
+        "gt": 47,
+        "tp": 31,
+        "fn": 16
+      },
+      ">32": {
+        "gt": 6,
+        "tp": 5,
+        "fn": 1
+      }
+    }
+  },
+  "metrics_full": {
+    "ap50": 0.4989144294098711,
+    "ap_conf_floor": 0.001,
+    "operating_point": {
+      "conf": 0.25,
+      "iou": 0.5
+    },
+    "tp": 71,
+    "fp": 25,
+    "fn": 83,
+    "precision": 0.7395833333333334,
+    "recall": 0.461038961038961,
+    "size_groups": {
+      "<8": {
+        "gt": 17,
+        "tp": 1,
+        "fn": 16
+      },
+      "8-16": {
+        "gt": 84,
+        "tp": 34,
+        "fn": 50
+      },
+      "16-32": {
+        "gt": 47,
+        "tp": 31,
+        "fn": 16
+      },
+      ">32": {
+        "gt": 6,
+        "tp": 5,
+        "fn": 1
+      }
+    }
+  },
+  "detections": {
+    "b1c66a42-6f7d68ca": 84,
+    "b1ceb32e-51852abe": 95,
+    "b1d0a191-5490450b": 126,
+    "b1d22ed6-f1cac061": 148,
+    "b1d7b3ac-5af8623b": 11,
+    "b1da9c53-0f3d4c5d": 36,
+    "b1e1a7b8-a7426a97": 3,
+    "b1eb9133-5cc75c18": 20,
+    "b1f20aa0-3401c3bf": 87,
+    "b1f4491b-9958bd99": 63,
+    "b1fbaab8-68db7df7": 8,
+    "b202cae2-672e61c5": 9,
+    "b2080dc7-f9b98a5f": 32,
+    "b20b69d2-ffc1d6af": 17,
+    "b2102d00-a8c09be1": 8,
+    "b2169b74-fa197951": 59,
+    "b21d5efb-5e2cd743": 4,
+    "b230a7b2-c881c382": 57,
+    "b23adb0d-8a7aaced": 103,
+    "b23fe89b-c704fe97": 7,
+    "b24380ab-855e9c00": 7,
+    "b24702e3-900f61ea": 74,
+    "b24c9ee6-e43a6e8b": 6,
+    "b250fb0c-01a1b8d3": 43,
+    "b255cd6c-6502a28c": 151,
+    "b258d359-49a3ad31": 32,
+    "b25fdb41-4644e3f7": 1,
+    "b26610ce-083c3bd1": 47,
+    "b268bb58-5ead8a56": 78,
+    "b26ba07a-e4ca935c": 15,
+    "b26f9b1e-09c56a3c": 9,
+    "b2715214-13e3dd85": 77,
+    "b277a772-08d8d7ad": 81,
+    "b27cd403-f2d087cc": 9,
+    "b2828509-133b042d": 49,
+    "b28cb5d3-9ff4ab4a": 66,
+    "b29026f0-d5a5ee8c": 85,
+    "b2939bf0-221e1dfb": 45,
+    "b29f09ea-ecd5304b": 66,
+    "b2a4bc4d-b251ccb1": 9,
+    "b2ae0446-4b0bfda7": 76,
+    "b2b70230-c43553a9": 123,
+    "b2bdc7e5-b4ebc5bd": 29,
+    "b2c5110e-ef7e4997": 67,
+    "b2cda443-f7cb5ccf": 22,
+    "b2d502aa-f8382905": 50,
+    "b2dbb793-305e0fc5": 7,
+    "b2e2f4ed-6ba045d0": 94,
+    "b2e63097-51c16783": 117,
+    "b2eed8fa-cf59a253": 47
+  },
+  "runtime": {
+    "mean_ms": 18.097560449969023,
+    "p50_ms": 9.671892505139112,
+    "p95_ms": 12.67569864285178
+  }
+}

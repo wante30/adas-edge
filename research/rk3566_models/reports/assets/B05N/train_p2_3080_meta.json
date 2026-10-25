@@ -1,0 +1,80 @@
+{
+  "arch": "yolov8n-p2",
+  "init": "bdd",
+  "init_path": "weights/bdd100k-yolov8n-best.pt",
+  "data": "/root/autodl-tmp/adas-edge-b05n/datasets/b05n_bdd_multiclass/data.yaml",
+  "epochs": 60,
+  "batch": 32,
+  "imgsz": 512,
+  "seed": 0,
+  "gpu": "NVIDIA GeForce RTX 3080 Ti",
+  "torch": "2.5.1+cu124",
+  "cuda": "12.4",
+  "python": "3.12.3 | packaged by Anaconda, Inc. | (main, May  6 2024, 19:46:43) [GCC 11.2.0]",
+  "platform": "Linux-5.15.0-78-generic-x86_64-with-glibc2.35",
+  "parameters": 3366022,
+  "transfer": {
+    "source": "weights/bdd100k-yolov8n-best.pt",
+    "source_sha256": "acd17780b331c3970e22faf3c6f123eae8b8c4abcc736ad5ef38ff28ecd72fb2",
+    "source_classes": 10,
+    "destination_classes": 0,
+    "matched_layers": 219,
+    "destination_layers": 437,
+    "matched_parameter_fraction": 0.4350381548308359,
+    "unmatched_examples": [
+      "model.18.cv1.bn.bias",
+      "model.18.cv1.bn.running_mean",
+      "model.18.cv1.bn.running_var",
+      "model.18.cv1.bn.weight",
+      "model.18.cv1.conv.weight",
+      "model.18.cv2.bn.bias",
+      "model.18.cv2.bn.running_mean",
+      "model.18.cv2.bn.running_var",
+      "model.18.cv2.bn.weight",
+      "model.18.cv2.conv.weight",
+      "model.18.m.0.cv1.bn.bias",
+      "model.18.m.0.cv1.bn.running_mean",
+      "model.18.m.0.cv1.bn.running_var",
+      "model.18.m.0.cv1.bn.weight",
+      "model.18.m.0.cv1.conv.weight",
+      "model.18.m.0.cv2.bn.bias",
+      "model.18.m.0.cv2.bn.running_mean",
+      "model.18.m.0.cv2.bn.running_var",
+      "model.18.m.0.cv2.bn.weight",
+      "model.18.m.0.cv2.conv.weight"
+    ],
+    "loaded_with": "YOLO.load(bdd100k-yolov8n-best.pt)"
+  },
+  "save_dir": "/root/autodl-tmp/adas-edge-b05n/runs/b05n_p2_bdd_full",
+  "best": "/root/autodl-tmp/adas-edge-b05n/runs/b05n_p2_bdd_full/weights/best.pt",
+  "best_sha256": "cac9a46bb75a8d4898cb7b34c4630f01aeb8b47952f9699a96f568f7f353a6e8",
+  "results_dict": {
+    "metrics/precision(B)": 0.4210482232596333,
+    "metrics/recall(B)": 0.36854050299111507,
+    "metrics/mAP50(B)": 0.3530030152387274,
+    "metrics/mAP50-95(B)": 0.1908427560217903,
+    "fitness": 0.1908427560217903
+  },
+  "onnx": {
+    "path": "/root/autodl-tmp/adas-edge-b05n/runs/b05n_p2_bdd_full/weights/best.onnx",
+    "sha256": "34b8896151dc24808dad40c529505cf7fc28bf1033ad02d2340d1528cfc8446e",
+    "size_bytes": 12024710,
+    "input": {
+      "name": "images",
+      "shape": [
+        1,
+        3,
+        288,
+        512
+      ]
+    },
+    "output": {
+      "name": "output0",
+      "shape": [
+        1,
+        14,
+        12240
+      ]
+    }
+  }
+}

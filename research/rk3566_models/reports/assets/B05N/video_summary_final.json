@@ -1,0 +1,19 @@
+{
+  "model": "b05n_final/b05n_p2_multiclass.pt",
+  "input": "full frame 1920x1080 -> 512x288",
+  "schedule": "every-frame",
+  "conf": 0.05,
+  "trusted_conf": 0.25,
+  "videos": {
+    "video_20260929_113421.mp4": {"frames": 392, "any_candidate_frames": 374, "trusted_frames": 319, "first_trusted_s": 0.0, "p50_inference_ms": 35.59},
+    "video_20260929_112507.mp4": {"frames": 1349, "any_candidate_frames": 789, "trusted_frames": 371, "first_trusted_s": 0.0, "p50_inference_ms": 35.22},
+    "video_20260929_113539.mp4": {"frames": 2315, "any_candidate_frames": 1828, "trusted_frames": 1057, "first_trusted_s": 0.6, "p50_inference_ms": 34.83},
+    "video_20260929_112739.mp4": {"frames": 2776, "any_candidate_frames": 1182, "trusted_frames": 348, "first_trusted_s": 6.0, "p50_inference_ms": 34.38}
+  },
+  "manual_review": {
+    "113421_1.8s": "two true green lights detected",
+    "112739_12.87s": "two true green lights detected; dashboard not selected",
+    "112739_81.23s": "two true red lights, no trusted detection (miss)",
+    "113539_3.267s": "several low-confidence sign/pole candidates; no GT"
+  }
+}
