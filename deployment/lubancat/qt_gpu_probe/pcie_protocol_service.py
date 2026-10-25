@@ -779,8 +779,8 @@ class Backend:
         else:
             self._log("HUD VECTOR", HUD["request"], value, "WROTE")
             self.wr(HUD["request"], value)
-        return self.hud_read() | {"ok": True, "state": "SENT",
-                                  "request": hex32(value)}
+        return {**self.hud_read(), "ok": True, "state": "SENT",
+                "request": hex32(value)}
 
     def raw_scene(self, payload):
         with self.lock:
@@ -793,7 +793,7 @@ class Backend:
                 if key.lower() not in allowed:
                     return {"ok": False, "state": "REJECTED", "error": f"bad scene offset {key}"}
                 self.wr(allowed[key.lower()], int(str(value), 0))
-            return self.scene_read() | {"ok": True, "state": "SENT"}
+            return {**self.scene_read(), "ok": True, "state": "SENT"}
 
 
 class Timer:
@@ -829,6 +829,9 @@ class Handler(BaseHTTPRequestHandler):
             return True
         supplied = self.headers.get("X-Token", "") or \
             self.headers.get("X-Auth-Token", "")
+        if not supplied:
+            from urllib.parse import urlparse, parse_qs
+            supplied = parse_qs(urlparse(self.path).query).get("token", [""])[0]
         if supplied == self.token:
             return True
         self.send_error(401, "token required")
@@ -859,15 +862,17 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self._auth():
             return
-        if self.path in ("/", "/index.html"):
+        from urllib.parse import urlparse
+        path = urlparse(self.path).path
+        if path in ("/", "/index.html"):
             return self._file("pcie_debug_ui.html")
-        if self.path == "/api/schema":
+        if path == "/api/schema":
             return self._json(SPEC)
-        if self.path == "/api/state":
+        if path == "/api/state":
             return self._json(self.backend.state())
-        if self.path == "/api/log":
+        if path == "/api/log":
             return self._json({"logs": list(self.backend.logs)})
-        if self.path == "/api/report":
+        if path == "/api/report":
             return self._json(self.backend.report())
         self.send_error(404)
 

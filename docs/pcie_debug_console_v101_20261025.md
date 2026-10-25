@@ -17,7 +17,9 @@ and `RK3566_PCIe协议开发交接.md`.
 | PIO BAR0 | not implemented | BLOCKED |
 | Ethernet action mailbox | not present in this repo | BLOCKED |
 | Real BAR1 windows | cannot open without PCIe | HARDWARE_NOT_TESTED |
-| Board web deployment | SSH timed out at deployment time | HARDWARE_NOT_TESTED |
+| Board service (SIMULATION) | deployed on RK3566 | SIMULATION_PASS |
+| Board web UI | LAN 200, HUD/SCENE/NAV/ISP/ALGO API exercised | SIMULATION_PASS |
+| Board real BAR1 | PCIe unavailable; service explicitly --simulation | HARDWARE_NOT_TESTED |
 
 `HARDWARE_PASS` is intentionally not claimed.
 
@@ -46,6 +48,18 @@ The browser must send `X-Token`. Do not expose an unauthenticated MMIO API.
 
 The old `pcie_isp_service.py` is now a thin launcher for the same worker so an
 old and new service cannot both own BAR1.
+
+## Board deployment
+
+```text
+http://192.168.137.2:8080/?token=rk3566-debug-2026
+```
+
+The service is running on the board with `--simulation --web-host 0.0.0.0`.
+Windows Chrome loaded the page from the LAN, and HUD/SCENE/NAV/ISP/ALGO
+simulation operations returned APPLIED/READ through the board service.
+The Qt binary was rebuilt with the `WEB DEBUG` button; the old FPGA page's
+control-object injection remains a separate UI issue and was not used as proof.
 
 ## UI
 
