@@ -129,7 +129,7 @@ PC 端单次推理耗时（仅用于说明这是 PC 模拟，不能外推 RK3566
 |---|---|---|---|
 | 12.867 s | 1×GREEN 0.25 | 2×GREEN 0.33 / 0.30 | 1×GREEN 0.25（BDD 来源） |
 
-30 Hz 上限在 12.867 s 给出 BDD 2 个 GREEN、P2 2 个 GREEN、Dual 1 个 GREEN。  
+30 Hz 上限在 12.867 s 给出 BDD 2 个 GREEN、P2 2 个 GREEN、Dual 3 个 GREEN（union 合并后）。  
 5 Hz 的 Specialist 在 12.867 s 没有新结果，Dual 显示的是 BDD 的框；如果只看 Specialist，会晚最多 200 ms。
 
 ![112739 12.867s BDD](assets/B05O/keyframes/112739_12.867_bdd_10hz.jpg)
