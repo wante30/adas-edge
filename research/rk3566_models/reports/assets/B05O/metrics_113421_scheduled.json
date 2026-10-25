@@ -1,0 +1,173 @@
+{
+  "video": "D:\\BaiduNetdiskDownload\\\u7d2b\u5149\u540c\u521b\u676f\u8d5b\u9898\u4e09\u53c2\u8003\u7d20\u6750\\video_20260929_113421.mp4",
+  "mode": "scheduled",
+  "fusion": "union",
+  "frames": 392,
+  "fps": 30.0,
+  "duration_s": 13.066666666666666,
+  "target": {
+    "bdd_hz": 10.0,
+    "p2_hz": 10.0,
+    "specialist_hz": 5.0
+  },
+  "rates": {
+    "bdd": {
+      "count": 131,
+      "hz": 10.025510204081632,
+      "mean_ms": 63.57974122289056,
+      "p95_ms": 79.26320000115084
+    },
+    "p2": {
+      "count": 131,
+      "hz": 10.025510204081632,
+      "mean_ms": 68.95429542055354,
+      "p95_ms": 96.06040000653593
+    },
+    "spec": {
+      "count": 66,
+      "hz": 5.051020408163265,
+      "mean_ms": 55.58087575760014,
+      "p95_ms": 75.99122499595978
+    }
+  },
+  "scheme_total_forward_per_second": {
+    "bdd_10hz": 10.025510204081632,
+    "p2_10hz": 10.025510204081632,
+    "dual_10_5hz": 15.076530612244898
+  },
+  "tl_tracks": {
+    "bdd": {
+      "source": "bdd",
+      "tracks": 80,
+      "mean_duration_s": 0.17625000000000002,
+      "p50_duration_s": 0.0,
+      "short_tracks_1_update": 49,
+      "short_track_fraction": 0.6125,
+      "mean_updates_per_track": 2.525,
+      "mean_iou_between_updates": 0.7278203541887652,
+      "p05_iou_between_updates": 0.538631488425594
+    },
+    "p2": {
+      "source": "p2",
+      "tracks": 97,
+      "mean_duration_s": 0.15154639175257734,
+      "p50_duration_s": 0.0,
+      "short_tracks_1_update": 69,
+      "short_track_fraction": 0.711340206185567,
+      "mean_updates_per_track": 2.3917525773195876,
+      "mean_iou_between_updates": 0.7452285335433727,
+      "p05_iou_between_updates": 0.5333598688930418
+    },
+    "spec": {
+      "source": "spec",
+      "tracks": 35,
+      "mean_duration_s": 0.13142857142857142,
+      "p50_duration_s": 0.0,
+      "short_tracks_1_update": 23,
+      "short_track_fraction": 0.6571428571428571,
+      "mean_updates_per_track": 1.6285714285714286,
+      "mean_iou_between_updates": 0.7208591671683702,
+      "p05_iou_between_updates": 0.5141556798887372
+    }
+  },
+  "display_stats": {
+    "bdd_10hz": {
+      "tl_frames": 312,
+      "any_frames": 392,
+      "first_tl_s": 0.1
+    },
+    "p2_10hz": {
+      "tl_frames": 321,
+      "any_frames": 392,
+      "first_tl_s": 0.0
+    },
+    "dual_10_5hz": {
+      "tl_frames": 347,
+      "any_frames": 392,
+      "first_tl_s": 0.1
+    }
+  },
+  "key_events": [
+    {
+      "t": 1.8,
+      "scheme": "bdd_10hz",
+      "tl_count": 1,
+      "detections": [
+        {
+          "bbox": [
+            849.1997909545898,
+            562.4234390258789,
+            869.901008605957,
+            594.6430206298828
+          ],
+          "confidence": 0.3385128378868103,
+          "class_id": 8,
+          "class_name": "traffic light",
+          "t_infer": 1.8,
+          "source": "bdd",
+          "color": "GREEN",
+          "color_valid": true
+        }
+      ]
+    },
+    {
+      "t": 1.8,
+      "scheme": "p2_10hz",
+      "tl_count": 2,
+      "detections": [
+        {
+          "bbox": [
+            1000.9565734863281,
+            565.8162689208984,
+            1016.9444274902344,
+            594.7275924682617
+          ],
+          "confidence": 0.44345566630363464,
+          "class_id": 8,
+          "class_name": "traffic light",
+          "t_infer": 1.8,
+          "source": "p2",
+          "color": "GREEN",
+          "color_valid": true
+        },
+        {
+          "bbox": [
+            849.7540283203125,
+            567.6057243347168,
+            868.1740951538086,
+            593.7373924255371
+          ],
+          "confidence": 0.4388723075389862,
+          "class_id": 8,
+          "class_name": "traffic light",
+          "t_infer": 1.8,
+          "source": "p2",
+          "color": "GREEN",
+          "color_valid": true
+        }
+      ]
+    },
+    {
+      "t": 1.8,
+      "scheme": "dual_10_5hz",
+      "tl_count": 1,
+      "detections": [
+        {
+          "bbox": [
+            849.334831237793,
+            563.0157737731934,
+            865.3635406494141,
+            589.5656776428223
+          ],
+          "confidence": 0.485231876373291,
+          "class_id": 8,
+          "class_name": "traffic light",
+          "color": "GREEN",
+          "color_valid": true,
+          "t_infer": 1.8,
+          "source": "spec"
+        }
+      ]
+    }
+  ]
+}

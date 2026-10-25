@@ -1,0 +1,252 @@
+{
+  "video": "D:\\BaiduNetdiskDownload\\\u7d2b\u5149\u540c\u521b\u676f\u8d5b\u9898\u4e09\u53c2\u8003\u7d20\u6750\\video_20260929_112739.mp4",
+  "frames": 2776,
+  "fps": 30.0,
+  "scheduled_rates": {
+    "bdd": {
+      "count": 926,
+      "hz": 10.007204610951009,
+      "mean_ms": 54.76667796993667,
+      "p95_ms": 81.39072499761824
+    },
+    "p2": {
+      "count": 926,
+      "hz": 10.007204610951009,
+      "mean_ms": 61.730177969629416,
+      "p95_ms": 88.56742499847314
+    },
+    "spec": {
+      "count": 463,
+      "hz": 5.003602305475504,
+      "mean_ms": 47.195578401631195,
+      "p95_ms": 64.44019000045954
+    }
+  },
+  "scheme_total_forward_per_second": {
+    "bdd_10hz": 10.007204610951009,
+    "p2_10hz": 10.007204610951009,
+    "dual_10_5hz": 15.010806916426514
+  },
+  "reference": "30 Hz dense inference (offline upper bound, not ground truth)",
+  "agreement": {
+    "bdd": {
+      "source": "bdd",
+      "frames_compared": 94,
+      "box_tp": 116,
+      "box_fp": 0,
+      "box_fn": 0,
+      "precision_vs_dense": 1.0,
+      "recall_vs_dense": 1.0,
+      "reference_tracks": 147,
+      "tracks_hit": 71,
+      "tracks_missed": 76,
+      "delay_s": {
+        "p50": 0.0,
+        "p95": 0.06666666666666667,
+        "max": 0.3333333333333333
+      },
+      "long_tracks_ge_0.2s": 10,
+      "long_tracks_hit": 10,
+      "long_track_miss_rate": 0.0,
+      "long_delay_s": {
+        "p50": 0.06666666666666667,
+        "p95": 0.25833333333333314,
+        "max": 0.3333333333333333
+      }
+    },
+    "p2": {
+      "source": "p2",
+      "frames_compared": 118,
+      "box_tp": 172,
+      "box_fp": 0,
+      "box_fn": 0,
+      "precision_vs_dense": 1.0,
+      "recall_vs_dense": 1.0,
+      "reference_tracks": 249,
+      "tracks_hit": 123,
+      "tracks_missed": 126,
+      "delay_s": {
+        "p50": 0.0,
+        "p95": 0.06666666666666667,
+        "max": 0.4666666666666667
+      },
+      "long_tracks_ge_0.2s": 12,
+      "long_tracks_hit": 12,
+      "long_track_miss_rate": 0.0,
+      "long_delay_s": {
+        "p50": 0.05,
+        "p95": 0.24666666666666637,
+        "max": 0.4666666666666667
+      }
+    },
+    "spec": {
+      "source": "spec",
+      "frames_compared": 34,
+      "box_tp": 42,
+      "box_fp": 0,
+      "box_fn": 0,
+      "precision_vs_dense": 1.0,
+      "recall_vs_dense": 1.0,
+      "reference_tracks": 165,
+      "tracks_hit": 40,
+      "tracks_missed": 125,
+      "delay_s": {
+        "p50": 0.0,
+        "p95": 0.10166666666666657,
+        "max": 0.13333333333333333
+      },
+      "long_tracks_ge_0.2s": 2,
+      "long_tracks_hit": 2,
+      "long_track_miss_rate": 0.0,
+      "long_delay_s": {
+        "p50": 0.06666666666666667,
+        "p95": 0.12666666666666665,
+        "max": 0.13333333333333333
+      }
+    }
+  },
+  "window": {
+    "window": [
+      80.5,
+      82.0
+    ],
+    "schemes": {
+      "bdd_10hz": {
+        "display_frames_with_tl": 1,
+        "display_coverage": 0.022222222222222223,
+        "first_tl_s": 81.3,
+        "max_gap_s": null
+      },
+      "p2_10hz": {
+        "display_frames_with_tl": 0,
+        "display_coverage": 0.0,
+        "first_tl_s": null,
+        "max_gap_s": null
+      },
+      "dual_10_5hz": {
+        "display_frames_with_tl": 1,
+        "display_coverage": 0.022222222222222223,
+        "first_tl_s": 81.4,
+        "max_gap_s": null
+      }
+    },
+    "dense": {
+      "bdd": {
+        "frames_with_tl": 1,
+        "coverage": 0.022222222222222223,
+        "first_tl_s": 81.3
+      },
+      "p2": {
+        "frames_with_tl": 0,
+        "coverage": 0.0,
+        "first_tl_s": null
+      },
+      "spec": {
+        "frames_with_tl": 2,
+        "coverage": 0.044444444444444446,
+        "first_tl_s": 80.53333333333333
+      }
+    }
+  },
+  "key_events": [
+    {
+      "t": 12.867,
+      "scheme": "bdd_10hz",
+      "tl_count": 1,
+      "detections": [
+        {
+          "bbox": [
+            856.09130859375,
+            163.78684043884277,
+            930.3199768066406,
+            204.9594783782959
+          ],
+          "confidence": 0.2534874379634857,
+          "class_id": 8,
+          "class_name": "traffic light",
+          "t_infer": 12.8,
+          "source": "bdd",
+          "color": "GREEN",
+          "color_valid": true
+        }
+      ]
+    },
+    {
+      "t": 12.867,
+      "scheme": "p2_10hz",
+      "tl_count": 2,
+      "detections": [
+        {
+          "bbox": [
+            1423.7719345092773,
+            385.6963920593262,
+            1447.558708190918,
+            424.95752334594727
+          ],
+          "confidence": 0.33273646235466003,
+          "class_id": 8,
+          "class_name": "traffic light",
+          "t_infer": 12.8,
+          "source": "p2",
+          "color": "GREEN",
+          "color_valid": true
+        },
+        {
+          "bbox": [
+            894.3651580810547,
+            167.06846237182617,
+            928.5173034667969,
+            202.77969360351562
+          ],
+          "confidence": 0.30168721079826355,
+          "class_id": 8,
+          "class_name": "traffic light",
+          "t_infer": 12.8,
+          "source": "p2",
+          "color": "GREEN",
+          "color_valid": true
+        }
+      ]
+    },
+    {
+      "t": 12.867,
+      "scheme": "dual_10_5hz",
+      "tl_count": 1,
+      "detections": [
+        {
+          "bbox": [
+            856.09130859375,
+            163.78684043884277,
+            930.3199768066406,
+            204.9594783782959
+          ],
+          "confidence": 0.2534874379634857,
+          "class_id": 8,
+          "class_name": "traffic light",
+          "t_infer": 12.8,
+          "source": "bdd",
+          "color": "GREEN",
+          "color_valid": true
+        }
+      ]
+    },
+    {
+      "t": 81.233,
+      "scheme": "bdd_10hz",
+      "tl_count": 0,
+      "detections": []
+    },
+    {
+      "t": 81.233,
+      "scheme": "p2_10hz",
+      "tl_count": 0,
+      "detections": []
+    },
+    {
+      "t": 81.233,
+      "scheme": "dual_10_5hz",
+      "tl_count": 0,
+      "detections": []
+    }
+  ]
+}

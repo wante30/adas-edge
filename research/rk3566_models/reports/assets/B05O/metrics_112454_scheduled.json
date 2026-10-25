@@ -1,0 +1,110 @@
+{
+  "video": "D:\\BaiduNetdiskDownload\\\u7d2b\u5149\u540c\u521b\u676f\u8d5b\u9898\u4e09\u53c2\u8003\u7d20\u6750\\video_20260929_112454.mp4",
+  "mode": "scheduled",
+  "fusion": "union",
+  "frames": 106,
+  "fps": 30.0,
+  "duration_s": 3.533333333333333,
+  "target": {
+    "bdd_hz": 10.0,
+    "p2_hz": 10.0,
+    "specialist_hz": 5.0
+  },
+  "rates": {
+    "bdd": {
+      "count": 36,
+      "hz": 10.18867924528302,
+      "mean_ms": 66.46255555662921,
+      "p95_ms": 65.24215000172262
+    },
+    "p2": {
+      "count": 36,
+      "hz": 10.18867924528302,
+      "mean_ms": 66.93658333380073,
+      "p95_ms": 102.14345000349567
+    },
+    "spec": {
+      "count": 18,
+      "hz": 5.09433962264151,
+      "mean_ms": 49.112294444866066,
+      "p95_ms": 71.8757950075086
+    }
+  },
+  "scheme_total_forward_per_second": {
+    "bdd_10hz": 10.18867924528302,
+    "p2_10hz": 10.18867924528302,
+    "dual_10_5hz": 15.283018867924529
+  },
+  "tl_tracks": {
+    "bdd": {
+      "source": "bdd",
+      "tracks": 1,
+      "mean_duration_s": 3.1,
+      "p50_duration_s": 3.1,
+      "short_tracks_1_update": 0,
+      "short_track_fraction": 0.0,
+      "mean_updates_per_track": 21.0,
+      "mean_iou_between_updates": 0.9222401711751648,
+      "p05_iou_between_updates": 0.7706235840306428
+    },
+    "p2": {
+      "source": "p2",
+      "tracks": 2,
+      "mean_duration_s": 0.6499999999999999,
+      "p50_duration_s": 0.6499999999999999,
+      "short_tracks_1_update": 0,
+      "short_track_fraction": 0.0,
+      "mean_updates_per_track": 7.0,
+      "mean_iou_between_updates": 0.8775244238163628,
+      "p05_iou_between_updates": 0.7635011471083054
+    },
+    "spec": {
+      "source": "spec",
+      "tracks": 0,
+      "mean_duration_s": null,
+      "p50_duration_s": null,
+      "short_tracks_1_update": 0,
+      "short_track_fraction": 0.0,
+      "mean_updates_per_track": null,
+      "mean_iou_between_updates": null,
+      "p05_iou_between_updates": null
+    }
+  },
+  "display_stats": {
+    "bdd_10hz": {
+      "tl_frames": 61,
+      "any_frames": 106,
+      "first_tl_s": 0.4
+    },
+    "p2_10hz": {
+      "tl_frames": 42,
+      "any_frames": 106,
+      "first_tl_s": 0.4
+    },
+    "dual_10_5hz": {
+      "tl_frames": 61,
+      "any_frames": 106,
+      "first_tl_s": 0.4
+    }
+  },
+  "key_events": [
+    {
+      "t": 1.5,
+      "scheme": "bdd_10hz",
+      "tl_count": 0,
+      "detections": []
+    },
+    {
+      "t": 1.5,
+      "scheme": "p2_10hz",
+      "tl_count": 0,
+      "detections": []
+    },
+    {
+      "t": 1.5,
+      "scheme": "dual_10_5hz",
+      "tl_count": 0,
+      "detections": []
+    }
+  ]
+}
