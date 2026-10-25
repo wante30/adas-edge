@@ -323,6 +323,12 @@ private:
     std::atomic<uint64_t> gpu_frequency_hz_{0};
     std::atomic<bool> producer_running_{false};
     std::atomic<bool> update_queued_{false};
+    // Video uploads remain frame-driven, but QML overlay metadata does not
+    // need to invalidate every video frame. Throttling this notification keeps
+    // per-box prediction bindings off the GUI hot path while retaining live
+    // track/HUD updates.
+    std::atomic<qint64> last_frame_advanced_ns_{0};
+    qint64 frame_advanced_interval_ns_ = 66666666;
     std::shared_ptr<RenderMetrics> render_metrics_ = std::make_shared<RenderMetrics>();
     QTimer metrics_timer_;
     QElapsedTimer stats_clock_;

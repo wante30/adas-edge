@@ -11,7 +11,10 @@ SOURCES += \
     tesla_scene_item.cpp \
     hud_control.cpp \
     ai_box_model.cpp \
-    source_controller.cpp
+    source_controller.cpp \
+    nav_bridge.cpp \
+    pcie_isp_control.cpp \
+    qsg_video_item.cpp
 
 HEADERS += \
     video_item.h \
@@ -19,7 +22,10 @@ HEADERS += \
     tesla_scene_item.h \
     hud_control.h \
     ai_box_model.h \
-    source_controller.h
+    source_controller.h \
+    nav_bridge.h \
+    pcie_isp_control.h \
+    qsg_video_item.h
 
 RESOURCES += qml.qrc
 

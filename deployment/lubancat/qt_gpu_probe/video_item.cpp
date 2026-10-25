@@ -398,6 +398,11 @@ VideoItem::VideoItem(QQuickItem *parent) : QQuickFramebufferObject(parent) {
     if (!timingPath.isEmpty()) {
         ai_timing_stream_.open(timingPath.constData(), std::ios::app);
     }
+    bool metadataHzOk = false;
+    const double metadataHz = QString::fromLatin1(qgetenv("QT_FRAME_METADATA_HZ"))
+                                  .toDouble(&metadataHzOk);
+    if (metadataHzOk && metadataHz > 0.0)
+        frame_advanced_interval_ns_ = static_cast<qint64>(1.0e9 / std::clamp(metadataHz, 1.0, 60.0));
     // QQuickFramebufferObject composites its FBO with a vertically flipped
     // texture on the board's xcb/EGL path. Keep the source RGB565 rows
     // top-to-bottom and mirror the FBO once so road video is upright.
@@ -1359,7 +1364,12 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
 void VideoItem::requestFrameUpdate() {
     render_metrics_->update_handled.fetch_add(1);
     update_queued_.store(false);
-    emit frameAdvanced();
+    const qint64 nowNs = steadyNs();
+    const qint64 lastNs = last_frame_advanced_ns_.load();
+    if (lastNs == 0 || nowNs - lastNs >= frame_advanced_interval_ns_) {
+        last_frame_advanced_ns_.store(nowNs);
+        emit frameAdvanced();
+    }
     update();
 }
 
