@@ -1,0 +1,138 @@
+{
+  "kind": "multiclass",
+  "rknn": "/mnt/d/Datasets/adas_edge_training/rknn_b05o/b05n_p2_clip_int8.rknn",
+  "onnx": "/mnt/d/Datasets/adas_edge_training/b05n_final/b05n_p2_multiclass.onnx",
+  "images": 800,
+  "thresholds": {
+    "conf": 0.001,
+    "nms_iou": 0.7
+  },
+  "raw_mean_abs_diff": 0.5948207518458366,
+  "runtime_ms": {
+    "mean": 178.63623916000117,
+    "p50": 175.2154819999987,
+    "p95": 207.03987865005897
+  },
+  "parity": {
+    "person": {
+      "rknn_boxes": 42971,
+      "onnx_boxes": 40777,
+      "matched": 32955,
+      "unmatched_rknn": 10016,
+      "unmatched_onnx": 7822,
+      "mean_iou": 0.7092395125258282,
+      "mean_conf_delta": 0.0061419784624584675
+    },
+    "rider": {
+      "rknn_boxes": 5655,
+      "onnx_boxes": 5086,
+      "matched": 4196,
+      "unmatched_rknn": 1459,
+      "unmatched_onnx": 890,
+      "mean_iou": 0.7421736003745711,
+      "mean_conf_delta": 0.002654654404913803
+    },
+    "car": {
+      "rknn_boxes": 135053,
+      "onnx_boxes": 129603,
+      "matched": 105028,
+      "unmatched_rknn": 30025,
+      "unmatched_onnx": 24575,
+      "mean_iou": 0.7085483860841368,
+      "mean_conf_delta": 0.021178336066950233
+    },
+    "truck": {
+      "rknn_boxes": 28988,
+      "onnx_boxes": 24023,
+      "matched": 20067,
+      "unmatched_rknn": 8921,
+      "unmatched_onnx": 3956,
+      "mean_iou": 0.7434303488848615,
+      "mean_conf_delta": 0.004888067442585321
+    },
+    "bus": {
+      "rknn_boxes": 12372,
+      "onnx_boxes": 10711,
+      "matched": 8762,
+      "unmatched_rknn": 3610,
+      "unmatched_onnx": 1949,
+      "mean_iou": 0.7402377179828529,
+      "mean_conf_delta": 0.0031688066789145037
+    },
+    "train": {
+      "rknn_boxes": 9,
+      "onnx_boxes": 8,
+      "matched": 7,
+      "unmatched_rknn": 2,
+      "unmatched_onnx": 1,
+      "mean_iou": 0.7899736202869659,
+      "mean_conf_delta": 7.262794367436851e-05
+    },
+    "motor": {
+      "rknn_boxes": 3687,
+      "onnx_boxes": 3611,
+      "matched": 2857,
+      "unmatched_rknn": 830,
+      "unmatched_onnx": 754,
+      "mean_iou": 0.7588666461607735,
+      "mean_conf_delta": 0.0022366524050468546
+    },
+    "bike": {
+      "rknn_boxes": 6999,
+      "onnx_boxes": 6418,
+      "matched": 5335,
+      "unmatched_rknn": 1664,
+      "unmatched_onnx": 1083,
+      "mean_iou": 0.7416752295327812,
+      "mean_conf_delta": 0.0027212339736815334
+    },
+    "traffic light": {
+      "rknn_boxes": 66268,
+      "onnx_boxes": 64737,
+      "matched": 43165,
+      "unmatched_rknn": 23103,
+      "unmatched_onnx": 21572,
+      "mean_iou": 0.6576267012327784,
+      "mean_conf_delta": 0.015432131073302548
+    },
+    "traffic sign": {
+      "rknn_boxes": 129438,
+      "onnx_boxes": 117867,
+      "matched": 86005,
+      "unmatched_rknn": 43433,
+      "unmatched_onnx": 31862,
+      "mean_iou": 0.6705115678775359,
+      "mean_conf_delta": 0.014875238716793984
+    }
+  },
+  "map50": {
+    "rknn": {
+      "person": 0.31964895394823156,
+      "rider": 0.23647227841553287,
+      "car": 0.6037374148894297,
+      "truck": 0.43318560418463464,
+      "bus": 0.3741383171652824,
+      "train": 0.0,
+      "motor": 0.23829869409590168,
+      "bike": 0.17189855878576143,
+      "traffic light": 0.26400422517748456,
+      "traffic sign": 0.3347044228407066
+    },
+    "onnx": {
+      "person": 0.4114984313187836,
+      "rider": 0.2670655138063697,
+      "car": 0.7068820084398083,
+      "truck": 0.46425298587802544,
+      "bus": 0.396428407032781,
+      "train": 0.0,
+      "motor": 0.2595892953323048,
+      "bike": 0.1736411208995825,
+      "traffic light": 0.4765706573768775,
+      "traffic sign": 0.49034499249139735
+    }
+  },
+  "map50_mean": {
+    "rknn": 0.29760884695029655,
+    "onnx": 0.364627341257593
+  }
+}
