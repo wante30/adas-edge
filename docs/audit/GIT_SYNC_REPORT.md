@@ -135,7 +135,7 @@ b8f13f881d866107e7e6834b2fa5fd0ae2774fc6	refs/heads/research/rk3566-adas-models
 
 - PR #1 已合并：`2026-10-28T12:35:05Z`
 - merge commit：`dc378d3a0d7d71e2ff1c42e4c42eb7d97e1d589d`
-- `main` 已从旧基线 `c321a89` 前进 80 个提交（77 个历史 + 2 个审计提交 + merge commit）。
+- `main` 已从旧基线 `c321a89` 前进 80+ 个提交（77 个历史 + 审计/文档提交 + merge commit；准确数量以 `git rev-list --count c321a89..origin/main` 为准）。
 - 默认分支已更新；`live/stage2` 分支保留。
 - 本报告在合并后做了一次 docs-only 更新；若 `main` 再前进一个提交，以 `git ls-remote origin main` 为准。
 - 本次同步不删除任何旧分支/旧提交；`main` 只做非强制合并。
