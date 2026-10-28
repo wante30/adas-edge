@@ -71,6 +71,28 @@ Item {
     })
 
     HudControl { id: pcieHud }
+    VehicleTelemetryStatus { id: vehicleTelemetry }
+    function lvtBoundaryText(type, count) {
+        var t = type === "solid" ? "实线" : (type === "dashed" ? "虚线" : "未知")
+        var n = (count === null || count === undefined) ? "?" : String(count)
+        return t + " x" + n
+    }
+    function lvtActionText(value) {
+        var labels = { throttle: "油门", brake: "刹车", lane_left: "左变道",
+                       lane_right: "右变道", none: "空闲" }
+        return labels[value] || "未知"
+    }
+    function lvtDecisionText(value) {
+        var labels = { allow: "允许", deny: "拒绝", warning: "警告",
+                       idle: "空闲", unknown: "未知" }
+        return labels[value] || "未知"
+    }
+    function lvtReasonText(value) {
+        var labels = { red_light: "红灯", left_solid: "左实线",
+                       right_solid: "右实线", sensor_unavailable: "传感器失效",
+                       brake_advisory: "刹车提示" }
+        return labels[value] || ""
+    }
 
     onRoadQuadrantChanged: if (video) video.aiRoadQuadrant = roadQuadrant
     onNavQuadrantChanged: if (video) video.aiNavigationQuadrant = navQuadrant
@@ -1314,7 +1336,8 @@ Item {
             x: parent.width - 72; y: 8; width: 58; height: 16; radius: 2
             color: "#0B1B22"; border.color: "#355E6C"; border.width: 0.6
             Text {
-                anchors.centerIn: parent; text: "未接入"; color: root.amber
+                anchors.centerIn: parent; text: vehicleTelemetry.online ? "LVT1 在线" : "未接入"
+                color: vehicleTelemetry.online ? root.mint : root.amber
                 font.family: root.cjk; font.pixelSize: 6
             }
         }
@@ -1323,17 +1346,22 @@ Item {
             source: "assets/lane_diagram.png"
             fillMode: Image.PreserveAspectFit
         }
-        Text { x: 104; y: 35; text: "当前车道"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 7 }
-        Text { x: 178; y: 35; text: "—"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
+        Text { x: 104; y: 35; text: "车道来源"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 7 }
+        Text { x: 178; y: 35; text: vehicleTelemetry.online ? (vehicleTelemetry.snapshot.lane_source || "none").toUpperCase() : "—"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
         Rectangle { x: 104; y: 53; width: parent.width - 118; height: 1; color: "#1A343D" }
-        Text { x: 104; y: 59; text: "左侧车道"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 7 }
-        Text { x: 178; y: 59; text: "—"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
+        Text { x: 104; y: 59; text: "左侧边界"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 7 }
+        Text { x: 165; y: 59; text: vehicleTelemetry.online ? root.lvtBoundaryText(vehicleTelemetry.snapshot.left_nearest_type, vehicleTelemetry.snapshot.left_line_count) : "—"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
         Rectangle { x: 104; y: 77; width: parent.width - 118; height: 1; color: "#1A343D" }
-        Text { x: 104; y: 83; text: "右侧车道"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 7 }
-        Text { x: 178; y: 83; text: "—"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
+        Text { x: 104; y: 83; text: "右侧边界"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 7 }
+        Text { x: 165; y: 83; text: vehicleTelemetry.online ? root.lvtBoundaryText(vehicleTelemetry.snapshot.right_nearest_type, vehicleTelemetry.snapshot.right_line_count) : "—"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
         Text {
             x: 104; y: parent.height - 23; width: parent.width - 118
-            text: "车道信息未接入"
+            text: vehicleTelemetry.online
+                  ? ("请求 " + root.lvtActionText(vehicleTelemetry.snapshot.current_action) +
+                     " · " + root.lvtDecisionText(vehicleTelemetry.snapshot.decision) +
+                     (root.lvtReasonText(vehicleTelemetry.snapshot.reason) ?
+                       " / " + root.lvtReasonText(vehicleTelemetry.snapshot.reason) : ""))
+                  : "车道信息未接入"
             color: "#8A9AA0"; font.family: root.cjk; font.pixelSize: 6
         }
     }
