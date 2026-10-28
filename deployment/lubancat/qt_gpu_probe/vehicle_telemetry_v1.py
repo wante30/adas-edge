@@ -158,6 +158,7 @@ def write_status_file(path: Path, status: dict) -> None:
             staged = output.name
             json.dump(status, output, ensure_ascii=False, separators=(',', ':'))
             output.write('\n')
+        os.chmod(staged, 0o644)  # root producer -> unprivileged Qt consumer
         os.replace(staged, target)
     finally:
         if staged and os.path.exists(staged):
