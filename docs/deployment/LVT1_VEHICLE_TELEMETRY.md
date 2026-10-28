@@ -1,6 +1,6 @@
 # LVT1 RK3566 vehicle telemetry integration (offline staging)
 
-**Status: software decoder and fixture tests; NOT board validated and NOT connected to production Qt.**
+**Status: software decoder, fixture tests, and opt-in Qt source integration staged on draft branch; NOT compiled on the target, board validated, or deployed to production.**
 
 Source of truth: teammate's `rk3566_pcie_vehicle_telemetry_v1.json` (2026-10-28), schema `pango.rk3566.vehicle_telemetry_handoff.v1`. The handoff references an FPGA build and files `rk3566_image_control/vehiclemon.c`, `include/pango_vehicle_regs.h`, and a modified kernel driver; **none of those three files was found in the synced `main` checkout at review**. Obtain and compare their actual versions before deploying.
 
@@ -50,14 +50,14 @@ The script prints one complete JSON status per coherent poll. Standard output is
 
 The example fixture in the teammate handoff must decode: **left=2 solid, right=1 dashed, action=brake active, decision=warning(reason8), last seq=65535, accept_count=7**. This is a fixture, NOT an observed board result.
 
-## HMI integration — proposed next step, not yet active
+## HMI integration — staged Qt source; not yet compiled or deployed
 
 * Existing Qt 5.12.8 app: `deployment/lubancat/qt_gpu_probe/main.cpp` + `main.qml` + `video_item.cpp`. Current active binary is documented under `docs/hmi/TESLA_ADAS_HMI.md`; deployed `main.qml` and `video_item.cpp` may differ from GitHub.
-* Add one read-only `VehicleStatus` QObject, independent of `VideoItem` render thread and NPU. Consume either verified C `vehiclemon` JSONL output or a single latest JSON file from this Python reader, not both in production.
-* Use an **explicit Qt-side freshness deadline** (suggest 250ms starting value) based on local receipt/modification age. Even a file containing `online:true` is OFFLINE if updates stop. FPGA's 500ms HSST stale flag and RK-side reader freshness are different checks. Do not keep displaying green permission after timeout.
+* The draft branch adds `VehicleTelemetryStatus` (`vehicle_telemetry_status.h/.cpp`) as a read-only Qt QObject registered in `main.cpp`. It reads only the optional atomic latest JSON file from the Python reader; does not access BAR1 directly, and runs on a 150ms GUI timer. Use either the verified C `vehiclemon` output adapted to this schema or the Python reader, not both in production.
+* The staged QObject uses a **400ms Qt-side freshness deadline** based on local modification age. Even a file containing `online:true` is OFFLINE if updates stop. FPGA's 500ms HSST stale flag and RK-side reader freshness are different checks. Do not keep displaying green permission after timeout.
 * Present left/right nearest type + valid count, `lane_source`, `current_action`, `decision`, `reason`, `sensor_stale`, and separate history fields. Do not draw geometrically accurate lanes or invent physical speed from this packet.
 * Reuse the existing QML '车道状态' card and Tesla ego brake/turn lights **only for explicit state indications**. Do not equate `brake_allow` to an actuated brake or `lane_left_allow` to a completed lane change.
-* Keep new HMI optional/feature-gated until source drift and ABI compatibility are resolved; do not replace `main.qml` or live `qt_gpu_probe` blindly.
+* The staged `main.qml` displays LVT1 values in the existing lane card **only when the optional JSON status is fresh**; otherwise it retains the old '未接入' state. This branch changes Qt source and `.pro` but does not replace the running binary. Confirm Qt 5.12.8 build, exact deployed QML drift and permissions before deployment.
 
 ## Deployment gate and rollback
 
@@ -71,5 +71,5 @@ The example fixture in the teammate handoff must decode: **left=2 solid, right=1
 
 1. Only the JSON handoff was supplied, not the teammate's actual C source, driver or FPGA image. Hardware cannot be claimed functional from host mocks.
 2. Authorized remote Windows machine `DESKTOP-2HNBT2L` was **offline** during this implementation. No RK3566 SSH / kernel headers / Qt compile were available.
-3. No board MMIO, interactive Ethernet actions, live HMI, or performance regression test has been performed on this new branch.
+3. No board MMIO, interactive Ethernet actions, Qt target build, live HMI, or performance regression test has been performed on this new branch.
 4. LVT1 only describes FPGA→RK state. YOLO→FPGA hazard event transport remains a **separate** protocol/algorithm development task.
