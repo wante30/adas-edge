@@ -16,8 +16,10 @@
 | 同步分支 | `live/stage2` |
 | 同步分支 HEAD | `659223faf7088f1f88a82f65fa29769f59b3b3d4` |
 | 分支相对 main | 领先 78 个提交（77 个历史 + 1 个审计快照） |
-| PR | <https://github.com/wante30/adas-edge/pull/1> |
-| 默认分支 | 通过 PR #1 合并更新（见文末“最终状态”） |
+| PR | <https://github.com/wante30/adas-edge/pull/1>（已合并） |
+| PR 合并时间 | 2026-10-28T12:35:05Z |
+| PR merge commit | `dc378d3a0d7d71e2ff1c42e4c42eb7d97e1d589d` |
+| 默认分支 | `main` 已更新到 PR #1 merge commit（后续 docs-only 提交可能再前进） |
 | 强制推送 | 无 |
 | 硬重置/清理 | 无 |
 
@@ -85,6 +87,10 @@ git ls-remote origin live/stage2
 
 git ls-remote origin main
 c321a89f26e5fa05a222ad29659e4148ec6c62d6	refs/heads/main   ← 合并前
+
+# PR #1 合并后
+dc378d3a0d7d71e2ff1c42e4c42eb7d97e1d589d	refs/heads/main
+4fb4d0c6f8d5b2f7c51a2058b57618949b04ca92	refs/heads/live/stage2
 ```
 
 ### 3.3 安全检查
@@ -119,5 +125,34 @@ c321a89f26e5fa05a222ad29659e4148ec6c62d6	refs/heads/main   ← 合并前
 
 ## 6. 最终状态
 
-合并 PR #1 后，最终 `main` 的 commit SHA 与 PR merge commit 以 GitHub 页面/`git ls-remote` 为准。  
-本次同步不删除任何旧分支/旧提交；`main` 只做非强制快进/合并。
+- PR #1 已合并：`2026-10-28T12:35:05Z`
+- merge commit：`dc378d3a0d7d71e2ff1c42e4c42eb7d97e1d589d`
+- `main` 已从旧基线 `c321a89` 前进 80 个提交（77 个历史 + 2 个审计提交 + merge commit）。
+- 默认分支已更新；`live/stage2` 分支保留。
+- 本报告在合并后做了一次 docs-only 更新；若 `main` 再前进一个提交，以 `git ls-remote origin main` 为准。
+- 本次同步不删除任何旧分支/旧提交；`main` 只做非强制合并。
+
+### 6.1 默认分支内容抽查
+
+合并后 `origin/main` 应包含：
+
+```text
+README.md
+docs/audit/PROJECT_INVENTORY.md
+docs/audit/GIT_SYNC_REPORT.md
+docs/architecture/SYSTEM_ARCHITECTURE.md
+docs/architecture/PCIE_DATA_FLOW.md
+docs/architecture/FPGA_RK3566_INTERFACE.md
+docs/models/TRAINING_REPORT.md
+docs/models/MODEL_COMPARISON.md
+docs/models/DATASET_AND_EVALUATION.md
+docs/models/MODEL_MANIFEST.md
+docs/deployment/RKNN_QUANTIZATION_REPORT.md
+docs/deployment/RK3566_BENCHMARK.md
+docs/deployment/DEPLOYMENT_GUIDE.md
+docs/hmi/TESLA_ADAS_HMI.md
+docs/hmi/HMI_PERFORMANCE.md
+docs/roadmap/ADAS_EVENT_ENGINE_PLAN.md
+docs/competition/REQUIREMENT_MATRIX.md
+artifacts/manifests/model_manifest.json
+```
