@@ -1,3 +1,5 @@
+> **历史文档**：本文的“YOLO11n 320 为主”结论已被 2026-10-27 的 B05P 四方案评测取代；当前默认是 BDD Raw-head INT8（A）。见 `docs/models/MODEL_COMPARISON.md`。
+
 # 比赛检测器最终配置
 
 更新日期：2026-09-21（追加 FRONT 强模型升级评估结论：维持 YOLO11n）

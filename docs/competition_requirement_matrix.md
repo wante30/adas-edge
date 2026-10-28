@@ -1,3 +1,5 @@
+> **历史文档（2026-09-06）**：已由 `docs/competition/REQUIREMENT_MATRIX.md`（2026-10-28）取代。本文保留旧状态，不要作为当前完成度依据。
+
 # Competition requirement matrix
 
 来源：官方《FPGA 创新设计赛道选题指南》PDF（选题三），逐项按当前仓库证据核对，日期 2026-09-06。
