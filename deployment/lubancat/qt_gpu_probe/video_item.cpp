@@ -1,5 +1,13 @@
 #include "video_item.h"
 
+namespace {
+int envPort(const char *name, int fallback) {
+    bool ok = false;
+    const int value = qEnvironmentVariableIntValue(name, &ok);
+    return ok && value > 0 && value < 65536 ? value : fallback;
+}
+} // namespace
+
 #include <QElapsedTimer>
 #include <QColor>
 #include <QJsonArray>
@@ -972,17 +980,17 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
     if (flags >= 0) fcntl(socketFd, F_SETFL, flags | O_NONBLOCK);
     sockaddr_in resultAddress{};
     resultAddress.sin_family = AF_INET;
-    resultAddress.sin_port = htons(38261);
+    resultAddress.sin_port = htons(envPort("ADAS_AI_RESULT_PORT", 38261));
     resultAddress.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     if (bind(socketFd, reinterpret_cast<const sockaddr *>(&resultAddress), sizeof(resultAddress)) != 0) {
         close(socketFd);
         QMutexLocker locker(&ai_metrics_mutex_);
-        ai_status_ = QStringLiteral("AI UDP 38261 绑定失败");
+        ai_status_ = QStringLiteral("AI UDP 绑定失败");
         return;
     }
     sockaddr_in requestAddress{};
     requestAddress.sin_family = AF_INET;
-    requestAddress.sin_port = htons(38260);
+    requestAddress.sin_port = htons(envPort("ADAS_AI_REQUEST_PORT", 38260));
     requestAddress.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     const auto interval = std::chrono::nanoseconds(
         static_cast<int64_t>(std::llround(1.0e9 / std::max(0.1, aiHz))));
@@ -1371,6 +1379,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                 modelOptions.append(item);
             }
             const QString traffic = status.value(QStringLiteral("traffic")).toString(QStringLiteral("UNKNOWN"));
+            const QString displayView = status.value(QStringLiteral("display_view")).toString(QStringLiteral("front"));
             const QJsonArray hazards = status.value(QStringLiteral("hazards")).toArray();
             const QJsonObject navigation = status.value(QStringLiteral("navigation")).toObject();
             const QString direction = navigation.value(QStringLiteral("direction")).toString(QStringLiteral("等待识别"));
@@ -1406,6 +1415,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     || ai_model_message_ != modelMessage
                     || (!modelOptions.isEmpty() && ai_model_options_ != modelOptions);
                 statusChanged = ai_traffic_ != traffic
+                    || ai_display_view_ != displayView
                     || ai_navigation_ != navigationText
                     || ai_navigation_road_ != navigationRoad
                     || ai_navigation_state_ != navigationState
@@ -1422,6 +1432,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                 ai_hazards_ = hazardItems;
                 ai_status_ = summary;
                 ai_traffic_ = traffic;
+                ai_display_view_ = displayView;
                 ai_navigation_ = navigationText;
                 ai_navigation_road_ = navigationRoad;
                 ai_navigation_state_ = navigationState;
@@ -1610,7 +1621,7 @@ void VideoItem::sendAiSelection(int road, int navigation) {
     if (fd < 0) return;
     sockaddr_in address{};
     address.sin_family = AF_INET;
-    address.sin_port = htons(38260);
+    address.sin_port = htons(envPort("ADAS_AI_REQUEST_PORT", 38260));
     address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     const unsigned char packet[6] = {
         'M', 'V', 'S', '1',

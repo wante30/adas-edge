@@ -117,3 +117,48 @@ def test_handoff_file_example_matches_decoder():
     actual = m.read_snapshot(fixture.__getitem__)
     for key, expected in source['example']['decoded'].items():
         assert actual[key] == expected, key
+
+
+FIXTURE_MODULE = MODULE.with_name('vehicle_telemetry_fixture.py')
+fixture_spec = importlib.util.spec_from_file_location('vehicle_telemetry_fixture', FIXTURE_MODULE)
+fixture = importlib.util.module_from_spec(fixture_spec)
+fixture_spec.loader.exec_module(fixture)
+
+
+def test_real_decoder_marks_simulated_false():
+    assert m.read_snapshot(EXAMPLE.__getitem__)['simulated'] is False
+
+
+def test_fixture_lane_scenario_is_self_consistent():
+    status = fixture.scenario('lane-left-solid-right-dashed')
+    assert status['schema'] == 'pango.rk3566.vehicle_status.v1'
+    assert status['simulated'] is True
+    assert (status['left_line_count'], status['right_line_count']) == (2, 1)
+    assert (status['left_nearest_type'], status['right_nearest_type']) == ('solid', 'dashed')
+    assert status['lane_source'] == 'hsst'
+
+
+def test_fixture_left_change_denied():
+    status = fixture.scenario('left-change-denied')
+    assert status['current_action'] == 'lane_left'
+    assert status['active'] is True
+    assert status['lane_left_deny'] is True
+    assert status['reason'] == 'left_solid'
+    assert status['decision'] == 'deny'
+
+
+def test_fixture_brake_warning_is_not_physical_brake():
+    status = fixture.scenario('brake-warning')
+    assert status['current_action'] == 'brake'
+    assert status['brake_allow'] is True
+    assert status['reason'] == 'brake_advisory'
+    assert status['decision'] == 'warning'
+
+
+def test_fixture_stale_and_offline_are_distinct():
+    stale = fixture.scenario('stale')
+    offline = fixture.scenario('offline')
+    assert stale['online'] is True and stale['sensor_stale'] is True
+    assert stale['left_line_count'] is None
+    assert offline['online'] is False and offline['lane_source'] == 'none'
+    assert offline['left_line_count'] is None

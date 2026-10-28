@@ -331,7 +331,7 @@ def run_benchmark(args) -> dict:
     timing_log = args.output_dir / "bridge_timing.jsonl"
     argv = [
         "--source", "SYNTHETIC", "--layout", "quad", "--display-view", "front",
-        "--road-quadrant", "1", "--navigation-quadrant", "1",
+        "--road-quadrant", "0", "--navigation-quadrant", "1",
         "--main-model", str(main_model),
         "--main-hz", str(args.request_hz), "--hazard-hz", "5", "--specialist-hz", "1",
         "--request-port", str(request_port), "--result-port", str(result_port),

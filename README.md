@@ -53,6 +53,30 @@
 
 ---
 
+## 1.4 LVT1 真实数据升级（独立分支）
+
+分支 `feature/lvt1-ego-bev-20261028` 已完成：
+
+- LVT1 左右车道线型/数量/来源/有效性接入 Qt；
+- 新增本车控制卡（油门/刹车/左右变道请求 + FPGA 判定/原因）；
+- Tesla 3D 道路边界按 LVT1 实线/虚线绘制；
+- YOLO 跟踪目标驱动 3D 车辆/行人，900ms 过期，无检测不生成模拟目标；
+- 默认道路象限改为 Q1（前视），Q2 只作为导航；
+- 修复 3D chase camera 左右镜像。
+
+实板离线截图：
+
+- `docs/hmi/assets/lvt1/single_live_targets_20261029.png`
+- `docs/hmi/assets/lvt1/quad_live_targets_20261029.png`
+- `docs/hmi/assets/lvt1/spatial_live_targets_20261029.png`
+- `docs/hmi/assets/lvt1/single_left_change_denied_20261029.png`
+
+当前状态：**实板 Qt 5.12.8 编译通过、fixture + 本地视频 + 第二 AI sidecar 截图通过；生产二进制未替换，真实 LVT1 驱动/位流未验收。**
+
+详见 [LVT1 真实数据 HMI](docs/hmi/LVT1_REAL_DATA_HMI.md)。
+
+---
+
 ## 2. 系统架构
 
 ```text
@@ -161,7 +185,7 @@ DISPLAY=:0 XAUTHORITY=/home/cat/.Xauthority \
 QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl \
 ./qt_gpu_probe --fps 60 --duration 0 --start-mode 0 \
   --pgv-file /dev/shm/pango-video/latest.pgv --source-label pgv-live \
-  --pgv-layout quad --road-quadrant 1 \
+  --pgv-layout quad --road-quadrant 0 \
   --ai-frame-file /dev/shm/qt_gpu_probe_ai.mfr1 --ai-hz 10
 ```
 

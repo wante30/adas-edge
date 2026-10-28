@@ -92,7 +92,7 @@ lspci -nn | grep 01:00.0
 /usr/bin/python3 /home/cat/qt_gpu_probe_ai_20261019/b05p_ai_bridge_launcher.py \
   --live-frame-file /dev/shm/qt_gpu_probe_ai.mfr1 \
   --source PGV_LIVE --layout quad --display-view front \
-  --road-quadrant 1 --navigation-quadrant 1 \
+  --road-quadrant 0 --navigation-quadrant 1 \
   --main-model /home/cat/cityscapes_arch_compare_20261027/models/bdd_yolov8n_512x288_raw_heads_int8.rknn \
   --main-hz 10 --hazard-hz 5 --ocr-hz 0.1 --navigation-ocr \
   --idle-timeout 90 \
@@ -154,7 +154,7 @@ AI_FRAME=/dev/shm/qt_gpu_probe_ai.mfr1
 "$RUN/qt_gpu_probe" \
   --fps 60 --duration 0 --start-mode 0 \
   --pgv-file "$PGV" --source-label pgv-live \
-  --pgv-layout quad --road-quadrant 1 \
+  --pgv-layout quad --road-quadrant 0 \
   --ai-frame-file "$AI_FRAME" --ai-hz 10
 ```
 
@@ -236,7 +236,7 @@ DISPLAY=:0 XAUTHORITY=/home/cat/.Xauthority \
 QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl QSG_INFO=1 \
 ./qt_gpu_probe --fps 60 --duration 0 --start-mode 0 \
   --pgv-file /dev/shm/pango-video/latest.pgv --source-label pgv-live \
-  --pgv-layout quad --road-quadrant 1 \
+  --pgv-layout quad --road-quadrant 0 \
   --ai-frame-file /dev/shm/qt_gpu_probe_ai.mfr1 --ai-hz 10
 ```
 

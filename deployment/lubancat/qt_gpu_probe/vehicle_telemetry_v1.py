@@ -85,6 +85,7 @@ def decode(words: dict[str, int], generation: int) -> dict:
     last_action = ACTIONS[bits(act, 16, 3)]
     return {
         'schema': 'pango.rk3566.vehicle_status.v1',
+        'simulated': False,
         'generation': generation, 'online': True,
         'hsst_sample_seq': words['sample_seq'],
         'hsst_valid': bool(bits(lane, 0)), 'hsst_stale': bool(bits(lane, 1)),

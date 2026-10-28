@@ -923,6 +923,9 @@ class AiReplayBridge:
     def start(self):
         status = initial_dynamic_status(self.args.source, time.monotonic_ns())
         status["model_selection"] = self._model_selection_status()
+        status["layout"] = self.args.layout
+        status["display_view"] = self.args.display_view
+        status["road_quadrant"] = int(self.args.road_quadrant)
         self._write_dynamic_hmi(status)
         self.listener.start()
         self.worker.start()
@@ -1350,6 +1353,9 @@ class AiReplayBridge:
             ai_fps=ai_fps,
         )
         status["model_selection"] = self._model_selection_status()
+        status["layout"] = self.args.layout
+        status["display_view"] = self.args.display_view
+        status["road_quadrant"] = int(self.args.road_quadrant)
         self.stage_timings["status_build"].append(
             (time.perf_counter_ns() - status_started) / 1e6
         )
@@ -1664,7 +1670,7 @@ def parser():
     result.add_argument("--legacy-model-root", default="")
     result.add_argument("--request-port", type=int, default=38260)
     result.add_argument("--result-port", type=int, default=38261)
-    result.add_argument("--road-quadrant", type=int, choices=range(4), default=3)
+    result.add_argument("--road-quadrant", type=int, choices=range(4), default=0)
     result.add_argument("--navigation-quadrant", type=int, choices=range(4), default=1)
     result.add_argument("--main-hz", type=float, default=10.0)
     result.add_argument(

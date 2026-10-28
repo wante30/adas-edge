@@ -1,3 +1,5 @@
+> **2026-10-29 更新**：LVT1 Qt 适配已在实板 Qt 5.12.8 编译通过，并用 fixture + 本地视频 + 第二 AI sidecar 完成单路/四路/空间视图截图。生产二进制未替换，真实 LVT1 驱动/位流仍未验收。详见 `docs/hmi/LVT1_REAL_DATA_HMI.md`。
+
 # LVT1 RK3566 vehicle telemetry integration (offline staging)
 
 **Status: software decoder, fixture tests, and opt-in Qt source integration staged on draft branch; NOT compiled on the target, board validated, or deployed to production.**

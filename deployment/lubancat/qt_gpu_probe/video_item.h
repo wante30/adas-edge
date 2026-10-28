@@ -49,6 +49,7 @@ class VideoItem : public QQuickFramebufferObject {
     Q_PROPERTY(QString aiModelMessage READ aiModelMessage NOTIFY aiStatusChanged)
     Q_PROPERTY(QVariantList aiModelOptions READ aiModelOptions NOTIFY aiStatusChanged)
     Q_PROPERTY(QString aiTraffic READ aiTraffic NOTIFY aiStatusChanged)
+    Q_PROPERTY(QString aiDisplayView READ aiDisplayView NOTIFY aiStatusChanged)
     Q_PROPERTY(QString aiNavigation READ aiNavigation NOTIFY aiStatusChanged)
     Q_PROPERTY(QString aiNavigationRoad READ aiNavigationRoad NOTIFY aiStatusChanged)
     Q_PROPERTY(QString aiNavigationState READ aiNavigationState NOTIFY aiStatusChanged)
@@ -210,6 +211,7 @@ public:
     bool aiOnline() const { return ai_online_.load(); }
     double aiFps() const { return ai_fps_.load(); }
     QString aiTraffic() const;
+    QString aiDisplayView() const { return ai_display_view_; }
     QString aiNavigation() const;
     QString aiNavigationRoad() const;
     QString aiNavigationState() const;
@@ -379,6 +381,7 @@ private:
     quint32 pending_model_switch_request_id_ = 0;
     quint32 next_model_switch_request_id_ = 0;
     QString ai_traffic_ = QStringLiteral("UNKNOWN");
+    QString ai_display_view_ = QStringLiteral("front");
     QString ai_navigation_ = QStringLiteral("等待导航识别");
     QString ai_navigation_road_;
     QString ai_navigation_state_ = QStringLiteral("UNKNOWN");

@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
     const bool autoCycleCapture = args.contains("--capture-cycle");
     const bool sceneEnabled = !args.contains("--scene-off");
     const QString pgvLayout = stringArg(args, "--pgv-layout");
-    const int roadQuadrant = intArg(args, "--road-quadrant", 1);
+    const int roadQuadrant = intArg(args, "--road-quadrant", 0);
     const int startMode = std::clamp(intArg(args, "--start-mode", 0), 0, 2);
     const QString effectiveLayout = pgvLayout.isEmpty()
                                         ? ((pgvFile.isEmpty() && rawReplay.isEmpty())
