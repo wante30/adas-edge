@@ -1,0 +1,14 @@
+[Unit]
+Description=FPGA PCIe video capture to PGVF
+After=local-fs.target
+Before=adas-ai-bridge-live.service
+
+[Service]
+Type=simple
+ExecStartPre=/bin/sh -c 'test -e /dev/pango_video0 || /sbin/insmod /home/cat/pcie_test/pango_video_t05/pcie_video/driver/pango_video.ko'
+ExecStart=/home/cat/pcie_test/pango_video_t05/pcie_video/app/pango_video_capture --continuous --fps 60 --publish-dir /dev/shm/pango-video
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

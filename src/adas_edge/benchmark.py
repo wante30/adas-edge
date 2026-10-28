@@ -6,6 +6,7 @@ from pathlib import Path
 
 import psutil
 
+from adas_edge.input_shape import format_shape
 from adas_edge.pipeline import PipelineResult
 
 
@@ -19,9 +20,13 @@ CSV_COLUMNS = [
 @dataclass
 class BenchmarkRecorder:
     model: str
-    input_size: int
+    input_size: int | str | tuple[int, int]
     precision: str
     _previous_end_to_end_ms: float | None = None
+
+    def __post_init__(self) -> None:
+        # Normalise once so every CSV row records the same explicit canvas.
+        self.input_size = format_shape(self.input_size)
 
     def row(self, result: PipelineResult, queue_latency_ms: float = 0.0, dropped_frames: int = 0) -> dict[str, float | int | str]:
         end_to_end = result.timing_ms["end_to_end"]

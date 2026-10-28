@@ -1,0 +1,5 @@
+[
+  {"start_ms": 0, "end_ms": 15000, "action": "STRAIGHT", "distance_m": 320},
+  {"start_ms": 15000, "end_ms": 19000, "action": "TURN_LEFT", "distance_m": 90},
+  {"start_ms": 19000, "end_ms": 20000, "action": "ARRIVE", "distance_m": 0}
+]

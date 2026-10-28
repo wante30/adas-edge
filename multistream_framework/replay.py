@@ -29,6 +29,14 @@ except ImportError:
     except ImportError:
         decode_yolo11_raw = None
 
+try:
+    from tools.profile_rknn_single_stream import letterbox_bgr
+except ImportError:
+    try:
+        from profile_rknn_single_stream import letterbox_bgr
+    except ImportError:
+        letterbox_bgr = None
+
 
 class DropOldestQueue:
     def __init__(self, maxsize: int) -> None:
@@ -160,7 +168,7 @@ def run_replay(video: Path, model: Path, stream_count: int, duration: float, out
                 continue
             packet = stream_queues[sid].get_nowait()
             packet["selected_ts"] = time.perf_counter()
-            image, scale, pad_x, pad_y = _letterbox(packet["bgr"], 320)
+            image, scale, pad_x, pad_y = _letterbox(packet["bgr"], _REPLAY_CANVAS)
             outputs = rknn.inference(inputs=[image[None, ...]], data_format="nhwc")
             packet["outputs"] = outputs
             packet["scale"], packet["pad_x"], packet["pad_y"] = scale, pad_x, pad_y
@@ -188,11 +196,17 @@ def run_replay(video: Path, model: Path, stream_count: int, duration: float, out
     output_dir.joinpath(f"multistream_{stream_count}_summary.md").write_text(f"# Multistream {stream_count}-stream round-robin\n\n- system throughput: {inferred / duration:.3f} FPS\n- scheduler: RoundRobinScheduler\n- queue depth: {queue_depth}\n\n" + "\n".join(f"- stream {m['stream_id']}: {m['inferred_fps']:.3f} FPS, drop {m['drop_rate']:.3%}, e2e mean/p95 {m['e2e_mean_ms']:.3f}/{m['e2e_p95_ms']:.3f} ms, wait mean/p95 {m['wait_mean_ms']:.3f}/{m['wait_p95_ms']:.3f} ms, queue avg {m['queue_avg']:.3f}" for m in metrics) + "\n", encoding="utf-8")
 
 
-def _letterbox(image: np.ndarray, size: int):
-    import cv2
-    h, w = image.shape[:2]; scale = min(size / w, size / h); rw, rh = round(w * scale), round(h * scale)
-    resized = cv2.resize(image, (rw, rh)); canvas = np.full((size, size, 3), 114, np.uint8); px, py = (size-rw)//2, (size-rh)//2; canvas[py:py+rh, px:px+rw] = resized
-    return np.ascontiguousarray(cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)), scale, px, py
+def _letterbox(image: np.ndarray, size):
+    """Letterbox to a fixed canvas, delegating to the canonical implementation.
+
+    This used to build a square ``size x size`` canvas from an ``int``, which is
+    the exact assumption the rectangular work removes: a 16:9 frame padded into a
+    square wastes ~40% of the input. It now accepts ``int`` or ``(width, height)``
+    and shares one implementation with the profiler, the detector and the exports.
+    """
+    if letterbox_bgr is None:
+        raise RuntimeError("tools.profile_rknn_single_stream.letterbox_bgr is not importable")
+    return letterbox_bgr(image, size)
 
 
 def _post_worker(stream_id, post_queue, rows, rows_lock):
@@ -201,13 +215,17 @@ def _post_worker(stream_id, post_queue, rows, rows_lock):
         if packet is sentinel_global:
             return
         if decode_yolo11_raw is not None:
-            decode_yolo11_raw(packet["outputs"], 320, 0.25, 0.45, packet["scale"], packet["pad_x"], packet["pad_y"])
+            decode_yolo11_raw(packet["outputs"], _REPLAY_CANVAS, 0.25, 0.45, packet["scale"], packet["pad_x"], packet["pad_y"])
         packet["infer_done_ts"] = time.perf_counter()
         with rows_lock:
             rows.append({"stream_id": stream_id, "frame_id": packet["frame_id"], "arrival_ts": packet["arrival_ts"], "selected_ts": packet["selected_ts"], "infer_done_ts": packet["infer_done_ts"], "dropped": False})
 
 
 sentinel_global = object()
+
+# The historical homogeneous replay canvas. Kept as an explicit named constant so
+# ``320`` no longer appears as a bare literal in the inference path.
+_REPLAY_CANVAS = 320
 
 
 def main() -> None:

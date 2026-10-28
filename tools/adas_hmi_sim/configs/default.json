@@ -1,0 +1,31 @@
+{
+  "mapping": {
+    "fx": 900,
+    "fy": 900,
+    "cx": 640,
+    "cy": 310,
+    "camera_height": 1.4,
+    "height_weight": 0.65,
+    "min_depth": 2.0,
+    "max_depth": 70.0,
+    "class_heights": {
+      "car": 1.5,
+      "person": 1.7,
+      "bus": 3.0,
+      "truck": 2.8,
+      "bicycle": 1.3,
+      "motorcycle": 1.4
+    }
+  },
+  "tracking": {
+    "iou_threshold": 0.18,
+    "ema_alpha": 0.35,
+    "max_missed": 2
+  },
+  "display": {
+    "min_confidence": 0.28,
+    "max_objects": 24,
+    "max_lateral_m": 8.2,
+    "max_depth_m": 58.0
+  }
+}

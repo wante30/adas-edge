@@ -1,0 +1,224 @@
+{
+  "evidence": "PGV_LIVE",
+  "layout": "quad",
+  "display_view": "front",
+  "frame_format": "1280x720 RGB565_LE packed, decoded using the existing PGV BGR565 conversion",
+  "model_paths": {
+    "yolo11n": "/home/cat/cityscapes_arch_compare_20261027/models/bdd_yolov8n_512x288_raw_heads_int8.rknn",
+    "traffic_light_specialist": "/home/cat/cityscapes_arch_compare_20261027/models/b05l_v8n_p2_raw_heads_int8_500_20261026.rknn"
+  },
+  "source_frames_loaded": 0,
+  "source_prepare_ms": 0.0,
+  "shared_frame_file_reads": 1650,
+  "shared_frame_identity_mismatches": 0,
+  "input_requests_received": 1650,
+  "input_request_fps": 9.993664567345505,
+  "source_ids_analyzed": 1650,
+  "source_id_analysis_fps": 9.993664567345505,
+  "source_ids_replaced_before_analysis": 0,
+  "result_packets_sent": 1650,
+  "dynamic_hmi_texture_updates": 0,
+  "inference_errors": 0,
+  "last_error": null,
+  "updates_per_second": {
+    "yolo11n_rknn": 9.993664567345505,
+    "traffic_light_specialist_rknn": 1.0054232231390021,
+    "navigation_ocr": 0.10296502887568094
+  },
+  "timings_ms": {
+    "main_rknn": {
+      "samples": 1650,
+      "p50_ms": 39.001968500000004,
+      "p95_ms": 46.6068906,
+      "mean_ms": 39.432086458181814
+    },
+    "specialist_rknn": {
+      "samples": 166,
+      "p50_ms": 0.0,
+      "p95_ms": 0.0,
+      "mean_ms": 0.0
+    },
+    "navigation_ocr": {
+      "samples": 17,
+      "p50_ms": 2204.1421130001027,
+      "p95_ms": 8910.809229600045,
+      "mean_ms": 5149.93484317649
+    },
+    "hazard_postprocess": {
+      "samples": 826,
+      "p50_ms": 32.96078799996849,
+      "p95_ms": 66.40216125006759,
+      "mean_ms": 35.35783504479518
+    },
+    "all_ai_work": {
+      "samples": 1650,
+      "p50_ms": 51.797587,
+      "p95_ms": 70.92228424999999,
+      "mean_ms": 53.89546709878788
+    },
+    "shared_frame_read": {
+      "samples": 1650,
+      "p50_ms": 3.0294860000000003,
+      "p95_ms": 4.4784447499999995,
+      "mean_ms": 3.1948487436363635
+    },
+    "shared_frame_validate": {
+      "samples": 1650,
+      "p50_ms": 1.1947904999999999,
+      "p95_ms": 1.91423185,
+      "mean_ms": 1.2896431381818183
+    },
+    "rgb565_decode": {
+      "samples": 1650,
+      "p50_ms": 1.7420930000000001,
+      "p95_ms": 5.023559349999998,
+      "mean_ms": 2.162174952121212
+    },
+    "pipeline": {
+      "samples": 1650,
+      "p50_ms": 42.169848,
+      "p95_ms": 50.11155145,
+      "mean_ms": 42.648304426060605
+    },
+    "navigation_submit": {
+      "samples": 1650,
+      "p50_ms": 0.420284,
+      "p95_ms": 16.334184949999994,
+      "mean_ms": 2.5803988303030305
+    },
+    "box_mapping": {
+      "samples": 1650,
+      "p50_ms": 0.469721,
+      "p95_ms": 0.7872226499999999,
+      "mean_ms": 0.5016358442424242
+    },
+    "status_build": {
+      "samples": 1650,
+      "p50_ms": 0.7675065,
+      "p95_ms": 1.5344740499999998,
+      "mean_ms": 0.8922887448484849
+    },
+    "dynamic_hmi": {
+      "samples": 1650,
+      "p50_ms": 0.011083,
+      "p95_ms": 0.02391655,
+      "mean_ms": 0.019817079393939393
+    },
+    "packet_encode": {
+      "samples": 1650,
+      "p50_ms": 0.7559855,
+      "p95_ms": 1.3668125,
+      "mean_ms": 0.9297723521212121
+    },
+    "result_publish": {
+      "samples": 1650,
+      "p50_ms": 0.2292455,
+      "p95_ms": 1.1120749499999998,
+      "mean_ms": 0.51763178
+    },
+    "main_preprocess_ms": {
+      "samples": 1650,
+      "p50_ms": 1.862987,
+      "p95_ms": 4.698765649999994,
+      "mean_ms": 2.2651983624242424
+    },
+    "main_rknn_call_ms": {
+      "samples": 1650,
+      "p50_ms": 29.132734,
+      "p95_ms": 34.657366849999995,
+      "mean_ms": 29.462048304242426
+    },
+    "main_decode_nms_ms": {
+      "samples": 1650,
+      "p50_ms": 9.715383500000002,
+      "p95_ms": 14.678539349999998,
+      "mean_ms": 9.970038153939395
+    },
+    "main_total_ms": {
+      "samples": 1650,
+      "p50_ms": 41.2069275,
+      "p95_ms": 48.9981496,
+      "mean_ms": 41.697284820606065
+    },
+    "specialist_preprocess_ms": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    },
+    "specialist_rknn_call_ms": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    },
+    "specialist_decode_nms_ms": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    },
+    "specialist_total_ms": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    }
+  },
+  "resources": {
+    "process_cpu_one_core_percent": 77.91131360093254,
+    "process_cpu_machine_percent": 19.477828400233136,
+    "inference_worker_cpu_one_core_percent": 32.30089108038656,
+    "online_cpus": 4,
+    "rss_end_mb": 105.03125,
+    "rss_peak_mb": 118.65234375,
+    "board_telemetry": {
+      "devices": {
+        "npu": {
+          "load_percent": {
+            "samples": 643,
+            "p50_percent": 100.0,
+            "p95_percent": 100.0,
+            "mean_percent": 100.0
+          },
+          "frequency_mhz": {
+            "samples": 643,
+            "p50_mhz": 600.0,
+            "p95_mhz": 600.0,
+            "mean_mhz": 600.0
+          }
+        },
+        "gpu": {
+          "load_percent": {
+            "samples": 643,
+            "p50_percent": 30.0,
+            "p95_percent": 54.0,
+            "mean_percent": 30.800933125972005
+          },
+          "frequency_mhz": {
+            "samples": 643,
+            "p50_mhz": 600.0,
+            "p95_mhz": 800.0,
+            "mean_mhz": 565.1632970451011
+          }
+        }
+      },
+      "temperatures_c": {
+        "soc-thermal": {
+          "samples": 643,
+          "min_c": 38.333,
+          "max_c": 40.625,
+          "end_c": 38.888
+        },
+        "gpu-thermal": {
+          "samples": 643,
+          "min_c": 36.111,
+          "max_c": 37.222,
+          "end_c": 36.666
+        }
+      },
+      "sample_period_ms": 250
+    }
+  },
+  "display_note": "AI runs in a separate latest-only worker and never blocks EGL frame submission."
+}

@@ -1,0 +1,3120 @@
+{
+  "document_type": "pango.rk3566.pcie.complete_contract",
+  "document_version": "1.0.1",
+  "language": "zh-CN",
+  "date": "2026-10-24",
+  "title": "PG2L100H 与 RK3566 PCIe 协议开发交接",
+  "scope": {
+    "workspace": "D:/QiansaiFPGA/source_code_3/PCIE_timig_fix",
+    "rtl_project": "build/hsst_timing_structural_20261024",
+    "reference_baseline": "build/hsst_zero_slack_20261024",
+    "target": "PG2L100H-6FBG676",
+    "basis": "当前源码静态核对；不根据文档magic推定板上已烧写相同固件",
+    "baseline_relation": "基于现有完整交接稿，对照当前 structural 工程核对。36个来源文件中33个直接字节比较相同，图像控制寄存器、ISP配置CDC及视频寄存器3个文件结构不同；对照读写分支、字段和握手，未发现外部协议定义变化。本次没有修改RTL或驱动。",
+    "board_bitstream_match": "needs_RK_and_board_owner_confirmation",
+    "no_wire_json": true,
+    "no_added_hash_or_checksum": true,
+    "rtl_or_driver_modified": false,
+    "protocol_abi_changed_by_this_delivery": false,
+    "document_origin": "host/rk3566_pcie_handoff_20261024；保留该原交接稿，本次独立输出到audit目录",
+    "engineering_project_file": "build/hsst_timing_structural_20261024/PG2L100H_AVM.pds",
+    "companion_markdown": "RK3566_PCIe协议开发交接.md"
+  },
+  "transport": {
+    "protocol": "standard PCIe Memory Read/Write TLP",
+    "role": {
+      "RK3566": "Root Complex / host",
+      "FPGA": "Endpoint"
+    },
+    "vendor_id_hex": "0x0755",
+    "device_id_hex": "0x0755",
+    "configured_max_speed": "Gen2 5.0GT/s",
+    "configured_max_width": 4,
+    "negotiated_speed_width": "由lspci -vv确认；RK端实际lane数及训练结果不由x4配置保证",
+    "bars": [
+      {
+        "index": 0,
+        "configured_bytes": 8192,
+        "type": "32bit non-prefetchable memory",
+        "purpose": "独立PIO RAM，正常枚举可见0..0x1fff"
+      },
+      {
+        "index": 1,
+        "configured_bytes": 4096,
+        "type": "32bit non-prefetchable memory",
+        "purpose": "控制CSR，业务实现主要在0x100..0x78f"
+      }
+    ],
+    "addresses": "本文所有寄存器是BAR1字节偏移；实际CPU映射基址由内核PCI枚举确定，不能硬编码物理BAR基址",
+    "control_access": {
+      "width_bits": 32,
+      "alignment_bytes": 4,
+      "write_tlp_length_dw": 1,
+      "first_be_hex": "0xf",
+      "last_be_hex": "0x0",
+      "policy": "独立readl/writel或ioread32/iowrite32；不使用64/128位store、memcpy/WC批量写CSR",
+      "posted_write_flush": "有序MMIO写入后安全回读并检查业务状态；读回不是生效ACK。传统DONE为读清，不能作为随意flush寄存器。"
+    },
+    "endianness": "RK3566小端；DWORD数值不额外htonl。JSON十六进制是数值文本，非包中字节串。",
+    "interrupt": {
+      "application_msi_requested": false,
+      "reason": "ven_msi_req固定0，本版业务完成依赖轮询"
+    },
+    "dma_address": "仅内核DMA API返回的DMA地址/IOVA；不是用户虚拟地址，也不直接假设物理地址等于DMA地址"
+  },
+  "driver": {
+    "reference_path": "build/hsst_timing_structural_20261024/host/rk3566_image_control",
+    "device": "/dev/pango_pci_driver",
+    "mmio_struct": {
+      "name": "pango_image_mmio",
+      "size_bytes": 8,
+      "fields": [
+        {
+          "name": "offset",
+          "type": "__u32"
+        },
+        {
+          "name": "value",
+          "type": "__u32"
+        }
+      ]
+    },
+    "mmio_ioctl": {
+      "read": {
+        "macro": "_IOWR('S', 11, struct pango_image_mmio)",
+        "hex": "0xc008530b"
+      },
+      "write": {
+        "macro": "_IOWR('S', 12, struct pango_image_mmio)",
+        "hex": "0xc008530c"
+      }
+    },
+    "allowed_offsets": {
+      "read": [
+        "0x700..0x7fc aligned",
+        "0x670..0x67c aligned",
+        "0x630"
+      ],
+      "write": [
+        "0x700..0x7fc aligned",
+        "0x670..0x67c aligned"
+      ]
+    },
+    "unexposed_by_new_ioctl": [
+      "basic HUD 0x600..0x634 except CAPS read",
+      "scene 0x638..0x664",
+      "HSST 0x680..0x68c",
+      "video CSR 0x400..0x57c",
+      "BAR0 PIO"
+    ],
+    "integration_requirement": "RK完整集成须补充经过地址白名单的BAR1访问及视频DMA缓冲API，或沿用已验证的既有接口；本次仅交接，未扩大驱动权限。",
+    "config_ioctl_warning": "旧nr0/1是PCI配置空间，不是BAR1 MMIO；同样的0x638不能用配置空间命令代替。",
+    "write_return": "nr12将value改为同地址读取结果；WO寄存器返回0正常，不可拿返回值==写值判成功",
+    "atomicity": "image_mmio_lock仅保护单个ioctl；整个shadow/COMMIT/poll/快照读/RMW需同设备flock或进程间锁。",
+    "legacy_ioctl_summary": [
+      {
+        "nr": 0,
+        "purpose": "PCI配置空间DWORD读"
+      },
+      {
+        "nr": 1,
+        "purpose": "PCI配置空间DWORD写"
+      },
+      {
+        "nr": 2,
+        "purpose": "分配传统DMA coherent缓冲"
+      },
+      {
+        "nr": 3,
+        "purpose": "复制用户数据到H2F缓冲并启动"
+      },
+      {
+        "nr": 4,
+        "purpose": "读取F2H DONE（读清）"
+      },
+      {
+        "nr": 5,
+        "purpose": "读取H2F DONE（读清）"
+      },
+      {
+        "nr": 6,
+        "purpose": "拷贝F2H内核缓冲到用户"
+      },
+      {
+        "nr": 7,
+        "purpose": "释放传统DMA缓冲"
+      },
+      {
+        "nr": 8,
+        "purpose": "启动F2H搬运"
+      },
+      {
+        "nr": 9,
+        "purpose": "历史MAP_BAR0命名，实际查询现有BAR资源信息"
+      },
+      {
+        "nr": 10,
+        "purpose": "固定宽度pango_dma_info：两项u64 DMA地址、u32 buffer_length、u32 dma_mask_bits"
+      }
+    ],
+    "legacy_abi": "nr0..9沿用旧struct，不要按ioctl编码中的int尺寸推断真实参数；复用对应C头，32/64位用户态ABI单独核对。",
+    "reference_client_known_issue": "ispctl transaction()只在busy=0/DONE/seq匹配后检查ERROR；新客户端应每轮先查ERROR，避免拒绝错误被显示为超时。"
+  },
+  "registers": [
+    {
+      "group": "legacy_h2f",
+      "bar": 1,
+      "offset_bytes": 256,
+      "offset_hex": "0x100",
+      "name": "HOST_DMA_ADDR_LO",
+      "width_bits": 32,
+      "access": "WO_UNSPECIFIED_READ",
+      "description_zh": "RK→FPGA：FPGA发MRd读取RK内存，RK DMA总线地址低32位"
+    },
+    {
+      "group": "legacy_h2f",
+      "bar": 1,
+      "offset_bytes": 260,
+      "offset_hex": "0x104",
+      "name": "HOST_DMA_ADDR_HI",
+      "width_bits": 32,
+      "access": "WO_UNSPECIFIED_READ",
+      "description_zh": "RK DMA总线地址高32位；不要写用户虚拟地址"
+    },
+    {
+      "group": "legacy_h2f",
+      "bar": 1,
+      "offset_bytes": 272,
+      "offset_hex": "0x110",
+      "name": "STAGING_ADDR",
+      "width_bits": 32,
+      "access": "WO_UNSPECIFIED_READ",
+      "description_zh": "16bit staging RAM字索引，单位2字节；不是BAR偏移或DDR地址"
+    },
+    {
+      "group": "legacy_h2f",
+      "bar": 1,
+      "offset_bytes": 288,
+      "offset_hex": "0x120",
+      "name": "LENGTH_MINUS_ONE",
+      "width_bits": 32,
+      "access": "WO_UNSPECIFIED_READ",
+      "description_zh": "低10位=(字节数/4)-1；当前驱动支持4..4096字节，4的倍数"
+    },
+    {
+      "group": "legacy_h2f",
+      "bar": 1,
+      "offset_bytes": 304,
+      "offset_hex": "0x130",
+      "name": "DONE",
+      "width_bits": 32,
+      "access": "RO_READ_CLEAR",
+      "description_zh": "返回bit0完成锁存并清除；读取所在16字节窗口也会消费它"
+    },
+    {
+      "group": "legacy_h2f",
+      "bar": 1,
+      "offset_bytes": 320,
+      "offset_hex": "0x140",
+      "name": "START_ADDR_TYPE",
+      "width_bits": 32,
+      "access": "WO_UNSPECIFIED_READ",
+      "description_zh": "最后写入即触发：0=32位地址，1=64位地址；不要重复写启动"
+    },
+    {
+      "group": "legacy_f2h",
+      "bar": 1,
+      "offset_bytes": 512,
+      "offset_hex": "0x200",
+      "name": "HOST_DMA_ADDR_LO",
+      "width_bits": 32,
+      "access": "WO_UNSPECIFIED_READ",
+      "description_zh": "FPGA→RK：FPGA发MWr写RK内存，RK DMA总线地址低32位"
+    },
+    {
+      "group": "legacy_f2h",
+      "bar": 1,
+      "offset_bytes": 516,
+      "offset_hex": "0x204",
+      "name": "HOST_DMA_ADDR_HI",
+      "width_bits": 32,
+      "access": "WO_UNSPECIFIED_READ",
+      "description_zh": "RK DMA总线地址高32位；不要写用户虚拟地址"
+    },
+    {
+      "group": "legacy_f2h",
+      "bar": 1,
+      "offset_bytes": 528,
+      "offset_hex": "0x210",
+      "name": "STAGING_ADDR",
+      "width_bits": 32,
+      "access": "WO_UNSPECIFIED_READ",
+      "description_zh": "16bit staging RAM字索引，单位2字节；不是BAR偏移或DDR地址"
+    },
+    {
+      "group": "legacy_f2h",
+      "bar": 1,
+      "offset_bytes": 544,
+      "offset_hex": "0x220",
+      "name": "LENGTH_MINUS_ONE",
+      "width_bits": 32,
+      "access": "WO_UNSPECIFIED_READ",
+      "description_zh": "低10位=(字节数/4)-1；当前驱动支持4..4096字节，4的倍数"
+    },
+    {
+      "group": "legacy_f2h",
+      "bar": 1,
+      "offset_bytes": 560,
+      "offset_hex": "0x230",
+      "name": "DONE",
+      "width_bits": 32,
+      "access": "RO_READ_CLEAR",
+      "description_zh": "返回bit0完成锁存并清除；读取所在16字节窗口也会消费它"
+    },
+    {
+      "group": "legacy_f2h",
+      "bar": 1,
+      "offset_bytes": 576,
+      "offset_hex": "0x240",
+      "name": "START_ADDR_TYPE",
+      "width_bits": 32,
+      "access": "WO_UNSPECIFIED_READ",
+      "description_zh": "最后写入即触发：0=32位地址，1=64位地址；不要重复写启动"
+    },
+    {
+      "group": "video",
+      "bar": 1,
+      "offset_bytes": 1024,
+      "offset_hex": "0x400",
+      "name": "MAGIC",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "0x31564750（内存ASCII PGV1）"
+    },
+    {
+      "group": "video",
+      "bar": 1,
+      "offset_bytes": 1028,
+      "offset_hex": "0x404",
+      "name": "VERSION",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "1"
+    },
+    {
+      "group": "video",
+      "bar": 1,
+      "offset_bytes": 1032,
+      "offset_hex": "0x408",
+      "name": "COMMAND",
+      "width_bits": 32,
+      "access": "WO_READ_ZERO",
+      "description_zh": "1 START；2 STOP；4 CLEAR_STATS。值是操作码，不能OR组合"
+    },
+    {
+      "group": "video",
+      "bar": 1,
+      "offset_bytes": 1036,
+      "offset_hex": "0x40c",
+      "name": "STATUS",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "bit0 enable；bit1 engine_busy；bit2 link_up；bit3 video_mode；bit4 any_hw"
+    },
+    {
+      "group": "video",
+      "bar": 1,
+      "offset_bytes": 1040,
+      "offset_hex": "0x410",
+      "name": "GENERATION",
+      "width_bits": 32,
+      "access": "RW_CONDITIONAL",
+      "description_zh": "复位1；软件只能提高；STOP/掉链递增，0xffffffff饱和"
+    },
+    {
+      "group": "video",
+      "bar": 1,
+      "offset_bytes": 1044,
+      "offset_hex": "0x414",
+      "name": "REJECT_COUNT",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "CSR/传统DMA拒绝统计；32位回绕"
+    },
+    {
+      "group": "video",
+      "bar": 1,
+      "offset_bytes": 1048,
+      "offset_hex": "0x418",
+      "name": "DONE_COUNT",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "成功视频帧数；32位回绕"
+    },
+    {
+      "group": "video",
+      "bar": 1,
+      "offset_bytes": 1052,
+      "offset_hex": "0x41c",
+      "name": "ERROR_COUNT",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "有效完成但失败的视频帧数；不是所有flush错误槽数量"
+    },
+    {
+      "group": "video",
+      "bar": 1,
+      "offset_bytes": 1056,
+      "offset_hex": "0x420",
+      "name": "DROP_COUNT",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "capture元数据drop事件统计"
+    },
+    {
+      "group": "video",
+      "bar": 1,
+      "offset_bytes": 1060,
+      "offset_hex": "0x424",
+      "name": "OVERFLOW_COUNT",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "capture元数据error事件统计；非单纯FIFO溢出总次数"
+    },
+    {
+      "group": "video",
+      "bar": 1,
+      "offset_bytes": 1064,
+      "offset_hex": "0x428",
+      "name": "RATE30",
+      "width_bits": 32,
+      "access": "RW_CONDITIONAL",
+      "description_zh": "0=不隔帧；1=隔帧采样；60fps源时约30fps，不是绝对帧率保证"
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1280,
+      "offset_hex": "0x500",
+      "name": "DESC0_ADDR_LO",
+      "width_bits": 32,
+      "access": "RW_CONDITIONAL",
+      "description_zh": "DMA目标地址低32位",
+      "descriptor_index": 0
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1284,
+      "offset_hex": "0x504",
+      "name": "DESC0_ADDR_HI",
+      "width_bits": 32,
+      "access": "RW_CONDITIONAL",
+      "description_zh": "DMA目标地址高32位",
+      "descriptor_index": 0
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1288,
+      "offset_hex": "0x508",
+      "name": "DESC0_CAPACITY",
+      "width_bits": 32,
+      "access": "RW_CONDITIONAL",
+      "description_zh": "至少1847296字节，且4096字节整数倍",
+      "descriptor_index": 0
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1292,
+      "offset_hex": "0x50c",
+      "name": "DESC0_GENERATION",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "ARM接受时复制当前全局generation",
+      "descriptor_index": 0
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1296,
+      "offset_hex": "0x510",
+      "name": "DESC0_STATE_CONTROL",
+      "width_bits": 32,
+      "access": "RW_DIFFERENT",
+      "description_zh": "读0 FREE/1 READY/2 HW/3 DONE/4 ERROR；写1 ARM，写2 RELEASE",
+      "descriptor_index": 0
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1300,
+      "offset_hex": "0x514",
+      "name": "DESC0_FRAME_ID",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "完成帧号，ARM后清可见值",
+      "descriptor_index": 0
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1304,
+      "offset_hex": "0x518",
+      "name": "DESC0_LENGTH",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "完成发送的图像字节数",
+      "descriptor_index": 0
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1308,
+      "offset_hex": "0x51c",
+      "name": "DESC0_CRC32",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "既有图像CRC32元数据；主机校验可选，不是新增哈希门禁",
+      "descriptor_index": 0
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1312,
+      "offset_hex": "0x520",
+      "name": "DESC1_ADDR_LO",
+      "width_bits": 32,
+      "access": "RW_CONDITIONAL",
+      "description_zh": "DMA目标地址低32位",
+      "descriptor_index": 1
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1316,
+      "offset_hex": "0x524",
+      "name": "DESC1_ADDR_HI",
+      "width_bits": 32,
+      "access": "RW_CONDITIONAL",
+      "description_zh": "DMA目标地址高32位",
+      "descriptor_index": 1
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1320,
+      "offset_hex": "0x528",
+      "name": "DESC1_CAPACITY",
+      "width_bits": 32,
+      "access": "RW_CONDITIONAL",
+      "description_zh": "至少1847296字节，且4096字节整数倍",
+      "descriptor_index": 1
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1324,
+      "offset_hex": "0x52c",
+      "name": "DESC1_GENERATION",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "ARM接受时复制当前全局generation",
+      "descriptor_index": 1
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1328,
+      "offset_hex": "0x530",
+      "name": "DESC1_STATE_CONTROL",
+      "width_bits": 32,
+      "access": "RW_DIFFERENT",
+      "description_zh": "读0 FREE/1 READY/2 HW/3 DONE/4 ERROR；写1 ARM，写2 RELEASE",
+      "descriptor_index": 1
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1332,
+      "offset_hex": "0x534",
+      "name": "DESC1_FRAME_ID",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "完成帧号，ARM后清可见值",
+      "descriptor_index": 1
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1336,
+      "offset_hex": "0x538",
+      "name": "DESC1_LENGTH",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "完成发送的图像字节数",
+      "descriptor_index": 1
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1340,
+      "offset_hex": "0x53c",
+      "name": "DESC1_CRC32",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "既有图像CRC32元数据；主机校验可选，不是新增哈希门禁",
+      "descriptor_index": 1
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1344,
+      "offset_hex": "0x540",
+      "name": "DESC2_ADDR_LO",
+      "width_bits": 32,
+      "access": "RW_CONDITIONAL",
+      "description_zh": "DMA目标地址低32位",
+      "descriptor_index": 2
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1348,
+      "offset_hex": "0x544",
+      "name": "DESC2_ADDR_HI",
+      "width_bits": 32,
+      "access": "RW_CONDITIONAL",
+      "description_zh": "DMA目标地址高32位",
+      "descriptor_index": 2
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1352,
+      "offset_hex": "0x548",
+      "name": "DESC2_CAPACITY",
+      "width_bits": 32,
+      "access": "RW_CONDITIONAL",
+      "description_zh": "至少1847296字节，且4096字节整数倍",
+      "descriptor_index": 2
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1356,
+      "offset_hex": "0x54c",
+      "name": "DESC2_GENERATION",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "ARM接受时复制当前全局generation",
+      "descriptor_index": 2
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1360,
+      "offset_hex": "0x550",
+      "name": "DESC2_STATE_CONTROL",
+      "width_bits": 32,
+      "access": "RW_DIFFERENT",
+      "description_zh": "读0 FREE/1 READY/2 HW/3 DONE/4 ERROR；写1 ARM，写2 RELEASE",
+      "descriptor_index": 2
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1364,
+      "offset_hex": "0x554",
+      "name": "DESC2_FRAME_ID",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "完成帧号，ARM后清可见值",
+      "descriptor_index": 2
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1368,
+      "offset_hex": "0x558",
+      "name": "DESC2_LENGTH",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "完成发送的图像字节数",
+      "descriptor_index": 2
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1372,
+      "offset_hex": "0x55c",
+      "name": "DESC2_CRC32",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "既有图像CRC32元数据；主机校验可选，不是新增哈希门禁",
+      "descriptor_index": 2
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1376,
+      "offset_hex": "0x560",
+      "name": "DESC3_ADDR_LO",
+      "width_bits": 32,
+      "access": "RW_CONDITIONAL",
+      "description_zh": "DMA目标地址低32位",
+      "descriptor_index": 3
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1380,
+      "offset_hex": "0x564",
+      "name": "DESC3_ADDR_HI",
+      "width_bits": 32,
+      "access": "RW_CONDITIONAL",
+      "description_zh": "DMA目标地址高32位",
+      "descriptor_index": 3
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1384,
+      "offset_hex": "0x568",
+      "name": "DESC3_CAPACITY",
+      "width_bits": 32,
+      "access": "RW_CONDITIONAL",
+      "description_zh": "至少1847296字节，且4096字节整数倍",
+      "descriptor_index": 3
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1388,
+      "offset_hex": "0x56c",
+      "name": "DESC3_GENERATION",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "ARM接受时复制当前全局generation",
+      "descriptor_index": 3
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1392,
+      "offset_hex": "0x570",
+      "name": "DESC3_STATE_CONTROL",
+      "width_bits": 32,
+      "access": "RW_DIFFERENT",
+      "description_zh": "读0 FREE/1 READY/2 HW/3 DONE/4 ERROR；写1 ARM，写2 RELEASE",
+      "descriptor_index": 3
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1396,
+      "offset_hex": "0x574",
+      "name": "DESC3_FRAME_ID",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "完成帧号，ARM后清可见值",
+      "descriptor_index": 3
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1400,
+      "offset_hex": "0x578",
+      "name": "DESC3_LENGTH",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "完成发送的图像字节数",
+      "descriptor_index": 3
+    },
+    {
+      "group": "video_descriptor",
+      "bar": 1,
+      "offset_bytes": 1404,
+      "offset_hex": "0x57c",
+      "name": "DESC3_CRC32",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "既有图像CRC32元数据；主机校验可选，不是新增哈希门禁",
+      "descriptor_index": 3
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1536,
+      "offset_hex": "0x600",
+      "name": "MAGIC",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "0x31445548（内存ASCII HUD1）"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1540,
+      "offset_hex": "0x604",
+      "name": "VERSION",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "0x00010000"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1544,
+      "offset_hex": "0x608",
+      "name": "REQUEST",
+      "width_bits": 32,
+      "access": "WO_READ_ZERO",
+      "description_zh": "基本HUD灯光完整请求，sequence放高16位，见hud_basic.request_fields"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1548,
+      "offset_hex": "0x60c",
+      "name": "STATUS",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "基本HUD握手及有效显示状态，见hud_basic.status_fields"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1552,
+      "offset_hex": "0x610",
+      "name": "ACCEPTED_SEQ",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "低16位最后接受序号"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1556,
+      "offset_hex": "0x614",
+      "name": "APPLIED_SEQ",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "低16位真实overlay锁存序号"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1560,
+      "offset_hex": "0x618",
+      "name": "RK_STATE",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "最后应用的RK基本请求低13位，含takeover和blink"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1564,
+      "offset_hex": "0x61c",
+      "name": "EFFECTIVE_STATE",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "真实overlay锁存9bit显示状态，反映用户/去雾覆盖"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1568,
+      "offset_hex": "0x620",
+      "name": "REJECT_COUNT",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "累计拒绝次数，32bit回绕；成功写不清零"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1572,
+      "offset_hex": "0x624",
+      "name": "LAST_ERROR",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "最后拒绝错误；成功写不清除，没有此通道CLEAR命令"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1576,
+      "offset_hex": "0x628",
+      "name": "REJECTED_SEQ",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "关联被拒完整REQUEST的序号；格式/未知地址错误可为0"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1580,
+      "offset_hex": "0x62c",
+      "name": "SNAPSHOT_ID",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "基本HUD可读状态变化计数；不是覆盖全部导航/HSST的全局版本号"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1584,
+      "offset_hex": "0x630",
+      "name": "CAPS",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "0x000001ff；已命名bit8=导航，其余位保持原值，不另造含义"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1588,
+      "offset_hex": "0x634",
+      "name": "LAST_ACCEPTED_REQUEST",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "完整最后接受的REQUEST"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1592,
+      "offset_hex": "0x638",
+      "name": "SCENE_SHADOW",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "扩展场景shadow；只写它不会生效"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1596,
+      "offset_hex": "0x63c",
+      "name": "TIME0_SHADOW",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "BCD日期0xMMDDYYYY，无RTC自动计时"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1600,
+      "offset_hex": "0x640",
+      "name": "TIME1_SHADOW",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "BCD时间0x00SSMMHH，无RTC自动计时"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1604,
+      "offset_hex": "0x644",
+      "name": "SCENE_COMMIT",
+      "width_bits": 32,
+      "access": "RW_DIFFERENT",
+      "description_zh": "低16位非零序号，原子冻结SCENE/TIME0/TIME1；读回低16位最后接收序号"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1608,
+      "offset_hex": "0x648",
+      "name": "SCENE_CDC_STATUS",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "bit0 latest-pending；bit1 mailbox-ready；不是整个场景事务BUSY"
+    },
+    {
+      "group": "hud",
+      "bar": 1,
+      "offset_bytes": 1612,
+      "offset_hex": "0x64c",
+      "name": "SCENE_APPLIED_SEQ",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "低16位真实overlay锁存场景序号；中间更新可合并，不保证每条显示"
+    },
+    {
+      "group": "behavior",
+      "bar": 1,
+      "offset_bytes": 1616,
+      "offset_hex": "0x650",
+      "name": "RESERVED_650",
+      "width_bits": 32,
+      "access": "RO_ZERO_WRITE_IGNORED",
+      "description_zh": "未实现动作控制，不能用来发油门/刹车"
+    },
+    {
+      "group": "behavior",
+      "bar": 1,
+      "offset_bytes": 1620,
+      "offset_hex": "0x654",
+      "name": "RESERVED_654",
+      "width_bits": 32,
+      "access": "RO_ZERO_WRITE_IGNORED",
+      "description_zh": "未实现动作控制，不能用来发左右变道"
+    },
+    {
+      "group": "behavior",
+      "bar": 1,
+      "offset_bytes": 1624,
+      "offset_hex": "0x658",
+      "name": "SCENE_STATUS",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "RK场景就绪/过期/错误和HSST车道owner，见scene.status_fields"
+    },
+    {
+      "group": "behavior",
+      "bar": 1,
+      "offset_bytes": 1628,
+      "offset_hex": "0x65c",
+      "name": "BEHAVIOR_RESULT",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "PCIe决策域结果；是当前持续判定，不是最终HUD像素回执"
+    },
+    {
+      "group": "behavior",
+      "bar": 1,
+      "offset_bytes": 1632,
+      "offset_hex": "0x660",
+      "name": "BEHAVIOR_EFFECTIVE",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "本版本PCIe域与RESULT同值；像素侧按最新HSST来源重算左右判定"
+    },
+    {
+      "group": "behavior",
+      "bar": 1,
+      "offset_bytes": 1636,
+      "offset_hex": "0x664",
+      "name": "CAPS",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "0x0002003f；bit5=HSST车道优先接入，其他低位不另造定义"
+    },
+    {
+      "group": "navigation",
+      "bar": 1,
+      "offset_bytes": 1648,
+      "offset_hex": "0x670",
+      "name": "NAV_SHADOW",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "见navigation.registers中的逐位定义"
+    },
+    {
+      "group": "navigation",
+      "bar": 1,
+      "offset_bytes": 1652,
+      "offset_hex": "0x674",
+      "name": "NAV_CONTROL",
+      "width_bits": 32,
+      "access": "RW with different read/write semantics",
+      "description_zh": "见navigation.registers中的逐位定义"
+    },
+    {
+      "group": "navigation",
+      "bar": 1,
+      "offset_bytes": 1656,
+      "offset_hex": "0x678",
+      "name": "NAV_STATUS",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "见navigation.registers中的逐位定义"
+    },
+    {
+      "group": "navigation",
+      "bar": 1,
+      "offset_bytes": 1660,
+      "offset_hex": "0x67c",
+      "name": "NAV_ACTIVE",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "same as NAV_SHADOW; returned from actual overlay frame latch; meaningful with applied_valid"
+    },
+    {
+      "group": "hsst",
+      "bar": 1,
+      "offset_bytes": 1664,
+      "offset_hex": "0x680",
+      "name": "SEQUENCE",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "HSST发布序号，32位"
+    },
+    {
+      "group": "hsst",
+      "bar": 1,
+      "offset_bytes": 1668,
+      "offset_hex": "0x684",
+      "name": "PAYLOAD",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "规范化payload；整包无效时为0"
+    },
+    {
+      "group": "hsst",
+      "bar": 1,
+      "offset_bytes": 1672,
+      "offset_hex": "0x688",
+      "name": "STATUS",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "bit0 valid；bit1 stale"
+    },
+    {
+      "group": "hsst",
+      "bar": 1,
+      "offset_bytes": 1676,
+      "offset_hex": "0x68c",
+      "name": "PROTOCOL_ID",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "0x4c4d0001；首个系统状态mailbox到达前可为0"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1792,
+      "offset_hex": "0x700",
+      "name": "MAGIC",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "图像控制接口magic",
+      "reset_hex": "0x31435049"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1796,
+      "offset_hex": "0x704",
+      "name": "VERSION",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "图像控制CSR版本",
+      "reset_hex": "0x00000001"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1800,
+      "offset_hex": "0x708",
+      "name": "CAPABILITIES",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "当前返回0x0000000f；现有代码没有定义各bit独立含义",
+      "reset_hex": "0x0000000f"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1804,
+      "offset_hex": "0x70c",
+      "name": "ISP_GLOBAL_SHADOW",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "低8位保存global；bit0总开关，bit[4:1]分区使能",
+      "reset_hex": "0x0000001e"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1808,
+      "offset_hex": "0x710",
+      "name": "ISP_TILE0_SHADOW_DW0",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile0配置位[31:0]",
+      "reset_hex": "0x40000000"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1812,
+      "offset_hex": "0x714",
+      "name": "ISP_TILE0_SHADOW_DW1",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile0配置位[63:32]",
+      "reset_hex": "0x21840410"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1816,
+      "offset_hex": "0x718",
+      "name": "ISP_TILE0_SHADOW_DW2",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile0配置位[95:64]",
+      "reset_hex": "0x00000001"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1820,
+      "offset_hex": "0x71c",
+      "name": "ISP_TILE0_SHADOW_DW3",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile0配置位[127:96]",
+      "reset_hex": "0x00401004"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1824,
+      "offset_hex": "0x720",
+      "name": "ISP_TILE1_SHADOW_DW0",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile1配置位[31:0]",
+      "reset_hex": "0x40000000"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1828,
+      "offset_hex": "0x724",
+      "name": "ISP_TILE1_SHADOW_DW1",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile1配置位[63:32]",
+      "reset_hex": "0x21840410"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1832,
+      "offset_hex": "0x728",
+      "name": "ISP_TILE1_SHADOW_DW2",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile1配置位[95:64]",
+      "reset_hex": "0x00000001"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1836,
+      "offset_hex": "0x72c",
+      "name": "ISP_TILE1_SHADOW_DW3",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile1配置位[127:96]",
+      "reset_hex": "0x00401004"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1840,
+      "offset_hex": "0x730",
+      "name": "ISP_TILE2_SHADOW_DW0",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile2配置位[31:0]",
+      "reset_hex": "0x40000000"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1844,
+      "offset_hex": "0x734",
+      "name": "ISP_TILE2_SHADOW_DW1",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile2配置位[63:32]",
+      "reset_hex": "0x21840410"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1848,
+      "offset_hex": "0x738",
+      "name": "ISP_TILE2_SHADOW_DW2",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile2配置位[95:64]",
+      "reset_hex": "0x00000001"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1852,
+      "offset_hex": "0x73c",
+      "name": "ISP_TILE2_SHADOW_DW3",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile2配置位[127:96]",
+      "reset_hex": "0x00401004"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1856,
+      "offset_hex": "0x740",
+      "name": "ISP_TILE3_SHADOW_DW0",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile3配置位[31:0]",
+      "reset_hex": "0x40000000"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1860,
+      "offset_hex": "0x744",
+      "name": "ISP_TILE3_SHADOW_DW1",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile3配置位[63:32]",
+      "reset_hex": "0x21840410"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1864,
+      "offset_hex": "0x748",
+      "name": "ISP_TILE3_SHADOW_DW2",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile3配置位[95:64]",
+      "reset_hex": "0x00000001"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1868,
+      "offset_hex": "0x74c",
+      "name": "ISP_TILE3_SHADOW_DW3",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "tile3配置位[127:96]",
+      "reset_hex": "0x00401004"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1872,
+      "offset_hex": "0x750",
+      "name": "ISP_COMMIT",
+      "width_bits": 32,
+      "access": "WO_READ_ZERO",
+      "description_zh": "sequence[31:16]，opcode[1:0]；bit[15:2]写0",
+      "reset_hex": "0x00000000"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1876,
+      "offset_hex": "0x754",
+      "name": "ISP_STATUS",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "ISP事务busy/done/error/last_error/sequence",
+      "reset_hex": "0x00000000"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1880,
+      "offset_hex": "0x758",
+      "name": "ISP_RESULT",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "ISP上次完成快照的epoch与source",
+      "reset_hex": "0x00000000"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1884,
+      "offset_hex": "0x75c",
+      "name": "ISP_CLEAR",
+      "width_bits": 32,
+      "access": "W1_ACTION_READ_ZERO",
+      "description_zh": "bit0写1清done/error/last_error；不取消在途命令",
+      "reset_hex": "0x00000000"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1888,
+      "offset_hex": "0x760",
+      "name": "ALGO_SHADOW_LO",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "ALGO配置[31:0]",
+      "reset_hex": "0xdc010080"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1892,
+      "offset_hex": "0x764",
+      "name": "ALGO_SHADOW_HI",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "ALGO配置[63:32]",
+      "reset_hex": "0x000fe619"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1896,
+      "offset_hex": "0x768",
+      "name": "ALGO_COMMIT",
+      "width_bits": 32,
+      "access": "WO_READ_ZERO",
+      "description_zh": "格式同ISP_COMMIT",
+      "reset_hex": "0x00000000"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1900,
+      "offset_hex": "0x76c",
+      "name": "ALGO_STATUS",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "格式同ISP_STATUS",
+      "reset_hex": "0x00000000"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1904,
+      "offset_hex": "0x770",
+      "name": "ALGO_RESULT",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "格式同ISP_RESULT",
+      "reset_hex": "0x00000000"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1908,
+      "offset_hex": "0x774",
+      "name": "ALGO_CLEAR",
+      "width_bits": 32,
+      "access": "W1_ACTION_READ_ZERO",
+      "description_zh": "格式同ISP_CLEAR",
+      "reset_hex": "0x00000000"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1920,
+      "offset_hex": "0x780",
+      "name": "ISP_SNAPSHOT_INDEX",
+      "width_bits": 32,
+      "access": "RW",
+      "description_zh": "0..15=tile*4+DWORD；16=global",
+      "reset_hex": "0x00000000"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1924,
+      "offset_hex": "0x784",
+      "name": "ISP_SNAPSHOT_DATA",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "所选ISP完成快照DWORD；默认index=0",
+      "reset_hex": "0x40000000"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1928,
+      "offset_hex": "0x788",
+      "name": "ALGO_SNAPSHOT_LO",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "ALGO完成快照[31:0]",
+      "reset_hex": "0xdc010080"
+    },
+    {
+      "group": "image",
+      "bar": 1,
+      "offset_bytes": 1932,
+      "offset_hex": "0x78c",
+      "name": "ALGO_SNAPSHOT_HI",
+      "width_bits": 32,
+      "access": "RO",
+      "description_zh": "ALGO完成快照[63:32]",
+      "reset_hex": "0x000fe619"
+    }
+  ],
+  "hud_basic": {
+    "magic_hex": "0x31445548",
+    "version_hex": "0x00010000",
+    "caps_hex": "0x000001ff",
+    "request_fields": [
+      {
+        "name": "hud_enable",
+        "lsb": 0,
+        "width_bits": 1,
+        "description_zh": "HUD总显示使能"
+      },
+      {
+        "name": "left",
+        "lsb": 1,
+        "width_bits": 1,
+        "description_zh": "左转"
+      },
+      {
+        "name": "right",
+        "lsb": 2,
+        "width_bits": 1,
+        "description_zh": "右转"
+      },
+      {
+        "name": "hazard",
+        "lsb": 3,
+        "width_bits": 1,
+        "description_zh": "双闪"
+      },
+      {
+        "name": "low_beam",
+        "lsb": 4,
+        "width_bits": 1,
+        "description_zh": "近光"
+      },
+      {
+        "name": "high_beam",
+        "lsb": 5,
+        "width_bits": 1,
+        "description_zh": "远光"
+      },
+      {
+        "name": "front_fog",
+        "lsb": 6,
+        "width_bits": 1,
+        "description_zh": "前雾灯"
+      },
+      {
+        "name": "position",
+        "lsb": 7,
+        "width_bits": 1,
+        "description_zh": "示廓灯"
+      },
+      {
+        "name": "adas",
+        "lsb": 8,
+        "width_bits": 1,
+        "description_zh": "ADAS显示"
+      },
+      {
+        "name": "left_blink",
+        "lsb": 9,
+        "width_bits": 1,
+        "description_zh": "左转闪烁，要求left=1"
+      },
+      {
+        "name": "right_blink",
+        "lsb": 10,
+        "width_bits": 1,
+        "description_zh": "右转闪烁，要求right=1"
+      },
+      {
+        "name": "hazard_blink",
+        "lsb": 11,
+        "width_bits": 1,
+        "description_zh": "双闪闪烁，要求hazard=1"
+      },
+      {
+        "name": "takeover",
+        "lsb": 12,
+        "width_bits": 1,
+        "description_zh": "1使用RK字段；0退回默认且低12位必须0"
+      },
+      {
+        "name": "reserved",
+        "lsb": 13,
+        "width_bits": 3,
+        "description_zh": "写0"
+      },
+      {
+        "name": "sequence",
+        "lsb": 16,
+        "width_bits": 16,
+        "description_zh": "1..65535；与最近接受序号不同才是新请求"
+      }
+    ],
+    "status_fields": [
+      "bit0 busy",
+      "bit1 last-applied RK takeover",
+      "bit2 dehaze override",
+      "bit3 accepted_valid",
+      "bit4 applied_valid",
+      "bit5 rejected_sequence_valid",
+      "bit6 effective_state_valid",
+      "bit7 ready",
+      "31:8 zero"
+    ],
+    "effective_fields": [
+      {
+        "name": "hud_enable",
+        "lsb": 0,
+        "width_bits": 1,
+        "description_zh": "HUD总显示使能"
+      },
+      {
+        "name": "left",
+        "lsb": 1,
+        "width_bits": 1,
+        "description_zh": "左转"
+      },
+      {
+        "name": "right",
+        "lsb": 2,
+        "width_bits": 1,
+        "description_zh": "右转"
+      },
+      {
+        "name": "hazard",
+        "lsb": 3,
+        "width_bits": 1,
+        "description_zh": "双闪"
+      },
+      {
+        "name": "low_beam",
+        "lsb": 4,
+        "width_bits": 1,
+        "description_zh": "近光"
+      },
+      {
+        "name": "high_beam",
+        "lsb": 5,
+        "width_bits": 1,
+        "description_zh": "远光"
+      },
+      {
+        "name": "front_fog",
+        "lsb": 6,
+        "width_bits": 1,
+        "description_zh": "前雾灯"
+      },
+      {
+        "name": "position",
+        "lsb": 7,
+        "width_bits": 1,
+        "description_zh": "示廓灯"
+      },
+      {
+        "name": "adas",
+        "lsb": 8,
+        "width_bits": 1,
+        "description_zh": "ADAS显示"
+      }
+    ],
+    "default_effective_hex": "0x101",
+    "sequence": {
+      "position": "31:16",
+      "minimum": 1,
+      "maximum": 65535,
+      "duplicate_same_payload": "幂等，不重新接受、不重新提交",
+      "duplicate_different_payload": "error=6",
+      "wrap": "65535后用1，并与当前accepted不同"
+    },
+    "completion": "busy=0 && applied_valid && APPLIED_SEQ==seq；LAST_ACCEPTED_REQUEST和ACCEPTED_SEQ用于确认接收，EFFECTIVE_STATE确认覆盖后的实际灯光",
+    "errors": {
+      "1": "busy",
+      "2": "partial/unaligned access",
+      "3": "reserved bits nonzero",
+      "4": "takeover/blink fields inconsistent",
+      "5": "sequence zero",
+      "6": "same sequence different payload",
+      "7": "write unsupported/read-only address",
+      "8": "control domain not ready"
+    },
+    "historical_error": "错误及拒绝计数不被成功命令清除；记提交前REJECT_COUNT并比较增量，不把旧LAST_ERROR当成本次失败",
+    "blink": "帧计数20亮20灭，60Hz时周期约0.667秒；双闪优先于RK左右独立请求",
+    "priority_high_to_low": [
+      "Ethernet用户方向动作窗口",
+      "去雾路灯策略",
+      "RK基本HUD请求/默认"
+    ],
+    "override_scope": "高优先级可强制HUD开启并接管左右/双闪；去雾还接管雾灯和示廓，近远光/ADAS保留RK或默认字段。bit2仅表示去雾，不表示用户动作覆盖。",
+    "link_down": "RK基本请求会话复位，回默认；HSST独立车道显示继续"
+  },
+  "scene": {
+    "shadow_fields": [
+      {
+        "name": "valid",
+        "lsb": 0,
+        "width_bits": 1,
+        "description_zh": "1刷新场景；0立即清除所有正检测保持"
+      },
+      {
+        "name": "traffic",
+        "lsb": 1,
+        "width_bits": 2,
+        "description_zh": "0未知/本次无检测，1红，2绿，3不支持"
+      },
+      {
+        "name": "person",
+        "lsb": 3,
+        "width_bits": 1,
+        "description_zh": "人正检测"
+      },
+      {
+        "name": "obstacle",
+        "lsb": 4,
+        "width_bits": 1,
+        "description_zh": "障碍正检测"
+      },
+      {
+        "name": "speed_limit",
+        "lsb": 5,
+        "width_bits": 1,
+        "description_zh": "限速提示正检测"
+      },
+      {
+        "name": "left_lane",
+        "lsb": 6,
+        "width_bits": 2,
+        "description_zh": "最近左边界：0未知/本次无检测，1实线，2虚线，3不支持"
+      },
+      {
+        "name": "right_lane",
+        "lsb": 8,
+        "width_bits": 2,
+        "description_zh": "最近右边界：0未知/本次无检测，1实线，2虚线，3不支持"
+      },
+      {
+        "name": "warning",
+        "lsb": 10,
+        "width_bits": 1,
+        "description_zh": "场景告警提示；不是动作reason=8的刹车警告"
+      },
+      {
+        "name": "show_time",
+        "lsb": 11,
+        "width_bits": 1,
+        "description_zh": "日期时间显示"
+      },
+      {
+        "name": "reserved",
+        "lsb": 12,
+        "width_bits": 20,
+        "description_zh": "当前未消费，推荐0；RTL不拒绝这些位"
+      }
+    ],
+    "commit": {
+      "sequence_position": "15:0",
+      "minimum": 1,
+      "maximum": 65535,
+      "upper16": "ignored; write zero",
+      "duplicate_policy": "无去重；重复seq/同payload也产生事件并刷新正检测计时；建议每次换序号便于回读核对"
+    },
+    "shadow_only_no_effect": true,
+    "time": {
+      "time0": "0xMMDDYYYY packed BCD",
+      "time1": "0x00SSMMHH packed BCD",
+      "validation": "RTL不做日期/BCD范围校验",
+      "tick": "不自动计时；RK需更新"
+    },
+    "positive_hold": {
+      "nominal_ms": 500,
+      "rtl_threshold_ms": 501,
+      "source_clock_hz": 27000000,
+      "retrigger": "各正检测独立；正值重计时，0/未知不立即清除旧正检测",
+      "red_green": "新的有效红/绿立即替换旧交通灯并重计时，不能叠亮",
+      "lane": "新的有效实/虚线立即替换相应RK线型并重计时",
+      "clear_all": "valid=0的COMMIT清除所有保持，不是只把当前包设为无效",
+      "delivery": "通过CDC和下一HUD帧后可见；不是精确主机时间500ms"
+    },
+    "status_fields": [
+      "bit0 zero",
+      "bit1 scene_ready",
+      "bit2 scene_ready（同bit1）",
+      "bit3 RK scene_stale",
+      "bit4 scene_error",
+      "bit5 PCIe link down（掉链时MMIO一般不可读）",
+      "bit6 HSST owns lanes",
+      "bit7 zero",
+      "15:8 error code",
+      "31:16 latest received scene seq"
+    ],
+    "status_error": "低16 COMMIT seq=0令error_code=1；下次合法scene事件清除该错误",
+    "completion": "0x644先确认接收seq；0x658确认perception已消费seq；0x64c确认真实overlay场景序号。",
+    "display_coalescing": "latest-pending合并：高速更新可跳过中间显示序号，保持计时仍按每次接收事件刷新。逐条显示核对时串行提交并等待0x64c。",
+    "diagnostic_limit": "0x64c只回序号，不回全部场景图形；HSST会覆盖车道字段，不能用APPLIED_SEQ证明RK车道拥有显示。",
+    "send_rate_recommendation": "正常识别10..30Hz；至少在501ms窗口内刷新需要保持的正检测。不是强制协议频率。"
+  },
+  "behavior": {
+    "pcie_action_write_supported": false,
+    "action_source": "当前动作输入来自Ethernet行为mailbox，PCIe仅提供场景/灯光/导航并读取结果",
+    "action_types": {
+      "1": "throttle",
+      "2": "brake",
+      "3": "left_lane_change",
+      "4": "right_lane_change"
+    },
+    "timing": {
+      "nominal_ms": 1000,
+      "rtl_threshold_ms": 1001,
+      "new_action": "最新动作替换旧动作；同动作重复事件重计时",
+      "evaluation": "窗口内按实时保持场景和实时车道来源持续判断，变化不重启动作计时；窗口外恢复默认图标，序号高位可能非零"
+    },
+    "result_fields": [
+      {
+        "name": "throttle_allow",
+        "lsb": 0,
+        "width_bits": 1,
+        "description_zh": "油门动作窗口内的允许标志；fresh RK场景为绿灯时置1"
+      },
+      {
+        "name": "brake_allow",
+        "lsb": 1,
+        "width_bits": 1,
+        "description_zh": "刹车动作窗口内置1；reason=8时表示黄色警告，仍允许刹车"
+      },
+      {
+        "name": "left_allow",
+        "lsb": 2,
+        "width_bits": 1,
+        "description_zh": "左变道动作窗口内，选定来源的左边界为虚线时置1"
+      },
+      {
+        "name": "right_allow",
+        "lsb": 3,
+        "width_bits": 1,
+        "description_zh": "右变道动作窗口内，选定来源的右边界为虚线时置1"
+      },
+      {
+        "name": "throttle_forbid",
+        "lsb": 4,
+        "width_bits": 1,
+        "description_zh": "油门动作窗口内缺少绿灯允许依据时置1"
+      },
+      {
+        "name": "brake_forbid",
+        "lsb": 5,
+        "width_bits": 1,
+        "description_zh": "本版恒0；刹车警告通过reason=8表达"
+      },
+      {
+        "name": "left_forbid",
+        "lsb": 6,
+        "width_bits": 1,
+        "description_zh": "左变道动作窗口内，左边界为实线、未知或无新鲜来源时置1"
+      },
+      {
+        "name": "right_forbid",
+        "lsb": 7,
+        "width_bits": 1,
+        "description_zh": "右变道动作窗口内，右边界为实线、未知或无新鲜来源时置1"
+      },
+      {
+        "name": "reason",
+        "lsb": 8,
+        "width_bits": 6,
+        "description_zh": "0正常；1红灯；2左实线；3右实线；6缺少允许依据；8刹车警告"
+      },
+      {
+        "name": "action_active",
+        "lsb": 14,
+        "width_bits": 1,
+        "description_zh": "动作窗口有效；为0时不得仅凭高位序号判断仍在动作"
+      },
+      {
+        "name": "stale",
+        "lsb": 15,
+        "width_bits": 1,
+        "description_zh": "油门缺新鲜场景/左右缺新鲜车道来源；新鲜但未知可为0"
+      },
+      {
+        "name": "action_sequence_low8",
+        "lsb": 16,
+        "width_bits": 8,
+        "description_zh": "以太网动作序号低8位，结束后可保留"
+      },
+      {
+        "name": "scene_sequence_low8",
+        "lsb": 24,
+        "width_bits": 8,
+        "description_zh": "RK场景序号低8位，结束后可保留"
+      }
+    ],
+    "decisions": [
+      {
+        "action": "throttle",
+        "condition": "RK场景新鲜且traffic=green",
+        "result": "allow",
+        "note": "本版油门分支不把person/obstacle/speed独立作为否决条件，不可在RK文档中擅自追加"
+      },
+      {
+        "action": "throttle",
+        "condition": "red",
+        "result": "forbid reason=1"
+      },
+      {
+        "action": "throttle",
+        "condition": "unknown/stale",
+        "result": "forbid reason=6"
+      },
+      {
+        "action": "brake",
+        "condition": "RK场景新鲜、green且person/obstacle/speed三个保持位均0",
+        "result": "brake_allow=1, reason=8，HUD黄色警告"
+      },
+      {
+        "action": "brake",
+        "condition": "其他情况",
+        "result": "brake_allow=1, reason=0"
+      },
+      {
+        "action": "left/right",
+        "condition": "选定最近边界为虚线",
+        "result": "allow"
+      },
+      {
+        "action": "left/right",
+        "condition": "选定最近边界为实线",
+        "result": "forbid reason=2/3"
+      },
+      {
+        "action": "left/right",
+        "condition": "未知/无新鲜来源",
+        "result": "forbid reason=6"
+      }
+    ],
+    "cross_domain_limit": "CSR是PCIe域结果；HUD像素域独立接收HSST并在同帧重算左右结果，软件两次采样可存在CDC/帧级差异"
+  },
+  "navigation": {
+    "capability": {
+      "offset": "0x630",
+      "mask": "0x00000100",
+      "meaning": "HUD_CAP_NAV; read only"
+    },
+    "registers": [
+      {
+        "offset": "0x670",
+        "name": "NAV_SHADOW",
+        "access": "RW",
+        "bits": {
+          "0": "enable",
+          "2:1": "0=straight, 1=left, 2=right, 3=invalid",
+          "15:3": "reserved; write zero",
+          "31:16": "unsigned distance_m, 0..65535"
+        }
+      },
+      {
+        "offset": "0x674",
+        "name": "NAV_CONTROL",
+        "access": "RW with different read/write semantics",
+        "write_bits": {
+          "31:16": "user sequence 0..65535",
+          "15:0": "1=APPLY; 2=CLEAR_ERRORS"
+        },
+        "read_bits": {
+          "31:16": "accepted_seq",
+          "15:0": "applied_seq"
+        }
+      },
+      {
+        "offset": "0x678",
+        "name": "NAV_STATUS",
+        "access": "RO",
+        "bits": {
+          "0": "busy: includes BCD conversion, CDC and actual overlay frame latch",
+          "1": "applied_valid: latest returned frame snapshot valid; not necessarily latest accepted command",
+          "2": "active_enable: NAV_ACTIVE bit0",
+          "3": "ready: pixel control/link reset released and request mailbox ready",
+          "4": "accepted_valid",
+          "5": "sticky_error",
+          "7:6": "zero",
+          "15:8": "last_error",
+          "31:16": "reject_count modulo 65536"
+        }
+      },
+      {
+        "offset": "0x67c",
+        "name": "NAV_ACTIVE",
+        "access": "RO",
+        "format": "same as NAV_SHADOW; returned from actual overlay frame latch; meaningful with applied_valid"
+      }
+    ],
+    "errors": {
+      "0": "none",
+      "1": "busy",
+      "2": "partial/unaligned DWORD access",
+      "3": "unknown opcode",
+      "4": "reserved fields/direction invalid",
+      "6": "same accepted sequence with different shadow payload",
+      "7": "write to read-only/unknown navigation address",
+      "8": "pixel/link domain not ready"
+    },
+    "transaction": [
+      "Read HUD_CAP_NAV and wait for NAV_STATUS.busy=0 and ready=1.",
+      "Choose sequence=(accepted_seq+1)&0xffff, including zero; serialize cooperating clients with flock.",
+      "Write NAV_CONTROL=2 to clear sticky errors only; this does not cancel a pending command.",
+      "Write all 32 bits of NAV_SHADOW.",
+      "Write NAV_CONTROL=(sequence<<16)|1. No TTL or mandatory heartbeat.",
+      "Poll bounded by a host timeout. Completion requires busy=0, applied_valid=1, accepted_seq==sequence, applied_seq==sequence, NAV_ACTIVE==requested shadow and no sticky error.",
+      "On timeout report result unconfirmed; do not automatically replay or claim the FPGA canceled it. After link reconnect submit a fresh command."
+    ],
+    "behavior": {
+      "power_on": "off",
+      "hold": "retain until explicit next APPLY/disable; no 0.5s or 1s action timer",
+      "link_down": "hide at next available HUD frame boundary; reconnect does not restore old navigation",
+      "global_hud_off": "navigation hidden with HUD; config can still be frame-latched",
+      "pcie_capture": "unchanged; captured frames omit HUD/navigation",
+      "independence": "does not trigger turn lights, behavior decisions, lane change or Ethernet/PCIe ISP priority",
+      "distance_zero": "valid; displays 0m; leading zero digits blank",
+      "diagnostic_quad_bypass": "C_HDMI_QUAD_OUTPUT=1是编译参数，直接原始四宫格，旁路算法和HUD；不要等同运行时算法输出模式。",
+      "dynamic_hud": "本版离线也保留动态HUD布局和独立HSST车道；导航仍依赖PCIe控制会话，掉链隐藏。"
+    },
+    "examples": [
+      {
+        "json": {
+          "command": "navigation",
+          "enabled": true,
+          "direction": "left",
+          "distance_m": 120
+        },
+        "shadow": "0x00780003",
+        "sequence": 1,
+        "control": "0x00010001",
+        "cli": "./ispctl nav left 120"
+      },
+      {
+        "json": {
+          "command": "navigation",
+          "enabled": true,
+          "direction": "right",
+          "distance_m": 65535
+        },
+        "shadow": "0xffff0005",
+        "cli": "./ispctl nav right 65535"
+      },
+      {
+        "json": {
+          "command": "navigation",
+          "enabled": true,
+          "direction": "straight",
+          "distance_m": 0
+        },
+        "shadow": "0x00000001",
+        "cli": "./ispctl nav straight 0"
+      },
+      {
+        "json": {
+          "command": "navigation",
+          "enabled": false
+        },
+        "shadow": "0x00000000",
+        "cli": "./ispctl nav off"
+      }
+    ],
+    "json_note": "JSON is interpreted by RK software into MMIO transactions; FPGA does not parse JSON. No hash field required."
+  },
+  "hsst_lane": {
+    "rk_control": "RK可写SCENE中的两侧线型，但新鲜HSST整包优先；数量仅由HSST提供诊断",
+    "priority_high_to_low": [
+      "fresh HSST entire packet",
+      "fresh RK scene",
+      "unknown"
+    ],
+    "unknown_owner": "新鲜HSST的未知/无效/有效零条也覆盖RK；只有整包过期/掉链才回退RK，不逐侧填补",
+    "ttl_ms": 500,
+    "independent_of_pcie_for_display": true,
+    "payload_fields": [
+      {
+        "name": "left_count",
+        "lsb": 0,
+        "width_bits": 8,
+        "description_zh": "左边界线数量，0..255，不是车道数"
+      },
+      {
+        "name": "right_count",
+        "lsb": 8,
+        "width_bits": 8,
+        "description_zh": "右边界线数量"
+      },
+      {
+        "name": "left_type",
+        "lsb": 16,
+        "width_bits": 2,
+        "description_zh": "0未知1实线2虚线3保留"
+      },
+      {
+        "name": "right_type",
+        "lsb": 18,
+        "width_bits": 2,
+        "description_zh": "同左"
+      },
+      {
+        "name": "left_count_valid",
+        "lsb": 20,
+        "width_bits": 1,
+        "description_zh": "左数量有效"
+      },
+      {
+        "name": "right_count_valid",
+        "lsb": 21,
+        "width_bits": 1,
+        "description_zh": "右数量有效"
+      },
+      {
+        "name": "left_type_valid",
+        "lsb": 22,
+        "width_bits": 1,
+        "description_zh": "左类型有效"
+      },
+      {
+        "name": "right_type_valid",
+        "lsb": 23,
+        "width_bits": 1,
+        "description_zh": "右类型有效"
+      },
+      {
+        "name": "reserved",
+        "lsb": 24,
+        "width_bits": 8,
+        "description_zh": "0"
+      }
+    ],
+    "protocol_id_hex": "0x4c4d0001",
+    "sample_payload_hex": "0x00f90102",
+    "sample_sequence": 42,
+    "read_consistency": "可读前后seq/status检测变化，但同序号包允许更新，不能证明4次MMIO原子快照；严格采样需上层软件策略或将来新增原子快照机制",
+    "source_handoff": "audit/hsst_protocol_handoff_20261024/HSST_TX发送端开发交接.md"
+  },
+  "image_control": {
+    "identity": {
+      "magic_hex": "0x31435049",
+      "version": 1,
+      "capabilities_hex": "0x0000000f",
+      "capability_bits": "目前未逐位定义，不臆测独立含义"
+    },
+    "status_layout": {
+      "busy": {
+        "lsb": 0,
+        "width_bits": 1,
+        "mask_hex": "0x00000001"
+      },
+      "done": {
+        "lsb": 1,
+        "width_bits": 1,
+        "mask_hex": "0x00000002"
+      },
+      "error": {
+        "lsb": 2,
+        "width_bits": 1,
+        "mask_hex": "0x00000004"
+      },
+      "reserved_zero": {
+        "lsb": 3,
+        "width_bits": 5
+      },
+      "last_error": {
+        "lsb": 8,
+        "width_bits": 8,
+        "mask_hex": "0x0000ff00"
+      },
+      "sequence": {
+        "lsb": 16,
+        "width_bits": 16,
+        "mask_hex": "0xffff0000"
+      },
+      "completion_success_expression": "(status & 1) == 0 && (status & 2) != 0 && (status >> 16) == expected_seq && (status & 4) == 0",
+      "note_zh": "sequence不是去重ID，不保证单调永久递增；16位回绕，重复sequence也会执行。客户端选择(last_sequence+1)&0xffff。"
+    },
+    "result_layout": {
+      "epoch": {
+        "lsb": 0,
+        "width_bits": 16
+      },
+      "source": {
+        "lsb": 16,
+        "width_bits": 2,
+        "values": {
+          "0": "reset_default",
+          "1": "Ethernet",
+          "2": "PCIe"
+        }
+      },
+      "reserved_zero": {
+        "lsb": 18,
+        "width_bits": 14
+      },
+      "epoch_rule_zh": "完整配置内容实际变化的APPLY才使对应通道epoch加1，16位回绕；QUERY不改变epoch。ISP这里是raw config epoch，不是内部每分区effective epoch。",
+      "source_rule_zh": "表示上次APPLY来源；QUERY本身不会把source改成PCIe。同值PCIe APPLY仍返回DONE并把source设2，但epoch不变。"
+    },
+    "error_codes": [
+      {
+        "code": 0,
+        "name": "OK",
+        "new_done": true,
+        "description_zh": "owner成功完成；历史sticky error仍需CLEAR"
+      },
+      {
+        "code": 1,
+        "name": "INVALID_WRITE",
+        "new_done": false,
+        "description_zh": "CSR写格式/地址/index非法；驱动已拦截的未对齐访问直接返回EINVAL，不到达RTL"
+      },
+      {
+        "code": 2,
+        "name": "INVALID_CONFIG",
+        "new_done": true,
+        "description_zh": "owner校验APPLY参数失败，busy清、done和error置1，活动配置不改变"
+      },
+      {
+        "code": 3,
+        "name": "BUSY_COMMIT",
+        "new_done": false,
+        "description_zh": "对应通道busy时提交新合法COMMIT；旧事务继续"
+      },
+      {
+        "code": 4,
+        "name": "INVALID_COMMAND",
+        "new_done": false,
+        "description_zh": "COMMIT opcode非法或bit[15:2]非零"
+      }
+    ],
+    "commands": {
+      "apply": 1,
+      "query": 2,
+      "packing": "(seq<<16)|opcode; bits15:2=0",
+      "sequence": "16位，可0可回绕；不去重，同seq可重复执行"
+    },
+    "isp_configuration": {
+      "total_width_bits": 520,
+      "packing": "{global[7:0], tile3[127:0], tile2[127:0], tile1[127:0], tile0[127:0]}",
+      "global": {
+        "master_bit": 0,
+        "tile_mask_lsb": 1,
+        "tile_mask_width": 4,
+        "reserved_zero_bits": "7:5",
+        "reset_hex": "0x1e",
+        "reset_master_enabled": false,
+        "reset_tile_mask_hex": "0xf"
+      },
+      "tile_ids": [
+        {
+          "id": 0,
+          "position": "top_left",
+          "label_zh": "左上"
+        },
+        {
+          "id": 1,
+          "position": "top_right",
+          "label_zh": "右上"
+        },
+        {
+          "id": 2,
+          "position": "bottom_left",
+          "label_zh": "左下"
+        },
+        {
+          "id": 3,
+          "position": "bottom_right",
+          "label_zh": "右下"
+        }
+      ],
+      "tile_id_note_zh": "指当前四宫格位置，不应固定解释为某个摄像头/视频源；源分配可由其他控制逻辑改变。",
+      "tile_fields": [
+        {
+          "name": "gain_enable",
+          "lsb": 120,
+          "msb": 120,
+          "width_bits": 1,
+          "minimum": 0,
+          "maximum": 1,
+          "reset_value": 0,
+          "description_zh": "RGB增益/偏移开关"
+        },
+        {
+          "name": "denoise_enable",
+          "lsb": 121,
+          "msb": 121,
+          "width_bits": 1,
+          "minimum": 0,
+          "maximum": 1,
+          "reset_value": 0,
+          "description_zh": "空间去噪开关"
+        },
+        {
+          "name": "median_enable",
+          "lsb": 122,
+          "msb": 122,
+          "width_bits": 1,
+          "minimum": 0,
+          "maximum": 1,
+          "reset_value": 0,
+          "description_zh": "ISP中值处理开关"
+        },
+        {
+          "name": "sharpen_enable",
+          "lsb": 123,
+          "msb": 123,
+          "width_bits": 1,
+          "minimum": 0,
+          "maximum": 1,
+          "reset_value": 0,
+          "description_zh": "锐化开关"
+        },
+        {
+          "name": "tone_enable",
+          "lsb": 124,
+          "msb": 124,
+          "width_bits": 1,
+          "minimum": 0,
+          "maximum": 1,
+          "reset_value": 0,
+          "description_zh": "tone LUT开关"
+        },
+        {
+          "name": "saturation_enable",
+          "lsb": 125,
+          "msb": 125,
+          "width_bits": 1,
+          "minimum": 0,
+          "maximum": 1,
+          "reset_value": 0,
+          "description_zh": "饱和度处理开关"
+        },
+        {
+          "name": "gain_r",
+          "lsb": 110,
+          "msb": 119,
+          "width_bits": 10,
+          "minimum": 0,
+          "maximum": 1023,
+          "reset_value": 256,
+          "description_zh": "R增益，数值256表示1倍",
+          "fractional_bits": 8
+        },
+        {
+          "name": "gain_g",
+          "lsb": 100,
+          "msb": 109,
+          "width_bits": 10,
+          "minimum": 0,
+          "maximum": 1023,
+          "reset_value": 256,
+          "description_zh": "G增益，数值256表示1倍",
+          "fractional_bits": 8
+        },
+        {
+          "name": "gain_b",
+          "lsb": 90,
+          "msb": 99,
+          "width_bits": 10,
+          "minimum": 0,
+          "maximum": 1023,
+          "reset_value": 256,
+          "description_zh": "B增益，数值256表示1倍",
+          "fractional_bits": 8
+        },
+        {
+          "name": "offset_r",
+          "lsb": 82,
+          "msb": 89,
+          "width_bits": 8,
+          "minimum": -128,
+          "maximum": 127,
+          "reset_value": 0,
+          "description_zh": "R偏移，8位补码",
+          "signed": true
+        },
+        {
+          "name": "offset_g",
+          "lsb": 74,
+          "msb": 81,
+          "width_bits": 8,
+          "minimum": -128,
+          "maximum": 127,
+          "reset_value": 0,
+          "description_zh": "G偏移，8位补码",
+          "signed": true
+        },
+        {
+          "name": "offset_b",
+          "lsb": 66,
+          "msb": 73,
+          "width_bits": 8,
+          "minimum": -128,
+          "maximum": 127,
+          "reset_value": 0,
+          "description_zh": "B偏移，8位补码",
+          "signed": true
+        },
+        {
+          "name": "denoise_mode",
+          "lsb": 64,
+          "msb": 65,
+          "width_bits": 2,
+          "minimum": 0,
+          "maximum": 1,
+          "reset_value": 1,
+          "description_zh": "去噪模式0/1，1使用邻域亮度差阈值"
+        },
+        {
+          "name": "denoise_strength",
+          "lsb": 61,
+          "msb": 63,
+          "width_bits": 3,
+          "minimum": 0,
+          "maximum": 4,
+          "reset_value": 1,
+          "description_zh": "去噪强度等级"
+        },
+        {
+          "name": "denoise_threshold",
+          "lsb": 53,
+          "msb": 60,
+          "width_bits": 8,
+          "minimum": 0,
+          "maximum": 255,
+          "reset_value": 12,
+          "description_zh": "去噪亮度差阈值"
+        },
+        {
+          "name": "median_threshold",
+          "lsb": 45,
+          "msb": 52,
+          "width_bits": 8,
+          "minimum": 0,
+          "maximum": 255,
+          "reset_value": 32,
+          "description_zh": "ISP中值阈值"
+        },
+        {
+          "name": "sharpen_strength",
+          "lsb": 42,
+          "msb": 44,
+          "width_bits": 3,
+          "minimum": 0,
+          "maximum": 4,
+          "reset_value": 1,
+          "description_zh": "锐化强度等级"
+        },
+        {
+          "name": "sharpen_noise",
+          "lsb": 34,
+          "msb": 41,
+          "width_bits": 8,
+          "minimum": 0,
+          "maximum": 255,
+          "reset_value": 4,
+          "description_zh": "锐化噪声阈值"
+        },
+        {
+          "name": "sharpen_limit",
+          "lsb": 26,
+          "msb": 33,
+          "width_bits": 8,
+          "minimum": 0,
+          "maximum": 255,
+          "reset_value": 16,
+          "description_zh": "锐化增量限幅"
+        },
+        {
+          "name": "tone_profile",
+          "lsb": 23,
+          "msb": 25,
+          "width_bits": 3,
+          "minimum": 0,
+          "maximum": 3,
+          "reset_value": 0,
+          "description_zh": "当前固件允许的tone LUT编号0..3；不在此臆测曲线名称"
+        },
+        {
+          "name": "saturation_level",
+          "lsb": 20,
+          "msb": 22,
+          "width_bits": 3,
+          "minimum": 0,
+          "maximum": 4,
+          "reset_value": 0,
+          "description_zh": "饱和度等级；算法关闭时仍可保存参数"
+        }
+      ],
+      "tile_reserved_zero": [
+        {
+          "lsb": 126,
+          "width_bits": 2
+        },
+        {
+          "lsb": 0,
+          "width_bits": 20
+        }
+      ],
+      "tile_shadow_address_formula": "0x710 + tile_id * 0x10 + dword_index * 4",
+      "tile_reset_hex128_msb_first": "0x00401004000000012184041040000000",
+      "tile_reset_dwords_low_to_high": [
+        "0x40000000",
+        "0x21840410",
+        "0x00000001",
+        "0x00401004"
+      ],
+      "enable_expression": "global.master && global.tile_enable[tile] && tile.algorithm_enable",
+      "parameter_encoding": "signed offset写入前value&0xff；增益Q2.8，256=1倍；其他字段用表中整数编码，不自行换算bit位置。",
+      "snapshot_read_steps": [
+        "先完成ISP QUERY",
+        "对index=0..15：写0x780=index，再读0x784；tile=index/4，DWORD=index%4",
+        "写0x780=16，再读0x784低8位得到global",
+        "读0x758得到该完成快照的epoch/source"
+      ],
+      "shared_scope": "四宫格ISP→共享去雾→PCIe采集/HDMI算法分支。AVM/监控原始显示支路绕过本处理；不要把共享理解为所有HDMI模式。"
+    },
+    "algo_configuration": {
+      "total_width_bits": 64,
+      "packing_msb_to_lsb": [
+        "stage[7:0]",
+        "tiles[7:0]",
+        "W[7:0]",
+        "t_min[7:0]",
+        "A[7:0]",
+        "flags[7:0]",
+        "threshold[15:8]",
+        "threshold[7:0]"
+      ],
+      "fields": [
+        {
+          "name": "stage_mask",
+          "lsb": 56,
+          "msb": 63,
+          "width_bits": 8,
+          "minimum": 0,
+          "maximum": 15,
+          "reset_value": 0,
+          "description_zh": "bit0去雾/bit1高斯/bit2中值/bit3Sobel"
+        },
+        {
+          "name": "tile_mask",
+          "lsb": 48,
+          "msb": 55,
+          "width_bits": 8,
+          "minimum": 0,
+          "maximum": 15,
+          "reset_value": 15,
+          "description_zh": "bit0..3对应tile0..3"
+        },
+        {
+          "name": "w",
+          "lsb": 40,
+          "msb": 47,
+          "width_bits": 8,
+          "minimum": 0,
+          "maximum": 255,
+          "reset_value": 230,
+          "description_zh": "去雾W参数，使用当前RTL的8位编码"
+        },
+        {
+          "name": "t_min",
+          "lsb": 32,
+          "msb": 39,
+          "width_bits": 8,
+          "minimum": 1,
+          "maximum": 255,
+          "reset_value": 25,
+          "description_zh": "最小透射率参数，8位编码"
+        },
+        {
+          "name": "atmosphere_a",
+          "lsb": 24,
+          "msb": 31,
+          "width_bits": 8,
+          "minimum": 1,
+          "maximum": 250,
+          "reset_value": 220,
+          "description_zh": "固定大气光A参数"
+        },
+        {
+          "name": "flags",
+          "lsb": 16,
+          "msb": 23,
+          "width_bits": 8,
+          "minimum": 0,
+          "maximum": 1,
+          "reset_value": 1,
+          "description_zh": "仅bit0为autoA；bit[7:1]写0"
+        },
+        {
+          "name": "threshold",
+          "lsb": 0,
+          "msb": 15,
+          "width_bits": 16,
+          "minimum": 0,
+          "maximum": 1443,
+          "reset_value": 128,
+          "description_zh": "后级边缘检测阈值；输入0在APPLY时规范化成128",
+          "normalized_zero": 128
+        }
+      ],
+      "stage_bits": [
+        {
+          "bit_in_stage_byte": 0,
+          "bit_in_config64": 56,
+          "name": "dehaze",
+          "scope": "algorithm_quad_and_PCIe_capture"
+        },
+        {
+          "bit_in_stage_byte": 1,
+          "bit_in_config64": 57,
+          "name": "gaussian",
+          "scope": "HDMI_algorithm_tail_only"
+        },
+        {
+          "bit_in_stage_byte": 2,
+          "bit_in_config64": 58,
+          "name": "median",
+          "scope": "HDMI_algorithm_tail_only"
+        },
+        {
+          "bit_in_stage_byte": 3,
+          "bit_in_config64": 59,
+          "name": "sobel",
+          "scope": "HDMI_algorithm_tail_only"
+        }
+      ],
+      "reserved_zero": [
+        "63:60",
+        "55:52",
+        "23:17"
+      ],
+      "reset_hex64": "0x000fe619dc010080",
+      "reset_dwords_low_to_high": [
+        "0xdc010080",
+        "0x000fe619"
+      ],
+      "assemble_expression": "((uint64_t)hi << 32) | lo",
+      "dehaze_toggle_expression": "new_cfg = (old_cfg & ~(1ULL << 56)) | ((uint64_t)enable << 56)",
+      "dehaze_master_independent_of_isp_master": true,
+      "snapshot_read_steps": [
+        "先完成ALGO QUERY",
+        "读0x788=lo，读0x78c=hi",
+        "读0x770获取相同完成快照epoch/source"
+      ],
+      "note_zh": "修改单独算法使用读改写，不能为开去雾直接覆盖整个stage字节，否则会关闭其他stage。ISP中值与ALGO后级中值是两个独立位置。"
+    },
+    "transactions": {
+      "identity_check": {
+        "magic_hex": "0x31435049",
+        "version": 1,
+        "capabilities_mask_hex": "0x0000000f",
+        "capabilities_expected_hex": "0x0000000f"
+      },
+      "lock_scope": "整个QUERY/快照读取/RMW/shadow写入/APPLY/复查QUERY期间持有同设备flock；GUI用单个控制worker串行执行，DMA可并行。",
+      "default_poll_interval_ms": 1,
+      "default_timeout_ms": 3000,
+      "query": [
+        "等待对应通道busy=0并取得last_sequence",
+        "seq=(last_sequence+1)&0xffff",
+        "写对应CLEAR=1",
+        "写对应COMMIT=(seq<<16)|2",
+        "轮询status，检查error；非busy+done+seq匹配才读取完成快照"
+      ],
+      "modify": [
+        "完成QUERY并取完整配置",
+        "仅修改请求字段，其余字段保留；校验范围和保留位",
+        "等待通道空闲，ISP写global+16个tile DWORD；ALGO写低高2个DWORD",
+        "选择下一seq，CLEAR=1，COMMIT=(seq<<16)|1",
+        "轮询status及error，确认该seq最终DONE",
+        "再QUERY读取当前结果与来源；结果可能已被后来的Ethernet命令更新"
+      ],
+      "poll_error_handling": "错误码1/3/4不会为被拒绝事务产生新DONE，看到error应停止并报告，不能只等DONE直到超时；代码2以完成事务形式返回。保留完整status用于诊断。",
+      "snapshot_coherence": "完成快照在下一次同通道事务完成前稳定；外部Ethernet不会直接改变PCIe已缓存快照。防止其他PCIe客户端在读取期间发QUERY/APPLY。",
+      "timeout_handling": "超时属于结果未知，可能仍在等帧边界；不自动重放，不写CLEAR当取消命令。先读status，链路恢复后重新QUERY再决定用户操作。",
+      "write_ioctl_failure": "对可能已经产生副作用的写失败不盲目重放，先确认status/快照。"
+    },
+    "arbitration": {
+      "priority_high_to_low": [
+        "Ethernet",
+        "PCIe"
+      ],
+      "policy_zh": "Ethernet包接收/解析/待提交期间，PCIe在mailbox中保持并等待；同拍Ethernet优先。已进入像素CDC的PCIe事务不被中途覆写；允许一项Ethernet命令待办并在其后优先提交。",
+      "permanent_ownership": false,
+      "cross_endpoint_atomic_compare_and_swap": false,
+      "read_modify_write_limit_zh": "QUERY与APPLY间Ethernet仍可能更新；共享baseline可保护Ethernet局部写中的非目标字段，但不能让主机整份RMW自动合并查询之后的新变化。持续争用可能延长PCIe等待。",
+      "independent_channels": "ISP和ALGO分别一项在途事务；没有两个通道同帧一起提交的保证。",
+      "udp_ack_backpressure": "PCIe completion独立于UDP ACK队列信用。"
+    },
+    "commit_snapshot": "每次合法COMMIT冻结独立shadow；busy期间可写shadow准备后续，但不得再次COMMIT。DONE与COMMIT同拍仍按旧busy拒绝。",
+    "sticky": "新COMMIT不自动清DONE/ERROR；提交前idle后CLEAR=1。拒绝错误1/3/4不产生该请求的新DONE；每轮先查ERROR。",
+    "visibility": "ACTIVE/SNAPSHOT为上次完成事务缓存；Ethernet更新不会自动刷新PCIe缓存，需QUERY。QUERY不把source改为PCIe。",
+    "apply": "quad帧边界（VS下降沿/消隐）原子应用；ISP与ALGO独立，不能承诺两个通道同帧应用",
+    "wait": "持续Ethernet流量可延迟PCIe；无边界/停钟可长时间BUSY，硬件没有固定完成超时",
+    "reset": "PCIe掉链清CSR/mailbox会话而不恢复算法默认；已进入像素CDC事务可继续排空生效。算法/像素协调复位才恢复默认。重连先QUERY。",
+    "pipeline_scope": {
+      "isp": "影响算法四宫格支路与PCIe采集",
+      "dehaze": "影响算法四宫格支路与PCIe采集",
+      "gaussian_median_sobel": "仅HDMI算法后级，不进入PCIe图像",
+      "avm_monitor": "当前原始AVM/监控显示支路绕过共享ISP/去雾，ACK成功可能肉眼无变化",
+      "runtime_algorithm_mode": "由以太网monitor路由选择，当前无PCIe对应CSR",
+      "compile_raw_quad": "C_HDMI_QUAD_OUTPUT=1直接旁路算法和HUD，不是运行时算法四宫格模式"
+    },
+    "examples": [
+      {
+        "name": "default_query_isp_seq1",
+        "writes": [
+          {
+            "offset_hex": "0x75c",
+            "value_hex": "0x00000001"
+          },
+          {
+            "offset_hex": "0x750",
+            "value_hex": "0x00010002"
+          }
+        ],
+        "poll_status_hex": "0x754",
+        "expected_sequence": 1,
+        "completion_test": "busy=0 && done=1 && error=0 && sequence=1",
+        "note_zh": "操作前必须idle；之后通过0x780/0x784读取17个DWORD。"
+      },
+      {
+        "name": "dehaze_on_from_reset_baseline",
+        "baseline_hex64": "0x000fe619dc010080",
+        "modified_hex64": "0x010fe619dc010080",
+        "shadow_writes": [
+          {
+            "offset_hex": "0x760",
+            "value_hex": "0xdc010080"
+          },
+          {
+            "offset_hex": "0x764",
+            "value_hex": "0x010fe619"
+          }
+        ],
+        "commit_example": {
+          "clear_hex": "0x774",
+          "clear_value_hex": "0x00000001",
+          "commit_hex": "0x768",
+          "value_hex": "0x00020001",
+          "sequence": 2
+        },
+        "note_zh": "仅示范从复位配置计算；实际须QUERY/RMW，保留其他算法。去雾开关位是config64 bit56，不是整份config bit0。"
+      },
+      {
+        "name": "isp_master_on_and_tile0_gain_from_reset",
+        "requires_complete_isp_shadow": true,
+        "global_hex": "0x1f",
+        "tile0_hex128_msb_first": "0x01401004000000012184041040000000",
+        "tile0_dwords_low_to_high": [
+          "0x40000000",
+          "0x21840410",
+          "0x00000001",
+          "0x01401004"
+        ],
+        "tile1_to_tile3_dwords": [
+          "0x40000000",
+          "0x21840410",
+          "0x00000001",
+          "0x00401004"
+        ],
+        "note_zh": "开启ISP master+tile0 gain，默认gain=256、offset=0所以增益阶段是单位变换；其他tile算法仍关闭。实际以QUERY基线合并。"
+      }
+    ]
+  },
+  "legacy_dma": {
+    "register_groups": [
+      "legacy_h2f",
+      "legacy_f2h"
+    ],
+    "staging_ram": {
+      "depth_words": 4096,
+      "word_bytes": 2,
+      "total_bytes": 8192,
+      "address": "只接低12位native word索引；调用方检查start_word+length_bytes/2<=4096，驱动没有完整越界保护"
+    },
+    "length": {
+      "minimum_bytes": 4,
+      "maximum_driver_bytes": 4096,
+      "multiple_bytes": 4,
+      "encoding": "length_bytes/4 - 1"
+    },
+    "h2f": "准备coherent源缓冲→必要的dma_wmb→写0x100/104 DMA地址→0x110字索引→0x120长度→最后0x140写addr_type→轮询0x130一次消费DONE",
+    "f2h": "准备coherent目标缓冲→写0x200/204 DMA地址→0x210字索引→0x220长度→最后0x240写addr_type→轮询0x230消费DONE→dma_rmb后取数据",
+    "serialization": "一次只执行一个传统DMA事务，两个方向共用mem_addr/mem_length和暂存转换链。单个ioctl锁不构成跨多个调用的整笔事务锁。",
+    "read_clear": "读取0x130所在16字节窗口0x130..0x13f会消费H2F DONE；0x230..0x23f对应F2H DONE。接收模块按16字节窗口对齐译码；只轮询0x130/0x230本身，由单一消费者读取，不可把相邻地址读取当作无副作用flush。",
+    "video_conflict": "video_mode=1期间传统BAR1 DMA控制写被拒绝，计入0x414；不能同时运行传统文件DMA与video DMA",
+    "purpose_limit": "传统H2F只写staging RAM，没有自动接到DDR视频帧缓冲或HUD配置；不是RK整帧视频上传显示协议",
+    "pio": {
+      "bar": 0,
+      "nominal_window_bytes": 8192,
+      "byte_order": "标准小端DWORD，RAM bridge内部按16字节lane处理",
+      "independent_storage": "PIO RAM与传统DMA的16bit staging RAM是独立存储；不要期望写BAR0后用传统DMA读到同内容",
+      "driver_support": "本参考驱动nr9没有提供用户态BAR0 mmap实现，RK需沿用已有PIO接口或另补安全映射"
+    }
+  },
+  "video_dma": {
+    "direction": "FPGA→RK，固定1280x720 RGB565帧",
+    "frame_bytes": 1843200,
+    "frame_bytes_hex": "0x001c2000",
+    "stride_bytes": 2560,
+    "pixel_bits": 16,
+    "pixel": "R[15:11],G[10:5],B[4:0]，低字节先；行优先连续，无行填充",
+    "descriptor_count": 4,
+    "descriptor_base_hex": "0x500",
+    "descriptor_stride_bytes": 32,
+    "buffer": {
+      "minimum_capacity": 1847296,
+      "minimum_capacity_hex": "0x001c3000",
+      "alignment": 4096,
+      "capacity_multiple": 4096,
+      "constraints": "非零DMA地址；addr+capacity不溢出64位；所有非FREE槽完整capacity区间不重叠"
+    },
+    "states": {
+      "0": "FREE",
+      "1": "READY",
+      "2": "HW",
+      "3": "DONE",
+      "4": "ERROR"
+    },
+    "control": {
+      "arm": 1,
+      "release": 2
+    },
+    "configuration": "addr/capacity仅在enable=0、engine_busy=0、无HW且该槽FREE时可改；配置后ARM。ARM可在运行时FREE槽执行。",
+    "startup": "确认legacy idle和video停稳→分配并映射四槽→配置所有槽地址/容量→清每槽内存commit→ARM→COMMAND=1→轮询槽状态",
+    "acquire": "槽DONE后dma_rmb/必要cache同步，核记录commit非零且对同槽上次值有变化、magic/version/generation/status/length正确，再读取像素；CPU不触碰HW槽",
+    "recycle": "消费后写槽CONTROL=2到FREE，再写1 ARM；不重写仍HW/READY槽地址或容量",
+    "shutdown": "COMMAND=2→generation递增并失效旧READY→等待engine_busy/video_mode/any_hw均0并处理ERROR槽→再解除DMA映射/释放内存；STOP不是立即总线静止确认",
+    "generation": "复位1、软件仅允许提高，且停稳/无READY；STOP/掉链加1并在0xffffffff饱和，饱和后START/ARM拒绝需硬件复位恢复",
+    "ownership": "最低编号可用READY优先；不要假设严格round-robin顺序",
+    "record": {
+      "offset_after_pixels": 1843200,
+      "bytes": 32,
+      "endian": "little",
+      "dwords": [
+        {
+          "offset": 0,
+          "name": "magic",
+          "value_hex": "0x31564750"
+        },
+        {
+          "offset": 4,
+          "name": "version",
+          "value": 1
+        },
+        {
+          "offset": 8,
+          "name": "generation"
+        },
+        {
+          "offset": 12,
+          "name": "frame_id"
+        },
+        {
+          "offset": 16,
+          "name": "sent_bytes"
+        },
+        {
+          "offset": 20,
+          "name": "crc32",
+          "description_zh": "既有CRC32/ISO-HDLC reflected poly0xedb88320 init/xorout0xffffffff；主机可选核对"
+        },
+        {
+          "offset": 24,
+          "name": "status",
+          "values": {
+            "1": "success",
+            "2": "frame_bad"
+          }
+        },
+        {
+          "offset": 28,
+          "name": "commit_sequence",
+          "description_zh": "最后独立DWORD MWr写入，32位递增跳0；不是scene/HUD/ISP序号"
+        }
+      ]
+    },
+    "ordering": "先像素，再7DWORD记录，最后独立commit DWORD；控制槽DONE与主存可见性不同，仍须主机DMA内存屏障/同步",
+    "packetization": "当前数据MWr最多128字节，不跨4KiB；固定4DW地址格式；MPS编码0..5有效，其他值不能采集",
+    "throughput": "不承诺持续60fps；source帧率/PCIe协商/缓冲回收/背压/FIFO和rate30共同影响",
+    "source": "ISP+去雾后的四宫格流；不包含HDMI后级高斯/中值/Sobel、HUD、导航、AVM最终合成",
+    "host_api_limit": "现有参考内核驱动只有最多4KiB传统DMA缓冲，不提供本视频四槽大缓冲分配/同步/查询API；不能用nr2旧缓冲直接当视频槽"
+  },
+  "sequence_domains": [
+    {
+      "domain": "basic_hud",
+      "where": "REQUEST[31:16]",
+      "zero": false,
+      "deduplicate": true
+    },
+    {
+      "domain": "scene",
+      "where": "COMMIT[15:0]",
+      "zero": false,
+      "deduplicate": false
+    },
+    {
+      "domain": "navigation",
+      "where": "CONTROL[31:16]",
+      "zero": true,
+      "deduplicate": true
+    },
+    {
+      "domain": "ISP",
+      "where": "COMMIT[31:16]",
+      "zero": true,
+      "deduplicate": false
+    },
+    {
+      "domain": "ALGO",
+      "where": "COMMIT[31:16]",
+      "zero": true,
+      "deduplicate": false
+    },
+    {
+      "domain": "HSST",
+      "where": "32-bit sample_seq",
+      "zero": true,
+      "deduplicate": false
+    },
+    {
+      "domain": "video_generation",
+      "where": "0x410",
+      "zero": false,
+      "deduplicate": "monotonic saturation"
+    },
+    {
+      "domain": "video_commit",
+      "where": "record+28",
+      "zero": false,
+      "deduplicate": "per completed record, skips zero"
+    }
+  ],
+  "golden_vectors": [
+    {
+      "name": "HUD左转稳亮+ADAS，seq1",
+      "writes": [
+        {
+          "offset": "0x608",
+          "value": "0x00011103"
+        }
+      ],
+      "expect": "0x610=1，0x614=1；无覆盖时0x61c=0x103"
+    },
+    {
+      "name": "HUD释放接管seq2",
+      "writes": [
+        {
+          "offset": "0x608",
+          "value": "0x00020000"
+        }
+      ],
+      "expect": "无高优先级覆盖时EFFECTIVE=0x101"
+    },
+    {
+      "name": "绿灯/无人/左虚右实/显示日期，scene42",
+      "writes": [
+        {
+          "offset": "0x638",
+          "value": "0x00000985"
+        },
+        {
+          "offset": "0x63c",
+          "value": "0x10242026"
+        },
+        {
+          "offset": "0x640",
+          "value": "0x00053014"
+        },
+        {
+          "offset": "0x644",
+          "value": "0x0000002a"
+        }
+      ],
+      "expect": "0x644低16及0x658高16=42；等待0x64c=42；日期2026-10-24 14:30:05；无HSST时左虚右实"
+    },
+    {
+      "name": "清除RK正检测scene43",
+      "writes": [
+        {
+          "offset": "0x638",
+          "value": "0x00000800"
+        },
+        {
+          "offset": "0x644",
+          "value": "0x0000002b"
+        }
+      ],
+      "expect": "valid0清保持；保留显示时间；HSST车道不受此清除影响"
+    },
+    {
+      "name": "导航左转120米seq1",
+      "writes": [
+        {
+          "offset": "0x674",
+          "value": "0x00000002"
+        },
+        {
+          "offset": "0x670",
+          "value": "0x00780003"
+        },
+        {
+          "offset": "0x674",
+          "value": "0x00010001"
+        }
+      ],
+      "expect": "idle+ready后发；完成0x674=0x00010001、NAV_ACTIVE=0x00780003且无错误"
+    },
+    {
+      "name": "ALGO QUERY seq1",
+      "writes": [
+        {
+          "offset": "0x774",
+          "value": "0x00000001"
+        },
+        {
+          "offset": "0x768",
+          "value": "0x00010002"
+        }
+      ],
+      "expect": "idle后提交，等0x76c匹配seq1/DONE/!BUSY/!ERROR，再读0x788/78c/770"
+    },
+    {
+      "name": "复位基线去雾打开seq2",
+      "prerequisite": "已QUERY确认复位配置；一般情况必须RMW保留其他配置",
+      "writes": [
+        {
+          "offset": "0x760",
+          "value": "0xdc010080"
+        },
+        {
+          "offset": "0x764",
+          "value": "0x010fe619"
+        },
+        {
+          "offset": "0x774",
+          "value": "0x00000001"
+        },
+        {
+          "offset": "0x768",
+          "value": "0x00020001"
+        }
+      ],
+      "expect": "去雾位是config64 bit56；与ISP master独立"
+    },
+    {
+      "name": "传统H2F 256字节",
+      "writes": [
+        {
+          "offset": "0x100",
+          "value": "DMA地址低32位"
+        },
+        {
+          "offset": "0x104",
+          "value": "DMA地址高32位"
+        },
+        {
+          "offset": "0x110",
+          "value": "0x00000000"
+        },
+        {
+          "offset": "0x120",
+          "value": "0x0000003f"
+        },
+        {
+          "offset": "0x140",
+          "value": "高32位非零用1，否则用0"
+        }
+      ],
+      "expect": "video_mode必须0；消费一次0x130.DONE；不能用本例向HUD或视频DDR发配置"
+    }
+  ],
+  "handoff_checks": [
+    "核对板上固件来源，读取HUD/IMAGE/VIDEO magic及capabilities，不以magic当唯一固件指纹",
+    "核对RK协商速率/lane、BAR长度、MMIO小端和独立DWORD写",
+    "分别确认scene低16与HUD/NAV/ISP高16序号，不混用",
+    "0x638只写不提交不变；COMMIT后按0x64c确认HUD；重复正检测刷新501ms",
+    "红转绿/绿转红立即替换，valid0清RK保持；HSST不随RK清除消失",
+    "新鲜HSST实线/未知覆盖RK虚线；过期后回退仍新鲜RK",
+    "用户动作1秒窗口及黄色刹车警告；PCIe没有动作写CSR",
+    "导航0/65535米、三方向、关闭、重连，完成按active+seq比对",
+    "ISP/ALGO QUERY后RMW、分别开关、同值APPLY、非法参数和忙拒绝",
+    "Ethernet争用时看source/epoch，APPLY完成不等于所有显示模式肉眼有变化",
+    "传统DMA同事务锁、16bit字偏移、DONE读清、4KiB边界，禁止与视频模式混用",
+    "视频四槽DMA地址/容量/所有权/32byte尾记录/commit最后写及CPU缓存同步",
+    "超时不自动重放，重连先QUERY/重新提交HUD导航并重建视频代际会话"
+  ],
+  "verification": {
+    "this_delivery": "对当前structural源码进行协议静态核对，检查JSON解析、123个BAR1地址、头文件覆盖、字段不重叠、默认值重算、示例编码及36个来源文件；未改RTL/驱动，未运行仿真、综合或PNR。",
+    "implementation_validation": "本次为文档交付，不对当前工程的前仿、后仿、STA或实板结果作新增通过声明；实现验证记录以对应工程报告为准。",
+    "rk_driver_calibration": "需要RK开发核对使用的真实驱动版本；所列限制针对本工程携带参考驱动",
+    "static_check_result": {
+      "status": "PASS",
+      "register_count": 123,
+      "source_file_count": 36,
+      "golden_vector_count": 8,
+      "reference_same_source_count": 33,
+      "structurally_changed_sources": [
+        "source/pcie/pcie_image_control_regs.v",
+        "source/video/isp/isp_config_cdc.v",
+        "source/pcie/pcie_video_regs.v"
+      ],
+      "comparison_method": "direct byte comparison; no hash",
+      "checks": [
+        "JSON parse roundtrip",
+        "BAR1 addresses unique/aligned/in range",
+        "HUD and VIDEO header offset coverage",
+        "MD register address coverage",
+        "field non-overlap",
+        "ISP/ALGO default repacking",
+        "golden vector encoding",
+        "video frame and tail sizing",
+        "hold timer constants",
+        "target device and PCIe IP configuration",
+        "source reference existence"
+      ]
+    }
+  },
+  "source_files_relative_to_project": [
+    "ipcore/PCIe_IP/PCIe_IP.idf",
+    "source/pcie/pcie_dma_subsystem.v",
+    "source/pcie_ref/dma_src/rt_pcie_dma.v",
+    "source/pcie_ref/dma_src/rx/rt0101_dma_request_ctrl.v",
+    "source/pcie_ref/dma_src/tx/rt0206_data_mux.v",
+    "source/pcie_ref/interface_conversion/rt_gs_dma_interface_conversion.v",
+    "source/pcie_ref/interface_conversion/rt_cpld_16bit_ram_ctrl.v",
+    "source/pcie_ref/interface_conversion/rt_mwr_16bit_ram_ctrl.v",
+    "source/pcie/pcie_hud_regs.vh",
+    "source/pcie/pcie_hud_regs.v",
+    "source/pcie/pcie_hud_navigation_regs.v",
+    "source/pcie/vehicle_perception_hold.v",
+    "source/pcie/vehicle_behavior_decision.v",
+    "source/video/hud_control_subsystem.v",
+    "source/video/hud_priority_control.v",
+    "source/video/hdmi_hud_overlay.v",
+    "source/fiber/fiber_lane_status_cdc.v",
+    "source/pcie/pcie_image_control_regs.v",
+    "source/pcie/pcie_image_control_bridge.v",
+    "source/pcie/pcie_image_control_cdc.v",
+    "source/video/isp/isp_control.v",
+    "source/video/isp/isp_config_cdc.v",
+    "source/video/control_v2/algorithm_control_v2.v",
+    "source/subsystems/video_algorithm_top.v",
+    "source/subsystems/pcie_top.v",
+    "source/subsystems/hdmi_board_top.v",
+    "source/video/avm_monitor_compositor.v",
+    "source/pcie/pcie_video_regs.vh",
+    "source/pcie/pcie_video_regs.v",
+    "source/pcie/pcie_video_subsystem.v",
+    "source/pcie/pcie_video_mwr_engine.v",
+    "source/pcie/pcie_video_tap.v",
+    "host/rk3566_image_control/include/pango_image_uapi.h",
+    "host/rk3566_image_control/driver/pango_pci_driver.h",
+    "host/rk3566_image_control/driver/pango_pci_driver.c",
+    "host/rk3566_image_control/ispctl.c"
+  ]
+}

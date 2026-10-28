@@ -1,0 +1,129 @@
+W rknn-toolkit-lite2 version: 2.3.2
+W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
+W rknn-toolkit-lite2 version: 2.3.2
+W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
+READY evidence=LOCAL_REPLAY request_port=38260 result_port=38261 frames=0 shared_frame_file=/dev/shm/qt_gpu_probe_ai_stream_30.mfr1
+{
+  "evidence": "LOCAL_REPLAY",
+  "layout": "front",
+  "display_view": "front",
+  "frame_format": "1280x720 RGB565_LE packed, decoded using the existing PGV BGR565 conversion",
+  "model_paths": {
+    "yolo11n": "/home/cat/adas-edge-rect/rect_models/yolo11n_rk3566_int8_split_512x288.rknn",
+    "traffic_light_specialist": "/home/cat/adas-edge-rect/tl_check/tl_specialist_512x192_hybrid2.rknn"
+  },
+  "source_frames_loaded": 0,
+  "source_prepare_ms": 0.0,
+  "shared_frame_file_reads": 300,
+  "shared_frame_identity_mismatches": 0,
+  "input_requests_received": 300,
+  "input_request_fps": 10.043461812840622,
+  "source_ids_analyzed": 297,
+  "source_id_analysis_fps": 9.943027194712217,
+  "source_ids_replaced_before_analysis": 3,
+  "result_packets_sent": 297,
+  "dynamic_hmi_texture_updates": 0,
+  "inference_errors": 0,
+  "last_error": null,
+  "updates_per_second": {
+    "yolo11n_rknn": 6.863032238774426,
+    "traffic_light_specialist_rknn": 2.611300071338562,
+    "navigation_ocr": 2.611300071338562
+  },
+  "timings_ms": {
+    "main_rknn": {
+      "samples": 205,
+      "p50_ms": 42.610548000084236,
+      "p95_ms": 47.696245391853154,
+      "mean_ms": 43.122522814679186
+    },
+    "specialist_rknn": {
+      "samples": 78,
+      "p50_ms": 30.954887501138728,
+      "p95_ms": 35.01322324809734,
+      "mean_ms": 30.946227563664507
+    },
+    "navigation_ocr": {
+      "samples": 78,
+      "p50_ms": 3.199086495442316,
+      "p95_ms": 6.312643895216746,
+      "mean_ms": 3.9893991529541566
+    },
+    "hazard_postprocess": {
+      "samples": 205,
+      "p50_ms": 25.183785997796804,
+      "p95_ms": 33.42735839250963,
+      "mean_ms": 26.385652151586285
+    },
+    "all_ai_work": {
+      "samples": 297,
+      "p50_ms": 80.012025,
+      "p95_ms": 141.92425,
+      "mean_ms": 71.98954325589226
+    }
+  },
+  "resources": {
+    "process_cpu_one_core_percent": 95.71799594813996,
+    "process_cpu_machine_percent": 23.92949898703499,
+    "inference_worker_cpu_one_core_percent": 51.9338235706579,
+    "online_cpus": 4,
+    "rss_end_mb": 103.54296875,
+    "rss_peak_mb": 129.23046875,
+    "board_telemetry": {
+      "devices": {
+        "npu": {
+          "load_percent": {
+            "samples": 154,
+            "p50_percent": 100.0,
+            "p95_percent": 100.0,
+            "mean_percent": 100.0
+          },
+          "frequency_mhz": {
+            "samples": 154,
+            "p50_mhz": 600.0,
+            "p95_mhz": 600.0,
+            "mean_mhz": 600.0
+          }
+        },
+        "gpu": {
+          "load_percent": {
+            "samples": 154,
+            "p50_percent": 34.0,
+            "p95_percent": 41.0,
+            "mean_percent": 26.941558441558442
+          },
+          "frequency_mhz": {
+            "samples": 154,
+            "p50_mhz": 700.0,
+            "p95_mhz": 800.0,
+            "mean_mhz": 596.1038961038961
+          }
+        }
+      },
+      "temperatures_c": {
+        "soc-thermal": {
+          "samples": 154,
+          "min_c": 27.222,
+          "max_c": 33.125,
+          "end_c": 27.222
+        },
+        "gpu-thermal": {
+          "samples": 154,
+          "min_c": 26.111,
+          "max_c": 30.625,
+          "end_c": 26.666
+        }
+      },
+      "sample_period_ms": 250
+    }
+  },
+  "display_note": "AI runs in a separate latest-only worker and never blocks EGL frame submission."
+}
+I RKNN: [23:00:17.683] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [23:00:17.683] RKNN Driver Information, version: 0.8.2
+I RKNN: [23:00:17.685] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+W RKNN: [23:00:17.751] query RKNN_QUERY_INPUT_DYNAMIC_RANGE error, rknn model is static shape type, please export rknn with dynamic_shapes
+I RKNN: [23:00:18.357] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [23:00:18.357] RKNN Driver Information, version: 0.8.2
+I RKNN: [23:00:18.359] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+W RKNN: [23:00:18.393] query RKNN_QUERY_INPUT_DYNAMIC_RANGE error, rknn model is static shape type, please export rknn with dynamic_shapes

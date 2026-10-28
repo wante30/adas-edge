@@ -87,3 +87,48 @@ def test_raw_decode_handles_filtered_candidate_vectors() -> None:
 
     assert len(result) == 1
     assert result[0][5] == 2.0
+
+
+def test_normalize_input_shape_is_pure_about_square_and_rectangular() -> None:
+    profiler = _load_profiler_module()
+
+    assert profiler.normalize_input_shape(320) == (320, 320)
+    assert profiler.normalize_input_shape((512, 288)) == (512, 288)
+    assert profiler.normalize_input_shape([512, 288]) == (512, 288)
+    # The decoder stays a pure function: grid divisibility is asserted there, and
+    # the 32-pixel model policy lives in validate_model_shape. Tiny shapes must
+    # remain legal so unit-scale tensors can be decoded.
+    assert profiler.normalize_input_shape(8) == (8, 8)
+    for invalid in (0, -32, (512,), (512, 288, 3), (0, 288)):
+        try:
+            profiler.normalize_input_shape(invalid)
+        except ValueError:
+            continue
+        raise AssertionError(f"{invalid!r} must be rejected")
+
+
+def test_validate_model_shape_enforces_rknn_multiple_of_32() -> None:
+    profiler = _load_profiler_module()
+
+    assert profiler.validate_model_shape(320) == (320, 320)
+    assert profiler.validate_model_shape("512x288") == (512, 288)
+    assert profiler.validate_model_shape("512X288") == (512, 288)
+    assert profiler.validate_model_shape("512x288") == (512, 288)
+    for invalid in (300, "512x300", "0x288", "-16x288", "512x288x3", "abc"):
+        try:
+            profiler.validate_model_shape(invalid)
+        except ValueError:
+            continue
+        raise AssertionError(f"{invalid!r} must be rejected")
+
+
+def test_letterbox_supports_non_square_model_input() -> None:
+    profiler = _load_profiler_module()
+    image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+
+    result, scale, pad_x, pad_y = profiler.letterbox_bgr(image, (512, 288))
+
+    assert result.shape == (288, 512, 3)
+    assert scale == 512 / 1920
+    assert pad_x == 0
+    assert pad_y == (288 - round(1080 * 512 / 1920)) // 2

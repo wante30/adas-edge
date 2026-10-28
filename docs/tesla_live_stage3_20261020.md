@@ -1,0 +1,217 @@
+# Tesla LIVE 第三阶段：GL 修复、帧率定位、动态与视觉回归
+
+日期：2026-10-20。分支：`live/stage2`（第三阶段改动未另开分支）。
+
+## 1. P0：GL_INVALID_ENUM 1280
+
+### 定位过程
+
+在 `VideoItem::render()` 和 `TeslaSceneItem::render()` 增加分阶段 `glGetError` 检查，发现：
+
+```text
+Tesla GL error initGL 1280
+```
+
+进一步定位到 `TeslaSceneItem::initGL()` 中已废弃的 billboard 初始化：
+
+- 2D billboard shader；
+- billboard VBO/VAO；
+- `QOpenGLTexture` 后视纹理。
+
+这些资源已经不再被 LIVE 使用（周边车辆已改 3D mesh），但仍被初始化，并在 Mali-G52 上留下 `GL_INVALID_ENUM`。随后 `VideoItem` 的 RGB565 上传前读到这个遗留错误，误报为 `RGB565 texture upload failed`。
+
+### 修复
+
+1. 删除已废弃的 billboard GL 初始化，不再创建其 shader/VBO/VAO/texture。
+2. `VideoItem` 的 RGB565 上传：
+   - 内部格式改为 `GL_RGB565`（尺寸化格式）；
+   - 上传前设置 `glActiveTexture(GL_TEXTURE0)`；
+   - 上传前显式检查并记录遗留错误，不再把它当作本次上传失败。
+3. 保留分阶段检查，确认 FBO 渲染后不再产生错误。
+
+### 结果
+
+重新运行带真实视频的本地回放（`local_gl_test2.log`）：
+
+- 日志中没有 `Tesla GL error`；
+- 没有 `RGB565 texture upload failed`；
+- 主视频持续更新。
+
+证据：`results/gl_fixed_local.log`、`results/local_gl_test2.json`。
+
+## 2. P1：唯一视频帧率损失定位
+
+### 真实 PCIe A/B（AI 开启）
+
+| 指标 | 场景关闭 | 场景开启 |
+|---|---:|---:|
+| source FPS | 25.16 | 25.64 |
+| 唯一帧上传 FPS | **14.96** | **13.72** |
+| QSG FPS | 50.31 | 57.69 |
+| YOLO FPS | 8.99 | 8.97 |
+| GPU | 25% | 36% |
+| CPU（全核） | 31.45% | 28.85% |
+
+结论：**场景只造成约 8% 的唯一帧下降；关闭场景也只有 14.96 FPS，Tesla 不是主因。**
+
+### AI 开启/关闭（同一 PGVF 本地回放）
+
+| 指标 | AI 开 | AI 关 |
+|---|---:|---:|
+| source FPS | 14.29 | **30.46** |
+| 唯一帧上传 FPS | **12.37** | **26.08** |
+| QSG FPS | 57.14 | 60.91 |
+| YOLO FPS | 8.25 | 0 |
+
+结论：**AI/OCR 竞争是唯一帧损失的主因。** 关闭 AI 后唯一帧从 12.37 恢复到 26.08，接近源 30 FPS；Tesla 场景关闭/开启只有小的影响。
+
+### 没有做的事
+
+- 没有通过降低 AI 频率、关闭 OCR 或改 RKNN 来“制造”高 FPS；
+- 没有把 QSG 58 FPS 当作视频 58 FPS；
+- 下一步若要修复，优先做 AI/OCR 与 Qt 的 CPU 隔离/亲和性，而不是改 Tesla 渲染。
+
+## 3. P2：动态验收
+
+- 真实 PCIe 10 秒录屏：`results/stage2_live_sync10.mp4`（在本轮 GL 修复前采集）。
+- 真实 PCIe 当前再次掉线：端点 `rev ff`、`/dev/pango_video0` 消失、`capture_io`；重启板卡后仍未恢复。
+- 因此本轮 GL/帧率验证使用已有真实录制 `local_quad.rgb` 的 PGVF 回放，界面明确显示 `LOCAL REPLAY`，不冒充 PCIe LIVE。
+- Track 日志：`results/stage3_final_objects.json`（`source_id=pgv-local`，含 track_id/class/frame/timestamp/validity）。
+- LIVE 中无 GIF、无随机车辆；目标来自 `video.aiBoxes`。
+
+## 4. P3：场景视觉
+
+- 自车为程序化三维车身，位于自车车道，和道路共用相机；不再使用 QML 大贴图。
+- car 使用下车身 + 梯形座舱 + 后窗/侧窗 + 车顶 + 车轮 + 尾灯。
+- truck/bus/person 仍为低面数程序化模型。
+- 四车道 + 路肩；扩大地面与城市剪影；小窗使用紧凑相机，空间页使用完整相机。
+- 没有真实 ego speed/yaw，不滚动道路。
+
+![LOCAL REPLAY + LIVE Tesla 小窗](<C:/Users/JingyuWang/adas-edge/deployment/lubancat/qt_gpu_probe/results/stage3_live_local.png>)
+
+## 5. 当前限制
+
+- 真实 PCIe 当前不可用，最终截图标为 LOCAL REPLAY。
+- 唯一视频帧率仍受 AI/OCR 竞争限制；本轮只定位，没有做 CPU 亲和性修改。
+- 没有 Q1 标定，所有目标仍是 `RELATIVE_ONLY`。
+- 车型为低面数程序化，不是高精模型。
+- 场景独立 FPS 未单独计数；QSG 不是感知更新率。
+- 没有 20 分钟长测。
+
+## 6. P0 四组分级对照（本轮补充）
+
+同一 `local_quad.rgb` → 本地 PGVF（`LOCAL_REPLAY`），Publisher 目标 30 FPS，Qt/Tesla 配置相同，20 s：
+
+| 组 | 配置 | 源 FPS | Qt 唯一上传 FPS | QSG FPS | AI FPS | Qt CPU 全核 | GPU |
+|---|---|---:|---:|---:|---:|---:|---:|
+| A | 无 AI | 30.15 | **27.54** | 60.30 | 0 | 26.38% | 44% |
+| B | YOLO，无 OCR | 30.12 | **17.63** | 66.27 | 9.55 | 33.13% | 21% |
+| C | YOLO + Specialist，无 OCR | 27.40 | **16.68** | 68.49 | 9.41 | 39.38% | 44% |
+| D | YOLO + Specialist + OCR | 23.95 | **14.18** | 53.89 | 9.24 | 31.44% | 48% |
+
+结论：
+
+- **A → B 是最大断点**：只开 YOLO，唯一上传从 27.54 降到 17.63 FPS；
+- Specialist 再降到 16.68；
+- OCR 再降到 14.18；
+- 瓶颈是 AI/OCR 整体与视频线程的资源竞争，不是 Tesla FBO。
+
+AI 端到端结果年龄（capture → result publish）：
+
+| 组 | p50 | p95 |
+|---|---:|---:|
+| B | 109.2 ms | 141.2 ms |
+| C | 125.9 ms | 186.9 ms |
+| D | 121.2 ms | 173.1 ms |
+
+## 7. CPU 亲和性尝试
+
+将 Publisher 固定到 CPU0，AI/OCR 固定到 CPU2–3，Qt 固定到 CPU1：
+
+- D 组唯一上传反而降到 **10.50 FPS**，AI 降到 **5.09 FPS**；
+- 单核 Qt + AI 的隔离方式不适合当前工作负载，已回退，未保留该调度。
+
+## 8. 60 FPS Publisher 试验
+
+Publisher 从内存 mmap 读取，设置 `--fps 60 --source-fps 30`：
+
+- source FPS：22.60；
+- Qt 唯一上传：12.16；
+- AI：3.15 FPS。
+
+说明 Publisher/AI 无法稳定跑到 60 FPS 输入；60 FPS 试验不列入达标数据，保留为压力测试记录。
+
+## 9. OCR
+
+本轮没有硬编码导航值，也没有通过永久关闭 OCR 达标。D 组保留 OCR 0.1 Hz；B/C 组用 `--no-navigation-ocr` 做隔离对照。OCR 仍是 D 组相对 C 组下降的主要原因之一。未做快速路径重写，因为本轮优先级是先定位视频吞吐瓶颈。
+
+## 10. 本轮热路径代码优化
+
+实际修改：
+
+- `VideoItem::runPgvProducer` 从每帧 `std::ifstream` 改为 `open + pread`，消除流对象构造和重复路径状态。
+- 增加 `QT_PGVF_SKIP_CRC=1`：仅对使用 atomic rename 的本地 PGVF 跳过完整 1.8MB CRC；默认仍校验。保留 header、长度、payload 大小检查，`source_crc_errors` 仍统计。
+- 删除已废弃 billboard GL 初始化，修复 1280。
+- 视频仍 latest-only，不等待 AI。
+
+实测：
+
+| 配置 | 优化前 | 优化后 |
+|---|---:|---:|
+| B YOLO 唯一上传 | 17.63 | **18.07** |
+| D 全功能唯一上传（CRC 开/关） | 14.18 | 13.95 / **14.32** |
+| A 无 AI | 27.54 | 27.54 |
+
+提升很小：B +0.44 FPS，D +0.14 FPS。`source_crc_errors=0`。  
+说明 Qt 读帧/CRC 不是主要瓶颈；剩余主要开销是 AI 预处理、MFR1 全帧传输和 RKNN/OCR 竞争。没有继续用大幅改协议来换取少量 FPS。
+
+## 11. 最佳可用配置
+
+- 本地回放：`pgv_local_publisher.py --fps 30 --source-fps 30`
+- Qt：`QT_PGVF_SKIP_CRC=1` 仅限本地 atomic PGVF
+- AI：YOLO + Specialist + OCR 全部开启
+- Tesla LIVE：开启
+- 最佳全功能唯一上传：约 **14.3 FPS**
+- 仅 YOLO：约 **18.1 FPS**
+- 无 AI：**27.5 FPS**
+
+## 12. 本轮 AI 输入预处理优化
+
+实际热点：
+
+- `decode_rgb565_payload()` 在 `_listen` 中把完整 1280×720 RGB565 解码为 BGR；
+- `_analyze` 再从整张 BGR 中裁 Q1/Q2；
+- 每次请求实际只消费 Q1（YOLO/Specialist）和 Q2（OCR），Q3/Q4 没有 AI 消费者。
+
+修改：
+
+- 新增 `PackedRgb565`，保留 packed payload；
+- `_analyze` 只对 `road_quadrant` 和 `navigation_quadrant` 做 `cvtColor`；
+- 坐标仍使用原 quadrant crop，Q1/Q2 偏移和检测框映射不变；
+- Q3/Q4 不再参与 AI 颜色转换；
+- 保留完整 MFR1 兼容路径。
+
+### 实测（本地 30 FPS 回放，全功能）
+
+| 指标 | 优化前 | 优化后 |
+|---|---:|---:|
+| Qt 唯一上传 | 14.18 | **14.78** |
+| AI FPS | 9.24 | 9.49 |
+| AI 结果年龄 p50 | 121.2 ms | 123.9 ms |
+| AI 结果年龄 p95 | 173.1 ms | 194.2 ms |
+| YOLO 检测数 | 正常 | 正常, 12 |
+| Tesla LIVE | 正常 | 正常 |
+
+提升约 **+0.6 FPS**，但目标 20–25 仍远未达到。原因不是颜色转换单项，而是 YOLO/Specialist/OCR 整体占用。
+
+## 13. 最终建议
+
+本轮到此停止常规性能优化。剩余成本集中在：
+
+- 每 100 ms 写/读 1.8MB MFR1；
+- YOLO 512 预处理与 RKNN；
+- Specialist 1 Hz；
+- RapidOCR 独立进程；
+- RK3566 四核 CPU/NPU 资源上限。
+
+继续优化需要改 AI 传输协议/ROI 或 OCR 快路径，属于更大改动；在未确认模型精度与坐标一致性的情况下不再盲改。

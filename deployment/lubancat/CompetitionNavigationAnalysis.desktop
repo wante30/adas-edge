@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=比赛导航与分析
+Comment=运行实时 PCIe 导航识别和危险分析
+Exec=/home/cat/competition_cockpit_current_20261018_fpga1/deployment/lubancat/run_navigation_analysis.sh
+Path=/home/cat/competition_cockpit_current_20261018_fpga1
+Terminal=false
+Categories=Utility;

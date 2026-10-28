@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=比赛感知座舱
+Exec=/home/cat/competition_cockpit_port_20261018/deployment/lubancat/run_competition_console.sh
+Path=/home/cat/competition_cockpit_port_20261018
+Terminal=false
+Categories=Utility;

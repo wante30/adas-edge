@@ -11,6 +11,13 @@ def test_preprocess_shapes_320_416():
     for n in (320,416):
         det.input_size=n; image,scale,px,py=det.preprocess(frame); assert image.shape==(n,n,3); assert image.dtype==np.uint8; assert scale>0; assert px>=0 and py>=0
 
+def test_model_class_profiles_keep_explicit_adapter_arguments_compatible():
+    det=CompetitionDetector("model.rknn", runner=object(), class_profile="bdd10")
+    assert det.class_names[0] == "pedestrian"
+    assert det.class_names[-1] == "traffic sign"
+    custom=CompetitionDetector("model.rknn", runner=object(), class_names=("vehicle",))
+    assert custom.class_names == ("vehicle",)
+
 def test_empty_and_multiple_detections_and_mapping():
     class Runner:
         def inference(self,**kwargs): return []
@@ -21,7 +28,12 @@ def test_empty_and_multiple_detections_and_mapping():
     # Exercise metadata path with an empty decoder by patching the imported module.
     import tools.profile_rknn_single_stream as prof
     saved=prof.decode_yolo11_raw; prof.decode_yolo11_raw=lambda *a: []
-    try: assert det.infer(np.zeros((2,2,3),dtype=np.uint8),2,3,4).detections==[]
+    try:
+        assert det.infer(np.zeros((2,2,3),dtype=np.uint8),2,3,4).detections==[]
+        assert set(det.last_timing) == {
+            "preprocess_ms", "rknn_call_ms", "decode_nms_ms", "total_ms",
+            "output_count", "detection_count", "preprocess_backend",
+        }
     finally: prof.decode_yolo11_raw=saved
 
 def test_split_decode_multiple_boxes_coordinate_restore():

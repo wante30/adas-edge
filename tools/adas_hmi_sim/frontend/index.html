@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ADAS / perception cockpit</title>
+  <link rel="stylesheet" href="./vendor/maplibre-gl.css" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">◒</span><div><strong>PERCEPTION COCKPIT</strong><small>PC HMI SIMULATOR / SCENEFRAME V1</small></div></div>
+      <div class="top-meta"><span class="mode-pill" id="mode-pill">MOCK</span><span class="live-dot"></span><span id="connection">CONNECTING</span></div>
+    </header>
+    <section class="workspace">
+      <section class="perception-panel panel">
+        <div class="panel-label"><span id="world-label">Tesla-BevCam-Clone 上游原版</span><div class="view-controls"><button data-view="tesla" class="view-button active" type="button" aria-pressed="true">Tesla-BevCam-Clone 原版</button><button data-view="drive" class="view-button" type="button" aria-pressed="false">Apollo Carviz 对照</button><button data-view="nav" class="view-button" type="button" aria-pressed="false">导航地图</button><button data-view="bowl" class="view-button" type="button" aria-pressed="false" disabled>环视 AVM</button></div></div>
+        <div id="scene-host" class="scene-host">
+          <div id="nav-map" class="nav-map" aria-label="离线导航地图"></div>
+          <img id="scene-surround-feed" class="scene-surround-feed" alt="全景环视地图" hidden />
+          <img id="scene-tesla-bev" class="scene-tesla-bev" alt="Tesla-BevCam 开源 BEV 渲染" hidden />
+          <div class="drive-ui" aria-label="驾驶辅助界面">
+            <div class="drive-top-left">
+              <div class="drive-speed"><strong id="drive-speed">0</strong><span>km/h</span></div>
+              <div class="drive-limit"><b id="drive-limit">60</b><small>限速</small></div>
+              <div class="drive-limit max"><b>63</b><small>MAX</small></div>
+              <div class="drive-assist" id="drive-assist"><span class="assist-mark" id="drive-assist-icon">▲</span><span id="drive-assist-text">城市领航辅助中</span></div>
+            </div>
+            <div class="drive-lane-state" id="drive-lane-state"><span>↶</span><b>↑</b><span>↷</span></div>
+            <section class="drive-route-card">
+              <div class="route-card-main"><span class="route-turn" id="drive-route-icon">↱</span><div><strong id="drive-route-distance">320</strong><span>米</span><small id="drive-route-name">海城路</small></div><div class="route-follow"><span>↱</span><small>随后</small></div></div>
+              <div class="route-lanes" id="drive-lane-arrows"><span>↑</span><span>↑</span><b>↱</b></div>
+              <div class="route-meta"><span id="drive-route-meta">1.5 公里 · 4 分 · ②</span><span id="drive-arrival">11:19 到</span></div>
+            </section>
+            <div class="drive-camera-float"><img id="scene-video-feed" alt="前视相机小窗" /><span>FRONT CAMERA</span></div>
+            <div class="drive-bottom-dock"><span class="dock-home">⌂</span><span class="dock-blue">✣</span><span>♨</span><span>22°C</span><span class="dock-sep"></span><span class="dock-nav">▲</span><span class="dock-music">♫</span><span>▦</span><span class="dock-sep"></span><span>22°C</span><span>通风</span><span>除雾</span><span>⏻</span></div>
+          </div>
+          <div class="scene-loading">INITIALISING SCENE</div>
+          <div class="scene-hud left"><span class="hud-chip" id="source-label">感知模拟</span></div>
+          <div class="scene-hud right"><span class="hud-chip">TRACKS <b id="scene-track-count">—</b></span></div>
+        </div>
+        <div class="scene-caption"><span><i class="key-line"></i> solid boundary</span><span><i class="key-line dashed"></i> dashed boundary</span><span><i class="key-car"></i> tracked object</span><span>SCENEFRAME / V1</span></div>
+      </section>
+      <aside class="side-panel">
+        <section class="video-card panel">
+          <div class="panel-label"><span>前视相机</span><span class="video-meta"><button class="aux-toggle" id="surround-toggle" type="button" aria-expanded="false">侧后视 · S</button><span id="video-size">—</span></span></div>
+          <div class="video-frame"><img id="video-feed" alt="front camera preview" /><div class="video-empty" id="video-empty">WAITING FOR VIDEO</div><span class="video-tag">BBOX DEBUG</span><span class="video-corner top-left"></span><span class="video-corner top-right"></span><span class="video-corner bottom-left"></span><span class="video-corner bottom-right"></span></div>
+          <div class="surround-strip" id="surround-strip" hidden>
+            <div class="surround-thumb"><img id="video-left" alt="left camera preview" /><span>CH1 / LEFT</span></div>
+            <div class="surround-thumb"><img id="video-right" alt="right camera preview" /><span>CH2 / RIGHT</span></div>
+            <div class="surround-thumb"><img id="video-rear" alt="rear camera preview" /><span>CH3 / REAR</span></div>
+          </div>
+        </section>
+        <section class="bev-card panel" id="bev-card" hidden>
+          <div class="panel-label"><span>环视预览</span><span class="video-meta" id="bev-calibration">近似映射</span></div>
+          <div class="bev-frame"><img id="bev-feed" alt="surround bird's-eye view" /><span class="video-tag">4-CAMERA PERCEPTION</span></div>
+        </section>
+        <section class="status-card panel">
+          <div class="panel-label"><span>行驶状态</span><span id="frame-id">FRAME —</span></div>
+          <div class="action-row"><div class="traffic-lamp" id="traffic-lamp"><span></span><span></span><span></span></div><div><small>TRAFFIC LIGHT</small><strong id="traffic-state">UNKNOWN</strong></div><div class="action-readout"><small>ACTION</small><strong id="action-state">STOP</strong></div></div>
+          <div class="warning-strip" id="warning-strip"><span class="warning-icon">!</span><span id="warning-text">TRAFFIC LIGHT UNKNOWN</span></div>
+          <div class="nav-row"><div class="nav-arrow" id="nav-arrow">↑</div><div><small>NEXT INTENT</small><strong id="nav-action">STRAIGHT</strong></div><div class="nav-distance"><small>RANGE</small><strong id="nav-distance">—</strong></div></div>
+        </section>
+        <section class="telemetry-card panel">
+          <div class="panel-label"><span>运行频率</span><span id="render-fps">RENDER —</span></div>
+          <div class="telemetry-grid"><div><small>VIDEO</small><strong id="video-fps">—</strong></div><div><small>DETECTOR</small><strong id="detector-fps">—</strong></div><div><small>WS RATE</small><strong id="ws-rate">—</strong></div><div><small>TRACKS</small><strong id="track-count">—</strong></div></div>
+        </section>
+      </aside>
+    </section>
+    <section class="debug panel" id="debug-panel"><div class="panel-label"><span>DEBUG INSPECTOR</span><span>PRESS D TO HIDE</span></div><pre id="debug-text"></pre></section>
+    <footer><span>LOCAL PC SIMULATION · TARGET HARDWARE LINK OFF</span><span>SCENEFRAME V1 · BROWSER RENDERER</span></footer>
+  </main>
+  <script src="./vendor/three.core.global.js" defer></script>
+  <script src="./vendor/three.global.js" defer></script>
+  <script src="./surround.js" defer></script>
+  <script src="./scene.js" defer></script>
+  <script src="./nav-map.js" defer></script>
+  <script type="module" src="./maplibre-nav.mjs"></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,567 @@
+{
+  "label": "real_pcie_rga_2",
+  "duration_s": 60.100639933,
+  "monotonic_start_ns": 10658947061195,
+  "monotonic_end_ns": 10719047701128,
+  "qt_elapsed_window_ms": [
+    2876080.613773,
+    2936181.253706
+  ],
+  "qt": {
+    "elapsed_s": 59.966,
+    "sample_count": 301,
+    "unique_uploaded_frame_fps": 27.615648867691693,
+    "produced_source_frame_fps": 45.00883834172698,
+    "ai_requests_fps": 10.00566987959844,
+    "ai_results_fps": 10.00566987959844,
+    "windowed_rates": {
+      "texture_upload_fps": {
+        "n": 301,
+        "mean": 32.00980258122381,
+        "p50": 32.55813953488372,
+        "p95": 42.5531914893617,
+        "max": 51.0948905109489
+      },
+      "scene_graph_fps": {
+        "n": 301,
+        "mean": 34.32201856014837,
+        "p50": 34.88372093023256,
+        "p95": 45.45454545454545,
+        "max": 51.612903225806456
+      },
+      "source_fps": {
+        "n": 301,
+        "mean": 52.39866676649999,
+        "p50": 52.63157894736842,
+        "p95": 64.74820143884891,
+        "max": 73.52941176470588
+      }
+    },
+    "result_age_ms": {
+      "n": 301,
+      "mean": 44.12292358803987,
+      "p50": 27.0,
+      "p95": 137.0,
+      "max": 154.0
+    },
+    "gui_update_ms": {
+      "n": 301,
+      "mean": 23.2850116179402,
+      "p50": 20.565621,
+      "p95": 47.332836,
+      "max": 73.437688
+    }
+  },
+  "ai": {
+    "result_packet_fps": 9.983254765155214,
+    "yolo_completed_fps": 9.983254765155214,
+    "yolo_completed_count": 600,
+    "specialist_completed_fps": 0.9983254765155215,
+    "specialist_completed_count": 60,
+    "result_age_ms_at_publish": {
+      "n": 600,
+      "mean": 90.894827745,
+      "p50": 85.302469,
+      "p95": 128.514131,
+      "max": 174.243996
+    },
+    "stages_ms": {
+      "shared_frame_read_ms": {
+        "n": 600,
+        "mean": 3.3327279916666663,
+        "p50": 3.107651,
+        "p95": 4.739496,
+        "max": 10.913382
+      },
+      "shared_frame_validate_ms": {
+        "n": 600,
+        "mean": 1.3258523416666665,
+        "p50": 1.215061,
+        "p95": 2.179877,
+        "max": 2.998279
+      },
+      "decode_ms": {
+        "n": 600,
+        "mean": 1.2897199083333333,
+        "p50": 0.94994,
+        "p95": 2.883947,
+        "max": 7.661942
+      },
+      "pipeline_ms": {
+        "n": 600,
+        "mean": 56.047937485000006,
+        "p50": 51.493676,
+        "p95": 95.361284,
+        "max": 132.019608
+      },
+      "navigation_submit_ms": {
+        "n": 600,
+        "mean": 1.5983451383333334,
+        "p50": 0.448283,
+        "p95": 7.401489,
+        "max": 53.844466
+      },
+      "box_mapping_ms": {
+        "n": 600,
+        "mean": 0.32575111500000004,
+        "p50": 0.285828,
+        "p95": 0.533157,
+        "max": 6.078221
+      },
+      "status_build_ms": {
+        "n": 600,
+        "mean": 0.8325821783333334,
+        "p50": 0.721862,
+        "p95": 1.380142,
+        "max": 12.455395
+      },
+      "dynamic_hmi_ms": {
+        "n": 600,
+        "mean": 0.013803836666666666,
+        "p50": 0.011375,
+        "p95": 0.024791,
+        "max": 0.12454
+      },
+      "packet_encode_ms": {
+        "n": 600,
+        "mean": 0.7043727133333333,
+        "p50": 0.637279,
+        "p95": 1.122604,
+        "max": 8.870294
+      },
+      "result_publish_ms": {
+        "n": 600,
+        "mean": 0.49166557333333333,
+        "p50": 0.234204,
+        "p95": 0.927775,
+        "max": 32.18949
+      }
+    },
+    "yolo_ms": {
+      "preprocess_ms": {
+        "n": 600,
+        "mean": 2.278110895,
+        "p50": 1.902798,
+        "p95": 4.069259,
+        "max": 18.418703
+      },
+      "rknn_call_ms": {
+        "n": 600,
+        "mean": 38.993866585,
+        "p50": 38.764118,
+        "p95": 43.024124,
+        "max": 52.405117
+      },
+      "decode_nms_ms": {
+        "n": 600,
+        "mean": 9.354465196666666,
+        "p50": 9.182955,
+        "p95": 12.027529,
+        "max": 17.271015
+      },
+      "total_ms": {
+        "n": 600,
+        "mean": 50.62644267666666,
+        "p50": 50.208616,
+        "p95": 55.56235,
+        "max": 68.739316
+      }
+    },
+    "specialist_ms": {
+      "preprocess_ms": {
+        "n": 60,
+        "mean": 10.177564416666666,
+        "p50": 6.07618,
+        "p95": 30.793015,
+        "max": 35.841673
+      },
+      "rknn_call_ms": {
+        "n": 60,
+        "mean": 33.52140488333333,
+        "p50": 32.393069,
+        "p95": 43.374992,
+        "max": 61.283286
+      },
+      "decode_nms_ms": {
+        "n": 60,
+        "mean": 2.6301917500000003,
+        "p50": 1.787884,
+        "p95": 5.011324,
+        "max": 21.797306
+      },
+      "total_ms": {
+        "n": 60,
+        "mean": 46.32916105,
+        "p50": 44.302766999999996,
+        "p95": 68.11282800000001,
+        "max": 79.363952
+      }
+    },
+    "yolo_preprocess_backends": {
+      "rga": 600
+    },
+    "ocr": {
+      "reported_result_count": 6,
+      "compute_call_count": 6,
+      "compute_fps": 0.09983254765155215,
+      "engine_ms": {
+        "n": 6,
+        "mean": 1253.3500000000001,
+        "p50": 1252.7,
+        "p95": 1336.5,
+        "max": 1336.5
+      }
+    }
+  },
+  "resources": {
+    "cpu_per_core_percent": [
+      {
+        "n": 60,
+        "mean": 87.30085343050247,
+        "p50": 85.85858585858585,
+        "p95": 95.04950495049505,
+        "max": 97.95918367346938
+      },
+      {
+        "n": 60,
+        "mean": 88.515202704774,
+        "p50": 86.86868686868686,
+        "p95": 100.0,
+        "max": 100.0
+      },
+      {
+        "n": 60,
+        "mean": 89.8088384659208,
+        "p50": 88.0,
+        "p95": 100.0,
+        "max": 100.0
+      },
+      {
+        "n": 60,
+        "mean": 89.2267788156188,
+        "p50": 87.0,
+        "p95": 100.0,
+        "max": 100.0
+      }
+    ],
+    "roles": {
+      "ocr": {
+        "cpu_percent": {
+          "n": 59,
+          "mean": 12.439034494377657,
+          "p50": 0.0,
+          "p95": 78.04736241741742,
+          "max": 87.89419376059197
+        },
+        "rss_mb": {
+          "n": 60,
+          "mean": 172.81640625,
+          "p50": 172.81640625,
+          "p95": 172.81640625,
+          "max": 172.81640625
+        },
+        "thread_count": {
+          "n": 60,
+          "mean": 5.0,
+          "p50": 5.0,
+          "p95": 5.0,
+          "max": 5.0
+        }
+      },
+      "pcie_capture": {
+        "cpu_percent": {
+          "n": 59,
+          "mean": 93.68129703507525,
+          "p50": 95.03591302607084,
+          "p95": 99.92383645315371,
+          "max": 100.01921369079574
+        },
+        "rss_mb": {
+          "n": 60,
+          "mean": 2.96484375,
+          "p50": 2.96484375,
+          "p95": 2.96484375,
+          "max": 2.96484375
+        },
+        "thread_count": {
+          "n": 60,
+          "mean": 1.0,
+          "p50": 1.0,
+          "p95": 1.0,
+          "max": 1.0
+        }
+      },
+      "qt": {
+        "cpu_percent": {
+          "n": 59,
+          "mean": 102.63058669000506,
+          "p50": 103.99889709176956,
+          "p95": 111.02132719679601,
+          "max": 114.02888910507689
+        },
+        "rss_mb": {
+          "n": 60,
+          "mean": 202.72779947916666,
+          "p50": 202.6328125,
+          "p95": 203.07421875,
+          "max": 203.328125
+        },
+        "thread_count": {
+          "n": 60,
+          "mean": 14.0,
+          "p50": 14.0,
+          "p95": 14.0,
+          "max": 14.0
+        }
+      },
+      "sidecar": {
+        "cpu_percent": {
+          "n": 59,
+          "mean": 85.84904865509196,
+          "p50": 86.02608508773221,
+          "p95": 97.93737619749574,
+          "max": 102.64880845282966
+        },
+        "rss_mb": {
+          "n": 60,
+          "mean": 138.67682291666668,
+          "p50": 139.61328125,
+          "p95": 142.37890625,
+          "max": 142.37890625
+        },
+        "thread_count": {
+          "n": 60,
+          "mean": 9.0,
+          "p50": 9.0,
+          "p95": 9.0,
+          "max": 9.0
+        }
+      }
+    },
+    "cpu_frequency_khz": {
+      "cpu0": {
+        "n": 60,
+        "mean": 1800000.0,
+        "p50": 1800000.0,
+        "p95": 1800000.0,
+        "max": 1800000.0
+      },
+      "cpu1": {
+        "n": 60,
+        "mean": 1800000.0,
+        "p50": 1800000.0,
+        "p95": 1800000.0,
+        "max": 1800000.0
+      },
+      "cpu2": {
+        "n": 60,
+        "mean": 1800000.0,
+        "p50": 1800000.0,
+        "p95": 1800000.0,
+        "max": 1800000.0
+      },
+      "cpu3": {
+        "n": 60,
+        "mean": 1800000.0,
+        "p50": 1800000.0,
+        "p95": 1800000.0,
+        "max": 1800000.0
+      }
+    },
+    "npu": {
+      "load_percent": {
+        "n": 60,
+        "mean": 100.0,
+        "p50": 100.0,
+        "p95": 100.0,
+        "max": 100.0
+      },
+      "frequency_hz": {
+        "n": 60,
+        "mean": 600000000.0,
+        "p50": 600000000,
+        "p95": 600000000,
+        "max": 600000000
+      }
+    },
+    "gpu": {
+      "load_percent": {
+        "n": 60,
+        "mean": 30.016666666666666,
+        "p50": 32.0,
+        "p95": 61.0,
+        "max": 68.0
+      },
+      "frequency_hz": {
+        "n": 60,
+        "mean": 666666666.6666666,
+        "p50": 800000000,
+        "p95": 800000000,
+        "max": 800000000
+      }
+    },
+    "dmc": {
+      "load_percent": {
+        "n": 60,
+        "mean": 44.78333333333333,
+        "p50": 45.0,
+        "p95": 49.0,
+        "max": 51.0
+      },
+      "frequency_hz": {
+        "n": 60,
+        "mean": 1056000000.0,
+        "p50": 1056000000,
+        "p95": 1056000000,
+        "max": 1056000000
+      }
+    },
+    "temperatures_c": {
+      "gpu-thermal": {
+        "n": 60,
+        "mean": 35.5366,
+        "p50": 35.555,
+        "p95": 36.111,
+        "max": 36.111
+      },
+      "soc-thermal": {
+        "n": 60,
+        "mean": 38.156933333333335,
+        "p50": 38.333,
+        "p95": 38.333,
+        "max": 38.888
+      }
+    },
+    "top_threads": [
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 100.01921369079574
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 99.9802479025139
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 99.96599336849484
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 99.92383645315371
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 99.8602751036004
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 99.04964972626316
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 99.02087023255692
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 98.93673717926097
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 98.92751007567124
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 98.30177879336999
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 98.11267829014976
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 98.08738811377911
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 98.06116653518754
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 97.99896072105032
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 97.98455743787412
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 97.86463725466253
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 97.04507860355913
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 97.00213996414247
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 96.88966689177296
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 96.09012081037483
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 96.0536108819901
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 96.02911823737966
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 96.02432766735656
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 95.90119750358016
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 95.88242427303454
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 95.10373049467326
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 95.05624249741939
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 95.04359440583262
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 95.03591302607084
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 95.0053933612833
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 94.98716305485912
+      },
+      {
+        "thread": "pcie_capture:783:783:pango_video_cap",
+        "cpu_percent": 94.94167324769981
+      }
+    ]
+  },
+  "memory_bandwidth_note": "DMC load is the driver-reported busy percentage; this kernel exposes no bytes-per-second counter."
+}

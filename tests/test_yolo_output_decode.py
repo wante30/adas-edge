@@ -31,3 +31,18 @@ def test_decode_split_outputs_returns_xyxy_detection() -> None:
     assert detections[0]["class_id"] == 2
     assert detections[0]["confidence"] == pytest.approx(0.9)
     assert detections[0]["bbox"] == [270.0, 280.0, 370.0, 360.0]
+
+
+def test_rectangular_raw_head_uses_independent_xy_strides() -> None:
+    profiler = __import__("tools.profile_rknn_single_stream", fromlist=["decode_yolo11_raw"])
+    outputs = []
+    for grid_h, grid_w in ((18, 32), (9, 16), (4, 8)):
+        reg = np.full((1, 64, grid_h, grid_w), -10.0, dtype=np.float32)
+        cls = np.full((1, 80, grid_h, grid_w), -10.0, dtype=np.float32)
+        reg[:, 0::16, grid_h // 2, grid_w // 2] = 1.0
+        cls[:, 2, grid_h // 2, grid_w // 2] = 10.0
+        outputs.extend((reg, cls))
+    boxes = profiler.decode_yolo11_raw(outputs, (512, 288), 0.25, 0.45, 1.0, 0, 0)
+    assert boxes
+    assert all(0 <= row[0] <= 512 and 0 <= row[2] <= 512 for row in boxes)
+    assert all(0 <= row[1] <= 288 and 0 <= row[3] <= 288 for row in boxes)

@@ -18,3 +18,15 @@ tmp/
 *.csv
 *.mp4
 *.avi
+yolo11s.pt
+yolo11s.onnx
+*.pt
+*.onnx
+
+# generated RTL/simulation artifacts
+rtl/**/build/
+
+# display/debug dumps
+*.xwd
+*.rgba
+

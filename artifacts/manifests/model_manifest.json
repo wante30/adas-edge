@@ -1,0 +1,214 @@
+{
+  "schema": "adas-edge/model-manifest/v1",
+  "updated": "2026-10-28",
+  "note": "Weights are intentionally not stored in normal Git history. This manifest is the version index; local Windows and board paths are recorded for reproducibility. SHA256 values were computed from the actual files listed.",
+  "artifacts": [
+    {
+      "id": "bdd-main-fp32",
+      "role": "BDD-YOLOv8n 10-class main detector (FP32 source checkpoint)",
+      "format": "PyTorch .pt",
+      "windows_path": "D:\\Datasets\\adas_edge_training\\b03b_pretrained_cache_20261021\\bdd100k-yolov8n-best.pt",
+      "size_bytes": 6268010,
+      "sha256": "acd17780b331c3970e22faf3c6f123eae8b8c4abcc736ad5ef38ff28ecd72fb2",
+      "input": "dynamic Ultralytics model; evaluated at 512x288",
+      "classes": 10,
+      "status": "PC source checkpoint; not a deployment artifact",
+      "evidence": [
+        "docs/models/evidence/B05N/bdd_main_1000.json",
+        "docs/models/TRAINING_REPORT.md"
+      ]
+    },
+    {
+      "id": "bdd-main-raw-head-onnx",
+      "role": "BDD main detector raw-head ONNX for RKNN conversion",
+      "format": "ONNX",
+      "windows_path": "D:\\Datasets\\adas_edge_training\\rknn_b05o\\bdd_yolov8n_512x288_raw_heads.onnx",
+      "size_bytes": 12081311,
+      "sha256": "d6ea1651a1bdcef1868bcb1651191e53d4568668df9e7f50cd5f2e9abe528adb",
+      "input": "[1,3,288,512]",
+      "outputs": "12 raw-head tensors (3 per scale, 4 scales: regression logits, class scores, score sum)",
+      "status": "conversion source; ONNX parity checked",
+      "evidence": [
+        "docs/models/evidence/B05P/B05P_bridge_runtime_20261027_A.json"
+      ]
+    },
+    {
+      "id": "bdd-main-raw-head-int8",
+      "role": "BDD main detector RKNN INT8 raw-head (current profile A)",
+      "format": "RKNN",
+      "windows_path": "D:\\Datasets\\adas_edge_training\\rknn_b05o\\bdd_yolov8n_512x288_raw_heads_int8.rknn",
+      "board_path": "/home/cat/cityscapes_arch_compare_20261027/models/bdd_yolov8n_512x288_raw_heads_int8.rknn",
+      "size_bytes": 4236613,
+      "sha256": "a86ab05338b49be54f95aa4d0cb937f1471924d917840d0f907480e29e041afb",
+      "input": "[1,288,512,3] uint8 NHWC (runtime)",
+      "classes": 10,
+      "status": "LOADED AND RUNNING on RK3566 on 2026-10-28; profile A; 10 Hz configured",
+      "evidence": [
+        "docs/deployment/evidence/current_live_summary_20261028.json",
+        "docs/models/evidence/B05P/B05P_bridge_runtime_20261027_A.json"
+      ]
+    },
+    {
+      "id": "b05n-p2-fp32",
+      "role": "B05N YOLOv8n-P2 10-class research model",
+      "format": "PyTorch .pt",
+      "windows_path": "D:\\Datasets\\adas_edge_training\\b05n_final\\b05n_p2_multiclass.pt",
+      "size_bytes": 6148944,
+      "sha256": "c249f7fffc828c892c8308c0f5a4768bb4c0a3c3ab28434d2e70e843b5e278ed",
+      "input": "512 (rect, 512x288 evaluation)",
+      "classes": 10,
+      "status": "PC research model; not the current production default",
+      "evidence": [
+        "docs/models/evidence/B05N/p2_4060_1000.json",
+        "docs/models/evidence/B05N/summary.json"
+      ]
+    },
+    {
+      "id": "b05n-p2-onnx",
+      "role": "B05N P2 10-class ONNX (post-DFL standard output)",
+      "format": "ONNX",
+      "windows_path": "D:\\Datasets\\adas_edge_training\\b05n_final\\b05n_p2_multiclass.onnx",
+      "size_bytes": 12024733,
+      "sha256": "c30ca4d99ccdd87a5c80f05dec1994fd256e38208955d191e8a55f9205f22e75",
+      "input": "[1,3,288,512]",
+      "output": "[1,14,12240]",
+      "status": "PC ONNX reference; post-DFL INT8 conversion showed large accuracy loss",
+      "evidence": [
+        "docs/models/MODEL_COMPARISON.md"
+      ]
+    },
+    {
+      "id": "b05n-p2-raw-head-onnx",
+      "role": "B05N P2 10-class raw-head ONNX for RKNN conversion",
+      "format": "ONNX",
+      "windows_path": "D:\\Datasets\\adas_edge_training\\rknn_b05o\\b05n_p2_multiclass_512x288_raw_heads_20261026.onnx",
+      "size_bytes": 11752800,
+      "sha256": "a1f3c20c3d4cd30e1690d75df4bf56be03059c874906c2536fecd1c6ad55cdd6",
+      "input": "[1,3,288,512]",
+      "outputs": "12 raw-head tensors",
+      "status": "conversion source; ONNX parity checked",
+      "evidence": [
+        "docs/models/evidence/B05P/B05P_bridge_runtime_20261027_B.json"
+      ]
+    },
+    {
+      "id": "b05n-p2-raw-head-int8",
+      "role": "B05N P2 10-class RKNN INT8 raw-head (profile B)",
+      "format": "RKNN",
+      "windows_path": "D:\\Datasets\\adas_edge_training\\rknn_b05o\\b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn",
+      "board_path": "/home/cat/cityscapes_arch_compare_20261027/models/b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn",
+      "size_bytes": 4393465,
+      "sha256": "65089ef0697bd7378071290baa218905cdcaed768452678da440b8eb116b2a5f",
+      "input": "[1,288,512,3] uint8 NHWC (runtime)",
+      "classes": 10,
+      "status": "BOARD-VALIDATED (isolated bridge and profile switch); not the current default",
+      "evidence": [
+        "docs/models/evidence/B05P/B05P_bridge_runtime_20261027_B.json",
+        "docs/models/MODEL_COMPARISON.md"
+      ]
+    },
+    {
+      "id": "b05l-specialist-fp32",
+      "role": "B05L YOLOv8n-P2 single-class traffic-light specialist",
+      "format": "PyTorch .pt",
+      "windows_path": "D:\\Datasets\\adas_edge_training\\b05l_runs\\v8n_p2\\weights\\best.pt",
+      "size_bytes": 6120464,
+      "sha256": "c2d8dd9250393af9eae838f147e9fcaff8bae5c37b05252ea1c1286e9c8776a7",
+      "input": "top-60% ROI resized to 512x192",
+      "classes": 1,
+      "status": "PC specialist; used as C/D specialist candidate",
+      "evidence": [
+        "docs/models/evidence/B05L/BDD50_summary_resize.json",
+        "docs/models/evidence/B05L/preprocessing_ab.json"
+      ]
+    },
+    {
+      "id": "b05l-specialist-raw-head-onnx",
+      "role": "B05L specialist raw-head ONNX",
+      "format": "ONNX",
+      "windows_path": "D:\\Datasets\\adas_edge_training\\rknn_b05o\\b05l_v8n_p2_512x192_raw_heads_20261026.onnx",
+      "size_bytes": 11747830,
+      "sha256": "74b7776606c07195ae6d3cc86369dff08a13b46728089859f798c140bf20897c",
+      "input": "[1,3,192,512]",
+      "outputs": "12 raw-head tensors",
+      "status": "conversion source; ONNX parity checked",
+      "evidence": [
+        "docs/models/evidence/B05P/B05P_bridge_runtime_20261027_C.json"
+      ]
+    },
+    {
+      "id": "b05l-specialist-raw-head-int8",
+      "role": "B05L specialist RKNN INT8 raw-head (profile C/D specialist)",
+      "format": "RKNN",
+      "windows_path": "D:\\Datasets\\adas_edge_training\\rknn_b05o\\b05l_v8n_p2_raw_heads_int8_500_20261026.rknn",
+      "board_path": "/home/cat/cityscapes_arch_compare_20261027/models/b05l_v8n_p2_raw_heads_int8_500_20261026.rknn",
+      "size_bytes": 4717877,
+      "sha256": "c11b95b481b25ee34a093390001e821af8f2503f923a52159b8576c6a6f38b6f",
+      "input": "[1,192,512,3] uint8 NHWC (runtime)",
+      "classes": 1,
+      "status": "BOARD-VALIDATED in C/D profiles; high traffic-light FP on Cityscapes; not default",
+      "evidence": [
+        "docs/models/evidence/B05P/B05P_bridge_runtime_20261027_C.json",
+        "docs/models/evidence/B05P/B05P_bridge_runtime_20261027_D.json"
+      ]
+    },
+    {
+      "id": "yolo11n-split-320",
+      "role": "Historical YOLO11n COCO split-output INT8 320 (not the current B05N/P2 model)",
+      "format": "RKNN",
+      "windows_path": "deployment/rknn/yolo11n_rk3566_int8_split_320.rknn",
+      "size_bytes": 3893761,
+      "sha256": "60f17e9bfe20b27dc7d0be068bc9852024e4a941847f881e1890bf96b2c977da",
+      "input": "[1,320,320,3] uint8 NHWC",
+      "classes": 80,
+      "status": "historical RK3566 single-image smoke; must NOT be quoted as B05N/P2 accuracy",
+      "evidence": [
+        "docs/competition_model_build.md",
+        "docs/competition_ai_inventory.md"
+      ]
+    },
+    {
+      "id": "yolo11n-split-416",
+      "role": "Historical YOLO11n COCO split-output INT8 416",
+      "format": "RKNN",
+      "windows_path": "deployment/rknn/yolo11n_rk3566_int8_split_416.rknn",
+      "size_bytes": 3954625,
+      "sha256": "87dfd6d480760d105e0abd7d04829d5059c8c5721bd7e3d6c53784de9793bb43",
+      "input": "[1,416,416,3] uint8 NHWC",
+      "classes": 80,
+      "status": "historical RK3566 single-image smoke; not current",
+      "evidence": [
+        "docs/competition_model_build.md",
+        "docs/competition_ai_inventory.md"
+      ]
+    },
+    {
+      "id": "legacy-yolo11n-split-512x288",
+      "role": "Legacy production detector before B05P profile A",
+      "format": "RKNN",
+      "board_path": "/home/cat/adas-edge-rect/rect_models/yolo11n_rk3566_int8_split_512x288.rknn",
+      "size_bytes": 3927489,
+      "sha256": "7a697ccc476954f6f36f7441b842257a2d7a019653cc4bad2fbf8de327c50591",
+      "input": "512x288",
+      "classes": 80,
+      "status": "historical production service; preserved for rollback",
+      "evidence": [
+        "docs/deployment/RK3566_BENCHMARK.md"
+      ]
+    },
+    {
+      "id": "legacy-tl-specialist-hybrid2",
+      "role": "Legacy traffic-light specialist used before B05L",
+      "format": "RKNN",
+      "board_path": "/home/cat/adas-edge-rect/tl_check/tl_specialist_512x192_hybrid2.rknn",
+      "size_bytes": 4246080,
+      "sha256": "becfaada5da49c4dd6c143e815f8f957fb7b7ed759040d4e18c685a9c434e6f8",
+      "input": "512x192",
+      "classes": 1,
+      "status": "legacy rollback candidate; not current default",
+      "evidence": [
+        "docs/deployment/DEPLOYMENT_GUIDE.md"
+      ]
+    }
+  ]
+}

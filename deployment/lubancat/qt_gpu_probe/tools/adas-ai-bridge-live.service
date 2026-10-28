@@ -1,0 +1,38 @@
+[Unit]
+Description=ADAS AI sidecar for live PCIe PGV
+Requires=pango-video-capture.service
+After=pango-video-capture.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=cat
+Group=cat
+WorkingDirectory=/home/cat/qt_gpu_probe_ai_20261019
+Environment=ADAS_EDGE_ROOT=/home/cat/competition_cockpit_port_20261018
+ExecStart=/usr/bin/python3 /home/cat/qt_gpu_probe_ai_20261019/ai_bridge.py \
+  --live-frame-file /dev/shm/qt_gpu_probe_ai.mfr1 \
+  --source PGV_LIVE \
+  --layout quad \
+  --display-view front \
+  --road-quadrant 1 \
+  --navigation-quadrant 1 \
+  --main-model /home/cat/adas-edge-rect/rect_models/yolo11n_rk3566_int8_split_512x288.rknn \
+  --specialist-model /home/cat/adas-edge-rect/tl_check/tl_specialist_512x192_hybrid2.rknn \
+  --main-hz 10 \
+  --hazard-hz 5 \
+  --specialist-hz 1 \
+  --ocr-hz 0.1 \
+  --navigation-ocr \
+  --idle-timeout 90 \
+  --timing-log /home/cat/qt_gpu_probe_ai_20261019/results/ai_live_timing.jsonl \
+  --summary /home/cat/qt_gpu_probe_ai_20261019/results/ai_live_summary.json
+Restart=always
+RestartSec=3
+# Keep the NPU/CPU sidecar from starving the Qt scene-graph thread. The
+# detector still runs at its configured cadence; this only changes scheduler
+# preference when both workloads compete for an A55 core.
+Nice=10
+
+[Install]
+WantedBy=multi-user.target
