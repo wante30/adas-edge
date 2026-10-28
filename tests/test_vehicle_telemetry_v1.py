@@ -105,3 +105,15 @@ def test_atomic_status_file(tmp_path):
     m.write_status_file(path, m.read_snapshot(EXAMPLE.__getitem__))
     assert json.loads(path.read_text(encoding='utf-8'))['decision'] == 'warning'
     assert list(tmp_path.iterdir()) == [path]
+
+
+def test_handoff_file_example_matches_decoder():
+    handoff_path = MODULE.with_name('rk3566_pcie_vehicle_telemetry_v1.json')
+    source = json.loads(handoff_path.read_text(encoding='utf-8'))
+    assert source['schema'] == 'pango.rk3566.vehicle_telemetry_handoff.v1'
+    fixture = EXAMPLE.copy()
+    for offset, value in source['example']['registers_hex'].items():
+        fixture[int(offset, 16)] = int(value, 16)
+    actual = m.read_snapshot(fixture.__getitem__)
+    for key, expected in source['example']['decoded'].items():
+        assert actual[key] == expected, key
