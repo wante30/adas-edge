@@ -6,6 +6,7 @@ Vehicle traffic lights never establish a pedestrian signal violation.
 """
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass, field
 import math
 import time
@@ -76,7 +77,7 @@ class HazardEvents:
             raise ValueError('Path must be a convex, nondegenerate polygon')
         self.path = tuple(tuple(float(v) for v in point) for point in polygon)
         self.polygon = polygon
-        self.timings = []
+        self.timings = deque(maxlen=3600)
         self.reset()
 
     def reset(self):

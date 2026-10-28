@@ -87,8 +87,11 @@ class SplitVideo:
         screen_polygon = quad + np.asarray([[-margin_left, -margin_top], [margin_right, -margin_top],
                                             [margin_right, margin_bottom], [-margin_left, margin_bottom]])
         road_mask = np.zeros(road.shape[:2], np.uint8)
-        cv2.fillConvexPoly(road_mask, np.rint(screen_polygon - [x1, y1]).astype(np.int32), 255)
-        road[road_mask != 0] = 0
+        polygon = np.rint(screen_polygon - [x1, y1]).astype(np.int32)
+        cv2.fillConvexPoly(road_mask, polygon, 255)
+        # The same integer rasterization directly fills all BGR channels; avoid
+        # allocating a boolean image and advanced-indexing every road pixel.
+        cv2.fillConvexPoly(road, polygon, (0, 0, 0))
         matrix = cv2.getPerspectiveTransform(quad.astype(np.float32), self.target_quad)
         navigation = cv2.warpPerspective(frame, matrix, self.navigation_size, flags=cv2.INTER_LINEAR,
                                          borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0))

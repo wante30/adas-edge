@@ -38,16 +38,16 @@ def nav(**changes):
     return result
 
 
-def test_recognized_navigation_is_visible_while_unassociated_light_still_stops(display):
+def test_recognized_navigation_is_visible_without_driving_controls(display):
     view,text=display
     image=render(view,nav())
     assert image.shape==(900,1600,3)
     assert '893 米后右转' in text and '白沙大道' in text
-    assert '同帧导航识别' in text and '行驶建议 · 灯控待确认' in text
-    assert '行驶状态' in text and '未测量' in text and '仅导航提示' in text
+    assert '同帧导航识别' in text and '信号灯 未确认' in text
+    assert not any('行驶建议' in value or '行驶状态' in value for value in text)
     assert '模拟车辆' not in text and '已停止' not in text and 'P' not in text
     assert '识别源帧 27 · 100 ms' in text
-    assert view.hit(868,41)=='n'
+    assert view.hit(868,41) is None
     assert view.video_point(230,510,(540,960,3)) is None
 
 
@@ -76,7 +76,8 @@ def test_uturn_is_preserved_as_route_hint_without_becoming_a_left_turn(display):
     view,text=display
     render(view,nav(direction='uturn',distance_m=221,road_name=''))
     assert '221 米后掉头' in text
-    assert '行驶建议 · 灯控待确认' in text
+    assert '221 米后左转' not in text
+    assert not any('请求左转' in value or '行驶建议' in value for value in text)
 
 
 def test_navigation_diagnostics_report_the_connected_source_and_age(display):
@@ -94,9 +95,9 @@ def test_ended_navigation_has_no_live_instruction(display):
     assert '893 米后右转' not in text
 
 
-def test_other_modes_keep_their_existing_presentation(display):
+def test_navigation_visibility_does_not_depend_on_a_simulated_control_mode(display):
     view,text=display
-    baseline=render(view,mode=Mode.INTERSECTION)
-    actual=render(view,nav(),mode=Mode.INTERSECTION)
-    assert np.array_equal(actual,baseline)
-    assert '模拟车辆' in text and '已停止' in text and 'P' in text
+    images=[render(view,nav(),mode=mode) for mode in Mode]
+    assert all(np.array_equal(image,images[0]) for image in images[1:])
+    assert '893 米后右转' in text
+    assert '模拟车辆' not in text and '已停止' not in text and 'P' not in text

@@ -88,6 +88,8 @@ body {
 .nav-map-fallback { display: block; width: 100%; height: 100%; }
 .scene-surround-feed { position: absolute; z-index: 1; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
 .scene-surround-feed[hidden] { display: none; }
+.scene-tesla-bev { position: absolute; z-index: 4; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; background: #f2f2f2; image-rendering: auto; }
+.scene-tesla-bev[hidden] { display: none; }
 .drive-ui { display: none; position: absolute; z-index: 7; inset: 0; color: #13252b; pointer-events: none; font-family: "Segoe UI", sans-serif; }
 .drive-top-left { position: absolute; top: 22px; left: 30px; display: flex; align-items: flex-start; gap: 9px; }
 .drive-speed { display: flex; align-items: baseline; gap: 5px; color: #10252c; text-shadow: 0 1px 1px #ffffff88; }
@@ -162,6 +164,11 @@ body[data-view-mode="drive"] .scene-host::before { background: linear-gradient(1
 body[data-view-mode="drive"] .panel-label { position: absolute; z-index: 10; top: 8px; right: 18px; left: 18px; min-height: 0; padding: 0; border: 0; color: #27464e; pointer-events: none; }
 body[data-view-mode="drive"] .panel-label .view-controls { pointer-events: auto; }
 body[data-view-mode="drive"] .scene-host canvas { z-index: 1; }
+body[data-view-mode="tesla"] .scene-host { background: #f2f2f2; }
+body[data-view-mode="tesla"] .scene-host::before, body[data-view-mode="tesla"] .scene-caption { display: none; }
+body[data-view-mode="tesla"] .scene-host canvas { visibility: hidden; }
+body[data-view-mode="tesla"] .drive-ui { display: none; }
+body[data-view-mode="tesla"] .scene-hud { z-index: 8; }
 body[data-view-mode="drive"] .scene-hud { z-index: 8; }
 .video-card { flex: 0 0 auto; }
 .bev-card { flex: 0 0 auto; }

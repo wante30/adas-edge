@@ -1,14 +1,24 @@
 """Source-clock navigation sampling and conservative policy adaptation."""
 from dataclasses import asdict, replace
 
+import cv2
+import numpy as np
+
 from competition_ai.scenario import Direction
 
 
 class NavigationSession:
-    def __init__(self, reader, *, hz=3.0, valid_for_ms=750):
+    def __init__(self, reader, *, hz=3.0, valid_for_ms=750, image_size=None):
         if hz <= 0 or not 1 <= valid_for_ms <= 60000:
             raise ValueError('Invalid navigation cadence or lifetime')
+        if image_size is not None:
+            if (not isinstance(image_size, (tuple, list)) or len(image_size) != 2
+                    or any(isinstance(value, bool) or not isinstance(value, int) or value <= 0
+                           for value in image_size)):
+                raise ValueError('image_size must contain positive integer width and height')
+            image_size = tuple(image_size)
         self.reader, self.hz, self.valid_for_ms = reader, hz, valid_for_ms
+        self.image_size = image_size
         self.timings = []
         self.reset()
 
@@ -25,6 +35,10 @@ class NavigationSession:
         if frame_id == self.last_frame:
             return
         if self.last_update_ns is None or timestamp_ns-self.last_update_ns >= round(1e9/self.hz)-1:
+            if (self.image_size is not None and isinstance(image, np.ndarray)
+                    and image.dtype == np.uint8 and image.ndim == 3 and image.shape[2] == 3
+                    and image.shape[1::-1] != self.image_size):
+                image = cv2.resize(image, self.image_size, interpolation=cv2.INTER_LINEAR)
             result = self.reader.update(image, frame_id, timestamp_ns)
             self.observation = asdict(result)
             if (self.observation.get('source_frame_id') != frame_id

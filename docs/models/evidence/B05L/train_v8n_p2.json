@@ -1,0 +1,122 @@
+{
+  "run": "D:\\Datasets\\adas_edge_training\\b05l_runs\\v8n_p2",
+  "arch": "yolov8n-p2",
+  "epochs_requested": 60,
+  "epochs_completed": 60,
+  "batch": 32,
+  "imgsz": 512,
+  "seed": 0,
+  "parameters": 3366022,
+  "transfer": {
+    "source": "C:\\Users\\JingyuWang\\adas-edge\\yolov8n.pt",
+    "source_sha256": "f59b3d833e2ff32e194b5bb8e08d211dc7c5bdf144b90d2c8412c47ccfc83b36",
+    "destination_layers": 437,
+    "matched_layers": 219,
+    "destination_parameters": 3366022,
+    "matched_parameter_fraction": 0.4350381548308359,
+    "unmatched_examples": [
+      "model.18.cv1.bn.bias",
+      "model.18.cv1.bn.running_mean",
+      "model.18.cv1.bn.running_var",
+      "model.18.cv1.bn.weight",
+      "model.18.cv1.conv.weight",
+      "model.18.cv2.bn.bias",
+      "model.18.cv2.bn.running_mean",
+      "model.18.cv2.bn.running_var",
+      "model.18.cv2.bn.weight",
+      "model.18.cv2.conv.weight",
+      "model.18.m.0.cv1.bn.bias",
+      "model.18.m.0.cv1.bn.running_mean",
+      "model.18.m.0.cv1.bn.running_var",
+      "model.18.m.0.cv1.bn.weight",
+      "model.18.m.0.cv1.conv.weight",
+      "model.18.m.0.cv2.bn.bias",
+      "model.18.m.0.cv2.bn.running_mean",
+      "model.18.m.0.cv2.bn.running_var",
+      "model.18.m.0.cv2.bn.weight",
+      "model.18.m.0.cv2.conv.weight"
+    ],
+    "note": "Exact key+shape matches before Ultralytics class-head remapping.",
+    "loaded_with": "YOLO.load(yolov8n.pt)",
+    "after_load": {
+      "matched_layers": 219,
+      "destination_layers": 437,
+      "matched_parameters": 1464348,
+      "destination_parameters": 3366022,
+      "matched_parameter_fraction": 0.4350381548308359,
+      "unmatched_layers": [
+        "model.18.cv1.bn.bias",
+        "model.18.cv1.bn.running_mean",
+        "model.18.cv1.bn.running_var",
+        "model.18.cv1.bn.weight",
+        "model.18.cv1.conv.weight",
+        "model.18.cv2.bn.bias",
+        "model.18.cv2.bn.running_mean",
+        "model.18.cv2.bn.running_var",
+        "model.18.cv2.bn.weight",
+        "model.18.cv2.conv.weight",
+        "model.18.m.0.cv1.bn.bias",
+        "model.18.m.0.cv1.bn.running_mean",
+        "model.18.m.0.cv1.bn.running_var",
+        "model.18.m.0.cv1.bn.weight",
+        "model.18.m.0.cv1.conv.weight",
+        "model.18.m.0.cv2.bn.bias",
+        "model.18.m.0.cv2.bn.running_mean",
+        "model.18.m.0.cv2.bn.running_var",
+        "model.18.m.0.cv2.bn.weight",
+        "model.18.m.0.cv2.conv.weight",
+        "model.19.bn.bias",
+        "model.19.bn.running_mean",
+        "model.19.bn.running_var",
+        "model.19.bn.weight",
+        "model.19.conv.weight",
+        "model.21.cv1.bn.bias",
+        "model.21.cv1.bn.running_mean",
+        "model.21.cv1.bn.running_var",
+        "model.21.cv1.bn.weight",
+        "model.21.cv1.conv.weight"
+      ]
+    }
+  },
+  "best_epoch": 55,
+  "best_fitness": 0.17395,
+  "best_metrics": {
+    "metrics/precision(B)": 0.60746,
+    "metrics/recall(B)": 0.50446,
+    "metrics/mAP50(B)": 0.52495,
+    "metrics/mAP50-95(B)": 0.17395
+  },
+  "final_metrics": {
+    "metrics/precision(B)": 0.60195,
+    "metrics/recall(B)": 0.50509,
+    "metrics/mAP50(B)": 0.51363,
+    "metrics/mAP50-95(B)": 0.1732
+  },
+  "train_seconds": 4260.05,
+  "best": "D:\\Datasets\\adas_edge_training\\b05l_runs\\v8n_p2\\weights\\best.pt",
+  "best_sha256": "c2d8dd9250393af9eae838f147e9fcaff8bae5c37b05252ea1c1286e9c8776a7",
+  "onnx": {
+    "path": "D:\\Datasets\\adas_edge_training\\b05l_runs\\v8n_p2\\weights\\best.onnx",
+    "sha256": "44fa7525afb042075467e4fc28090ab033b170d714b5e4a3c6930a4d531cac53",
+    "size_bytes": 11937968,
+    "input": {
+      "name": "images",
+      "shape": [
+        1,
+        3,
+        192,
+        512
+      ]
+    },
+    "output": {
+      "name": "output0",
+      "shape": [
+        1,
+        5,
+        8160
+      ]
+    }
+  },
+  "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "torch": "2.12.1+cu126"
+}

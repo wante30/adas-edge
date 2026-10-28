@@ -15,10 +15,11 @@
     </header>
     <section class="workspace">
       <section class="perception-panel panel">
-        <div class="panel-label"><span id="world-label">驾驶感知</span><div class="view-controls"><button data-view="drive" class="view-button active" type="button" aria-pressed="true">驾驶感知</button><button data-view="nav" class="view-button" type="button" aria-pressed="false">导航地图</button><button data-view="bowl" class="view-button" type="button" aria-pressed="false" disabled>环视 AVM</button></div></div>
+        <div class="panel-label"><span id="world-label">Tesla-BevCam-Clone 上游原版</span><div class="view-controls"><button data-view="tesla" class="view-button active" type="button" aria-pressed="true">Tesla-BevCam-Clone 原版</button><button data-view="drive" class="view-button" type="button" aria-pressed="false">Apollo Carviz 对照</button><button data-view="nav" class="view-button" type="button" aria-pressed="false">导航地图</button><button data-view="bowl" class="view-button" type="button" aria-pressed="false" disabled>环视 AVM</button></div></div>
         <div id="scene-host" class="scene-host">
           <div id="nav-map" class="nav-map" aria-label="离线导航地图"></div>
           <img id="scene-surround-feed" class="scene-surround-feed" alt="全景环视地图" hidden />
+          <img id="scene-tesla-bev" class="scene-tesla-bev" alt="Tesla-BevCam 开源 BEV 渲染" hidden />
           <div class="drive-ui" aria-label="驾驶辅助界面">
             <div class="drive-top-left">
               <div class="drive-speed"><strong id="drive-speed">0</strong><span>km/h</span></div>

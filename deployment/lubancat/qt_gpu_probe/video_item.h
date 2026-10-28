@@ -44,20 +44,26 @@ class VideoItem : public QQuickFramebufferObject {
     Q_PROPERTY(QString aiStatus READ aiStatus NOTIFY metricsChanged)
     Q_PROPERTY(bool aiOnline READ aiOnline NOTIFY metricsChanged)
     Q_PROPERTY(double aiFps READ aiFps NOTIFY metricsChanged)
-    Q_PROPERTY(QString aiTraffic READ aiTraffic NOTIFY aiChanged)
-    Q_PROPERTY(QString aiNavigation READ aiNavigation NOTIFY aiChanged)
-    Q_PROPERTY(QString aiNavigationRoad READ aiNavigationRoad NOTIFY aiChanged)
-    Q_PROPERTY(QString aiNavigationState READ aiNavigationState NOTIFY aiChanged)
-    Q_PROPERTY(QString aiNavigationDirection READ aiNavigationDirection NOTIFY aiChanged)
-    Q_PROPERTY(double aiNavigationDistanceM READ aiNavigationDistanceM NOTIFY aiChanged)
+    Q_PROPERTY(QString aiModelId READ aiModelId NOTIFY aiStatusChanged)
+    Q_PROPERTY(QString aiModelState READ aiModelState NOTIFY aiStatusChanged)
+    Q_PROPERTY(QString aiModelMessage READ aiModelMessage NOTIFY aiStatusChanged)
+    Q_PROPERTY(QVariantList aiModelOptions READ aiModelOptions NOTIFY aiStatusChanged)
+    Q_PROPERTY(QString aiTraffic READ aiTraffic NOTIFY aiStatusChanged)
+    Q_PROPERTY(QString aiNavigation READ aiNavigation NOTIFY aiStatusChanged)
+    Q_PROPERTY(QString aiNavigationRoad READ aiNavigationRoad NOTIFY aiStatusChanged)
+    Q_PROPERTY(QString aiNavigationState READ aiNavigationState NOTIFY aiStatusChanged)
+    Q_PROPERTY(QString aiNavigationDirection READ aiNavigationDirection NOTIFY aiStatusChanged)
+    Q_PROPERTY(double aiNavigationDistanceM READ aiNavigationDistanceM NOTIFY aiStatusChanged)
     Q_PROPERTY(int aiResultAgeMs READ aiResultAgeMs NOTIFY metricsChanged)
     Q_PROPERTY(int aiHazardAgeMs READ aiHazardAgeMs NOTIFY metricsChanged)
-    Q_PROPERTY(int aiDetectionCount READ aiDetectionCount NOTIFY aiChanged)
-    Q_PROPERTY(QVariantMap aiDetectionCounts READ aiDetectionCounts NOTIFY aiChanged)
-    Q_PROPERTY(QVariantList aiBoxes READ aiBoxes NOTIFY aiChanged)
-    Q_PROPERTY(QAbstractListModel *bboxModel READ bboxModel CONSTANT)
-    Q_PROPERTY(int bboxCount READ bboxCount NOTIFY aiChanged)
-    Q_PROPERTY(QVariantList aiHazards READ aiHazards NOTIFY aiChanged)
+    Q_PROPERTY(int aiDetectionCount READ aiDetectionCount NOTIFY aiBoxesChanged)
+    Q_PROPERTY(QVariantMap aiDetectionCounts READ aiDetectionCounts NOTIFY aiBoxesChanged)
+    Q_PROPERTY(QVariantList aiBoxes READ aiBoxes NOTIFY aiBoxesChanged)
+    // Expose the model through QObject so Qt 5 QML can consume it without
+    // requiring a metatype registration for the abstract model pointer.
+    Q_PROPERTY(QObject *bboxModel READ bboxModelObject CONSTANT)
+    Q_PROPERTY(int bboxCount READ bboxCount NOTIFY aiBoxesChanged)
+    Q_PROPERTY(QVariantList aiHazards READ aiHazards NOTIFY aiStatusChanged)
     Q_PROPERTY(qulonglong aiRequestsSent READ aiRequestsSent NOTIFY metricsChanged)
     Q_PROPERTY(qulonglong aiResultsReceived READ aiResultsReceived NOTIFY metricsChanged)
     Q_PROPERTY(QString sourceMode READ sourceMode NOTIFY metricsChanged)
@@ -67,7 +73,7 @@ class VideoItem : public QQuickFramebufferObject {
     Q_PROPERTY(qulonglong sourceFrameId READ sourceFrameId NOTIFY metricsChanged)
     Q_PROPERTY(qulonglong displayFrameId READ displayFrameId NOTIFY frameAdvanced)
     Q_PROPERTY(qulonglong displayTimestampNs READ displayTimestampNs NOTIFY frameAdvanced)
-    Q_PROPERTY(int aiFrameLag READ aiFrameLag NOTIFY aiChanged)
+    Q_PROPERTY(int aiFrameLag READ aiFrameLag NOTIFY aiBoxesChanged)
     Q_PROPERTY(int maxTrackPredictionMs READ maxTrackPredictionMs
                WRITE setMaxTrackPredictionMs NOTIFY metricsChanged)
     Q_PROPERTY(bool spatialViewActive READ spatialViewActive
@@ -197,6 +203,10 @@ public:
     QString eglVendor() const;
     bool hardwareAccelerated() const { return render_metrics_->hardware_accelerated.load(); }
     QString aiStatus() const;
+    QString aiModelId() const;
+    QString aiModelState() const;
+    QString aiModelMessage() const;
+    QVariantList aiModelOptions() const;
     bool aiOnline() const { return ai_online_.load(); }
     double aiFps() const { return ai_fps_.load(); }
     QString aiTraffic() const;
@@ -207,10 +217,12 @@ public:
     double aiNavigationDistanceM() const;
     int aiResultAgeMs() const { return ai_result_age_ms_.load(); }
     int aiHazardAgeMs() const { return ai_hazard_age_ms_.load(); }
+    double aiGuiUpdateMs() const { return ai_gui_update_ms_.load(); }
     int aiDetectionCount() const;
     QVariantMap aiDetectionCounts() const;
     QVariantList aiBoxes() const;
     AiBoxModel *bboxModel() const { return bbox_model_.get(); }
+    QObject *bboxModelObject() const { return bbox_model_.get(); }
     int bboxCount() const { return bbox_model_ ? bbox_model_->count() : 0; }
     QVariantList aiHazards() const;
     qulonglong aiRequestsSent() const { return ai_requests_sent_.load(); }
@@ -264,6 +276,7 @@ public:
     bool qsgMode() const { return qsg_target_ != nullptr; }
     void setAiRoadQuadrant(int quadrant);
     void setAiNavigationQuadrant(int quadrant);
+    Q_INVOKABLE void requestModelSwitch(const QString &profileId);
     qulonglong uniqueReplayContentFramesUploaded() const {
         return render_metrics_->unique_replay_content_frames.load();
     }
@@ -290,10 +303,14 @@ public:
 
 public slots:
     void requestFrameUpdate();
+    void notifyAiModelChanged();
 
 signals:
     void metricsChanged();
-    void aiChanged();
+    // Keep box/model invalidations separate from HUD/status changes. The
+    // overlay is updated at AI cadence without reevaluating every HUD binding.
+    void aiBoxesChanged();
+    void aiStatusChanged();
     void frameAdvanced();
     void spatialViewActiveChanged();
     void sourceViewportChanged();
@@ -346,12 +363,21 @@ private:
     uint32_t last_ai_epoch_ = 0;
     std::atomic<bool> ai_online_{false};
     std::atomic<bool> ai_dirty_{false};
+    std::atomic<bool> ai_status_dirty_{false};
     std::atomic<double> ai_fps_{0.0};
     std::atomic<int> ai_result_age_ms_{0};
     std::atomic<int> ai_hazard_age_ms_{0};
+    std::atomic<double> ai_gui_update_ms_{0.0};
     std::atomic<qint64> last_ai_result_ns_{0};
     mutable QMutex ai_metrics_mutex_;
     QString ai_status_ = QStringLiteral("AI sidecar 未连接");
+    QString ai_model_id_;
+    QString ai_model_state_ = QStringLiteral("WAITING");
+    QString ai_model_message_;
+    QVariantList ai_model_options_;
+    QString pending_model_switch_id_;
+    quint32 pending_model_switch_request_id_ = 0;
+    quint32 next_model_switch_request_id_ = 0;
     QString ai_traffic_ = QStringLiteral("UNKNOWN");
     QString ai_navigation_ = QStringLiteral("等待导航识别");
     QString ai_navigation_road_;

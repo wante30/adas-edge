@@ -101,7 +101,8 @@ ADAS_EDGE_ROOT=/home/cat/competition_cockpit_port_20261018 \
   --navigation-quadrant 1 \
   --main-model /home/cat/adas-edge-rect/rect_models/yolo11n_rk3566_int8_split_512x288.rknn \
   --specialist-model /home/cat/adas-edge-rect/tl_check/tl_specialist_512x192_hybrid2.rknn \
-  --main-hz 5 --specialist-hz 1 --ocr-hz 0.5 --idle-timeout 90 \
+  --main-hz 10 --hazard-hz 5 --specialist-hz 1 --ocr-hz 0.1 --idle-timeout 90 \
+  --no-navigation-ocr \
   --summary "$RUN/results/ai_summary.json" \
   > "$RUN/results/ai.log" 2>&1 &
 ```
@@ -155,6 +156,7 @@ cat results/hud_bridge.log
 | `--capture-cycle` | 仅测试用，每 5 秒自动切换模式，便于一次抓三张图 |
 | `--ai-frame-file PATH` | `MFR1` 快照路径；必须与 sidecar 一致 |
 | `--ai-hz N` | 向 sidecar 发请求的频率 |
+| `--hazard-hz N` | 危险事件分析频率；`0` 跟随 YOLO，生产配置为 5 Hz |
 
 ## 当前性能
 
@@ -165,10 +167,21 @@ cat results/hud_bridge.log
 | 真实 PCIe + AI 3 Hz | 56.1 | 49.4/s | 61.2/s | 3.0 Hz（末窗 0.76） | 2.33 ms |
 | 真实 PCIe + AI 5 Hz，Q1 截图档（旧） | 51.3 | 44.2/s | 51.3/s | 4.92 Hz | 3.13 ms |
 
+当前常驻桌面配置的专项复测（单路主视、真实 PCIe、`QT_FRAME_METADATA_HZ=15`）如下。这里的 `AI 请求` 是 Qt 向 sidecar 请求结果的频率，sidecar 内部 YOLO 主模型仍按 `--main-hz 10` 配置运行。
+
+| 配置 | QSG 回调 | AI 结果 | 说明 |
+|---|---:|---:|---|
+| 无 AI | 约 45 FPS | 0 | Qt 基线 |
+| AI 请求 5 Hz，sidecar `Nice=10` | 约 42–44 FPS | 约 4.7–5.0 Hz | 基本不影响 Qt，推荐稳定档 |
+| AI 请求 10 Hz，sidecar 默认优先级 | 约 30–35 FPS | 约 9.3–9.8 Hz | YOLO 上限，Qt 明显降速 |
+| AI 请求 10 Hz，sidecar leader `Nice=10` | 约 30–36 FPS | 约 9.5 Hz | 只改善调度竞争，仍未回到基线 |
+
+同一配置的单次结果会随 PCIe publisher、NPU/GPU 频率和窗口负载波动；以上是当前板端多次复测范围，不是物理显示器的 scan-out FPS。
+
 - 采集 publisher 本身约 **58.8 fps**；旧布局 Qt 单路 scene graph 约 **51–61 fps**。新增 LiveBev + PCIe 测试面板后的截图档实测约 **20–29 fps**，不能用旧表当作新布局指标。
 - `GL 接受` 只表示 `glTexSubImage2D` 无错误，不等于物理 HDMI scanout；`physical_scanout_fps` 保持 `null`。
 - Qt 使用一个复用 RGB565 纹理、一次上传；producer 读取直接写入预分配帧池，CRC 使用 zlib，避免每帧临时整帧 copy。
-- 渲染线程直接拉取共享帧队列，QML 不再为每个 PCIe 帧排一次 GUI 事件；静态卡片用 `layer.enabled` 缓存，目标框使用预渲染 BorderImage 角标而不是大量 QML 图元。
+- 渲染线程直接拉取共享帧队列，QML 不再为每个 PCIe 帧排一次 GUI 事件；静态卡片用 `layer.enabled` 缓存，目标框使用轻量边框和标签图元。
 - AI sidecar 在持续高频率推理时可能变慢或停止返回（约 15–20 秒后出现）；5 Hz 截图档可见，但持续运行也可能变慢，必要时重启 sidecar。UI 会在 1.5 秒后如实显示离线，不保留陈旧框。
 
 ## AI 结果与诚实边界
@@ -261,6 +274,7 @@ QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl \
 - 参考素材本身是 30 fps，所以本地视频内容最多 30 fps；QSG 接近 60。不要宣称本地回放是 60 fps 内容。
 - 320/416 模型降低延迟但交通灯/远小目标精度下降；512 模型精度更好但 AI 状态约 3–5 fps。
 - **导航 OCR 默认关闭**：Q2 卡片 OCR 在 RK3566 上单次约 10 s，会抢占 CPU 并让源 FPS/框延迟变差。需要时加 `--navigation-ocr`，并接受掉帧；本地性能模式不启用。
+- **生产 AI cadence**：YOLO 主模型保持 10 Hz，危险事件分析独立为 5 Hz，避免每个 YOLO 结果都重复执行全帧运动/跟踪计算；这不会降低检测框更新频率。
 - 图像/时序证据：`results/local_noai.json`、`local_ai30.json`、`local_ai416.json`、`local_final3.json`。
 
 ## 已知限制

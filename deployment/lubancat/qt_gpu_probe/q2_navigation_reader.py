@@ -99,7 +99,7 @@ class Q2NavigationReader(NavigationReader):
             _, labels, stats, _ = cv2.connectedComponentsWithStats(binary)
             for label, (x, y, w, h, area) in enumerate(stats[1:], 1):
                 if (area < 45 or not 20 <= h <= 115 or not 10 <= w <= 110
-                        or x >= card.shape[1] * 0.45 or y >= card.shape[0] * 0.85
+                        or x >= card.shape[1] * 0.80 or y >= card.shape[0] * 0.85
                         or not 0.22 <= w / max(1, h) <= 1.65):
                     continue
                 mask = np.uint8(labels[y:y+h, x:x+w] == label) * 255

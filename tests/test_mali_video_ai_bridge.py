@@ -1,5 +1,8 @@
 import importlib.util
 from pathlib import Path
+import threading
+import sys
+from types import SimpleNamespace
 
 import numpy as np
 
@@ -13,6 +16,14 @@ AI_BRIDGE_PATH = (
     / "mali_video"
     / "ai_bridge.py"
 )
+QT_AI_BRIDGE_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "deployment"
+    / "lubancat"
+    / "qt_gpu_probe"
+    / "ai_bridge.py"
+)
+B05P_ADAPTER_PATH = QT_AI_BRIDGE_PATH.with_name("b05p_competition_bridge.py")
 
 
 def _load_ai_bridge():
@@ -21,6 +32,38 @@ def _load_ai_bridge():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def _load_qt_ai_bridge():
+    assert QT_AI_BRIDGE_PATH.is_file(), "Qt GPU probe AI bridge is missing"
+    sys.path.insert(0, str(QT_AI_BRIDGE_PATH.parent))
+    spec = importlib.util.spec_from_file_location("qt_ai_bridge_test", QT_AI_BRIDGE_PATH)
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.path.pop(0)
+    return module
+
+
+def test_qt_ai_bridge_reuses_identical_road_and_navigation_quadrants(monkeypatch):
+    bridge = _load_qt_ai_bridge()
+    payload = bytes(bridge.FRAME_BYTES)
+    packed = bridge.PackedRgb565(payload)
+    calls = []
+    road = object()
+
+    def decode(self, quadrant):
+        calls.append(quadrant)
+        return road if quadrant == 1 else object()
+
+    monkeypatch.setattr(bridge.PackedRgb565, "quadrant_bgr", decode)
+    selected_road, selected_navigation = bridge.select_inference_frames(
+        packed, "quad", 1, 1
+    )
+
+    assert calls == [1]
+    assert selected_road is selected_navigation is road
 
 
 def test_latest_frame_slot_replaces_pending_requests_without_queueing():
@@ -346,3 +389,155 @@ def test_board_telemetry_reports_load_frequency_and_temperature_distributions():
     assert summary["devices"]["npu"]["load_percent"]["p95_percent"] == 78.1
     assert summary["devices"]["npu"]["frequency_mhz"]["p50_mhz"] == 500.0
     assert summary["temperatures_c"]["soc-thermal"]["max_c"] == 35.0
+
+
+def _make_switch_bridge(bridge_module, tmp_path, fail_specialist=False, same_main=False):
+    sys.path.insert(0, str(QT_AI_BRIDGE_PATH.parent))
+    try:
+        from model_profiles import ModelProfile
+    finally:
+        sys.path.pop(0)
+
+    old_main_path = tmp_path / "old-main.rknn"
+    old_main_path.write_bytes(b"old")
+    new_main_path = tmp_path / "new-main.rknn"
+    new_main_path.write_bytes(b"new")
+    new_specialist_path = tmp_path / "new-specialist.rknn"
+    new_specialist_path.write_bytes(b"new specialist")
+    created = []
+
+    class FakeDetector:
+        def __init__(self, path, input_size, *, specialist=False, class_profile=None,
+                     class_names=None):
+            if fail_specialist and specialist:
+                raise RuntimeError("specialist load failed")
+            self.path = Path(path)
+            self.input_size = input_size
+            self.specialist = specialist
+            self.single_model = not specialist
+            self.class_profile = class_profile
+            self.closed = False
+            created.append(self)
+
+        def close(self):
+            self.closed = True
+
+    old_main = FakeDetector(old_main_path, (512, 288), class_profile="bdd10")
+    profile = ModelProfile(
+        "D", "D test", old_main_path if same_main else new_main_path,
+        new_specialist_path, (512, 288), "bdd10"
+    )
+    bridge_module.RknnConsoleDetector = FakeDetector
+    instance = object.__new__(bridge_module.AiReplayBridge)
+    instance.args = SimpleNamespace(
+        main_model=str(old_main_path), specialist_model="",
+        main_hz=10.0, specialist_hz=1.0,
+    )
+    instance.pipeline = SimpleNamespace(
+        main_detector=old_main,
+        specialist_detector=None,
+        reset=lambda: setattr(instance, "pipeline_was_reset", True),
+    )
+    instance.model_profiles = {"D": profile}
+    instance.model_switch_lock = threading.Lock()
+    instance.pending_model_switch = {"request_id": 11, "profile_id": "D"}
+    instance.model_switch_peer = None
+    instance.active_model_id = "A"
+    instance.model_switch_state = "SWITCHING"
+    instance.model_switch_message = "loading"
+    return instance, old_main, created
+
+
+def test_runtime_model_switch_replaces_both_detectors_after_success(tmp_path):
+    bridge_module = _load_qt_ai_bridge()
+    instance, old_main, created = _make_switch_bridge(bridge_module, tmp_path)
+
+    assert instance._apply_pending_model_switch()
+
+    assert instance.active_model_id == "D", instance.model_switch_message
+    assert instance.args.main_model.endswith("new-main.rknn")
+    assert instance.args.specialist_model.endswith("new-specialist.rknn")
+    assert instance.pipeline.main_detector is created[1]
+    assert instance.pipeline.main_detector.single_model is False
+    assert instance.pipeline.specialist_detector is created[2]
+    assert old_main.closed
+    assert instance.pipeline_was_reset
+    assert instance.model_switch_state == "APPLIED"
+
+
+def test_runtime_model_switch_keeps_current_pair_when_specialist_load_fails(tmp_path):
+    bridge_module = _load_qt_ai_bridge()
+    instance, old_main, created = _make_switch_bridge(
+        bridge_module, tmp_path, fail_specialist=True
+    )
+
+    assert instance._apply_pending_model_switch()
+
+    assert instance.active_model_id == "A"
+    assert instance.pipeline.main_detector is old_main
+    assert instance.pipeline.specialist_detector is None
+    assert instance.args.main_model.endswith("old-main.rknn")
+    assert created[1].closed
+    assert instance.model_switch_state == "FAILED"
+
+
+def test_failed_dual_switch_keeps_single_model_filter_when_main_is_reused(tmp_path):
+    bridge_module = _load_qt_ai_bridge()
+    instance, old_main, created = _make_switch_bridge(
+        bridge_module, tmp_path, fail_specialist=True, same_main=True
+    )
+
+    assert instance._apply_pending_model_switch()
+
+    assert instance.active_model_id == "A"
+    assert instance.pipeline.main_detector is old_main
+    assert old_main.single_model is True
+    assert instance.pipeline.specialist_detector is None
+    assert created == [old_main]
+    assert instance.model_switch_state == "FAILED"
+
+
+def test_b05p_adapter_follows_runtime_single_or_dual_model_state():
+    import competition_ai.detector as detector_module
+
+    spec = importlib.util.spec_from_file_location("b05p_adapter_test", B05P_ADAPTER_PATH)
+    adapter = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(adapter)
+
+    class FakeRunner:
+        def infer(self, frame, stream_id=0, frame_id=0, timestamp_ns=None):
+            detections = [
+                SimpleNamespace(class_name="traffic light", confidence=0.9,
+                                x1=1.0, y1=2.0, x2=5.0, y2=8.0),
+                SimpleNamespace(class_name="car", confidence=0.8,
+                                x1=10.0, y1=20.0, x2=30.0, y2=40.0),
+            ]
+            return SimpleNamespace(detections=detections, inference_ms=1.0)
+
+    class FakeBaseDetector:
+        def __init__(self, model_path, input_size, **kwargs):
+            self.detector = FakeRunner()
+            self.model_path = model_path
+            self.input_size = input_size
+
+        def close(self):
+            pass
+
+    bridge = SimpleNamespace(RknnConsoleDetector=FakeBaseDetector)
+    original_detector = detector_module.CompetitionDetector
+    try:
+        adapter._install_raw_head_adapter(bridge, "A")
+        main = bridge.RknnConsoleDetector("bdd.rknn", (512, 288), class_profile="bdd10")
+        assert {item["class_name"] for item in main.detect(None)[0]} == {"traffic light", "car"}
+
+        main.single_model = False
+        assert {item["class_name"] for item in main.detect(None)[0]} == {"car"}
+
+        specialist = bridge.RknnConsoleDetector(
+            "specialist.rknn", (512, 192), specialist=True,
+            class_names=("traffic light",),
+        )
+        assert specialist.detector is not None
+        assert specialist.detect(None)[0]
+    finally:
+        detector_module.CompetitionDetector = original_detector

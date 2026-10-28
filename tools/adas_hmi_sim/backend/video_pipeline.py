@@ -344,43 +344,192 @@ class ReplaySource:
 
 
 class LiveSource:
-    def __init__(self, video: str | Path, model: str | Path, confidence: float = 0.25, device: str = "cpu", fps_limit: float = 10.0):
+    def __init__(self, video: str | Path, model: str | Path, confidence: float = 0.25, device: str = "cpu", fps_limit: float = 10.0, input_size: int | tuple[int, int] = 640, traffic_light_min_confidence: float = 0.25, traffic_light_hold_frames: int = 4, traffic_light_association: str = "unverified", lane_stride: int = 1, signal_roi: bool = False, signal_roi_confidence: float = 0.10, signal_roi_input_size: int | tuple[int, int] | None = None, signal_roi_top: float = 0.55, traffic_light_model: str | Path | None = None, traffic_light_confidence: float = 0.05, traffic_light_fps: float = 3.0, traffic_light_roi_top: float = 0.60, traffic_light_specialist_mode: str = "fuse", start_frame: int = 0, loop: bool = False, traffic_light_roi_mode: str = "top60"):
         self.capture = cv2.VideoCapture(str(video))
         if not self.capture.isOpened():
             raise RuntimeError(f"Could not open live video: {video}")
+        self.start_frame = max(0, int(start_frame))
+        self.loop = bool(loop)
+        if self.start_frame > 0:
+            self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.start_frame)
         self.index = 0
-        self.fps_limit = fps_limit
+        self.fps_limit = max(0.0, float(fps_limit))
         self._last_emit = 0.0
+        self._last_signal_emit = 0.0
+        self._last_signal_detections: list[dict[str, Any]] = []
+        self._last_signal_inference_ms: float | None = None
+        self._signal_fps = max(0.0, float(traffic_light_fps))
+        if traffic_light_specialist_mode not in {"fuse", "replace"}:
+            raise ValueError("traffic_light_specialist_mode must be 'fuse' or 'replace'")
+        self.traffic_light_specialist_mode = traffic_light_specialist_mode
+        self.traffic_light_association = traffic_light_association
+        self.signal_roi_confidence = max(0.0, float(signal_roi_confidence))
+        self.signal_roi_input_size = signal_roi_input_size if signal_roi_input_size is not None else input_size
+        self.signal_roi_top = float(np.clip(signal_roi_top, 0.30, 0.90))
+        self._last_result_metadata: dict[str, Any] = {
+            "system_mode": "PC_FRONT_LIVE",
+            "traffic_light_state": "UNKNOWN",
+            "traffic_light_decision_state": "UNKNOWN",
+            "traffic_light": {"state": "UNKNOWN", "confidence": 0.0, "bbox": None, "candidate_count": 0, "signal_type": "UNKNOWN", "pedestrian_state": "UNKNOWN"},
+            "lanes": {},
+            "lane_detector": {"coverage": 0.0, "source": "OPENCV_HOUGH_EXPERIMENTAL", "validation": "EXPERIMENTAL"},
+        }
         model_path = Path(model)
+        self.signal_roi_enabled = bool(signal_roi and model_path.suffix.lower() == ".pt" and traffic_light_model is None)
+        self.signal_detector = None
+        self.signal_specialist = None
+        from .traffic_light_specialist import SignalCandidateCache
+        self.signal_cache = SignalCandidateCache(confidence=traffic_light_confidence)
+        self.traffic_light_model_path = Path(traffic_light_model) if traffic_light_model is not None else None
+        if traffic_light_model is not None:
+            from .traffic_light_specialist import TrafficLightSpecialist
+
+            self.signal_specialist = TrafficLightSpecialist(
+                traffic_light_model,
+                confidence=traffic_light_confidence,
+                roi_top=traffic_light_roi_top,
+                device=device,
+                roi_mode=traffic_light_roi_mode,
+            )
         if model_path.suffix.lower() == ".rknn":
             from competition_ai.detector import CompetitionDetector
-            self.detector = CompetitionDetector(model_path, conf_threshold=confidence)
+            self.detector = CompetitionDetector(model_path, input_size=input_size, conf_threshold=confidence)
         else:
             from adas_edge.perception.ultralytics_detector import UltralyticsDetector
-            self.detector = UltralyticsDetector(model_path, confidence=confidence, device=device)
+            self.detector = UltralyticsDetector(model_path, confidence=confidence, input_size=input_size, device=device, exact_input_canvas=True)
+            if self.signal_roi_enabled:
+                # The main detector sees the complete frame. A second PC-only
+                # pass enlarges the upper signal corridor without changing
+                # the board's fixed 512x288 NPU path.
+                self.signal_detector = UltralyticsDetector(model_path, confidence=self.signal_roi_confidence, input_size=self.signal_roi_input_size, device=device)
+        from .traffic_light_runtime import TrafficLightTemporalFilter
+        from .lane_runtime import FrontLaneCandidate
+        self.traffic_filter = TrafficLightTemporalFilter(min_confidence=traffic_light_min_confidence, hold_frames=traffic_light_hold_frames, association_mode=traffic_light_association,
+                                                       specialist_min_confidence=traffic_light_confidence, ego_x_max=.95, pedestrian_hold_frames=0)
+        self.lane_estimator = FrontLaneCandidate(update_stride=lane_stride)
+        self.model_path = model_path
+        self.input_size = input_size
 
     def next(self) -> FramePacket | None:
         ok, image = self.capture.read()
+        if not ok and self.loop:
+            self.capture.set(cv2.CAP_PROP_POS_FRAMES, self.start_frame)
+            self.index = self.start_frame
+            if hasattr(self, "traffic_filter"):
+                self.traffic_filter.reset()
+            if hasattr(self, "lane_estimator"):
+                self.lane_estimator.reset()
+            self.signal_cache.reset()
+            self._last_signal_emit = 0.0
+            self._last_signal_detections = []
+            if self.signal_specialist is not None:
+                self.signal_specialist.reset_roi()
+            self._last_result_metadata["traffic_light_state"] = "UNKNOWN"
+            self._last_result_metadata["traffic_light_decision_state"] = "UNKNOWN"
+            ok, image = self.capture.read()
         if not ok:
             return None
+        frame_id = self.index
+        self.index += 1
         now = time.perf_counter()
         if self.fps_limit > 0 and self._last_emit and now - self._last_emit < 1.0 / self.fps_limit:
-            return FramePacket(self.index, int(self.index * 1000 / max(1.0, self.capture.get(cv2.CAP_PROP_FPS))), image, [], {}, False)
+            timestamp_ms = int(frame_id * 1000 / max(1.0, self.capture.get(cv2.CAP_PROP_FPS)))
+            return FramePacket(frame_id, timestamp_ms, image, [], dict(self._last_result_metadata), False)
         self._last_emit = now
-        timestamp_ms = int(self.index * 1000 / max(1.0, self.capture.get(cv2.CAP_PROP_FPS)))
+        timestamp_ms = int(frame_id * 1000 / max(1.0, self.capture.get(cv2.CAP_PROP_FPS)))
+        detector_inference_ms = None
+        signal_roi_ms = None
         if hasattr(self.detector, "infer"):
-            result = self.detector.infer(image, frame_id=self.index, timestamp_ns=timestamp_ms * 1_000_000)
+            result = self.detector.infer(image, frame_id=frame_id, timestamp_ns=timestamp_ms * 1_000_000)
             detections = [item.to_dict() for item in result.detections]
+            detector_inference_ms = round(float(getattr(result, "inference_ms", 0.0)), 3)
         else:
             from adas_edge.contracts import Frame, PixelFormat
             from datetime import datetime, timezone
-            frame = Frame("front", self.index, datetime.now(timezone.utc), image, PixelFormat.BGR888)
+            frame = Frame("front", frame_id, datetime.now(timezone.utc), image, PixelFormat.BGR888)
+            detector_started = time.perf_counter()
             detections = [item.to_dict() for item in self.detector.detect(frame)]
-        packet = FramePacket(self.index, timestamp_ms, image, detections, {})
-        self.index += 1
+            detector_inference_ms = round((time.perf_counter() - detector_started) * 1000.0, 3)
+            if self.signal_detector is not None:
+                roi_started = time.perf_counter()
+                height, width = image.shape[:2]
+                x0, x1 = int(width * 0.10), int(width * 0.90)
+                y0, y1 = 0, int(height * self.signal_roi_top)
+                crop = image[y0:y1, x0:x1]
+                roi_frame = Frame("front_signal_roi", frame_id, datetime.now(timezone.utc), crop, PixelFormat.BGR888)
+                roi_items = [item.to_dict() for item in self.signal_detector.detect(roi_frame)]
+                for item in roi_items:
+                    bbox = item.get("bbox") or item.get("bbox_xyxy")
+                    if bbox is None or len(bbox) != 4:
+                        continue
+                    rx1, ry1, rx2, ry2 = (float(value) for value in bbox)
+                    item["bbox"] = [
+                        x0 + rx1 * (x1 - x0) / max(1, crop.shape[1]),
+                        y0 + ry1 * (y1 - y0) / max(1, crop.shape[0]),
+                        x0 + rx2 * (x1 - x0) / max(1, crop.shape[1]),
+                        y0 + ry2 * (y1 - y0) / max(1, crop.shape[0]),
+                    ]
+                detections.extend(item for item in roi_items if item.get("class_name") == "traffic light")
+                signal_roi_ms = round((time.perf_counter() - roi_started) * 1000.0, 3)
+        if self.signal_specialist is not None:
+            # The specialist is intentionally slower than the broad detector.
+            # Keep its last boxes between updates so the temporal filter sees a
+            # coherent signal track without running a second NPU/PC pass at the
+            # main detector rate.
+            from .traffic_light_specialist import signal_refresh_due
+            signal_due = signal_refresh_due(now, None if self._last_signal_emit == 0. else self._last_signal_emit, self._signal_fps)
+            if self.traffic_light_specialist_mode == "replace":
+                detections = [
+                    item
+                    for item in detections
+                    if str(item.get("class_name", "")).replace("_", " ").lower() != "traffic light"
+                ]
+            if signal_due:
+                self._last_signal_detections, self._last_signal_inference_ms = self.signal_specialist.detect(image, frame_id=frame_id)
+                self.signal_cache.store(image, self._last_signal_detections,
+                                        frame_id=frame_id, timestamp_ms=timestamp_ms)
+                self._last_signal_emit = now
+            detections.extend(self.signal_cache.current(timestamp_ms))
+        lane_estimate = self.lane_estimator.update(image)
+        estimate = self.traffic_filter.update(image, detections, lane_metadata=lane_estimate.as_metadata())
+        self._last_result_metadata = {
+            "system_mode": "PC_FRONT_LIVE",
+            # SceneFrame displays the measured candidate color, while the
+            # decision field remains UNKNOWN until signal-to-ego-lane
+            # association is validated.
+            "traffic_light_state": estimate.state,
+            "traffic_light_decision_state": estimate.decision_state,
+            "traffic_light": estimate.as_metadata(),
+            "lanes": lane_estimate.lanes,
+            "lane_detector": lane_estimate.as_metadata(),
+            "perception": {
+                "model": self.model_path.name,
+                "input_size": list(self.input_size) if isinstance(self.input_size, tuple) else self.input_size,
+                "inference_ms": detector_inference_ms,
+                "signal_roi_enabled": self.signal_roi_enabled,
+                "signal_roi_confidence": self.signal_roi_confidence if self.signal_roi_enabled else None,
+                "signal_roi_input_size": list(self.signal_roi_input_size) if isinstance(self.signal_roi_input_size, tuple) else self.signal_roi_input_size if self.signal_roi_enabled else None,
+                "signal_roi_top": self.signal_roi_top if self.signal_roi_enabled else None,
+                "signal_roi_ms": signal_roi_ms if "signal_roi_ms" in locals() else None,
+                "traffic_light_specialist_enabled": self.signal_specialist is not None,
+                "traffic_light_specialist_model": self.traffic_light_model_path.name if self.traffic_light_model_path is not None else None,
+                "traffic_light_specialist_roi": self.signal_specialist.last_roi if self.signal_specialist is not None else None,
+                "traffic_light_specialist_fps_target": self._signal_fps if self.signal_specialist is not None else 0.0,
+                "traffic_light_specialist_mode": self.traffic_light_specialist_mode if self.signal_specialist is not None else None,
+                "traffic_light_specialist_inference_ms": self._last_signal_inference_ms,
+                "traffic_light_specialist_updated": bool(self.signal_specialist is not None and signal_due),
+                "traffic_light_association": self.traffic_light_association,
+                "detector_frame_id": frame_id,
+            },
+        }
+        packet = FramePacket(frame_id, timestamp_ms, image, detections, dict(self._last_result_metadata))
         return packet
 
     def close(self) -> None:
         self.capture.release()
         if hasattr(self.detector, "close"):
             self.detector.close()
+        if self.signal_detector is not None and hasattr(self.signal_detector, "close"):
+            self.signal_detector.close()
+        if self.signal_specialist is not None:
+            self.signal_specialist.close()

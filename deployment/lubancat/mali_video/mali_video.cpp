@@ -1,5 +1,6 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/keysym.h>
 
 #include <arpa/inet.h>
 #include <algorithm>
@@ -94,6 +95,7 @@ void glPixelStorei(GLenum, GLint);
 void glTexImage2D(GLenum, GLint, GLint, GLsizei, GLsizei, GLint, GLenum, GLenum, const void *);
 void glTexSubImage2D(GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, const void *);
 void glViewport(GLint, GLint, GLsizei, GLsizei);
+void glScissor(GLint, GLint, GLsizei, GLsizei);
 void glClearColor(GLfloat, GLfloat, GLfloat, GLfloat);
 void glClear(GLenum);
 void glVertexAttribPointer(GLuint, GLint, GLenum, GLboolean, GLsizei, const void *);
@@ -122,6 +124,31 @@ constexpr uint32_t kPgvDmaAlignment = 4096;
 constexpr uint32_t kPgvBufferBytes = 1847296;
 constexpr uint32_t kSyntheticPoolFrames = 60;
 constexpr size_t kMaxDetectionBoxes = 32;
+
+struct UiRect {
+  GLfloat x;
+  GLfloat y;
+  GLfloat width;
+  GLfloat height;
+};
+
+// Frozen 1280x720 composition shared by the design preview and GPU clip regions.
+struct LayoutSpec {
+  UiRect main_video{14.f, 62.f, 986.f, 468.f};
+  UiRect signal_card{24.f, 78.f, 300.f, 182.f};
+  UiRect navigation_card{1004.f, 78.f, 252.f, 136.f};
+  UiRect hazard_card{1004.f, 224.f, 252.f, 148.f};
+  UiRect lane_card{1004.f, 382.f, 252.f, 148.f};
+  std::array<UiRect, 4> thumbnails{{
+      {16.f, 548.f, 204.f, 150.f},
+      {230.f, 548.f, 204.f, 150.f},
+      {444.f, 548.f, 204.f, 150.f},
+      {658.f, 548.f, 204.f, 150.f},
+  }};
+  UiRect spatial_card{872.f, 548.f, 392.f, 150.f};
+};
+
+constexpr LayoutSpec kLayout{};
 
 static_assert(kFrameBytes == 1843200, "PGV1 frame byte count changed.");
 static_assert((kFrameBytes + 32 + kPgvDmaAlignment - 1) / kPgvDmaAlignment *
@@ -167,6 +194,7 @@ constexpr GLenum GL_TRIANGLE_STRIP = 0x0005;
 constexpr GLenum GL_TRIANGLES = 0x0004;
 constexpr GLenum GL_LINES = 0x0001;
 constexpr GLenum GL_BLEND = 0x0be2;
+constexpr GLenum GL_SCISSOR_TEST = 0x0c11;
 constexpr GLenum GL_SRC_ALPHA = 0x0302;
 constexpr GLenum GL_ONE_MINUS_SRC_ALPHA = 0x0303;
 constexpr GLenum GL_TEXTURE0 = 0x84c0;
@@ -301,8 +329,73 @@ class ReplayFrameSource final : public FrameSource {
  public:
   explicit ReplayFrameSource(const std::vector<std::string> &paths) {
     if (paths.empty()) throw std::invalid_argument("Replay source needs at least one .rgb565 file");
+    for (size_t index = 0; index < paths.size(); ++index) {
+      entries_.push_back(ReplayEntry{paths[index], static_cast<uint64_t>(index), 0});
+    }
+    loadEntries();
+  }
+
+  explicit ReplayFrameSource(const std::string &manifest_path) {
+    std::ifstream manifest(manifest_path);
+    if (!manifest) throw std::runtime_error("Cannot open replay manifest: " + manifest_path);
+    const std::string base_dir = [&]() {
+      const size_t slash = manifest_path.find_last_of("/");
+      return slash == std::string::npos ? std::string(".") : manifest_path.substr(0, slash);
+    }();
+    std::string line;
+    size_t line_number = 0;
+    while (std::getline(manifest, line)) {
+      ++line_number;
+      if (line.empty() || line[0] == '#') continue;
+      std::istringstream row(line);
+      ReplayEntry entry;
+      row >> entry.frame_id >> entry.timestamp_ns >> entry.path;
+      if (!row || entry.path.empty()) {
+        throw std::runtime_error("Invalid replay manifest row " + std::to_string(line_number));
+      }
+      if (entry.path.front() != '/') entry.path = base_dir + "/" + entry.path;
+      entries_.push_back(std::move(entry));
+    }
+    if (entries_.empty()) throw std::invalid_argument("Replay manifest has no frames");
+    for (size_t i = 1; i < entries_.size(); ++i) {
+      if (entries_[i].frame_id <= entries_[i - 1].frame_id ||
+          entries_[i].timestamp_ns < entries_[i - 1].timestamp_ns) {
+        throw std::invalid_argument("Replay manifest frame IDs and timestamps must be monotonic");
+      }
+    }
+    manifest_path_ = manifest_path;
+    loadEntries();
+  }
+
+  bool acquire(uint64_t source_index, uint64_t scheduled_ns, FrameView &view) override {
+    const ReplayEntry &entry = entries_[source_index % entries_.size()];
+    const uint64_t timestamp_ns = manifest_path_.empty()
+                                      ? scheduled_ns
+                                      : startNs() + entry.timestamp_ns;
+    view = FrameView{frames_[source_index % frames_.size()].data(), entry.frame_id,
+                     timestamp_ns, kStrideBytes, {}};
+    return true;
+  }
+
+  const std::string &timestampMode() const {
+    static const std::string scheduled = "scheduled_monotonic";
+    static const std::string manifest = "manifest_relative_rebased_to_monotonic";
+    return manifest_path_.empty() ? scheduled : manifest;
+  }
+
+  const std::string &manifestPath() const { return manifest_path_; }
+
+ private:
+  struct ReplayEntry {
+    std::string path;
+    uint64_t frame_id = 0;
+    uint64_t timestamp_ns = 0;
+  };
+
+  void loadEntries() {
     const uint64_t prepare_start = monotonicNs();
-    for (const auto &path : paths) {
+    for (const auto &entry : entries_) {
+      const auto &path = entry.path;
       std::ifstream input(path, std::ios::binary | std::ios::ate);
       if (!input) throw std::runtime_error("Cannot open replay frame: " + path);
       const auto size = input.tellg();
@@ -330,8 +423,9 @@ class ReplayFrameSource final : public FrameSource {
 
   double prepareMs() const override { return prepare_ms_; }
 
- private:
+  std::vector<ReplayEntry> entries_;
   std::vector<std::vector<uint16_t>> frames_;
+  std::string manifest_path_;
   double prepare_ms_ = 0.0;
 };
 
@@ -608,37 +702,97 @@ class SyntheticFrameSource final : public FrameSource {
 
 class StaticHmiLayer {
  public:
-  StaticHmiLayer() {
+  StaticHmiLayer(const std::string &source, const std::string &mode, uint32_t focus_quadrant,
+                 uint32_t navigation_quadrant) {
     const uint64_t started = monotonicNs();
+    (void)navigation_quadrant;
     pixels_.assign(kWidth * kHeight * 4U, 0);
-    fill(0, 0, kWidth, 58, 9, 18, 25, 205);
-    fill(22, 128, 238, 452, 8, 19, 25, 188);
-    fill(1020, 128, 238, 452, 8, 19, 25, 188);
-    fill(310, 614, 660, 84, 9, 18, 25, 205);
-    border(22, 128, 238, 452, 2, 37, 190, 184, 210);
-    border(1020, 128, 238, 452, 2, 37, 190, 184, 210);
-    border(310, 614, 660, 84, 2, 37, 190, 184, 210);
-    fill(38, 208, 204, 2, 47, 189, 185, 220);
-    fill(1036, 208, 204, 2, 47, 189, 185, 220);
-    fill(340, 632, 600, 2, 47, 189, 185, 220);
-    text("SPD", 67, 164, 3, 225, 241, 240, 240);
-    text("CAM", 1072, 164, 3, 225, 241, 240, 240);
-    text("AI", 1092, 238, 3, 225, 241, 240, 240);
-    text("NAV", 1056, 328, 3, 225, 241, 240, 240);
-    text("LANE", 58, 382, 3, 225, 241, 240, 240);
-    text("NO DATA", 58, 238, 2, 145, 162, 179, 220);
-    text("UNKNOWN", 58, 442, 2, 145, 162, 179, 220);
-    fill(1054, 232, 22, 22, 75, 91, 96, 230);
-    fill(1088, 232, 22, 22, 75, 91, 96, 230);
-    fill(1122, 232, 22, 22, 75, 91, 96, 230);
-    fill(1054, 304, 22, 22, 75, 91, 96, 230);
-    fill(1088, 304, 22, 22, 75, 91, 96, 230);
-    fill(1122, 304, 22, 22, 75, 91, 96, 230);
-    fill(374, 646, 88, 28, 75, 91, 96, 210);
-    fill(483, 646, 88, 28, 75, 91, 96, 210);
-    fill(592, 646, 88, 28, 75, 91, 96, 210);
-    fill(701, 646, 88, 28, 75, 91, 96, 210);
-    fill(810, 646, 122, 28, 75, 91, 96, 210);
+    // One cached texture keeps the road dominant and avoids a full-frame CPU redraw.
+    fill(0, 0, kWidth, 62, 7, 15, 22, 232);
+    fill(0, 61, kWidth, 1, 57, 180, 177, 180);
+    fill(24, 16, 8, 22, 101, 214, 207, 240);
+    text("ADAS", 46, 18, 3, 235, 244, 245, 255);
+    text("MALI EGL", 132, 23, 2, 143, 166, 178, 230);
+    text(source.c_str(), 308, 24, 2, 143, 166, 178, 230);
+    const uint32_t mode_x[] = {488, 584, 680};
+    const char *mode_text[] = {"FOCUS", "MULTI", "SPACE"};
+    const bool focus_mode = mode == "FOCUS";
+    const bool multi_mode = mode == "MULTI";
+    const bool spatial_mode = mode == "SPATIAL";
+    const bool selected[] = {focus_mode, multi_mode, spatial_mode};
+    for (size_t index = 0; index < 3; ++index) {
+      fill(mode_x[index], 16, 84, 30, selected[index] ? 26 : 17, selected[index] ? 73 : 31,
+           selected[index] ? 92 : 39, selected[index] ? 240 : 210);
+      border(mode_x[index], 16, 84, 30, 1, selected[index] ? 73 : 52,
+             selected[index] ? 180 : 77, selected[index] ? 215 : 88, 220);
+      text(mode_text[index], mode_x[index] + 14, 26, 2,
+           selected[index] ? 151 : 184, selected[index] ? 225 : 194,
+           selected[index] ? 232 : 201, 245);
+    }
+    text("VIEW  CAM 1", 778, 24, 2, 143, 166, 178, 230);
+    text("PCIE", 928, 23, 2, 143, 166, 178, 230);
+    fill(978, 25, 8, 8, 255, 190, 100, 245);
+    text("UNKNOWN", 998, 23, 2, 255, 190, 100, 245);
+    text("VIDEO  -- FPS", 1128, 23, 2, 143, 166, 178, 230);
+
+    // Reference layout: small perception card at upper-left, right dynamic stack, and a
+    // persistent bottom strip containing four camera previews plus the spatial inset.
+    fill(24, 78, 300, 182, 7, 15, 22, 204);
+    border(24, 78, 300, 182, 1, 61, 174, 170, 220);
+    fill(42, 105, 3, 88, 101, 214, 207, 225);
+    text("SIGNAL / PERCEPTION", 64, 92, 2, 143, 166, 178, 235);
+    text("UNKNOWN", 64, 120, 3, 255, 190, 100, 250);
+    text("VEHICLE   PERSON   OTHER", 48, 175, 2, 143, 166, 178, 230);
+    text("--        --        --", 58, 200, 3, 214, 225, 230, 245);
+    text("LANE / RULE   UNKNOWN", 48, 236, 2, 143, 166, 178, 220);
+
+    fill(1020, 78, 238, 136, 7, 15, 22, 204);
+    border(1020, 78, 238, 136, 1, 61, 174, 170, 220);
+    text("NAVIGATION", 1038, 94, 2, 143, 166, 178, 235);
+    text("UNREADABLE", 1038, 124, 3, 255, 190, 100, 250);
+    text("ROAD NAME UNKNOWN", 1038, 166, 2, 143, 166, 178, 220);
+    text("OCR / TTL 750 MS", 1038, 188, 2, 143, 166, 178, 220);
+    fill(1020, 224, 238, 148, 7, 15, 22, 204);
+    border(1020, 224, 238, 148, 1, 137, 52, 67, 230);
+    text("HAZARDS", 1038, 241, 2, 255, 132, 135, 245);
+    text("NO VALID EVENT", 1038, 276, 2, 143, 166, 178, 220);
+    text("TTL / SOURCE CHECK", 1038, 316, 2, 143, 166, 178, 220);
+    fill(1020, 382, 238, 148, 7, 15, 22, 204);
+    border(1020, 382, 238, 148, 1, 61, 140, 207, 220);
+    text("LANE STATUS", 1038, 399, 2, 143, 196, 231, 245);
+    text("CURRENT  UNKNOWN", 1038, 436, 2, 143, 166, 178, 220);
+    text("LEFT / RIGHT  UNKNOWN", 1038, 472, 2, 143, 166, 178, 220);
+    text("FPGA METADATA  --", 1038, 508, 2, 143, 166, 178, 220);
+
+    const uint32_t preview_x[] = {24, 250, 476, 702};
+    const char *preview_text[] = {"CAM 1 / ROAD", "CAM 2 / ROAD", "CAM 3 / ROAD", "CAM 4 / NAV"};
+    for (size_t index = 0; index < 4; ++index) {
+      fill(preview_x[index], 548, 214, 148, 7, 15, 22, 216);
+      border(preview_x[index], 548, 214, 148, 1, 44, 105, 126, 220);
+      text(preview_text[index], preview_x[index] + 12, 674, 2, 214, 225, 230, 240);
+    }
+    fill(928, 548, 326, 148, 7, 15, 22, 224);
+    border(928, 548, 326, 148, 1, 61, 174, 170, 220);
+    text("ADAS SPACE / SCHEMATIC", 950, 568, 2, 214, 225, 230, 245);
+    text("CALIBRATION UNKNOWN", 950, 680, 2, 255, 190, 100, 230);
+
+    fill(24, 700, 1230, 20, 7, 15, 22, 232);
+    text("VIEWS", 44, 705, 2, 143, 166, 178, 230);
+    const uint8_t active_r = 101, active_g = 214, active_b = 207;
+    const uint32_t button_x[] = {150, 294, 438, 582, 726, 870};
+    const uint32_t button_w[] = {126, 126, 126, 126, 126, 188};
+    const char *button_text[] = {"QUAD", "CAM 1", "CAM 2", "CAM 3", "CAM 4", "SPATIAL"};
+    for (size_t index = 0; index < 6; ++index) {
+      const bool multi = index == 0 && mode == "MULTI";
+      fill(button_x[index], 700, button_w[index], 18, 17, 31, 39, multi ? 238 : 210);
+      border(button_x[index], 700, button_w[index], 18, 1,
+             multi ? active_r : 52, multi ? active_g : 77, multi ? active_b : 88, 220);
+      text(button_text[index], button_x[index] + 15, 705, 2,
+           multi ? active_r : 214, multi ? active_g : 225, multi ? active_b : 230, 245);
+    }
+    const size_t focus_index = 1U + std::min<uint32_t>(focus_quadrant, 3U);
+    fill(button_x[focus_index], 700, button_w[focus_index], 2,
+         active_r, active_g, active_b, 250);
     prepare_ms_ = elapsedMs(started, monotonicNs());
   }
 
@@ -757,6 +911,24 @@ struct DetectionPacket {
   size_t count = 0;
 };
 
+constexpr uint32_t kFlagRed = 1U << 0;
+constexpr uint32_t kFlagGreen = 1U << 1;
+
+DetectionPacket makeDesignPreviewPacket(uint64_t frame_id, uint64_t timestamp_ns) {
+  DetectionPacket packet;
+  packet.frame_id = frame_id;
+  packet.timestamp_ns = timestamp_ns;
+  packet.flags = kFlagGreen;
+  packet.nav_direction = 2;  // RIGHT in the isolated visual fixture.
+  packet.nav_distance_m = 50.f;
+  packet.count = 4;
+  packet.boxes[0] = DetectionBox{430.f, 294.f, 594.f, 508.f, 0.08f, 0.88f, 0.98f, 2, 0.87f};
+  packet.boxes[1] = DetectionBox{690.f, 320.f, 770.f, 510.f, 0.18f, 0.92f, 0.62f, 0, 0.79f};
+  packet.boxes[2] = DetectionBox{804.f, 244.f, 948.f, 421.f, 0.08f, 0.88f, 0.98f, 2, 0.92f};
+  packet.boxes[3] = DetectionBox{588.f, 124.f, 650.f, 184.f, 0.12f, 0.86f, 0.98f, 9, 0.93f};
+  return packet;
+}
+
 class SyntheticDetectionWorker {
  public:
   void start(FrameSource &source, uint64_t deadline_ns, uint32_t fps, uint32_t duration_seconds) {
@@ -868,8 +1040,93 @@ class EglX11Window {
     crop_[3] = static_cast<GLfloat>(row + 1U) * 0.5f;
   }
 
+  // Returns queued keyboard/mouse commands without blocking the EGL thread.
+  std::vector<char> pollControls() {
+    std::vector<char> commands;
+    while (XPending(x_display_) > 0) {
+      XEvent event{};
+      XNextEvent(x_display_, &event);
+      if (event.type == KeyPress) {
+        const KeySym key = XLookupKeysym(&event.xkey, 0);
+        if (key >= XK_1 && key <= XK_4) commands.push_back(static_cast<char>('1' + key - XK_1));
+        else if (key == XK_q || key == XK_Q) commands.push_back('q');
+        else if (key == XK_m || key == XK_M) commands.push_back('m');
+        else if (key == XK_f || key == XK_F) commands.push_back('f');
+        else if (key == XK_s || key == XK_S) commands.push_back('s');
+        else if (key == XK_n || key == XK_N) commands.push_back('n');
+        else if (key == XK_Escape) commands.push_back('x');
+      } else if (event.type == ButtonPress && event.xbutton.y >= 650) {
+        const int x = event.xbutton.x;
+        if (x >= 150 && x < 276) commands.push_back('q');
+        else if (x >= 294 && x < 420) commands.push_back('1');
+        else if (x >= 438 && x < 564) commands.push_back('2');
+        else if (x >= 582 && x < 708) commands.push_back('3');
+        else if (x >= 726 && x < 852) commands.push_back('4');
+        else if (x >= 870 && x < 1058) commands.push_back('s');
+      }
+    }
+    return commands;
+  }
+
+  void drawSpatialOverlay(const DetectionPacket *packet) {
+    std::array<GLfloat, (32U + kMaxDetectionBoxes * 8U) * 6U> vertices{};
+    size_t offset = 0;
+    const auto point = [&vertices, &offset](float x, float y, float r, float g, float b,
+                                            float a) {
+      vertices[offset++] = (x / static_cast<float>(kWidth)) * 2.f - 1.f;
+      vertices[offset++] = 1.f - (y / static_cast<float>(kHeight)) * 2.f;
+      vertices[offset++] = r;
+      vertices[offset++] = g;
+      vertices[offset++] = b;
+      vertices[offset++] = a;
+    };
+    const auto line = [&point](float x1, float y1, float x2, float y2, float r, float g, float b,
+                               float a) {
+      point(x1, y1, r, g, b, a);
+      point(x2, y2, r, g, b, a);
+    };
+    // Cached camera-space guide: this is explicitly schematic until calibration is available.
+    line(428.f, 650.f, 562.f, 350.f, 0.40f, 0.84f, 0.82f, 0.72f);
+    line(852.f, 650.f, 718.f, 350.f, 0.40f, 0.84f, 0.82f, 0.72f);
+    line(512.f, 650.f, 610.f, 390.f, 0.28f, 0.52f, 0.55f, 0.58f);
+    line(768.f, 650.f, 670.f, 390.f, 0.28f, 0.52f, 0.55f, 0.58f);
+    line(604.f, 614.f, 676.f, 614.f, 0.94f, 0.75f, 0.35f, 0.92f);
+    line(676.f, 614.f, 676.f, 660.f, 0.94f, 0.75f, 0.35f, 0.92f);
+    line(676.f, 660.f, 604.f, 660.f, 0.94f, 0.75f, 0.35f, 0.92f);
+    line(604.f, 660.f, 604.f, 614.f, 0.94f, 0.75f, 0.35f, 0.92f);
+    if (packet) {
+      for (size_t index = 0; index < packet->count && index < packet->boxes.size(); ++index) {
+        const DetectionBox &box = packet->boxes[index];
+        const float center_x = std::clamp((box.x1 + box.x2) * 0.5f, 0.f, 1279.f);
+        const float center_y = std::clamp((box.y1 + box.y2) * 0.5f, 0.f, 719.f);
+        const float depth = std::clamp(1.f - center_y / 720.f, 0.05f, 0.95f);
+        const float x = 640.f + (center_x - 640.f) * (0.20f + 0.35f * depth);
+        const float y = 578.f - depth * 210.f;
+        const float width = std::clamp((box.x2 - box.x1) * 0.20f, 10.f, 82.f);
+        const float height = std::clamp((box.y2 - box.y1) * 0.15f, 8.f, 50.f);
+        line(x - width, y - height, x + width, y - height, box.r, box.g, box.b, 0.92f);
+        line(x + width, y - height, x + width, y + height, box.r, box.g, box.b, 0.92f);
+        line(x + width, y + height, x - width, y + height, box.r, box.g, box.b, 0.92f);
+        line(x - width, y + height, x - width, y - height, box.r, box.g, box.b, 0.92f);
+      }
+    }
+    if (offset == 0) return;
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glUseProgram(box_program_);
+    glEnableVertexAttribArray(box_position_location_);
+    glEnableVertexAttribArray(box_color_location_);
+    glVertexAttribPointer(box_position_location_, 2, GL_FLOAT, 0, 6 * sizeof(GLfloat),
+                          vertices.data());
+    glVertexAttribPointer(box_color_location_, 4, GL_FLOAT, 0, 6 * sizeof(GLfloat),
+                          vertices.data() + 2);
+    glLineWidth(1.f);
+    glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(offset / 6));
+    glDisable(GL_BLEND);
+  }
+
   void setStaticUiPixels(const unsigned char *pixels) {
-    glGenTextures(1, &ui_texture_);
+    if (!ui_texture_) glGenTextures(1, &ui_texture_);
     glBindTexture(GL_TEXTURE_2D, ui_texture_);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -879,6 +1136,31 @@ class EglX11Window {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kWidth, kHeight, 0, GL_RGBA,
                  GL_UNSIGNED_BYTE, pixels);
     if (glGetError() != GL_NO_ERROR) throw std::runtime_error("Static HMI texture upload failed");
+  }
+
+  bool loadStaticUiFile(const std::string &path) {
+    if (path.empty()) return false;
+    struct stat info {};
+    if (stat(path.c_str(), &info) != 0) return false;
+    constexpr size_t header_bytes = 24;
+    constexpr size_t pixel_bytes = static_cast<size_t>(kWidth) * kHeight * 4U;
+    if (info.st_size != static_cast<off_t>(header_bytes + pixel_bytes)) return false;
+    std::ifstream input(path, std::ios::binary);
+    if (!input) return false;
+    std::vector<unsigned char> raw(header_bytes + pixel_bytes);
+    input.read(reinterpret_cast<char *>(raw.data()), static_cast<std::streamsize>(raw.size()));
+    if (input.gcount() != static_cast<std::streamsize>(raw.size()) ||
+        std::memcmp(raw.data(), "UI1\0", 4) != 0) {
+      return false;
+    }
+    uint16_t file_width = 0, file_height = 0;
+    uint32_t file_bytes = 0;
+    std::memcpy(&file_width, raw.data() + 4, sizeof(file_width));
+    std::memcpy(&file_height, raw.data() + 6, sizeof(file_height));
+    std::memcpy(&file_bytes, raw.data() + 20, sizeof(file_bytes));
+    if (file_width != kWidth || file_height != kHeight || file_bytes != pixel_bytes) return false;
+    setStaticUiPixels(raw.data() + header_bytes);
+    return true;
   }
 
   bool loadDynamicUiFile(const std::string &path) {
@@ -922,7 +1204,84 @@ class EglX11Window {
     }
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    drawTexturedRect(dynamic_ui_texture_, 1020.f, 128.f, 238.f, 452.f);
+    drawTexturedRect(dynamic_ui_texture_, 1020.f, 78.f, 238.f, 452.f);
+    glDisable(GL_BLEND);
+  }
+
+  void drawVideoThumbnails(bool quad_source) {
+    for (size_t index = 0; index < 4; ++index) {
+      const uint32_t row = static_cast<uint32_t>(index / 2U);
+      const uint32_t column = static_cast<uint32_t>(index % 2U);
+      const GLfloat u0 = quad_source ? column * 0.5f : 0.f;
+      const GLfloat v0 = quad_source ? row * 0.5f : 0.f;
+      const GLfloat u1 = quad_source ? (column + 1U) * 0.5f : 1.f;
+      const GLfloat v1 = quad_source ? (row + 1U) * 0.5f : 1.f;
+      const UiRect &card = kLayout.thumbnails[index];
+      drawTexturedRectCrop(texture_, card.x + 6.f, card.y + 6.f, card.width - 12.f,
+                           card.height - 42.f, u0, v0, u1, v1);
+    }
+  }
+
+  void drawLiveStatus(const DetectionPacket &packet) {
+    if (!status_texture_ || status_frame_id_ != packet.frame_id) updateStatusTexture(packet);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    drawTexturedRect(status_texture_, 24.f, 78.f, 300.f, 182.f);
+    glDisable(GL_BLEND);
+  }
+
+  void drawSpatialInset(const DetectionPacket *packet) {
+    std::array<GLfloat, (16U + kMaxDetectionBoxes * 8U) * 6U> vertices{};
+    size_t offset = 0;
+    const auto point = [&vertices, &offset](float x, float y, float r, float g, float b,
+                                            float a) {
+      vertices[offset++] = (x / static_cast<float>(kWidth)) * 2.f - 1.f;
+      vertices[offset++] = 1.f - (y / static_cast<float>(kHeight)) * 2.f;
+      vertices[offset++] = r;
+      vertices[offset++] = g;
+      vertices[offset++] = b;
+      vertices[offset++] = a;
+    };
+    const auto line = [&point](float x1, float y1, float x2, float y2, float r, float g, float b,
+                               float a) {
+      point(x1, y1, r, g, b, a);
+      point(x2, y2, r, g, b, a);
+    };
+    line(1038.f, 682.f, 1080.f, 586.f, 0.40f, 0.84f, 0.82f, 0.78f);
+    line(1172.f, 586.f, 1214.f, 682.f, 0.40f, 0.84f, 0.82f, 0.78f);
+    line(1072.f, 682.f, 1118.f, 606.f, 0.27f, 0.54f, 0.58f, 0.66f);
+    line(1180.f, 606.f, 1226.f, 682.f, 0.27f, 0.54f, 0.58f, 0.66f);
+    line(1110.f, 662.f, 1160.f, 662.f, 0.95f, 0.76f, 0.35f, 0.95f);
+    line(1160.f, 662.f, 1160.f, 688.f, 0.95f, 0.76f, 0.35f, 0.95f);
+    line(1160.f, 688.f, 1110.f, 688.f, 0.95f, 0.76f, 0.35f, 0.95f);
+    line(1110.f, 688.f, 1110.f, 662.f, 0.95f, 0.76f, 0.35f, 0.95f);
+    if (packet) {
+      for (size_t index = 0; index < packet->count && index < packet->boxes.size(); ++index) {
+        const DetectionBox &box = packet->boxes[index];
+        const float cx = std::clamp((box.x1 + box.x2) * 0.5f, 0.f, 1279.f);
+        const float cy = std::clamp((box.y1 + box.y2) * 0.5f, 0.f, 719.f);
+        const float depth = std::clamp(1.f - cy / 720.f, 0.05f, 0.95f);
+        const float x = 1135.f + (cx - 640.f) * (0.055f + 0.08f * depth);
+        const float y = 650.f - depth * 42.f;
+        const float width = std::clamp((box.x2 - box.x1) * 0.055f, 3.f, 22.f);
+        line(x - width, y, x + width, y, box.r, box.g, box.b, 0.94f);
+        line(x + width, y, x + width, y + 10.f, box.r, box.g, box.b, 0.94f);
+        line(x + width, y + 10.f, x - width, y + 10.f, box.r, box.g, box.b, 0.94f);
+        line(x - width, y + 10.f, x - width, y, box.r, box.g, box.b, 0.94f);
+      }
+    }
+    if (offset == 0) return;
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glUseProgram(box_program_);
+    glEnableVertexAttribArray(box_position_location_);
+    glEnableVertexAttribArray(box_color_location_);
+    glVertexAttribPointer(box_position_location_, 2, GL_FLOAT, 0, 6 * sizeof(GLfloat),
+                          vertices.data());
+    glVertexAttribPointer(box_color_location_, 4, GL_FLOAT, 0, 6 * sizeof(GLfloat),
+                          vertices.data() + 2);
+    glLineWidth(1.f);
+    glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(offset / 6));
     glDisable(GL_BLEND);
   }
 
@@ -956,6 +1315,13 @@ class EglX11Window {
       point(box.x2, box.y2, box); point(box.x1, box.y2, box);
       point(box.x1, box.y2, box); point(box.x1, box.y1, box);
     }
+    const GLint scissor_x = static_cast<GLint>(kLayout.main_video.x);
+    const GLint scissor_y = static_cast<GLint>(kHeight -
+                                               (kLayout.main_video.y + kLayout.main_video.height));
+    const GLsizei scissor_width = static_cast<GLsizei>(kLayout.main_video.width);
+    const GLsizei scissor_height = static_cast<GLsizei>(kLayout.main_video.height);
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(scissor_x, scissor_y, scissor_width, scissor_height);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glUseProgram(box_program_);
@@ -969,6 +1335,7 @@ class EglX11Window {
     glDisable(GL_BLEND);
     if (!has_label_frame_ || label_frame_id_ != packet.frame_id) updateLabelAtlas(packet);
     drawDetectionLabels(packet);
+    glDisable(GL_SCISSOR_TEST);
   }
 
   void verifySyntheticRedPixel() {
@@ -995,6 +1362,93 @@ class EglX11Window {
       -1.f, -1.f, 0.f, 1.f, 1.f, -1.f, 1.f, 1.f,
       -1.f, 1.f,  0.f, 0.f, 1.f, 1.f,  1.f, 0.f};
 
+  static void statusText(std::vector<unsigned char> &pixels, uint32_t width, uint32_t height,
+                         const char *value, uint32_t x, uint32_t y, uint32_t scale,
+                         uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    for (const char *cursor = value; *cursor; ++cursor) {
+      const auto rows = StaticHmiLayer::glyph(*cursor);
+      for (uint32_t row = 0; row < rows.size(); ++row) {
+        for (uint32_t col = 0; col < 5; ++col) {
+          if ((rows[row] & (1U << (4U - col))) == 0) continue;
+          for (uint32_t dy = 0; dy < scale; ++dy) {
+            for (uint32_t dx = 0; dx < scale; ++dx) {
+              const uint32_t px = x + col * scale + dx;
+              const uint32_t py = y + row * scale + dy;
+              if (px >= width || py >= height) continue;
+              const size_t index = (static_cast<size_t>(py) * width + px) * 4U;
+              pixels[index] = r;
+              pixels[index + 1] = g;
+              pixels[index + 2] = b;
+              pixels[index + 3] = a;
+            }
+          }
+        }
+      }
+      x += 7U * scale;
+    }
+  }
+
+  void updateStatusTexture(const DetectionPacket &packet) {
+    constexpr uint32_t width = 300, height = 182;
+    std::vector<unsigned char> pixels(static_cast<size_t>(width) * height * 4U, 0);
+    const auto fill = [&pixels, width, height](uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint8_t r,
+                                uint8_t g, uint8_t b, uint8_t a) {
+      const uint32_t right = std::min<uint32_t>(width, x + w);
+      const uint32_t bottom = std::min<uint32_t>(height, y + h);
+      for (uint32_t row = y; row < bottom; ++row) {
+        for (uint32_t col = x; col < right; ++col) {
+          const size_t index = (static_cast<size_t>(row) * width + col) * 4U;
+          pixels[index] = r;
+          pixels[index + 1] = g;
+          pixels[index + 2] = b;
+          pixels[index + 3] = a;
+        }
+      }
+    };
+    fill(0, 0, width, height, 7, 15, 22, 220);
+    fill(0, 0, 2, height, 61, 174, 170, 235);
+    const bool red = (packet.flags & kFlagRed) != 0;
+    const bool green = (packet.flags & kFlagGreen) != 0;
+    const uint8_t r = red ? 255 : (green ? 92 : 255);
+    const uint8_t g = red ? 91 : (green ? 220 : 190);
+    const uint8_t b = red ? 88 : (green ? 157 : 100);
+    const char *signal = red ? "RED" : green ? "GREEN" : "UNKNOWN";
+    fill(24, 30, 26, 66, r, g, b, 215);
+    statusText(pixels, width, height, "SIGNAL", 70, 14, 2, 143, 166, 178, 245);
+    statusText(pixels, width, height, signal, 70, 42, 3, r, g, b, 255);
+    uint32_t vehicles = 0, persons = 0, other = 0;
+    for (size_t index = 0; index < packet.count && index < packet.boxes.size(); ++index) {
+      if (packet.boxes[index].class_id == 0) ++persons;
+      else if (packet.boxes[index].class_id == 1 || packet.boxes[index].class_id == 3) ++other;
+      else if (packet.boxes[index].class_id == 2 || packet.boxes[index].class_id == 5 ||
+               packet.boxes[index].class_id == 7) ++vehicles;
+      else ++other;
+    }
+    statusText(pixels, width, height, "VEHICLE", 24, 120, 2, 143, 166, 178, 230);
+    statusText(pixels, width, height, "PERSON", 124, 120, 2, 143, 166, 178, 230);
+    statusText(pixels, width, height, "OTHER", 216, 120, 2, 143, 166, 178, 230);
+    const std::string counts = std::to_string(vehicles) + "        " + std::to_string(persons) +
+                               "        " + std::to_string(other);
+    statusText(pixels, width, height, counts.c_str(), 34, 146, 3, 214, 225, 230, 245);
+    statusText(pixels, width, height, "LANE / RULE   UNKNOWN", 24, 174, 2, 143, 166, 178, 220);
+    if (!status_texture_) {
+      glGenTextures(1, &status_texture_);
+      glBindTexture(GL_TEXTURE_2D, status_texture_);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+                   GL_UNSIGNED_BYTE, pixels.data());
+    } else {
+      glBindTexture(GL_TEXTURE_2D, status_texture_);
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA,
+                      GL_UNSIGNED_BYTE, pixels.data());
+    }
+    status_frame_id_ = packet.frame_id;
+  }
+
   void drawTextured(GLuint texture) {
     glViewport(0, 0, kWidth, kHeight);
     glUseProgram(program_);
@@ -1011,13 +1465,18 @@ class EglX11Window {
   }
 
   void drawTexturedRect(GLuint texture, GLfloat x, GLfloat y, GLfloat width, GLfloat height) {
+    drawTexturedRectCrop(texture, x, y, width, height, 0.f, 0.f, 1.f, 1.f);
+  }
+
+  void drawTexturedRectCrop(GLuint texture, GLfloat x, GLfloat y, GLfloat width, GLfloat height,
+                            GLfloat u0, GLfloat v0, GLfloat u1, GLfloat v1) {
     const GLfloat left = -1.f + 2.f * x / static_cast<float>(kWidth);
     const GLfloat right = -1.f + 2.f * (x + width) / static_cast<float>(kWidth);
     const GLfloat top = 1.f - 2.f * y / static_cast<float>(kHeight);
     const GLfloat bottom = 1.f - 2.f * (y + height) / static_cast<float>(kHeight);
     const GLfloat vertices[] = {
-        left, bottom, 0.f, 1.f, right, bottom, 1.f, 1.f,
-        left, top,    0.f, 0.f, right, top,    1.f, 0.f};
+        left, bottom, u0, v1, right, bottom, u1, v1,
+        left, top,    u0, v0, right, top,    u1, v0};
     glViewport(0, 0, kWidth, kHeight);
     glUseProgram(program_);
     glUniform4f(crop_location_, 0.f, 0.f, 1.f, 1.f);
@@ -1247,7 +1706,7 @@ class EglX11Window {
     XSetWindowAttributes attributes{};
     attributes.colormap = XCreateColormap(x_display_, RootWindow(x_display_, visual->screen),
                                           visual->visual, AllocNone);
-    attributes.event_mask = StructureNotifyMask | ExposureMask;
+    attributes.event_mask = StructureNotifyMask | ExposureMask | KeyPressMask | ButtonPressMask;
     attributes.override_redirect = True;
     x_window_ = XCreateWindow(x_display_, RootWindow(x_display_, visual->screen), 0, 0,
                               kWidth, kHeight, 0, visual->depth, InputOutput, visual->visual,
@@ -1256,6 +1715,7 @@ class EglX11Window {
     if (!x_window_) throw std::runtime_error("XCreateWindow failed");
     XStoreName(x_display_, x_window_, "Mali EGL RGB565 benchmark");
     XMapRaised(x_display_, x_window_);
+    XSetInputFocus(x_display_, x_window_, RevertToParent, CurrentTime);
     XSync(x_display_, False);
 
     egl_surface_ = eglCreateWindowSurface(egl_display_, config, x_window_, nullptr);
@@ -1362,6 +1822,7 @@ class EglX11Window {
     if (egl_display_ && egl_context_) eglMakeCurrent(egl_display_, nullptr, nullptr, nullptr);
     if (texture_) glDeleteTextures(1, &texture_);
     if (ui_texture_) glDeleteTextures(1, &ui_texture_);
+    if (status_texture_) glDeleteTextures(1, &status_texture_);
     if (dynamic_ui_texture_) glDeleteTextures(1, &dynamic_ui_texture_);
     if (label_texture_) glDeleteTextures(1, &label_texture_);
     if (program_) glDeleteProgram(program_);
@@ -1381,6 +1842,7 @@ class EglX11Window {
   GLuint program_ = 0;
   GLuint texture_ = 0;
   GLuint ui_texture_ = 0;
+  GLuint status_texture_ = 0;
   GLuint dynamic_ui_texture_ = 0;
   GLuint label_texture_ = 0;
   struct HmiSignature {
@@ -1398,6 +1860,7 @@ class EglX11Window {
   bool has_dynamic_signature_ = false;
   uint64_t dynamic_hmi_frame_id_ = 0;
   uint64_t dynamic_hmi_timestamp_ns_ = 0;
+  uint64_t status_frame_id_ = UINT64_MAX;
   uint64_t label_frame_id_ = 0;
   bool has_label_frame_ = false;
   GLuint box_program_ = 0;
@@ -1760,13 +2223,17 @@ struct Timings {
 struct Options {
   std::string source = "synthetic";
   std::vector<std::string> files;
+  std::string manifest;
   std::string output_json;
   std::string pgv_file = "/dev/shm/pgv_live_codex_20261018_postreboot/latest.pgv";
   std::string ai_frame_file = "/dev/shm/mali_video_ai_frame.rgb565";
   std::string dynamic_hmi_file = "/dev/shm/mali_video_dynamic_hmi.rgba";
+  std::string design_preview_file;
   std::string layout = "quad";
   std::string view = "quad";
+  std::string mode = "MULTI";
   uint32_t road_quadrant = 3;
+  uint32_t navigation_quadrant = 1;
   uint32_t fps = 60;
   uint32_t duration_seconds = 60;
   uint32_t ai_request_hz = 10;
@@ -1775,6 +2242,8 @@ struct Options {
   bool ai_bridge = false;
   bool layout_explicit = false;
   bool view_explicit = false;
+  bool mode_explicit = false;
+  bool design_preview = false;
 };
 
 Options parseOptions(int argc, char **argv) {
@@ -1787,17 +2256,29 @@ Options parseOptions(int argc, char **argv) {
     };
     if (arg == "--source") options.source = value("--source");
     else if (arg == "--file") options.files.push_back(value("--file"));
+    else if (arg == "--manifest") options.manifest = value("--manifest");
     else if (arg == "--pgv-file") options.pgv_file = value("--pgv-file");
     else if (arg == "--ai-frame-file") options.ai_frame_file = value("--ai-frame-file");
     else if (arg == "--dynamic-hmi-file") options.dynamic_hmi_file = value("--dynamic-hmi-file");
+    else if (arg == "--design-preview-file") {
+      options.design_preview_file = value("--design-preview-file");
+      options.design_preview = true;
+      options.overlays = true;
+    }
     else if (arg == "--layout") {
       options.layout = value("--layout");
       options.layout_explicit = true;
     } else if (arg == "--view") {
       options.view = value("--view");
       options.view_explicit = true;
+    } else if (arg == "--mode") {
+      options.mode = value("--mode");
+      options.mode_explicit = true;
     } else if (arg == "--road-quadrant") {
       options.road_quadrant = static_cast<uint32_t>(std::stoul(value("--road-quadrant")));
+    } else if (arg == "--navigation-quadrant") {
+      options.navigation_quadrant =
+          static_cast<uint32_t>(std::stoul(value("--navigation-quadrant")));
     } else if (arg == "--ai-request-hz") {
       options.ai_request_hz = static_cast<uint32_t>(std::stoul(value("--ai-request-hz")));
     }
@@ -1816,10 +2297,11 @@ Options parseOptions(int argc, char **argv) {
     }
     else if (arg == "--help") {
       std::cout << "Usage: mali_video [--source synthetic|replay|pgv-live] "
-                   "[--file FRAME.rgb565 ...] [--pgv-file latest.pgv] [--layout quad|front] "
-                   "[--view quad|front] [--road-quadrant 0..3] [--fps 60] [--duration 60] "
+                   "[--file FRAME.rgb565 ...|--manifest replay.txt] [--pgv-file latest.pgv] [--layout quad|front] "
+                   "[--view quad|front|spatial] [--mode FOCUS|MULTI|SPATIAL] "
+                   "[--road-quadrant 0..3] [--navigation-quadrant 0..3] [--fps 60] [--duration 60] "
                    "[--overlays] [--demo-boxes|--ai-bridge] [--ai-frame-file FILE] "
-                   "[--dynamic-hmi-file FILE] [--output-json FILE]\n";
+                   "[--dynamic-hmi-file FILE] [--design-preview-file FILE] [--output-json FILE]\n";
       std::exit(0);
     } else {
       throw std::invalid_argument("Unknown option: " + arg);
@@ -1838,16 +2320,35 @@ Options parseOptions(int argc, char **argv) {
   if (options.layout != "quad" && options.layout != "front") {
     throw std::invalid_argument("Layout must be quad or front");
   }
-  if (options.view != "quad" && options.view != "front") {
-    throw std::invalid_argument("View must be quad or front");
+  if (options.view != "quad" && options.view != "front" && options.view != "spatial") {
+    throw std::invalid_argument("View must be quad, front, or spatial");
   }
   if (options.road_quadrant > 3) throw std::invalid_argument("Road quadrant must be 0..3");
+  if (options.navigation_quadrant > 3) {
+    throw std::invalid_argument("Navigation quadrant must be 0..3");
+  }
+  if (options.mode != "FOCUS" && options.mode != "MULTI" && options.mode != "SPATIAL") {
+    throw std::invalid_argument("Mode must be FOCUS, MULTI, or SPATIAL");
+  }
   if (options.source == "synthetic") {
     if (!options.layout_explicit) options.layout = "front";
-    if (!options.view_explicit) options.view = "front";
   }
-  if (options.source == "replay" && options.files.empty()) {
-    throw std::invalid_argument("Replay source needs one or more --file arguments");
+  if (options.mode_explicit) {
+    options.view = options.mode == "FOCUS" ? "front" : options.mode == "SPATIAL" ? "spatial" : "quad";
+  } else if (options.view_explicit) {
+    options.mode = options.view == "front" ? "FOCUS" : options.view == "spatial" ? "SPATIAL" : "MULTI";
+  } else if (options.source == "synthetic") {
+    options.view = "front";
+    options.mode = "FOCUS";
+  } else {
+    options.view = "quad";
+    options.mode = "MULTI";
+  }
+  if (options.source == "replay" && options.files.empty() && options.manifest.empty()) {
+    throw std::invalid_argument("Replay source needs --file or --manifest");
+  }
+  if (!options.files.empty() && !options.manifest.empty()) {
+    throw std::invalid_argument("Replay source accepts either --file or --manifest, not both");
   }
   if (options.layout == "front" && options.view == "quad") {
     throw std::invalid_argument("A front-only source cannot be displayed as a four-camera view");
@@ -1855,11 +2356,17 @@ Options parseOptions(int argc, char **argv) {
   if (options.ai_bridge && options.demo_boxes) {
     throw std::invalid_argument("Choose either demo boxes or the AI bridge");
   }
+  if (options.design_preview && options.ai_bridge) {
+    throw std::invalid_argument("DESIGN_PREVIEW is isolated from live AI; omit --ai-bridge");
+  }
   return options;
 }
 
 std::unique_ptr<FrameSource> createSource(const Options &options) {
-  if (options.source == "replay") return std::make_unique<ReplayFrameSource>(options.files);
+  if (options.source == "replay") {
+    if (!options.manifest.empty()) return std::make_unique<ReplayFrameSource>(options.manifest);
+    return std::make_unique<ReplayFrameSource>(options.files);
+  }
   if (options.source == "pgv-live") return std::make_unique<PgvLiveFrameSource>(options.pgv_file);
   return std::make_unique<SyntheticFrameSource>();
 }
@@ -1915,6 +2422,19 @@ void writeSummary(const std::string &path, const Options &options, const FrameSo
          << "  \"static_hmi_cache_prepare_ms\": " << static_ui_prepare_ms << ",\n"
          << "  \"source_layout\": \"" << options.layout << "\",\n"
          << "  \"display_view\": \"" << options.view << "\",\n"
+         << "  \"display_mode\": \"" << options.mode << "\",\n"
+         << "  \"focus_quadrant\": " << options.road_quadrant << ",\n"
+         << "  \"navigation_quadrant\": " << options.navigation_quadrant << ",\n"
+         << "  \"replay_timestamp_mode\": \""
+         << (dynamic_cast<const ReplayFrameSource *>(&source)
+                 ? dynamic_cast<const ReplayFrameSource *>(&source)->timestampMode()
+                 : "not_applicable")
+         << "\",\n"
+         << "  \"replay_manifest\": \""
+         << (dynamic_cast<const ReplayFrameSource *>(&source)
+                 ? jsonEscape(dynamic_cast<const ReplayFrameSource *>(&source)->manifestPath())
+                 : "")
+         << "\",\n"
          << "  \"road_quadrant\": " << options.road_quadrant << ",\n"
          << "  \"pgv_file\": \"" << (pgv_source ? jsonEscape(pgv_source->path()) : "not_used")
          << "\",\n"
@@ -2038,11 +2558,29 @@ int run(const Options &options) {
     ai_bridge = std::make_unique<AiBridgeClient>(options.ai_frame_file, 38260, 38261);
   }
   std::unique_ptr<StaticHmiLayer> hmi_layer;
-  if (options.overlays) hmi_layer = std::make_unique<StaticHmiLayer>();
+  if (options.overlays && !options.design_preview) {
+    hmi_layer = std::make_unique<StaticHmiLayer>(source->name(), options.mode,
+                                                 options.road_quadrant,
+                                                 options.navigation_quadrant);
+  }
   EglX11Window window;
-  window.setVideoCrop(options.road_quadrant,
-                      options.layout == "quad" && options.view == "front");
+  enum class UiView { Quad, Focus, Spatial };
+  UiView current_view = options.mode == "SPATIAL"
+                            ? UiView::Spatial
+                            : options.mode == "FOCUS" ? UiView::Focus : UiView::Quad;
+  uint32_t focus_quadrant = options.road_quadrant;
+  const auto apply_view = [&]() {
+    window.setVideoCrop(focus_quadrant,
+                        options.layout == "quad" && current_view == UiView::Focus);
+  };
+  apply_view();
   if (hmi_layer) window.setStaticUiPixels(hmi_layer->pixels().data());
+  const bool design_ui_loaded = options.design_preview &&
+                                window.loadStaticUiFile(options.design_preview_file);
+  if (options.design_preview && !design_ui_loaded) {
+    throw std::runtime_error("DESIGN_PREVIEW texture could not be loaded: " +
+                             options.design_preview_file);
+  }
   const bool warmup_dynamic_loaded = options.ai_bridge &&
                                       window.loadDynamicUiFile(options.dynamic_hmi_file);
   FrameView warmup{source->pixelsFor(0), 0, 0, kStrideBytes, {}};
@@ -2050,8 +2588,15 @@ int run(const Options &options) {
     window.upload(warmup.pixels);
     window.draw();
     if (i == 0 && source->name() == "SYNTHETIC") window.verifySyntheticRedPixel();
-    if (hmi_layer) window.drawStaticUi();
-    if (warmup_dynamic_loaded) window.drawDynamicUi();
+    if (design_ui_loaded) {
+      window.drawVideoThumbnails(options.layout == "quad");
+      window.drawStaticUi();
+    } else {
+      if (hmi_layer) window.drawStaticUi();
+      if (warmup_dynamic_loaded) window.drawDynamicUi();
+      if (hmi_layer) window.drawVideoThumbnails(options.layout == "quad");
+      if (hmi_layer) window.drawSpatialInset(nullptr);
+    }
     window.swap();
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(250));
@@ -2100,10 +2645,34 @@ int run(const Options &options) {
   uint64_t ui_only_swaps = 0;
   uint64_t last_ai_request_ns = 0;
   uint64_t last_idle_redraw_ns = 0;
+  bool quit_requested = false;
   const uint64_t ai_period_ns = 1000000000ULL / options.ai_request_hz;
   const uint64_t source_period_ns = 1000000000ULL / options.fps;
 
-  while (monotonicNs() < end_ns) {
+  while (!quit_requested && monotonicNs() < end_ns) {
+    for (const char command : window.pollControls()) {
+      if (command == 'x') {
+        quit_requested = true;
+      } else if (command == 'q' || command == 'm') {
+        current_view = UiView::Quad;
+        apply_view();
+      } else if (command == 'f') {
+        current_view = UiView::Focus;
+        apply_view();
+      } else if (command == 's') {
+        current_view = UiView::Spatial;
+        apply_view();
+      } else if (command >= '1' && command <= '4') {
+        focus_quadrant = static_cast<uint32_t>(command - '1');
+        current_view = UiView::Focus;
+        apply_view();
+      } else if (command == 'n') {
+        focus_quadrant = (focus_quadrant + 1U) % 4U;
+        current_view = UiView::Focus;
+        apply_view();
+      }
+    }
+    if (quit_requested) break;
     const uint64_t acquire_start = monotonicNs();
     FrameView frame;
     const uint64_t poll_deadline = std::min(end_ns, acquire_start + source_period_ns);
@@ -2114,8 +2683,15 @@ int run(const Options &options) {
                                          window.loadDynamicUiFile(options.dynamic_hmi_file);
         if (dynamic_hmi_changed || idle_now_ns - last_idle_redraw_ns >= 100000000ULL) {
           window.draw();
-          if (hmi_layer) window.drawStaticUi();
-          if (options.ai_bridge) window.drawDynamicUi();
+          if (design_ui_loaded) {
+            window.drawVideoThumbnails(options.layout == "quad");
+            window.drawStaticUi();
+          } else {
+            if (hmi_layer) window.drawStaticUi();
+            if (options.ai_bridge) window.drawDynamicUi();
+            if (hmi_layer) window.drawVideoThumbnails(options.layout == "quad");
+            if (hmi_layer) window.drawSpatialInset(nullptr);
+          }
           window.swap();
           timings.swap_times_ns.push_back(monotonicNs());
           ++swaps;
@@ -2145,12 +2721,6 @@ int run(const Options &options) {
     window.draw();
     stage_end = monotonicNs();
     timings.draw_submit_ms.push_back(elapsedMs(stage_start, stage_end));
-    if (hmi_layer) {
-      stage_start = monotonicNs();
-      window.drawStaticUi();
-      stage_end = monotonicNs();
-      timings.static_ui_draw_ms.push_back(elapsedMs(stage_start, stage_end));
-    }
     if (ai_bridge) {
       stage_start = monotonicNs();
       if (last_ai_request_ns == 0 || frame.timestamp_ns >= last_ai_request_ns + ai_period_ns) {
@@ -2174,23 +2744,49 @@ int run(const Options &options) {
     if (dynamic_hmi_changed) timings.dynamic_hmi_upload_ms.push_back(elapsedMs(stage_start, stage_end));
     if (warmup_dynamic_loaded || options.overlays || options.ai_bridge) {
       stage_start = monotonicNs();
-      window.drawDynamicUi();
+      if (!design_ui_loaded) window.drawDynamicUi();
       stage_end = monotonicNs();
-      timings.dynamic_hmi_draw_ms.push_back(elapsedMs(stage_start, stage_end));
+      if (!design_ui_loaded) timings.dynamic_hmi_draw_ms.push_back(elapsedMs(stage_start, stage_end));
     }
     DetectionPacket packet;
     const uint64_t overlay_now_ns = monotonicNs();
-    const bool have_detection = options.demo_boxes
-                                    ? demo_worker.snapshot(frame.frame_id, overlay_now_ns, packet)
-                                    : ai_bridge && ai_bridge->snapshot(
-                                          frame.frame_id, overlay_now_ns, packet);
+    const bool have_detection = options.design_preview
+                                    ? (packet = makeDesignPreviewPacket(frame.frame_id,
+                                                                         frame.timestamp_ns), true)
+                                    : options.demo_boxes
+                                          ? demo_worker.snapshot(frame.frame_id, overlay_now_ns, packet)
+                                          : ai_bridge && ai_bridge->snapshot(
+                                                frame.frame_id, overlay_now_ns, packet);
+    const bool focus_matches_ai = current_view != UiView::Focus ||
+                                  focus_quadrant == options.road_quadrant;
+    const bool live_status = have_detection && focus_matches_ai;
     if (have_detection && packet.count > 0) {
       timings.detection_age_ms.push_back(elapsedMs(packet.timestamp_ns, overlay_now_ns));
       stage_start = monotonicNs();
-      window.drawDetectionBoxes(packet);
+      if (focus_matches_ai && current_view != UiView::Spatial) window.drawDetectionBoxes(packet);
       stage_end = monotonicNs();
       timings.detection_layer_draw_ms.push_back(elapsedMs(stage_start, stage_end));
       ++box_frames_drawn;
+    }
+    if (design_ui_loaded) {
+      window.drawVideoThumbnails(options.layout == "quad");
+      stage_start = monotonicNs();
+      window.drawStaticUi();
+      stage_end = monotonicNs();
+      timings.static_ui_draw_ms.push_back(elapsedMs(stage_start, stage_end));
+    } else {
+      if (live_status) window.drawLiveStatus(packet);
+      if (hmi_layer) {
+        stage_start = monotonicNs();
+        window.drawStaticUi();
+        stage_end = monotonicNs();
+        timings.static_ui_draw_ms.push_back(elapsedMs(stage_start, stage_end));
+      }
+      if (hmi_layer) window.drawVideoThumbnails(options.layout == "quad");
+      if (hmi_layer) {
+        if (current_view == UiView::Spatial) window.drawSpatialOverlay(have_detection ? &packet : nullptr);
+        else window.drawSpatialInset(live_status ? &packet : nullptr);
+      }
     }
     stage_start = monotonicNs();
     window.swap();

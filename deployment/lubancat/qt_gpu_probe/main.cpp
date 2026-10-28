@@ -177,7 +177,7 @@ int main(int argc, char **argv) {
     }
     auto *video = view.rootObject() ? view.rootObject()->findChild<VideoItem *>(QStringLiteral("videoProbeItem")) : nullptr;
     auto *navBridge = new NavBridge(&app);
-    QObject::connect(video, &VideoItem::aiChanged, navBridge, [video, navBridge] {
+    QObject::connect(video, &VideoItem::aiStatusChanged, navBridge, [video, navBridge] {
         navBridge->updateNav(video->aiNavigationDirection(),
                              video->aiNavigationDistanceM());
     });
@@ -206,6 +206,40 @@ int main(int argc, char **argv) {
                                 sourceLabel.isEmpty() ? QStringLiteral("pgv-live") : sourceLabel);
     } else {
         video->startProducer(fps, replayFrames, aiFrameFile, aiHz);
+    }
+
+    const QString metricsJsonlPath = stringArg(args, "--metrics-jsonl");
+    QFile metricsJsonl(metricsJsonlPath);
+    if (!metricsJsonlPath.isEmpty()) {
+        if (!metricsJsonl.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
+            qWarning().noquote() << "Could not open metrics JSONL" << metricsJsonlPath
+                                 << metricsJsonl.errorString();
+        } else {
+            QObject::connect(video, &VideoItem::metricsChanged, &app,
+                             [video, &metricsJsonl, &runClock] {
+                QJsonObject sample;
+                sample["process_elapsed_ms"] = runClock.elapsed();
+                sample["source_frame_id"] = static_cast<qint64>(video->sourceFrameId());
+                sample["uploaded_frame_id"] = static_cast<qint64>(video->frameId());
+                sample["produced_frames"] = static_cast<qint64>(video->producedFrames());
+                sample["uploaded_frames"] = static_cast<qint64>(video->consumedFrames());
+                sample["source_fps"] = video->inputFps();
+                sample["texture_upload_fps"] = video->consumedFps();
+                sample["scene_graph_fps"] = video->renderFps();
+                sample["ai_requests"] = static_cast<qint64>(video->aiRequestsSent());
+                sample["ai_results"] = static_cast<qint64>(video->aiResultsReceived());
+                sample["ai_frame_id"] = static_cast<qint64>(video->latestAiFrameId());
+                sample["ai_result_age_ms"] = video->aiResultAgeMs();
+                sample["ai_gui_update_ms"] = video->aiGuiUpdateMs();
+                sample["cpu_percent_of_all_cores"] = video->cpuPercent();
+                sample["gpu_load_percent"] = video->gpuLoadPercent();
+                sample["gpu_frequency_hz"] = static_cast<qint64>(video->gpuFrequencyHz());
+                sample["npu_load_percent"] = video->npuLoadPercent();
+                metricsJsonl.write(QJsonDocument(sample).toJson(QJsonDocument::Compact));
+                metricsJsonl.write("\n");
+                metricsJsonl.flush();
+            });
+        }
     }
 
     QTimer stopTimer;
@@ -326,6 +360,7 @@ int main(int argc, char **argv) {
     report["ai_navigation_direction_last"] = video->aiNavigationDirection();
     report["ai_navigation_distance_m_last"] = video->aiNavigationDistanceM();
     report["ai_result_age_ms_last"] = video->aiResultAgeMs();
+    report["ai_gui_update_ms_last"] = video->aiGuiUpdateMs();
     QJsonObject countObject;
     const QVariantMap counts = video->aiDetectionCounts();
     for (auto it = counts.begin(); it != counts.end(); ++it) {

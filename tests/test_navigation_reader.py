@@ -1,5 +1,7 @@
 """Synthetic contract tests; these are not real-video recognition accuracy."""
 from types import SimpleNamespace
+import logging
+import sys
 
 import cv2
 import numpy as np
@@ -125,6 +127,28 @@ def test_photographed_card_position_can_move_without_a_time_lookup(dx,dy):
                          borderValue=(160,160,160))
     observation=NavigationReader(ocr=FakeOCR()).update(image,123,999)
     assert observation.valid and observation.direction=='right'
+
+
+def test_instruction_card_below_status_strip_is_not_clipped():
+    image=cv2.warpAffine(screen(),np.float32([[1,0,36],[0,1,167]]),(960,540),
+                         borderValue=(160,160,160))
+    observation=NavigationReader(ocr=FakeOCR()).update(image,124,1000)
+    assert observation.valid and observation.direction=='right'
+    assert observation.distance_m==893
+
+
+def test_rapidocr_restores_standard_error_level_after_backend_shortens_names(monkeypatch):
+    captured={}
+    monkeypatch.delitem(logging._nameToLevel,'ERROR')
+
+    class FakeRapidOCR:
+        def __init__(self,params):
+            logging.getLogger('rapidocr-test').setLevel(params['Global.log_level'].upper())
+            captured.update(params)
+
+    monkeypatch.setitem(sys.modules,'rapidocr',SimpleNamespace(RapidOCR=FakeRapidOCR))
+    NavigationReader()._engine()
+    assert captured['Global.log_level']=='error'
 
 
 def test_digit_component_crop_excludes_small_unit_and_road_text():

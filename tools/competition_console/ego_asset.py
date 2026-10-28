@@ -21,7 +21,8 @@ ASSET_PATH = ASSET_DIR / "ego_car_rear.png"
 def load_ego_asset(size: tuple[int, int] = (340, 370)) -> Image.Image:
     """Return an RGBA illustration; callers should not modify the cached image."""
     with Image.open(ASSET_PATH) as image:
-        return image.convert("RGBA").resize(size, Image.Resampling.LANCZOS)
+        resampling = getattr(Image, "Resampling", Image)
+        return image.convert("RGBA").resize(size, resampling.LANCZOS)
 
 
 def _unit(v: np.ndarray) -> np.ndarray:

@@ -56,7 +56,7 @@ old and new service cannot both own BAR1.
 ## Board deployment
 
 ```text
-http://192.168.137.2:8080/?token=rk3566-debug-2026
+http://<board-ip>:8080/?token=<redacted>
 ```
 
 The service is now running in HARDWARE mode on the recovered PCIe endpoint.

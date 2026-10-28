@@ -7,36 +7,22 @@ import cv2
 import numpy as np
 
 from .scenario import Light
+from .traffic_light import classify_traffic_light
 
 
 def classify_horizontal_head(frame, bbox) -> Light:
-    """Colour measurement for an explicitly bound horizontal R/Y/G housing.
-
-    The layout is a scene calibration, not an inferred lamp type. Restricting
-    colour evidence to bulb slots keeps surrounding leaves out of the vote.
-    Unsupported/ambiguous layouts return UNKNOWN.
-    """
-    x1,y1,x2,y2 = [round(x) for x in bbox]
-    roi = frame[max(0,y1):min(frame.shape[0],y2), max(0,x1):min(frame.shape[1],x2)]
-    if roi.size == 0 or roi.shape[1]/max(1,roi.shape[0]) < 2:
-        return Light.UNKNOWN
-    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-    h,s,v = hsv[:,:,0], hsv[:,:,1], hsv[:,:,2]
-    if (v < 120).mean() < .25:
-        return Light.UNKNOWN
-    yy,xx = np.indices(h.shape)
-    height,width = h.shape
-    colours = []
-    for index,colour in enumerate((Light.RED, Light.YELLOW, Light.GREEN)):
-        cx,cy = width*(.22+.28*index), height*.5
-        slot = ((xx-cx)/max(2,width*.12))**2 + ((yy-cy)/max(2,height*.28))**2 <= 1
-        hue = ((h <= 12) | (h >= 165)) if colour == Light.RED else ((h >= 15) & (h <= 35)) if colour == Light.YELLOW else ((h >= 40) & (h <= 95))
-        mask = (slot & hue & (s >= 80) & (v >= 160)).astype(np.uint8)
-        count,_,stats,_ = cv2.connectedComponentsWithStats(mask,8)
-        largest = int(stats[1:,cv2.CC_STAT_AREA].max()) if count > 1 else 0
-        if largest >= max(4, int(slot.sum()*.08)):
-            colours.append(colour)
-    return colours[0] if len(colours) == 1 else Light.UNKNOWN
+    """Classify an explicitly bound housing without assuming its lamp layout."""
+    state = classify_traffic_light(
+        frame,
+        {"class_name": "traffic light", "confidence": 1.0, "bbox": bbox},
+        min_roi_size=4,
+        min_saturation=80,
+        min_value=80,
+        color_ratio_threshold=.08,
+        min_confidence=0.0,
+        require_lamp_evidence=True,
+    )
+    return Light(state.value)
 
 
 @dataclass(frozen=True)

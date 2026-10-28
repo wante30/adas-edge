@@ -1,6 +1,7 @@
 from dataclasses import replace
 
 import numpy as np
+import time
 
 from competition_ai.scenario import Lane, Light, Maneuver, Mode, Motion, Perception
 from tools.competition_console.controls import Controller
@@ -100,6 +101,68 @@ def test_pipeline_cadence_pause_expiry_and_replay_reset():
     pipeline.advance(frame,0,0)
     assert main.calls == 11 and specialist.calls == 4
     assert pipeline.last_frame == 0
+
+
+def test_pipeline_cadence_can_use_arrival_clock_when_source_timestamps_jitter():
+    main, specialist = Detector(), Detector()
+    pipeline = FrontPipeline(main, specialist, main_hz=5., specialist_hz=1.)
+    frame = np.zeros((108,192,3), np.uint8)
+    for fid in range(50):
+        # The PGVF producer clock is quantized just below 200 ms between AI
+        # requests, while the sidecar receives those requests at a stable 5 Hz.
+        source_ns = round(fid * 199.6e6)
+        schedule_ns = fid * 200_000_000
+        pipeline.advance(frame, fid, source_ns,
+                         schedule_timestamp_ns=schedule_ns)
+    assert main.calls == 50
+    assert specialist.calls == 10
+
+
+def test_pipeline_async_hazards_do_not_block_main_detector(monkeypatch):
+    main, specialist = Detector(), Detector()
+    pipeline = FrontPipeline(main, specialist, main_hz=10., specialist_hz=1.,
+                             hazards=True, hazards_async=True)
+    calls = []
+    original_update = pipeline.hazard_engine._engine.update
+
+    def slow_update(*args, **kwargs):
+        time.sleep(.05)
+        calls.append(args[2])
+        return original_update(*args, **kwargs)
+
+    monkeypatch.setattr(pipeline.hazard_engine._engine, 'update', slow_update)
+    frame = np.zeros((108,192,3), np.uint8)
+    started = time.perf_counter()
+    for fid in range(4):
+        pipeline.advance(frame, fid, fid * 100_000_000)
+    elapsed = time.perf_counter() - started
+    deadline = time.perf_counter() + 1.0
+    while not calls and time.perf_counter() < deadline:
+        time.sleep(.01)
+    assert elapsed < .04
+    assert calls
+    pipeline.hazard_engine.close()
+
+
+def test_pipeline_can_decouple_hazard_cadence_from_main_detector():
+    main, specialist = Detector(), Detector()
+    pipeline = FrontPipeline(main, specialist, main_hz=10., specialist_hz=1.,
+                             hazards=True, hazard_hz=5.)
+    frame = np.zeros((108,192,3), np.uint8)
+    for fid in range(20):
+        pipeline.advance(frame, fid, fid * 50_000_000)
+    assert main.calls == 10
+    assert len(pipeline.hazard_engine.timings) == 5
+
+
+def test_pipeline_can_run_main_for_each_rate_limited_request():
+    main, specialist = Detector(), Detector()
+    pipeline = FrontPipeline(main, specialist, main_hz=10., specialist_hz=1.,
+                             main_every_request=True)
+    frame = np.zeros((108,192,3), np.uint8)
+    for fid in range(12):
+        pipeline.advance(frame, fid, round(fid * 100_000_000))
+    assert main.calls == 12
 
 
 def test_integrated_pipeline_event_drives_policy_brake_and_expires(monkeypatch):

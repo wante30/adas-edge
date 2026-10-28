@@ -20,6 +20,23 @@ g++ -std=c++17 -O3 -Wall -Wextra -pthread mali_video.cpp \
 
 The program requires the active X11 mode to be 1280x720 and refuses to run on a non-Mali renderer. It uses eglSwapInterval(1).
 
+## Competition cockpit layout
+
+With `--overlays`, the cached UI follows the competition cockpit layout: a thin
+top control bar, a large video surface, a left perception card, the right
+navigation/hazard/lane stack, four UV-sampled camera previews, and a small
+ADAS spatial schematic. The previews sample the existing RGB565 texture; they
+do not decode or rebuild four CPU images. The spatial drawing is explicitly
+labelled schematic until camera calibration and FPGA lane metadata are
+available.
+
+The initial view can be selected with `--mode FOCUS|MULTI|SPATIAL` (or the
+`--view` alias). While the X11 window has focus, `F` selects the configured
+road source, `M`/`Q` shows the four-way view, `S` opens the spatial view, and
+`1`-`4` focus a quadrant. The bottom preview buttons accept the same mouse
+selection. These changes only update UV crops and cached overlays; they do not
+reload RKNN models or recreate the EGL context.
+
 ## Run
 
 Synthetic RGB565 input; the background is prepared once, then a source worker generates a moving road scene and frame-ID marker into a bounded four-buffer pool. The EGL thread only consumes the newest ready frame:

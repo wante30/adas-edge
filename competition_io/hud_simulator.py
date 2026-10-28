@@ -104,23 +104,42 @@ class HudSimulator:
     def read32(self, offset: int) -> int:
         if not self.supports_hud:
             return 0
-        status = (Status.BUSY if self.pending else 0) | (Status.RK_OWNER if self.applied and self.applied.owner else 0)
-        status |= Status.DEHAZE_OVERRIDE if self.covered else 0
-        status |= Status.ACCEPTED_VALID if self.accepted else 0
-        status |= Status.APPLIED_VALID if self.applied else 0
-        status |= Status.REJECT_VALID if self.reject_valid else 0
-        status |= Status.EFFECTIVE_VALID if self.effective_valid else 0
-        status |= Status.CONTROL_READY if self.ready else 0
-        registers = {
-            R.MAGIC: MAGIC, R.VERSION: self.version, R.CAPS: self.caps, R.STATUS: int(status),
-            R.ACCEPTED_SEQ: self.accepted.sequence if self.accepted else 0,
-            R.APPLIED_SEQ: self.applied.sequence if self.applied else 0,
-            R.RK_STATE: self.applied.encode() & 0x1FFF if self.applied else 0,
-            R.EFFECTIVE_STATE: self.effective, R.REJECT_COUNT: self.rejects, R.LAST_ERROR: int(self.error),
-            R.REJECTED_SEQ: self.rejected, R.SNAPSHOT_ID: self.snapshot_id,
-            R.LAST_ACCEPTED_REQUEST: self.accepted.encode() if self.accepted else 0,
-        }
-        return registers.get(offset, 0)
+        # Client snapshots read each register separately. Calculate only the
+        # requested value; reads remain stateless and observe the latest model.
+        if offset == R.STATUS:
+            status = (Status.BUSY if self.pending else 0) | (Status.RK_OWNER if self.applied and self.applied.owner else 0)
+            status |= Status.DEHAZE_OVERRIDE if self.covered else 0
+            status |= Status.ACCEPTED_VALID if self.accepted else 0
+            status |= Status.APPLIED_VALID if self.applied else 0
+            status |= Status.REJECT_VALID if self.reject_valid else 0
+            status |= Status.EFFECTIVE_VALID if self.effective_valid else 0
+            status |= Status.CONTROL_READY if self.ready else 0
+            return int(status)
+        if offset == R.SNAPSHOT_ID:
+            return self.snapshot_id
+        if offset == R.ACCEPTED_SEQ:
+            return self.accepted.sequence if self.accepted else 0
+        if offset == R.APPLIED_SEQ:
+            return self.applied.sequence if self.applied else 0
+        if offset == R.RK_STATE:
+            return self.applied.encode() & 0x1FFF if self.applied else 0
+        if offset == R.EFFECTIVE_STATE:
+            return self.effective
+        if offset == R.REJECT_COUNT:
+            return self.rejects
+        if offset == R.LAST_ERROR:
+            return int(self.error)
+        if offset == R.REJECTED_SEQ:
+            return self.rejected
+        if offset == R.LAST_ACCEPTED_REQUEST:
+            return self.accepted.encode() if self.accepted else 0
+        if offset == R.MAGIC:
+            return MAGIC
+        if offset == R.VERSION:
+            return self.version
+        if offset == R.CAPS:
+            return self.caps
+        return 0
 
     def read_window128(self, byte_offset: int) -> int:
         base = byte_offset & ~15

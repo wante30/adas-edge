@@ -57,6 +57,15 @@ def test_green_background_around_red_head_does_not_win_colour_vote():
     assert classify_horizontal_head(np.full_like(frame,(0,200,0)),[57,47,214,104]) == Light.UNKNOWN
 
 
+def test_bound_single_lamp_housing_confirms_centered_red_light():
+    frame = np.full((120,240,3),225,np.uint8)
+    cv2.rectangle(frame,(80,42),(160,78),(20,20,20),-1)
+    cv2.rectangle(frame,(80,42),(160,78),(160,160,160),2)
+    cv2.circle(frame,(120,60),10,(0,0,255),-1)
+
+    assert classify_horizontal_head(frame,[76,38,164,82]) == Light.RED
+
+
 def test_zoom_does_not_accumulate_housing_aspect_ratio_drift():
     original = housing('green')
     signal = BoundSignal(original,[57,47,214,104])

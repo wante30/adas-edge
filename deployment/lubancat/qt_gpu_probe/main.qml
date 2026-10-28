@@ -14,6 +14,23 @@ Item {
         Text { anchors.centerIn: parent; text: "FPGA CTRL"; color: root.cyanHot; font.family: root.num; font.pixelSize: 7 }
         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.fpgaOpen = true }
     }
+    Rectangle {
+        id: modelPickerButton
+        x: 1174; y: 15; width: 90; height: 34; z: 900; radius: 5
+        color: root.modelPickerOpen ? "#103B49" : "#071821"
+        border.color: root.modelPickerOpen ? root.cyan : "#28505E"; border.width: 1
+        Text { x: 8; y: 3; text: "模型方案"; color: "#7FA6B0"; font.family: root.cjk; font.pixelSize: 7 }
+        Text {
+            x: 8; y: 15; width: 62; height: 14; text: root.modelShortLabel()
+            color: root.ink; font.family: root.cjk; font.pixelSize: 9; font.weight: Font.DemiBold
+            elide: Text.ElideRight
+        }
+        Text { x: 72; y: 11; text: "v"; color: root.modelStateColor(); font.family: root.num; font.pixelSize: 9; font.weight: Font.Bold }
+        MouseArea {
+            anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+            onClicked: root.modelPickerOpen = !root.modelPickerOpen
+        }
+    }
 
     property string cjk: "Noto Sans CJK SC"
     property string num: "DejaVu Sans"
@@ -35,6 +52,7 @@ Item {
     property var now: new Date()
     property bool hudTestOpen: false
     property bool fpgaOpen: false
+    property bool modelPickerOpen: false
     property bool videoQsg: typeof videoQsgMode !== "undefined" ? videoQsgMode : false
     property var fpgaControl: fpgaIsp
     property bool autoHudSend: true
@@ -117,7 +135,7 @@ Item {
         else if (event.key === Qt.Key_T) { root.hudTestOpen = !root.hudTestOpen; event.accepted = true }
         else if (event.key === Qt.Key_I) { root.fpgaOpen = !root.fpgaOpen; event.accepted = true }
         else if (event.key === Qt.Key_L) { root.trackingMode = (root.trackingMode + 1) % 3; event.accepted = true }
-        else if (event.key === Qt.Key_Escape) { root.hudTestOpen = false; root.fpgaOpen = false; event.accepted = true }
+        else if (event.key === Qt.Key_Escape) { root.hudTestOpen = false; root.fpgaOpen = false; root.modelPickerOpen = false; event.accepted = true }
         else if (event.key === Qt.Key_Q) { Qt.quit() }
     }
 
@@ -159,6 +177,35 @@ Item {
         return video.sourceMode === "pgv-live" ? mint : amber
     }
     function ambertone() { return amber }
+    function modelOptionsFor(legacy) {
+        return (video.aiModelOptions || []).filter(function(option) {
+            return !!option.legacy === legacy
+        })
+    }
+    function modelShortLabel() {
+        var id = video.aiModelId || ""
+        if (!id) return "等待 AI"
+        if (id.length === 1) return "方案 " + id
+        var options = video.aiModelOptions || []
+        for (var i = 0; i < options.length; ++i) {
+            var option = options[i]
+            if (option.id === id) return option.legacy ? "旧版模型" : "方案 " + id
+        }
+        return id
+    }
+    function modelActiveLabel() {
+        var options = video.aiModelOptions || []
+        for (var i = 0; i < options.length; ++i) {
+            var option = options[i]
+            if (option.id === video.aiModelId) return option.label
+        }
+        return video.aiModelId || "等待 AI 状态"
+    }
+    function modelStateColor() {
+        if (video.aiModelState === "FAILED" || video.aiModelState === "REJECTED") return red
+        if (video.aiModelState === "SWITCHING" || video.aiModelState === "SENDING") return amber
+        return video.aiModelId ? mint : muted
+    }
 
     function detectionMap() { return video.aiDetectionCounts ? video.aiDetectionCounts : ({}) }
     function countOf(name) { var m = detectionMap(); return m && m[name] !== undefined ? m[name] : 0 }
@@ -627,8 +674,8 @@ Item {
         }
 
         // AI target layer, mapped from the 1280x720 AI display space onto
-        // the live front view. Simple QML primitives render faster than a
-        // continuously repainted Canvas on this Mali/X11 path.
+        // the live front view. Keep each delegate small: this is rebuilt at
+        // AI cadence while the video texture continues at source cadence.
         Item {
             anchors.fill: parent
             clip: true
@@ -668,23 +715,7 @@ Item {
 
                     Rectangle {
                         anchors.fill: parent
-                        color: Qt.rgba(tone.r, tone.g, tone.b, hot ? 0.055 : 0.018)
-                    }
-                    BorderImage {
-                        anchors.fill: parent
-                        source: root.targetFrame(model.className)
-                        border.left: 14
-                        border.top: 14
-                        border.right: 14
-                        border.bottom: 14
-                        horizontalTileMode: BorderImage.Stretch
-                        verticalTileMode: BorderImage.Stretch
-                        smooth: true
-                        opacity: hot ? 1.0 : 0.82
-                    }
-                    Rectangle {
-                        anchors.fill: parent
-                        color: "transparent"
+                        color: Qt.rgba(tone.r, tone.g, tone.b, hot ? 0.045 : 0.012)
                         border.width: hot ? 1.2 : 0.8
                         border.color: Qt.rgba(tone.r, tone.g, tone.b, hot ? 0.62 : 0.34)
                     }
@@ -697,7 +728,6 @@ Item {
                         color: "#E8020C12"
                         border.color: Qt.rgba(tone.r, tone.g, tone.b, 0.5)
                         border.width: 0.8
-                        Rectangle { x: 0; y: 0; width: 2.2; height: parent.height; color: tone }
                         Text {
                             id: labelText
                             x: 7; anchors.verticalCenter: parent.verticalCenter
@@ -1651,6 +1681,119 @@ Item {
         onLoaded: {
             item.control = root.fpgaControl
             item.closeRequested.connect(function() { root.fpgaOpen = false })
+        }
+    }
+
+    Item {
+        anchors.fill: parent
+        visible: root.modelPickerOpen
+        z: 940
+        MouseArea { anchors.fill: parent; onClicked: root.modelPickerOpen = false }
+
+        Rectangle {
+            id: modelPickerPanel
+            x: parent.width - width - 16; y: 56; width: 420; height: 556; radius: 4
+            color: "#F007151D"; border.color: "#3A6574"; border.width: 1
+
+            Text {
+                x: 16; y: 13; width: 265; height: 18; text: "运行模型"
+                color: root.ink; font.family: root.cjk; font.pixelSize: 12; font.weight: Font.DemiBold
+            }
+            Rectangle {
+                x: parent.width - 116; y: 12; width: 100; height: 20; radius: 2
+                color: Qt.rgba(root.modelStateColor().r, root.modelStateColor().g,
+                               root.modelStateColor().b, 0.12)
+                border.color: Qt.rgba(root.modelStateColor().r, root.modelStateColor().g,
+                                      root.modelStateColor().b, 0.42)
+                border.width: 0.8
+                Text {
+                    anchors.centerIn: parent; text: video.aiModelState || "WAITING"
+                    color: root.modelStateColor(); font.family: root.num; font.pixelSize: 7
+                }
+            }
+            Text {
+                x: 16; y: 34; width: parent.width - 32; height: 20
+                text: root.modelActiveLabel(); color: root.inkSoft
+                font.family: root.cjk; font.pixelSize: 8; elide: Text.ElideRight
+            }
+            Rectangle { x: 16; y: 60; width: parent.width - 32; height: 1; color: "#244451" }
+
+            Flickable {
+                id: modelOptionsScroll
+                x: 16; y: 72; width: parent.width - 32; height: 418
+                clip: true; contentWidth: width
+                contentHeight: 48 + root.modelOptionsFor(false).length * 44
+                               + 24 + root.modelOptionsFor(true).length * 44
+                boundsBehavior: Flickable.StopAtBounds
+
+                Text {
+                    x: 0; y: 0; width: parent.width; height: 20; text: "四方案对照"
+                    color: root.cyanHot; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold
+                    verticalAlignment: Text.AlignVCenter
+                }
+                Text {
+                    x: 0; y: 24 + root.modelOptionsFor(false).length * 44
+                    width: parent.width; height: 20; text: "旧版模型"
+                    color: "#A7BEC5"; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold
+                    verticalAlignment: Text.AlignVCenter
+                }
+                Repeater {
+                    model: video.aiModelOptions || []
+                    delegate: Rectangle {
+                        property var option: modelData
+                        x: 0
+                        y: option.legacy
+                           ? 48 + root.modelOptionsFor(false).length * 44
+                               + (index - root.modelOptionsFor(false).length) * 44
+                           : 24 + index * 44
+                        width: modelOptionsScroll.width; height: 40; radius: 2
+                        color: option.id === video.aiModelId ? "#173B47" : "#0B2029"
+                        border.color: option.id === video.aiModelId ? root.cyan : "#1E3B46"
+                        border.width: option.id === video.aiModelId ? 1 : 0.7
+                        opacity: option.available ? 1 : 0.58
+                        Text {
+                            x: 9; y: 4; width: parent.width - 104; height: 32
+                            text: option.label
+                            color: option.id === video.aiModelId ? root.ink : root.inkSoft
+                            font.family: root.cjk; font.pixelSize: 8
+                            verticalAlignment: Text.AlignVCenter; elide: Text.ElideRight
+                        }
+                        Text {
+                            x: parent.width - 88; y: 4; width: 78; height: 32
+                            text: !option.available ? "缺少文件"
+                                  : (option.has_specialist ? "双模型" : "单模型")
+                            color: !option.available ? root.amber
+                                   : (option.has_specialist ? root.mint : "#8CAAB3")
+                            font.family: root.cjk; font.pixelSize: 7
+                            horizontalAlignment: Text.AlignRight; verticalAlignment: Text.AlignVCenter
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            enabled: option.available
+                                     && video.aiModelState !== "SWITCHING"
+                                     && video.aiModelState !== "SENDING"
+                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            onClicked: video.requestModelSwitch(option.id)
+                        }
+                    }
+                }
+            }
+
+            Rectangle { x: 16; y: 500; width: parent.width - 32; height: 1; color: "#244451" }
+            Text {
+                x: 16; y: 507; width: parent.width - 32; height: 30
+                text: video.aiModelMessage || "等待板端模型清单"
+                color: root.modelStateColor(); font.family: root.cjk; font.pixelSize: 7
+                verticalAlignment: Text.AlignVCenter; elide: Text.ElideRight
+            }
+            Text {
+                x: parent.width - 48; y: 13; width: 28; height: 18; text: "×"
+                color: "#8FAAB2"; font.family: root.num; font.pixelSize: 14
+                MouseArea {
+                    anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor
+                    onClicked: root.modelPickerOpen = false
+                }
+            }
         }
     }
 }

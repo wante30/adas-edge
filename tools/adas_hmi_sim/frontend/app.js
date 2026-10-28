@@ -4,7 +4,7 @@
     host: $('scene-host'), navMap: $('nav-map'), connection: $('connection'), mode: $('mode-pill'),
     video: $('video-feed'), videoLeft: $('video-left'), videoRight: $('video-right'), videoRear: $('video-rear'),
     surround: $('surround-strip'), surroundToggle: $('surround-toggle'), videoEmpty: $('video-empty'), videoSize: $('video-size'),
-    bevCard: $('bev-card'), bev: $('bev-feed'), sceneSurround: $('scene-surround-feed'), bevCalibration: $('bev-calibration'),
+    bevCard: $('bev-card'), bev: $('bev-feed'), sceneSurround: $('scene-surround-feed'), teslaBev: $('scene-tesla-bev'), bevCalibration: $('bev-calibration'),
     frame: $('frame-id'), traffic: $('traffic-state'), lamp: $('traffic-lamp'), action: $('action-state'),
     warningStrip: $('warning-strip'), warning: $('warning-text'), navArrow: $('nav-arrow'), navAction: $('nav-action'), navDistance: $('nav-distance'),
     videoFps: $('video-fps'), detectorFps: $('detector-fps'), wsRate: $('ws-rate'), tracks: $('track-count'), sceneTracks: $('scene-track-count'), renderFps: $('render-fps'),
@@ -30,7 +30,8 @@
     renderer.setView(mode);
     if (dom.navMap) dom.navMap.hidden = mode !== 'nav';
     if (dom.sceneSurround) dom.sceneSurround.hidden = mode !== 'bowl' || !dom.sceneSurround.src;
-    const labels = { nav: '导航地图', drive: '驾驶感知', bowl: '环视 AVM' };
+    if (dom.teslaBev) dom.teslaBev.hidden = mode !== 'tesla' || !dom.teslaBev.src;
+    const labels = { nav: '导航地图', drive: 'Apollo Carviz 实验对照', tesla: 'Tesla-BevCam-Clone 上游原版', bowl: '环视 AVM' };
     setText(dom.worldLabel, labels[mode] || '导航地图');
     document.body.dataset.viewMode = mode;
     if (mapRenderer && mode === 'nav') mapRenderer.resize();
@@ -55,7 +56,18 @@
     setText(dom.driveSpeed, String(speed));
     const action = String(nav.action || 'STRAIGHT');
     setText(dom.driveAssistIcon, frame.ego?.action === 'STOP' ? '●' : '▲');
-    setText(dom.driveAssistText, frame.ego?.action === 'STOP' ? '等待信号灯' : action.startsWith('CHANGE_') ? '即将沿导航变道' : '城市领航辅助中');
+    const trafficMeta = frame.metadata?.traffic_light || {};
+    const trafficAssociation = String(trafficMeta.association || '');
+    const assistText = frame.ego?.action !== 'STOP'
+      ? (action.startsWith('CHANGE_') ? '即将沿导航变道' : '城市领航辅助中')
+      : traffic === 'RED'
+        ? '检测到红灯 · 等待通行'
+        : traffic === 'YELLOW'
+          ? '检测到黄灯 · 减速等待'
+          : traffic === 'GREEN' && trafficAssociation === 'UNVERIFIED'
+            ? '检测到绿灯 · 车道确认中'
+            : '等待信号灯';
+    setText(dom.driveAssistText, assistText);
     setText(dom.driveRouteIcon, navArrow(action));
     setText(dom.driveRouteDistance, nav.distance_m == null ? '—' : String(Math.round(nav.distance_m)));
     setText(dom.driveRouteName, action.endsWith('LEFT') ? '兴业路' : action.endsWith('RIGHT') ? '宝源一街' : '海城路');
@@ -119,6 +131,11 @@
       document.body.dataset.hasSurround = '1';
       document.body.dataset.surroundMode = metadata.calibration_mode || 'UNKNOWN';
     }
+    if (message.tesla_bev_jpeg && dom.teslaBev) {
+      dom.teslaBev.src = `data:image/jpeg;base64,${message.tesla_bev_jpeg}`;
+      dom.teslaBev.hidden = document.body.dataset.viewMode !== 'tesla';
+      dom.teslaBev.dataset.renderer = message.tesla_bev?.renderer || 'Tesla-BevCam-Clone';
+    }
   }
 
   function connect() {
@@ -139,6 +156,8 @@
   });
   try { renderer = new SceneRenderer(dom.host); } catch (error) { dom.host.innerHTML = `<div class="scene-error">WebGL renderer unavailable<br><small>${error.message}</small></div>`; console.error(error); renderer = { update: () => {}, updateSurround: () => {}, setView: () => {} }; }
   try { const MapRenderer = globalThis.MapLibreNavigationMap || globalThis.NavigationMapRenderer; mapRenderer = new MapRenderer(dom.navMap); } catch (error) { console.error(error); }
-  activateView('drive');
+  // Keep the user-selected upstream renderer as the primary view. Apollo
+  // Carviz remains available only as an explicit comparison view.
+  activateView('tesla');
   connect();
 })();

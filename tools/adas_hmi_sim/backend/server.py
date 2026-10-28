@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from .navigation_state import NavigationState
 from .scene_builder import SceneBuilder
 from .schemas import NavigationIntent
+from .tesla_bevcam_renderer import TeslaBevCamRenderer
 from .video_pipeline import FramePacket
 
 
@@ -29,6 +31,7 @@ class SimulatorOptions:
     source_name: str
     target_hz: float = 30.0
     video_jpeg_quality: int = 78
+    tesla_renderer: TeslaBevCamRenderer | None = None
 
 
 def _jpeg_data(image: Any, quality: int) -> str | None:
@@ -44,6 +47,16 @@ def create_app(options: SimulatorOptions) -> FastAPI:
     app = FastAPI(title="ADAS HMI PC Simulator", docs_url=None, redoc_url=None)
     started_at = time.perf_counter()
     counts = {"frames": 0, "last_frame_ms": 0, "last_source_s": 0.0, "last_ws_s": 0.0, "detector_updates": 0}
+    tesla_renderer = options.tesla_renderer
+    # OpenCV VideoCapture and the detector objects are not re-entrant.  A
+    # second browser tab should not be able to call LiveSource.next() while a
+    # first tab is decoding a frame (FFmpeg otherwise aborts with
+    # ``async_lock`` assertions).
+    source_lock = threading.Lock()
+
+    def read_packet() -> FramePacket | None:
+        with source_lock:
+            return options.source.next()
 
     @app.get("/health")
     async def health() -> JSONResponse:
@@ -61,12 +74,21 @@ def create_app(options: SimulatorOptions) -> FastAPI:
         try:
             while True:
                 tick_started = time.perf_counter()
-                packet: FramePacket | None = await asyncio.to_thread(options.source.next)
+                packet: FramePacket | None = await asyncio.to_thread(read_packet)
                 if packet is None:
                     await websocket.send_json({"type": "end", "message": "input complete"})
                     break
                 route_nav = options.navigation.at(packet.frame_id, packet.timestamp_ms)
                 metadata = packet.metadata or {}
+                light_metadata = metadata.get("traffic_light", {})
+                if isinstance(light_metadata, dict):
+                    light_state = str(metadata.get("traffic_light_state", light_metadata.get("state", "UNKNOWN")))
+                    decision_state = metadata.get("traffic_light_decision_state", light_metadata.get("decision_state"))
+                else:
+                    light_state = str(metadata.get("traffic_light_state", light_metadata))
+                    decision_state = metadata.get("traffic_light_decision_state")
+                if options.source_name in {"front", "live"} and decision_state is None:
+                    decision_state = "UNKNOWN"
                 # Replay rows may use a nested lane contract or the flat mock contract.
                 lane_metadata = metadata.get("lanes") or metadata.get("lane")
                 scene = options.builder.build(
@@ -75,7 +97,9 @@ def create_app(options: SimulatorOptions) -> FastAPI:
                     packet.detections,
                     int(packet.image.shape[1]) if packet.image is not None else 960,
                     int(packet.image.shape[0]) if packet.image is not None else 540,
-                    traffic_light_state=str(metadata.get("traffic_light_state", metadata.get("traffic_light", "UNKNOWN"))),
+                    traffic_light_state=light_state,
+                    traffic_light_decision_state=str(decision_state) if decision_state is not None else None,
+                    traffic_light_metadata=light_metadata if isinstance(light_metadata, dict) and light_metadata else None,
                     lane_metadata=lane_metadata,
                     navigation=route_nav,
                     warning_flags=list(metadata.get("warning_flags", [])),
@@ -85,7 +109,7 @@ def create_app(options: SimulatorOptions) -> FastAPI:
                 # Preserve the transport and device-stage evidence in the
                 # renderer-facing frame. The browser can inspect these fields
                 # without knowing the source implementation.
-                for key in ("system_mode", "channel_roles", "pcie", "rk3566", "surround_bev"):
+                for key in ("system_mode", "channel_roles", "pcie", "rk3566", "surround_bev", "perception", "traffic_light", "traffic_light_decision_state", "lanes", "lane_detector"):
                     if key in metadata:
                         scene.metadata[key] = metadata[key]
                 now = time.perf_counter()
@@ -118,6 +142,17 @@ def create_app(options: SimulatorOptions) -> FastAPI:
                     message["transport"] = dict(packet.transport)
                 if packet.surround_bev is not None:
                     message["surround_bev_jpeg"] = _jpeg_data(packet.surround_bev, options.video_jpeg_quality)
+                if tesla_renderer is not None:
+                    try:
+                        tesla_frame = await asyncio.to_thread(tesla_renderer.render, scene)
+                        message["tesla_bev_jpeg"] = _jpeg_data(tesla_frame, options.video_jpeg_quality)
+                        message["tesla_bev"] = {
+                            "renderer": tesla_renderer.name,
+                            "commit": "e99318bde342c665382950d46a3fc01b469b939a",
+                            "validation": tesla_renderer.validation,
+                        }
+                    except Exception as error:
+                        message["tesla_bev_error"] = str(error)
                 await websocket.send_json(message)
                 wait = 1.0 / options.target_hz - (time.perf_counter() - tick_started)
                 if wait > 0:

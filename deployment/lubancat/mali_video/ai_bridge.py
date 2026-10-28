@@ -340,16 +340,11 @@ def render_dynamic_hmi_rgba(status, font_path=None):
         draw.text((18, 303), fit_hmi_text(draw, "未检出有效危险事件", font_small, text_width),
                   font=font_small, fill=muted)
 
-    counts = status.get("detections") or {}
-    class_names = {"person": "行人", "bicycle": "自行车", "car": "汽车",
-                   "motorcycle": "摩托车", "bus": "公交车", "truck": "货车",
-                   "traffic light": "信号灯"}
-    total = sum(int(value) for value in counts.values())
-    draw.text((18, 374), fit_hmi_text(draw, f"道路目标  {total} 个", font_value, text_width),
+    # Lane metadata is not part of the current MVA packet. Keep this explicit
+    # rather than turning an absent FPGA field into a decorative lane state.
+    draw.text((18, 374), fit_hmi_text(draw, "车道状态", font_value, text_width),
               font=font_value, fill=ink)
-    summary = " · ".join(f"{class_names.get(name, name)} {count}"
-                         for name, count in sorted(counts.items())) or "未检出目标"
-    draw.text((18, 402), fit_hmi_text(draw, summary, font_small, text_width),
+    draw.text((18, 402), fit_hmi_text(draw, "未接入 / FPGA 元数据 UNKNOWN", font_small, text_width),
               font=font_small, fill=muted)
     ai_fps = status.get("ai_fps")
     result_age = status.get("result_age_ms")

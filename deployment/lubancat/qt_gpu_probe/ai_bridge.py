@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import deque
 from dataclasses import replace
 import json
 import math
@@ -41,6 +42,11 @@ from tools.competition_console.navigation_reader import NavigationObservation
 from tools.competition_console.pipeline import FrontPipeline
 from tools.competition_console.rknn_detector import RknnConsoleDetector
 from tools.competition_console.latest_frame_slot import LatestFrameSlot
+from model_profiles import (
+    build_model_profiles,
+    decode_model_switch_request,
+    encode_model_switch_reply,
+)
 
 
 WIDTH = 1280
@@ -575,6 +581,24 @@ class PackedRgb565:
         return cv2.cvtColor(packed, cv2.COLOR_BGR5652BGR)
 
 
+def select_inference_frames(frame, layout, road_quadrant, navigation_quadrant):
+    """Decode the road and navigation inputs, reusing an identical quadrant."""
+    if isinstance(frame, PackedRgb565):
+        if layout == "quad":
+            road = frame.quadrant_bgr(road_quadrant)
+            navigation = (road if navigation_quadrant == road_quadrant
+                          else frame.quadrant_bgr(navigation_quadrant))
+            return road, navigation
+        road = frame.full_bgr()
+        return road, road
+    if layout == "quad":
+        road = crop_quadrant(frame, road_quadrant)
+        navigation = (road if navigation_quadrant == road_quadrant
+                      else crop_quadrant(frame, navigation_quadrant))
+        return road, navigation
+    return frame, frame
+
+
 def load_replay_frames(paths):
     started = time.perf_counter()
     frames = []
@@ -608,9 +632,12 @@ def _distribution(values, unit="ms"):
 
 class BoardTelemetry:
     def __init__(self):
-        self.samples = {"npu_load_percent": [], "npu_frequency_mhz": [],
-                        "gpu_load_percent": [], "gpu_frequency_mhz": []}
-        self.temperatures = []
+        self.samples = {
+            name: deque(maxlen=3600)
+            for name in ("npu_load_percent", "npu_frequency_mhz",
+                         "gpu_load_percent", "gpu_frequency_mhz")
+        }
+        self.temperatures = deque(maxlen=3600)
         self.running = threading.Event()
         self.worker = None
         self.zones = []
@@ -703,6 +730,14 @@ def _current_rss_mb():
     return None
 
 
+def _deprioritize_sidecar_process(nice_value=10):
+    """Lower only the Python sidecar leader; keep RKNN native workers intact."""
+    try:
+        os.setpriority(os.PRIO_PROCESS, os.getpid(), int(nice_value))
+    except (AttributeError, OSError):
+        pass
+
+
 def _quadrant_offset(quadrant):
     row, col = divmod(quadrant, 2)
     return col * (WIDTH // 2), row * (HEIGHT // 2)
@@ -756,6 +791,26 @@ def _navigation_ocr_process(request_queue, result_queue, ttl_ms):
 class AiReplayBridge:
     def __init__(self, args):
         self.args = args
+        model_root = Path(args.main_model).resolve().parent
+        legacy_root = Path(args.legacy_model_root).resolve() if args.legacy_model_root else None
+        if legacy_root is None:
+            legacy_root = next(
+                (parent for parent in Path(args.main_model).resolve().parents
+                 if (parent / "adas-edge-rect").is_dir()),
+                Path.home(),
+            )
+        self.model_profiles = {
+            profile.id: profile
+            for profile in build_model_profiles(model_root, legacy_root)
+        }
+        self.model_switch_lock = threading.Lock()
+        self.pending_model_switch = None
+        self.model_switch_peer = None
+        self.model_switch_state = "READY"
+        self.model_switch_message = ""
+        self.active_model_id = self._profile_id_for_paths(
+            args.main_model, args.specialist_model
+        ) or "custom"
         self.live_frame_path = Path(args.live_frame_file) if args.live_frame_file else None
         if self.live_frame_path is None:
             self.frames, self.source_prepare_ms = load_replay_frames(args.files)
@@ -772,12 +827,34 @@ class AiReplayBridge:
         self.shared_frame_mismatches = 0
         self.source_frame_reads = 0
         self.selection_changes = 0
+        # Stage samples are intentionally kept in memory for the bounded
+        # 60-second board runs. They make the existing timing log actionable
+        # without changing the detector cadence or packet contract.
+        self.stage_timings = {
+            name: deque(maxlen=3600)
+            for name in (
+                "shared_frame_read", "shared_frame_validate", "rgb565_decode",
+                "pipeline", "navigation_submit", "box_mapping", "status_build",
+                "dynamic_hmi", "packet_encode", "result_publish",
+            )
+        }
 
-        main_size = (320, 192) if "320x192" in args.main_model else ((416, 256) if "416x256" in args.main_model else (512, 288))
-        main = RknnConsoleDetector(args.main_model, main_size)
+        active_profile = self.model_profiles.get(self.active_model_id)
+        main_size = active_profile.input_size if active_profile else (
+            (320, 192) if "320x192" in args.main_model else
+            ((416, 256) if "416x256" in args.main_model else (512, 288))
+        )
+        main = RknnConsoleDetector(
+            args.main_model, main_size,
+            class_profile=active_profile.class_profile if active_profile else None,
+        )
+        main.single_model = not bool(args.specialist_model)
         try:
-            specialist = RknnConsoleDetector(
-                args.specialist_model, (512, 192), specialist=True
+            specialist = (
+                RknnConsoleDetector(
+                    args.specialist_model, (512, 192), specialist=True,
+                    class_names=("traffic light",),
+                ) if args.specialist_model else None
             )
         except BaseException:
             main.close()
@@ -785,6 +862,12 @@ class AiReplayBridge:
         self.pipeline = FrontPipeline(
             main, specialist, main_hz=args.main_hz,
             specialist_hz=args.specialist_hz, hazards=True,
+            hazards_async=True,
+            hazard_hz=(args.hazard_hz if args.hazard_hz > 0 else args.main_hz),
+            # Qt already rate-limits live requests to --ai-hz. Running the
+            # main model for each latest request avoids a second clock gate
+            # dropping requests when PGV timestamps jitter around 100 ms.
+            main_every_request=True,
         )
         self.navigation = None
         self.nav_request = None
@@ -804,9 +887,10 @@ class AiReplayBridge:
             )
             self.nav_process.start()
         self.navigation_last_update_ns = None
-        self.navigation_timings = []
-        self.navigation_preprocess_timings = []
-        self.navigation_engine_timings = []
+        self.navigation_timings = deque(maxlen=3600)
+        self.navigation_timing_count = 0
+        self.navigation_preprocess_timings = deque(maxlen=3600)
+        self.navigation_engine_timings = deque(maxlen=3600)
         self.navigation_jump_rejections = 0
         self.latest_source_timestamp_ns = 0
         self.last_nav_thumb = None
@@ -826,9 +910,7 @@ class AiReplayBridge:
         self.replaced_count = 0
         self.result_count = 0
         self.error_count = 0
-        self.frame_ids = []
-        self.request_times = []
-        self.latency_ms = []
+        self.latency_ms = deque(maxlen=3600)
         self.worker_cpu_ns = 0
         self.process_cpu_start_ns = time.process_time_ns()
         self.telemetry = BoardTelemetry()
@@ -839,18 +921,25 @@ class AiReplayBridge:
         self.analysis_start_ns = None
 
     def start(self):
-        self._write_dynamic_hmi(initial_dynamic_status(self.args.source, time.monotonic_ns()))
+        status = initial_dynamic_status(self.args.source, time.monotonic_ns())
+        status["model_selection"] = self._model_selection_status()
+        self._write_dynamic_hmi(status)
         self.listener.start()
         self.worker.start()
+        _deprioritize_sidecar_process()
 
     def _listen(self):
         while self.running.is_set():
             try:
-                packet, _ = self.request_socket.recvfrom(128)
+                packet, peer = self.request_socket.recvfrom(128)
             except socket.timeout:
                 continue
             except OSError:
                 break
+            model_request = decode_model_switch_request(packet)
+            if model_request is not None:
+                self._queue_model_switch(model_request, peer)
+                continue
             # Runtime view selection: MVS1 + road quadrant + navigation
             # quadrant. It is intentionally handled on the request listener so
             # the next inference uses the new crops without restarting RKNN.
@@ -877,12 +966,20 @@ class AiReplayBridge:
             requested_id, requested_timestamp_ns = request[:2]
             input_fps, submitted_fps = request[2:4] if len(request) == 4 else (None, None)
             if self.live_frame_path is not None:
+                read_started = time.perf_counter_ns()
                 try:
                     snapshot = self.live_frame_path.read_bytes()
                 except OSError:
                     self.shared_frame_mismatches += 1
                     continue
+                self.stage_timings["shared_frame_read"].append(
+                    (time.perf_counter_ns() - read_started) / 1e6
+                )
+                validate_started = time.perf_counter_ns()
                 payload = decode_frame_snapshot(snapshot, requested_id, requested_timestamp_ns)
+                self.stage_timings["shared_frame_validate"].append(
+                    (time.perf_counter_ns() - validate_started) / 1e6
+                )
                 if payload is None:
                     self.shared_frame_mismatches += 1
                     continue
@@ -900,12 +997,163 @@ class AiReplayBridge:
                 request = (requested_id, requested_timestamp_ns, None,
                            input_fps, submitted_fps, now)
             self.request_count += 1
-            self.request_times.append(now)
             if self.first_request_ns is None:
                 self.first_request_ns = now
             self.last_request_ns = now
             if self.latest.publish(request):
                 self.replaced_count += 1
+
+    def _profile_id_for_paths(self, main_model, specialist_model):
+        main_path = Path(main_model).resolve()
+        specialist_path = Path(specialist_model).resolve() if specialist_model else None
+        for profile_id, profile in self.model_profiles.items():
+            if profile.main_model.resolve() != main_path:
+                continue
+            expected_specialist = (
+                profile.specialist_model.resolve()
+                if profile.specialist_model is not None else None
+            )
+            if expected_specialist == specialist_path:
+                return profile_id
+        return None
+
+    def _model_selection_status(self):
+        with self.model_switch_lock:
+            active_id = self.active_model_id
+            state = self.model_switch_state
+            message = self.model_switch_message
+            pending = self.pending_model_switch
+            requested_id = pending["profile_id"] if pending else ""
+        active = self.model_profiles.get(active_id)
+        return {
+            "active_id": active_id,
+            "active_label": active.label if active else "自定义模型",
+            "requested_id": requested_id,
+            "state": state,
+            "message": message,
+            "options": [profile.public() for profile in self.model_profiles.values()],
+        }
+
+    def _send_model_switch_reply(self, request_id, peer, state, requested_id, message):
+        if peer is None:
+            return
+        payload = encode_model_switch_reply(
+            request_id,
+            state=state,
+            active_id=self.active_model_id,
+            requested_id=requested_id,
+            message=message,
+        )
+        if payload is None:
+            return
+        try:
+            self.result_socket.sendto(payload, peer)
+        except OSError:
+            pass
+
+    def _queue_model_switch(self, request, peer):
+        request_id = int(request["request_id"])
+        profile_id = str(request["profile_id"])
+        profile = self.model_profiles.get(profile_id)
+        if profile is None:
+            self._send_model_switch_reply(
+                request_id, peer, "REJECTED", profile_id, "未知模型方案"
+            )
+            return
+        if not profile.available:
+            self._send_model_switch_reply(
+                request_id, peer, "REJECTED", profile_id, profile.unavailable_reason
+            )
+            return
+        with self.model_switch_lock:
+            if profile_id == self.active_model_id and self.pending_model_switch is None:
+                self.model_switch_state = "READY"
+                self.model_switch_message = "当前已是该方案"
+                immediate_state = "APPLIED"
+            else:
+                self.pending_model_switch = {
+                    "request_id": request_id,
+                    "profile_id": profile_id,
+                }
+                self.model_switch_peer = peer
+                self.model_switch_state = "SWITCHING"
+                self.model_switch_message = "正在切换模型"
+                immediate_state = "SWITCHING"
+            message = self.model_switch_message
+        self._send_model_switch_reply(
+            request_id, peer, immediate_state, profile_id, message
+        )
+
+    def _apply_pending_model_switch(self):
+        with self.model_switch_lock:
+            request = self.pending_model_switch
+            if request is None:
+                return False
+            self.pending_model_switch = None
+            peer = self.model_switch_peer
+            self.model_switch_peer = None
+        request_id = int(request["request_id"])
+        profile_id = str(request["profile_id"])
+        profile = self.model_profiles[profile_id]
+        old_main = self.pipeline.main_detector
+        old_specialist = self.pipeline.specialist_detector
+        same_main = Path(self.args.main_model).resolve() == profile.main_model.resolve()
+        current_specialist = (
+            Path(self.args.specialist_model).resolve()
+            if self.args.specialist_model else None
+        )
+        wanted_specialist = (
+            profile.specialist_model.resolve()
+            if profile.specialist_model is not None else None
+        )
+        same_specialist = current_specialist == wanted_specialist
+        new_main = old_main if same_main else None
+        new_specialist = old_specialist if same_specialist else None
+        try:
+            if new_main is None:
+                new_main = RknnConsoleDetector(
+                    profile.main_model, profile.input_size,
+                    class_profile=profile.class_profile,
+                )
+            if profile.specialist_model is not None and new_specialist is None:
+                new_specialist = RknnConsoleDetector(
+                    profile.specialist_model, (512, 192), specialist=True,
+                    class_names=("traffic light",),
+                )
+        except Exception as exc:
+            if new_main is not None and new_main is not old_main:
+                new_main.close()
+            if new_specialist is not None and new_specialist is not old_specialist:
+                new_specialist.close()
+            message = f"模型加载失败：{type(exc).__name__}: {exc}"
+            with self.model_switch_lock:
+                self.model_switch_state = "FAILED"
+                self.model_switch_message = message
+            self._send_model_switch_reply(
+                request_id, peer, "FAILED", profile_id, message
+            )
+            return True
+
+        new_main.single_model = profile.specialist_model is None
+        self.pipeline.main_detector = new_main
+        self.pipeline.specialist_detector = new_specialist
+        self.pipeline.reset()
+        self.args.main_model = str(profile.main_model)
+        self.args.specialist_model = (
+            str(profile.specialist_model) if profile.specialist_model else ""
+        )
+        with self.model_switch_lock:
+            self.active_model_id = profile_id
+            self.model_switch_state = "APPLIED"
+            self.model_switch_message = "模型已切换"
+        if old_main is not new_main:
+            old_main.close()
+        if old_specialist is not None and old_specialist is not new_specialist:
+            old_specialist.close()
+        self._send_model_switch_reply(
+            request_id, peer, "APPLIED", profile_id, "模型已切换"
+        )
+        return True
 
     def _detections_to_boxes(self, snapshot):
         boxes = []
@@ -983,6 +1231,7 @@ class AiReplayBridge:
                 # validated card. Keep it until its own TTL expires; the next
                 # focused recognition or periodic detection can refresh it.
                 self.navigation_timings.append(float(observation.inference_ms))
+                self.navigation_timing_count += 1
                 continue
             if (observation.valid and previous.valid
                     and previous.distance_m is not None and observation.distance_m is not None):
@@ -1001,31 +1250,29 @@ class AiReplayBridge:
                 flush=True,
             )
             self.navigation_timings.append(float(observation.inference_ms))
+            self.navigation_timing_count += 1
             self.navigation_preprocess_timings.append(float(observation.preprocess_ms))
             self.navigation_engine_timings.append(float(observation.engine_ms))
     def _analyze(self, frame_id, timestamp_ns, full_frame=None, input_fps=None,
-                 submitted_fps=None, ai_fps=None):
+                 submitted_fps=None, ai_fps=None, schedule_timestamp_ns=None):
         if full_frame is None:
             full_frame = self.frames[frame_id % len(self.frames)]
         decode_start_ns = time.perf_counter_ns()
-        if isinstance(full_frame, PackedRgb565):
-            if self.args.layout == "quad":
-                road = full_frame.quadrant_bgr(self.args.road_quadrant)
-                navigation_image = full_frame.quadrant_bgr(self.args.navigation_quadrant)
-            else:
-                road = full_frame.full_bgr()
-                navigation_image = road
-        elif self.args.layout == "quad":
-            road = crop_quadrant(full_frame, self.args.road_quadrant)
-            navigation_image = crop_quadrant(full_frame, self.args.navigation_quadrant)
-        else:
-            road = full_frame
-            navigation_image = full_frame
+        road, navigation_image = select_inference_frames(
+            full_frame, self.args.layout, self.args.road_quadrant,
+            self.args.navigation_quadrant,
+        )
         self._last_decode_ms = (time.perf_counter_ns() - decode_start_ns) / 1e6
+        self.stage_timings["rgb565_decode"].append(self._last_decode_ms)
         self.latest_source_timestamp_ns = int(timestamp_ns)
         pipeline_start_ns = time.perf_counter_ns()
-        self.pipeline.advance(road, int(frame_id), int(timestamp_ns))
+        self.pipeline.advance(
+            road, int(frame_id), int(timestamp_ns),
+            schedule_timestamp_ns=schedule_timestamp_ns,
+        )
         self._last_pipeline_ms = (time.perf_counter_ns() - pipeline_start_ns) / 1e6
+        self.stage_timings["pipeline"].append(self._last_pipeline_ms)
+        navigation_submit_started = time.perf_counter_ns()
         self._poll_navigation_ocr()
         if (self.navigation is not None and
                 (self.navigation_last_update_ns is None or
@@ -1056,6 +1303,9 @@ class AiReplayBridge:
                     self.nav_ocr_skipped += 1
             else:
                 self.nav_ocr_skipped += 1
+        self.stage_timings["navigation_submit"].append(
+            (time.perf_counter_ns() - navigation_submit_started) / 1e6
+        )
         lane = next(iter(Lane))
         snapshot = self.pipeline.snapshot(lane, int(timestamp_ns))
         nav = self.navigation.current(int(timestamp_ns)).to_dict() if self.navigation else {}
@@ -1073,9 +1323,14 @@ class AiReplayBridge:
             flags |= FLAG_NAVIGATION_VALID
         nav_direction = NAV_DIRECTIONS.get(nav.get("direction", "none"), 0)
         nav_distance = nav.get("distance_m")
+        box_started = time.perf_counter_ns()
         boxes = self._detections_to_boxes(snapshot)
+        self.stage_timings["box_mapping"].append(
+            (time.perf_counter_ns() - box_started) / 1e6
+        )
         ages = [value for value in (snapshot.main_age_ms, snapshot.specialist_age_ms)
                 if isinstance(value, (int, float))]
+        status_started = time.perf_counter_ns()
         status = build_dynamic_status(
             source=self.args.source,
             frame_id=frame_id,
@@ -1094,9 +1349,18 @@ class AiReplayBridge:
             submitted_fps=submitted_fps,
             ai_fps=ai_fps,
         )
+        status["model_selection"] = self._model_selection_status()
+        self.stage_timings["status_build"].append(
+            (time.perf_counter_ns() - status_started) / 1e6
+        )
         self.latest_dynamic_status = status
+        hmi_started = time.perf_counter_ns()
         self._write_dynamic_hmi(status)
-        return encode_ai_result_packet(
+        self.stage_timings["dynamic_hmi"].append(
+            (time.perf_counter_ns() - hmi_started) / 1e6
+        )
+        packet_started = time.perf_counter_ns()
+        packet = encode_ai_result_packet(
             frame_id=frame_id,
             timestamp_ns=timestamp_ns,
             flags=flags,
@@ -1105,12 +1369,19 @@ class AiReplayBridge:
             boxes=boxes,
             status=status,
         )
+        self.stage_timings["packet_encode"].append(
+            (time.perf_counter_ns() - packet_started) / 1e6
+        )
+        return packet
 
     def _infer(self):
+        priority_reapplied = False
         while self.running.is_set():
             request = self.latest.take(timeout=0.2)
             if request is None:
+                self._apply_pending_model_switch()
                 continue
+            self._apply_pending_model_switch()
             if len(request) == 6:
                 frame_id, timestamp_ns, full_frame, input_fps, submitted_fps, ai_recv_ns = request
             else:
@@ -1125,22 +1396,53 @@ class AiReplayBridge:
                     self.analysis_start_ns = now_ns
                 analysis_duration_s = max((now_ns - self.analysis_start_ns) / 1e9, 1e-6)
                 ai_fps = (self.result_count + 1) / analysis_duration_s
+                main_count_before = len(self.pipeline.main_timings)
+                specialist_count_before = len(self.pipeline.specialist_timings)
                 packet = self._analyze(
-                    frame_id, timestamp_ns, full_frame, input_fps, submitted_fps, ai_fps
+                    frame_id, timestamp_ns, full_frame, input_fps, submitted_fps,
+                    ai_fps, schedule_timestamp_ns=ai_recv_ns,
                 )
+                if not priority_reapplied:
+                    # RKNN may reset the Python leader to -19 during the first
+                    # detect call. Lower only that leader; native NPU workers
+                    # retain the priority required by the RKNN runtime.
+                    _deprioritize_sidecar_process()
+                    priority_reapplied = True
                 infer_end_ns = time.monotonic_ns()
+                publish_started = time.perf_counter_ns()
                 self.result_socket.sendto(packet, self.result_address)
                 publish_ns = time.monotonic_ns()
+                self.stage_timings["result_publish"].append(
+                    (time.perf_counter_ns() - publish_started) / 1e6
+                )
                 if self.timing_stream is not None:
+                    main_timing = getattr(self.pipeline.main_detector.detector, "last_timing", None)
+                    specialist_runtime = getattr(self.pipeline.specialist_detector, "detector", None)
+                    specialist_timing = getattr(specialist_runtime, "last_timing", None)
                     self.timing_stream.write(json.dumps({
                         "frame_id": int(frame_id),
                         "capture_timestamp_ns": int(timestamp_ns),
                         "ai_receive_timestamp_ns": int(ai_recv_ns),
                         "infer_start_ns": int(infer_start_ns),
                         "infer_end_ns": int(infer_end_ns),
+                        "schedule_timestamp_ns": int(ai_recv_ns),
                         "decode_ms": getattr(self, "_last_decode_ms", None),
+                        "shared_frame_read_ms": self.stage_timings["shared_frame_read"][-1] if self.stage_timings["shared_frame_read"] else None,
+                        "shared_frame_validate_ms": self.stage_timings["shared_frame_validate"][-1] if self.stage_timings["shared_frame_validate"] else None,
                         "pipeline_ms": getattr(self, "_last_pipeline_ms", None),
+                        "navigation_submit_ms": self.stage_timings["navigation_submit"][-1] if self.stage_timings["navigation_submit"] else None,
+                        "box_mapping_ms": self.stage_timings["box_mapping"][-1] if self.stage_timings["box_mapping"] else None,
+                        "status_build_ms": self.stage_timings["status_build"][-1] if self.stage_timings["status_build"] else None,
+                        "dynamic_hmi_ms": self.stage_timings["dynamic_hmi"][-1] if self.stage_timings["dynamic_hmi"] else None,
+                        "packet_encode_ms": self.stage_timings["packet_encode"][-1] if self.stage_timings["packet_encode"] else None,
+                        "result_publish_ms": self.stage_timings["result_publish"][-1] if self.stage_timings["result_publish"] else None,
+                        "main_ran": len(self.pipeline.main_timings) > main_count_before,
+                        "specialist_ran": len(self.pipeline.specialist_timings) > specialist_count_before,
+                        "main_count": len(self.pipeline.main_timings),
+                        "specialist_count": len(self.pipeline.specialist_timings),
                         "main_ms": (self.pipeline.main_timings[-1] if self.pipeline.main_timings else None),
+                        "main_timing": main_timing if len(self.pipeline.main_timings) > main_count_before else None,
+                        "specialist_timing": specialist_timing if len(self.pipeline.specialist_timings) > specialist_count_before else None,
                         "result_publish_timestamp_ns": int(publish_ns),
                         "boxes": int(struct.unpack_from("<I", packet, 20)[0]),
                         "traffic": self.latest_dynamic_status.get("traffic"),
@@ -1152,7 +1454,6 @@ class AiReplayBridge:
                         "hazard_details": self.latest_dynamic_status.get("hazard_details"),
                     }, separators=(",", ":")) + "\n")
                 self.result_count += 1
-                self.frame_ids.append(frame_id)
                 self.latency_ms.append((time.perf_counter_ns() - started) / 1e6)
             except BaseException as exc:
                 self.error_count += 1
@@ -1211,7 +1512,8 @@ class AiReplayBridge:
             self.timing_stream = None
         self.telemetry.stop()
         self.pipeline.main_detector.close()
-        self.pipeline.specialist_detector.close()
+        if self.pipeline.specialist_detector is not None:
+            self.pipeline.specialist_detector.close()
         self._write_summary()
 
     def _publish_stopped_status(self, now_ns=None):
@@ -1265,6 +1567,16 @@ class AiReplayBridge:
             ),
             "all_ai_work": _distribution(self.latency_ms),
         }
+        for name, values in self.stage_timings.items():
+            timings[name] = _distribution(values)
+        main_detector = getattr(self.pipeline.main_detector, "detector", None)
+        specialist_detector = getattr(self.pipeline.specialist_detector, "detector", None)
+        for label, detector in (("main", main_detector), ("specialist", specialist_detector)):
+            history = list(getattr(detector, "timing_history", ()) or ())
+            for key in ("preprocess_ms", "rknn_call_ms", "decode_nms_ms", "total_ms"):
+                timings[f"{label}_{key}"] = _distribution(
+                    [float(row[key]) for row in history if key in row]
+                )
         peak_rss_mb = None
         if resource is not None:
             usage = resource.getrusage(resource.RUSAGE_SELF)
@@ -1272,9 +1584,11 @@ class AiReplayBridge:
         duration_s = duration_ns / 1e9 if duration_ns else 0.0
         process_cpu_ns = time.process_time_ns() - self.process_cpu_start_ns
         online_cpus = os.cpu_count() or 1
-        rknpu_updates = len(self.pipeline.main_timings)
-        specialist_updates = len(self.pipeline.specialist_timings)
-        ocr_updates = len(self.navigation_timings)
+        rknpu_updates = getattr(self.pipeline, "main_update_count", len(self.pipeline.main_timings))
+        specialist_updates = getattr(
+            self.pipeline, "specialist_update_count", len(self.pipeline.specialist_timings)
+        )
+        ocr_updates = self.navigation_timing_count
         report = {
             "evidence": self.args.source,
             "layout": self.args.layout,
@@ -1290,8 +1604,8 @@ class AiReplayBridge:
             "shared_frame_identity_mismatches": self.shared_frame_mismatches,
             "input_requests_received": self.request_count,
             "input_request_fps": self.request_count / duration_s if duration_s else 0.0,
-            "source_ids_analyzed": len(self.frame_ids),
-            "source_id_analysis_fps": len(self.frame_ids) / duration_s if duration_s else 0.0,
+            "source_ids_analyzed": self.result_count,
+            "source_id_analysis_fps": self.result_count / duration_s if duration_s else 0.0,
             "source_ids_replaced_before_analysis": self.replaced_count,
             "result_packets_sent": self.result_count,
             "dynamic_hmi_texture_updates": self.dynamic_hmi_updates,
@@ -1346,17 +1660,22 @@ def parser():
     result.add_argument("--layout", choices=("quad", "front"), default="quad")
     result.add_argument("--display-view", choices=("quad", "front"), default="quad")
     result.add_argument("--main-model", required=True)
-    result.add_argument("--specialist-model", required=True)
+    result.add_argument("--specialist-model", default="")
+    result.add_argument("--legacy-model-root", default="")
     result.add_argument("--request-port", type=int, default=38260)
     result.add_argument("--result-port", type=int, default=38261)
     result.add_argument("--road-quadrant", type=int, choices=range(4), default=3)
     result.add_argument("--navigation-quadrant", type=int, choices=range(4), default=1)
     result.add_argument("--main-hz", type=float, default=10.0)
+    result.add_argument(
+        "--hazard-hz", type=float, default=0.0,
+        help="hazard analysis cadence; 0 follows the YOLO cadence",
+    )
     result.add_argument("--specialist-hz", type=float, default=3.0)
     result.add_argument("--ocr-hz", type=float, default=3.0)
     result.add_argument(
-        "--navigation-ocr", dest="navigation_ocr", action="store_true", default=True,
-        help="enable the low-priority Q2 navigation-card OCR worker (default: on)",
+        "--navigation-ocr", dest="navigation_ocr", action="store_true", default=False,
+        help="enable the low-priority Q2 navigation-card OCR worker (default: off)",
     )
     result.add_argument(
         "--no-navigation-ocr", dest="navigation_ocr", action="store_false",

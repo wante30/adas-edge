@@ -5,7 +5,6 @@ from pathlib import Path
 import time
 
 import numpy as np
-import onnxruntime as ort
 
 from competition_ai.detector import COCO_NAMES, COMPETITION_CLASSES
 from deployment.rknn.decode_yolo_output import decode_outputs
@@ -14,6 +13,8 @@ from tools.profile_rknn_single_stream import letterbox_bgr
 
 class PcDetector:
     def __init__(self, path: Path, input_size, *, specialist=False):
+        import onnxruntime as ort
+
         options = ort.SessionOptions()
         options.intra_op_num_threads = 4
         options.inter_op_num_threads = 1

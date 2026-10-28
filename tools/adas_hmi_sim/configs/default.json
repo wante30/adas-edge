@@ -20,6 +20,12 @@
   "tracking": {
     "iou_threshold": 0.18,
     "ema_alpha": 0.35,
-    "max_missed": 4
+    "max_missed": 2
+  },
+  "display": {
+    "min_confidence": 0.28,
+    "max_objects": 24,
+    "max_lateral_m": 8.2,
+    "max_depth_m": 58.0
   }
 }

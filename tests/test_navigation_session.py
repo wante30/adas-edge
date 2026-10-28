@@ -44,6 +44,21 @@ def test_navigation_source_cadence_pause_replay_and_expiry():
     assert reader.calls == [0,10,20,0]
 
 
+def test_navigation_session_resizes_quadrant_to_reader_input_size():
+    class ShapeReader(Reader):
+        def update(self, image, frame_id, timestamp_ns):
+            self.shapes = getattr(self, 'shapes', [])
+            self.shapes.append(image.shape)
+            return Observation('right', frame_id, timestamp_ns)
+
+    reader = ShapeReader()
+    session = NavigationSession(reader, image_size=(960, 540))
+
+    session.advance(np.zeros((360, 640, 3), np.uint8), 42, 8_000_000_000)
+
+    assert reader.shapes == [(540, 960, 3)]
+
+
 def test_navigation_hint_cannot_request_turn_or_bypass_lamp_gate():
     controls = Controls(mode=Mode.NAVIGATION,signalized=True)
     result = apply_navigation(controls,{'valid':True,'direction':'right'})
