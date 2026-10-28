@@ -175,7 +175,8 @@ pytest tests/test_vehicle_telemetry_v1.py tests/test_lvt1_hmi_contract.py
 | 左变道请求 + 左实线拒绝 | `docs/hmi/assets/lvt1/single_left_change_denied_20261029.png` |
 
 截图中的 `SIM` 表示 LVT1 是 fixture；场景是本地视频而非 PCIe。  
-截图中的 AI 目标是真实 RKNN 推理结果（本地视频），但不是当前生产 PCIe 输入。
+截图中的 AI 目标是真实 RKNN 推理结果（本地视频），但不是当前生产 PCIe 输入。  
+测试时生产 `pango-video-capture` 已处于 `capture_io`（`/dev/shm/pango-video/status.json` state=error），因此没有可用的真实 PCIe 帧；本次严格使用本地 PGVF fixture，没有把 fixture 写成实板 PCIe。
 
 ---
 
@@ -190,7 +191,7 @@ pytest tests/test_vehicle_telemetry_v1.py tests/test_lvt1_hmi_contract.py
 
 因此测试 Qt 的 FPS 低于生产，不能作为生产性能。
 
-单路测试 JSON（`lvt1_fixture_mode_0.json`）：
+单路测试 JSON（`docs/deployment/evidence/lvt1_fixture_mode_0_20261029.json`）：
 
 ```text
 source_fps ≈ 20.5
@@ -203,6 +204,7 @@ RSS ≈ 191.8 MB
 duration ≈ 16.4 s
 ```
 
+测试 AI summary（`docs/deployment/evidence/lvt1_test_ai_summary_20261029.json`）：主模型结果率约 4.07 Hz。  
 原因：两个 AI sidecar 共用 NPU；本地 publisher + 双 Qt；不是生产 10Hz/56FPS 配置。  
 生产基线仍是 2026-10-28 的 49.49 FPS 视频 / 9.98 Hz AI / 56 FPS HMI；**本次未部署，未重测生产**。
 

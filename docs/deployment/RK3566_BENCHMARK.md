@@ -211,13 +211,14 @@ PCIe Gen2 x1 理论 500 MB/s（8b/10b 后约 500 MB/s 量级）
 - 测试 AI sidecar（端口 38280/38281，A 模型 5 Hz）；
 - 本地 PGVF publisher（60 帧 1280×720，30 FPS）。
 
-单路测试 JSON `lvt1_fixture_mode_0.json`：
+单路测试 JSON `docs/deployment/evidence/lvt1_fixture_mode_0_20261029.json`：
 
 | 指标 | 数值 |
 |---|---:|
 | source_fps | 20.48 |
 | Qt scene-graph callback | 10.24 FPS |
-| AI result | 4.36 FPS |
+| AI result (Qt) | 4.36 FPS |
+| AI result (test sidecar summary) | 4.07 Hz |
 | NPU | 100% |
 | GPU | 81% |
 | CPU（整机） | 15.36% |
