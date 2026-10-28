@@ -1,0 +1,128 @@
+{
+  "schema": "pango.rk3566.vehicle_telemetry_handoff.v1",
+  "date": "2026-10-28",
+  "project": "build/pcie_lane_behavior_telemetry_20261028/PG2L100H_AVM.pds",
+  "target": "Pango Logos2 PG2L100H-6FBG676",
+  "purpose_zh": "RK3566读取HSST车道数量/最近边界线型、最终车道来源及以太网当前用户动作和判定。",
+  "json_usage_zh": "本文件为离线开发交接；PCIe上传32位二进制寄存器，不在PCIe线上传输JSON文本。vehiclemon由RK端把寄存器解码为逐行JSON。",
+  "transport": {
+    "type": "PCIe BAR1 MMIO polling",
+    "vendor_id": "0x0755",
+    "device_id": "0x0755",
+    "bar_index": 1,
+    "address_unit": "byte_offset_from_BAR1",
+    "endianness": "little_endian",
+    "read_width_bits": 32,
+    "alignment_bytes": 4,
+    "dma_or_interrupt_required": false,
+    "read_side_effects": "none",
+    "access": "read_only",
+    "device": "/dev/pango_pci_driver",
+    "abi_struct": "struct pango_image_mmio { __u32 offset; __u32 value; }",
+    "abi_struct_size_bytes": 8,
+    "read_ioctl": {"macro": "PCI_IMAGE_MMIO_READ_CMD", "definition": "_IOWR('S', 11, struct pango_image_mmio)", "rk_arm64_hex": "0xc008530b"},
+    "write_ioctl_preserved": {"number": 12, "rk_arm64_hex": "0xc008530c", "telemetry_write_result": "-EINVAL; no MMIO write"},
+    "driver_sources": ["rk3566_image_control/driver/pango_pci_driver.c", "rk3566_image_control/include/pango_image_uapi.h", "rk3566_image_control/include/pango_vehicle_regs.h"],
+    "driver_read_allowlist_added": ["0x658", "0x65c", "0x660", "0x664", "0x680..0x68c DWORD aligned", "0x690..0x6bc DWORD aligned"],
+    "compatibility_zh": "旧DMA、ioctl0..10、ISP/去雾和HUD导航不变。必须更新RK内核模块；旧模块会对新地址返回EINVAL。不要用BAR0的pio_test替代本接口。"
+  },
+  "registers": [
+    {"offset": "0x690", "name": "MAGIC", "access": "RO", "reset": "0x3154564c", "meaning": "LE ASCII LVT1"},
+    {"offset": "0x694", "name": "VERSION", "access": "RO", "reset": "0x00010000", "fields": [{"lsb": 16, "width": 16, "name": "major", "value": 1}, {"lsb": 0, "width": 16, "name": "minor", "value": 0}]},
+    {"offset": "0x698", "name": "GENERATION", "access": "RO", "reset": 0, "meaning_zh": "每次192位公开快照任一字段变化时同沿加1，32位自然回绕，不随每拍时钟或毫秒变化。0不是无效标志。"},
+    {"offset": "0x69c", "name": "CAPS", "access": "RO", "reset": "0x00000007", "bits": {"0": "lane telemetry", "1": "Ethernet action/decision telemetry", "2": "generation-bracketed coherent snapshot", "31:3": "reserved"}},
+    {"offset": "0x6a0", "name": "HSST_SAMPLE_SEQ", "access": "RO", "reset": 0, "meaning_zh": "光口发送端32位sample_seq，允许相同值、回绕或发送端重启；仅诊断，不能当一致性锁或事件计数。"},
+    {"offset": "0x6a4", "name": "HSST_PAYLOAD", "access": "RO", "reset": 0, "bits": {"7:0": "left_line_count", "15:8": "right_line_count", "17:16": "left_nearest_type", "19:18": "right_nearest_type", "20": "left_count_valid", "21": "right_count_valid", "22": "left_type_valid", "23": "right_type_valid", "31:24": "reserved; ignore"}, "meaning_zh": "规范化HSST数据。整包无效时payload为0；数量与线型各自有效，必须结合LANE_STATUS.valid且非stale使用。"},
+    {"offset": "0x6a8", "name": "LANE_STATUS", "access": "RO", "reset": 0, "bits": {"0": "hsst_valid", "1": "hsst_stale", "2": "hsst_owns_both_sides", "3": "rk_scene_fresh", "5:4": "effective_left_nearest_type", "7:6": "effective_right_nearest_type", "9:8": "effective_lane_source: 0 none, 1 RK, 2 HSST, 3 reserved", "31:10": "reserved; ignore"}},
+    {"offset": "0x6ac", "name": "ACTION_STATUS", "access": "RO", "reset": 0, "bits": {"15:0": "last_accepted_action_sequence", "18:16": "last_accepted_action_type", "19": "action_active", "20": "timebase_ready", "31:21": "reserved; ignore"}, "meaning_zh": "序号和类型在动作过期后保留为历史；active=0表示当前idle，不可把last_type当成仍按住。"},
+    {"offset": "0x6b0", "name": "BEHAVIOR_RESULT", "access": "RO", "reset": 0, "bits": {"0": "throttle_allow", "1": "brake_allow; reason8 is warning", "2": "lane_left_allow", "3": "lane_right_allow", "4": "throttle_deny", "5": "brake_deny reserved by present policy", "6": "lane_left_deny", "7": "lane_right_deny", "13:8": "reason_code", "14": "decision_action_active", "15": "sensor_stale", "23:16": "action_sequence_low8 diagnostic", "31:24": "RK_scene_sequence_low8 diagnostic"}, "meaning_zh": "与ACTION_STATUS从同一决策拍一起冻结；优先active=0判idle，再reason8判warning，再禁止位判deny，再允许位判allow，其余unknown。"},
+    {"offset": "0x6b4", "name": "ACTION_ACCEPT_COUNT", "access": "RO", "reset": 0, "meaning_zh": "每个被PCIe决策域合法接受的以太网动作加1，包含同类型/同序号重新触发；32位自然回绕。不是UDP接收数、BO应答数或永久历史。"},
+    {"offset": "0x6b8", "name": "ACTION_HOLD_MS", "access": "RO", "reset": 1001, "unit": "ms", "meaning_zh": "既有动作超时比较阈值；保持原约1秒行为，不表示还剩多少毫秒。"},
+    {"offset": "0x6bc", "name": "HSST_STALE_MS", "access": "RO", "reset": 500, "unit": "ms", "meaning_zh": "既有系统域车道保鲜阈值。完整合法包重复也刷新，不增加RK的额外0.5秒保持。"}
+  ],
+  "enums": {
+    "nearest_type": {"0": "unknown", "1": "solid", "2": "dashed", "3": "reserved_treat_as_unknown"},
+    "action_type": {"0": "none", "1": "throttle", "2": "brake", "3": "lane_left", "4": "lane_right", "5..7": "unknown"},
+    "lane_source": {"0": "none", "1": "rk", "2": "hsst", "3": "reserved_treat_as_none"},
+    "reason": {"0": "none", "1": "red_light", "2": "left_solid", "3": "right_solid", "6": "sensor_unavailable", "8": "brake_advisory", "other": "unknown_preserve_numeric_code"},
+    "decision_state": ["idle", "allow", "deny", "warning", "unknown"]
+  },
+  "lane_semantics": {
+    "coordinate_zh": "左右以车辆前进方向为准；线型表示最近左右边界。",
+    "count_zh": "各侧边界线数量，包含最近边界，0..255；不是车道数。",
+    "rk_count_available": false,
+    "rk_count_note_zh": "现有RK感知协议只提供左右线型，无法从RK线型推导数量。HSST数量无效时输出null，不能填0或编造RK数量。",
+    "fresh_hsst_condition": "LANE_STATUS.bit0 == 1 && bit1 == 0",
+    "source_priority": ["fresh_hsst_whole_packet", "fresh_rk_scene", "none"],
+    "whole_packet_ownership_zh": "HSST新鲜时同时拥有左右线型；某侧未知、无效或有效零条不能从RK补空。",
+    "normalization_zh": ["count_valid=0时数量无效，客户端输出null。", "count_valid=1且count=0是有效的零；该侧线型无效。", "type_valid=0或type=0/3时线型输出unknown。", "数量无效不必然导致线型无效；type_valid可独立有效。", "整包valid=0或stale=1时所有HSST数量/线型不可授权，即使旧字段非零。", "复位后valid=0、stale暂为0也不可用；邮箱同步后初始stale置1。"],
+    "timestamp_note_zh": "保鲜从完整包到达系统域算起；sample_seq不是采样时间戳。"
+  },
+  "action_semantics": {
+    "source": "Ethernet BV user-action command",
+    "acceptance_point_zh": "动作邮箱交付PCIe决策域并通过既有合法性检查；BO只确认源侧邮箱接受，不能替代此目的侧状态。",
+    "active_window_nominal_ms": 1000,
+    "latest_replaces_previous": true,
+    "same_type_or_same_sequence_retriggers": true,
+    "sequence_zh": "完整16位最后接受序号，不保证严格单调。同一序号重传也能成为新动作，新增accept_count能区分；不要仅按序号去重。",
+    "expiry_zh": "约1秒后active清0，判定回默认；last_type/last_sequence仍是历史。",
+    "decision_live_zh": "活动窗口内实时跟随有效车道和感知变化；不是按下时冻结的判定。",
+    "brake_warning_zh": "新鲜绿灯且未检测到人时按刹车，reason8表示warning；此时brake_allow也为1，禁止仅看低4允许位显示绿灯。",
+    "counter_zh": "accept_count差值只在同一连续会话中按uint32相减解释，复位后需重新建立基线。该接口是最新状态，无无损历史队列；count增量>1不能恢复中间每个动作。",
+    "no_control_side_effect": true
+  },
+  "coherent_read": {
+    "identity": {"magic": "0x3154564c", "version": "0x00010000", "caps_required_mask": "0x00000007", "caps_required_value": "0x00000007"},
+    "steps_zh": ["确认MAGIC、VERSION和CAPS匹配；接口不存在、全1读回或ioctl失败均视为不可用。", "读取GENERATION为g0。", "按0x6a0、0x6a4、0x6a8、0x6ac、0x6b0、0x6b4读取完整六字快照；可同时读取静态1001/500阈值。", "再次读取GENERATION为g1；g0!=g1时丢弃此次所有数据并重试。", "g0==g1后再次核对MAGIC/VERSION/CAPS，避免中途断链全1伪装成状态。", "只有身份有效且g0==g1才解码/发布整份JSON；失败不得部分更新UI或把上轮状态当成本轮成功。"],
+    "max_attempts_per_poll": 5,
+    "on_churn_zh": "5次仍不一致：跳过本轮，20~50ms后再轮询；--once返回4。",
+    "generation_wrap_zh": "按相等比较，0xffffffff是合法generation，允许自然回绕到0；不要求单调大于。一次读取期间假定不会发生2^32次公开状态变化。",
+    "reset_boundary_zh": "一致性仅保证同一连续会话。复位/掉链会清generation和动作计数，前后偶然同号不能跨会话证明一致；断链后丢弃待处理快照、重新打开设备并检查身份。没有永久boot/session ID。"
+  },
+  "reset_and_link": {
+    "static_regs_during_reset": ["MAGIC", "VERSION", "CAPS", "ACTION_HOLD_MS", "HSST_STALE_MS"],
+    "snapshot_reset": "all six words and generation zero",
+    "after_release_zh": "随后采集当前源状态，time_ready可能稍后置1；车道首个mailbox完成前valid=0。",
+    "pcie_session_zh": "PCIe/HUD会话复位清动作历史、accept_count、generation；系统域HSST接收及500ms保鲜独立，重连后重新同步当前车道。",
+    "clock_stop_zh": "PCIe时钟停止则本域遥测及既有动作计时不能继续推进；不要把缓存的RK端数据当成在线实时状态。",
+    "receiver_error_zh": "vehiclemon遇到MMIO/身份错误退出3，不自动重放任何控制；重连后由用户或服务重新启动读取。"
+  },
+  "receiver": {
+    "source": "rk3566_image_control/vehiclemon.c",
+    "header": "rk3566_image_control/include/pango_vehicle_regs.h",
+    "build_on_rk": "make vehiclemon",
+    "build_cross_example": "make vehiclemon CC=aarch64-linux-gnu-gcc",
+    "single_read": "./vehiclemon --once",
+    "poll": "./vehiclemon --interval-ms 25",
+    "poll_interval_ms": {"minimum": 20, "default": 25, "maximum": 50},
+    "output": "one JSON object per successful poll on stdout; diagnostics on stderr",
+    "output_schema": "pango.rk3566.vehicle_status.v1",
+    "exit_codes": {"0": "normal/--once success", "2": "invalid command-line argument", "3": "device/MMIO/identity/output error", "4": "--once coherence retries exhausted"},
+    "locking_zh": "只读无副作用，不需锁DMA、不改变以太网/PCIe控制优先级。内核沿用独立image_mmio_lock保护单次MMIO，跨多次ioctl靠generation而非锁保证一致性。",
+    "ui_guidance_zh": "active=0显示idle；保留历史在独立last字段。HSST无效数量显示未知而不是0；有效数量0显示0。断链显示离线，不继续显示绿灯/禁止为实时结果。"
+  },
+  "legacy_readback": {
+    "0x658": "scene status; bit6 HSST owns; not coherent with separately read legacy words",
+    "0x65c": "behavior result legacy",
+    "0x660": "behavior effective legacy",
+    "0x664": "behavior caps 0x0002003f",
+    "0x680": "HSST sample_seq",
+    "0x684": "normalized HSST payload",
+    "0x688": "bit0 valid, bit1 stale",
+    "0x68c": "0x4c4d0001 after first mailbox; zero beforehand",
+    "recommendation_zh": "新RK接收端使用0x690..0x6bc统一快照，不用legacy sample_seq代替generation。"
+  },
+  "example": {
+    "scenario_zh": "HSST左2条实线、右1条虚线；RK场景序号1且新鲜绿灯无人，以太网序号65535的刹车活动，因此警告。",
+    "registers_hex": {"0x698": "00000009", "0x6a0": "0000002a", "0x6a4": "00f90102", "0x6a8": "0000029d", "0x6ac": "001affff", "0x6b0": "01ff4802", "0x6b4": "00000007", "0x6b8": "000003e9", "0x6bc": "000001f4"},
+    "decoded": {"lane_source": "hsst", "left_line_count": 2, "right_line_count": 1, "left_nearest_type": "solid", "right_nearest_type": "dashed", "current_action": "brake", "last_sequence": 65535, "active": true, "accept_count": 7, "decision": "warning", "reason_code": 8},
+    "actual_vehiclemon_output_fixture": "rk3566_image_control/tests/vehiclemon_example.json"
+  },
+  "validation": {
+    "host_mock": "passed; tests/run_vehicle_mocks.ps1",
+    "existing_isp_and_navigation_mocks": "passed; tests/run_nav_mocks.ps1",
+    "target_kernel_module_compile": "requires RK3566 target Linux kernel headers/toolchain; not run on this Windows host",
+    "rk_mmio_board_test": "not run",
+    "fpga_final_sta_and_matching_sdf": "follow project delivery report; not established by this JSON"
+  }
+}
