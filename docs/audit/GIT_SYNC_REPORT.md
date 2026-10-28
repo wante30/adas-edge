@@ -14,8 +14,9 @@
 | 远程仓库 | `https://github.com/wante30/adas-edge` |
 | 审计开始时远程 `main` | `c321a89f26e5fa05a222ad29659e4148ec6c62d6` |
 | 同步分支 | `live/stage2` |
-| 同步分支 HEAD | `659223faf7088f1f88a82f65fa29769f59b3b3d4` |
-| 分支相对 main | 领先 78 个提交（77 个历史 + 1 个审计快照） |
+| 审计快照 commit | `659223faf7088f1f88a82f65fa29769f59b3b3d4` |
+| 合并前分支 HEAD | `4fb4d0c6f8d5b2f7c51a2058b57618949b04ca92`（快照 + sync report） |
+| 分支相对 main | 领先 78 个提交（77 个历史 + 2 个审计/文档提交） |
 | PR | <https://github.com/wante30/adas-edge/pull/1>（已合并） |
 | PR 合并时间 | 2026-10-28T12:35:05Z |
 | PR merge commit | `dc378d3a0d7d71e2ff1c42e4c42eb7d97e1d589d` |
@@ -91,7 +92,14 @@ c321a89f26e5fa05a222ad29659e4148ec6c62d6	refs/heads/main   ← 合并前
 # PR #1 合并后
 dc378d3a0d7d71e2ff1c42e4c42eb7d97e1d589d	refs/heads/main
 4fb4d0c6f8d5b2f7c51a2058b57618949b04ca92	refs/heads/live/stage2
+
+# 研究分支（审计后）
+b8f13f881d866107e7e6834b2fa5fd0ae2774fc6	refs/heads/research/rk3566-adas-models
+82f2d57534628f7e3920ede4b2293408ddfd7c89	refs/heads/research/rk3566-p2-multiclass
+857ece9d0ba4a749978fb12ac33b282028931e76	refs/heads/research/rk3566-b05o-video-scheduling
 ```
+
+> `research/rk3566-p2-multiclass` 与 `research/rk3566-b05o-video-scheduling` 的远程分支保留原 tip；最新的 B05N/B05P 报告与证据已归档到 `main` 的 `docs/models/`，未重写这两个研究分支的历史。
 
 ### 3.3 安全检查
 
