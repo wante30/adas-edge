@@ -204,6 +204,8 @@ B · B05N P2 十类 Raw-head INT8 单模型
   SHA256 65089ef0697bd7378071290baa218905cdcaed768452678da440b8eb116b2a5f
 ```
 
+板端本地道路视频回放与限制：[B05N B 模型验证记录](docs/deployment/B05N_B_MODEL_REPLAY_20261029.md)。
+
 其他可切换方案：
 
 ```text
