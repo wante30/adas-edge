@@ -28,6 +28,14 @@ def _replay_quadrant_args() -> list[str]:
     return ["--road-quadrant", str(REPLAY_ROAD_QUADRANT)]
 
 
+def _replay_source_description(data_root: Path) -> str:
+    return (
+        "Local image replay from data_root/images through the board's actual "
+        "AI bridge request, scheduler, detector adapter, result mapping and "
+        "UDP publication path; PCIe capture and Qt display excluded."
+    )
+
+
 def _nchw(value: np.ndarray, channels: int, label: str) -> np.ndarray:
     array = np.asarray(value, dtype=np.float32)
     if array.ndim == 3:
@@ -386,13 +394,14 @@ def run_benchmark(args) -> dict:
     report = {
         "schema": "b05p-competition-bridge-runtime-v1",
         "scheme": args.scheme,
-        "source": "Cityscapes replay through the board's actual AiReplayBridge request, scheduler, detector adapter, result mapping and UDP publication path; PCIe capture and Qt display excluded.",
+        "source": _replay_source_description(args.data_root),
         "models": {
             "main": {"path": str(main_model), "sha256": _sha256(main_model)},
             "specialist": ({"path": str(specialist_model), "sha256": _sha256(specialist_model)}
                             if args.scheme in {"C", "D"} else None),
         },
         "input": {
+            "data_root": str(args.data_root.resolve()),
             "frame_format": (
                 "1280x720 BGR565 packed replay, road image in quadrant "
                 f"{REPLAY_ROAD_QUADRANT}"

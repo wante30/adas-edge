@@ -52,6 +52,15 @@ def test_competition_default_b_uses_the_b05n_single_model():
     assert "--specialist-model" not in command
 
 
+def test_replay_report_describes_local_image_source_without_assuming_cityscapes():
+    adapter = _load_adapter()
+
+    description = adapter._replay_source_description(Path("/test/road-video"))
+
+    assert "local image replay" in description.lower()
+    assert "cityscapes" not in description.lower()
+
+
 def test_synthetic_replay_places_road_in_the_quadrant_used_for_inference(tmp_path):
     adapter = _load_adapter()
     image_dir = tmp_path / "images"
