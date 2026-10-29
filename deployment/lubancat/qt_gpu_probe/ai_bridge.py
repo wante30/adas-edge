@@ -267,6 +267,18 @@ def initial_dynamic_status(source, now_ns):
     return status
 
 
+def timing_detection_counts(status):
+    counts = status.get("detections") if isinstance(status, dict) else None
+    if not isinstance(counts, dict):
+        return {}
+    return {
+        str(name): int(count)
+        for name, count in counts.items()
+        if isinstance(name, str) and name and isinstance(count, int)
+        and not isinstance(count, bool) and count >= 0
+    }
+
+
 def should_refresh_stopped_status(now_ns, last_activity_ns, last_refresh_ns,
                                   heartbeat_ns=DYNAMIC_HMI_HEARTBEAT_NS):
     if now_ns < last_activity_ns or now_ns - last_activity_ns < heartbeat_ns:
@@ -1517,6 +1529,7 @@ class AiReplayBridge:
                         "boxes": int(struct.unpack_from("<I", packet, 20)[0]),
                         "traffic": self.latest_dynamic_status.get("traffic"),
                         "traffic_reason": self.latest_dynamic_status.get("traffic_reason"),
+                        "detection_counts": timing_detection_counts(self.latest_dynamic_status),
                         "specialist_age_ms": self.latest_dynamic_status.get("specialist_age_ms"),
                         "navigation_state": (self.latest_dynamic_status.get("navigation") or {}).get("state"),
                         "navigation_ocr_age_ms": (self.latest_dynamic_status.get("navigation") or {}).get("ocr_age_ms"),

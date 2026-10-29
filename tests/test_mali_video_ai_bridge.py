@@ -221,6 +221,15 @@ def test_dynamic_status_expires_navigation_and_never_carries_old_road_name():
     assert status["source"] == "LOCAL_REPLAY"
 
 
+def test_timing_log_detection_counts_keep_b05n_class_breakdown():
+    bridge = _load_qt_ai_bridge()
+
+    assert bridge.timing_detection_counts({
+        "detections": {"car": 3, "person": 1},
+    }) == {"car": 3, "person": 1}
+    assert bridge.timing_detection_counts({"detections": None}) == {}
+
+
 def test_dynamic_status_preserves_hazard_target_and_severity_for_mva2():
     bridge = _load_ai_bridge()
     now_ns = 2_000_000_000
