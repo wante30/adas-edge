@@ -1,0 +1,42 @@
+name: Export ARM report screenshots
+on:
+  push:
+    branches:
+      - chore/arm-report-images-export-20261030
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package real screenshots for ARM report
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          files = [
+            'docs/hmi/assets/current_live_20261028.png',
+            'deployment/lubancat/qt_gpu_probe/results/pcie_single_live.png',
+            'deployment/lubancat/qt_gpu_probe/results/pcie_live_final.png',
+            'deployment/lubancat/qt_gpu_probe/results/mode_quad.png',
+            'deployment/lubancat/qt_gpu_probe/results/stage2_live_single.png',
+            'deployment/lubancat/qt_gpu_probe/results/stage2_live_spatial.png',
+            'deployment/lubancat/qt_gpu_probe/results/gpu_scene_4lane.png',
+            'deployment/lubancat/qt_gpu_probe/results/tracker_compare_final.png',
+            'deployment/lubancat/qt_gpu_probe/results/tracking_modes_abc.png',
+            'deployment/lubancat/qt_gpu_probe/results/scene_before_after_opt.png',
+          ]
+          with ZipFile('arm_report_real_images.zip', 'w', ZIP_DEFLATED, compresslevel=6) as z:
+            for f in files:
+              assert Path(f).is_file(), f
+              z.write(f)
+              print(f, Path(f).stat().st_size)
+          print('Archive size:', Path('arm_report_real_images.zip').stat().st_size)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arm-report-real-images
+          path: arm_report_real_images.zip
+          retention-days: 3
