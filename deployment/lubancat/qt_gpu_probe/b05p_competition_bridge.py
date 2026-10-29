@@ -21,7 +21,7 @@ MODEL_FILES = {
     "p2": "b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn",
     "specialist": "b05l_v8n_p2_raw_heads_int8_500_20261026.rknn",
 }
-REPLAY_ROAD_QUADRANT = 1
+REPLAY_ROAD_QUADRANT = 3
 
 
 def _replay_quadrant_args() -> list[str]:
@@ -393,7 +393,11 @@ def run_benchmark(args) -> dict:
                             if args.scheme in {"C", "D"} else None),
         },
         "input": {
-            "frame_format": "1280x720 BGR565 packed replay, road image in quadrant 1",
+            "frame_format": (
+                "1280x720 BGR565 packed replay, road image in quadrant "
+                f"{REPLAY_ROAD_QUADRANT}"
+            ),
+            "road_quadrant": REPLAY_ROAD_QUADRANT,
             "road_crop": "640x360",
             "requests_hz": args.request_hz,
             "warmup_requests": args.warmup,

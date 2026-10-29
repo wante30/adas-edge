@@ -71,7 +71,8 @@ def test_synthetic_replay_places_road_in_the_quadrant_used_for_inference(tmp_pat
         for index in range(4)
     }
 
-    expected_quadrant = adapter.REPLAY_ROAD_QUADRANT
+    expected_quadrant = 3
+    assert adapter.REPLAY_ROAD_QUADRANT == expected_quadrant
     assert adapter._replay_quadrant_args() == ["--road-quadrant", str(expected_quadrant)]
     assert int(quadrants[expected_quadrant].mean()) > 0
     assert all(int(quadrants[index].mean()) == 0 for index in range(4) if index != expected_quadrant)
