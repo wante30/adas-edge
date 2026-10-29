@@ -685,10 +685,7 @@ Item {
         MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
-            onClicked: {
-                console.log("SOURCE_CHIP_CLICK mode=" + sourceSwitch.mode)
-                sourceSwitch.toggle()
-            }
+            onClicked: sourceSwitch.toggle()
         }
     }
 

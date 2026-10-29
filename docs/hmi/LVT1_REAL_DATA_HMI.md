@@ -283,3 +283,31 @@ per lane:
 - `tests/test_vehicle_telemetry_v1.py`
 - `tests/test_lvt1_hmi_contract.py`
 - `docs/deployment/LVT1_VEHICLE_TELEMETRY.md`
+---
+
+## 13. PCIe / 本地回放切换修复（2026-10-29）
+
+问题：`source_controller.cpp/.h` 仍存在，但 `main.cpp` 在后续重写中丢失了 `sourceSwitch` 注入和 `setVideo(video)`，顶部“输入源”卡片只剩状态显示，切换失效。
+
+修复：
+
+- `main.cpp` 恢复 `SourceSwitchController` 注册、context property、`setVideo(video)`。
+- `main.qml` 输入源卡片增加“切换”按钮，`z: 950` 防止被遮挡；键盘 `O` 同样可切换。
+- 增加 `SourceSwitchController::message`：本地 PGV 不存在时显示“本地回放未准备”，不会黑屏冒充。
+- 新增 `tools/run_local_replay.sh`，用于启动本地 PGVF publisher。
+
+实测日志：
+
+```text
+SourceSwitch toggle mode "pgv-local"
+SourceSwitch apply "/dev/shm/pango-video/latest.pgv" "pgv-live" video true
+SourceSwitch toggle mode "pgv-live"
+SourceSwitch apply "/dev/shm/pgv_local/latest.pgv" "pgv-local" video true
+```
+
+截图：
+
+- PCIe 路径（当前采集不可用，显示测试图）：`docs/hmi/assets/lvt1/source_switch_pcie_20261029.png`
+- 切回本地回放：`docs/hmi/assets/lvt1/source_switch_local_20261029.png`
+
+这证明按钮/O 键、`sourceSwitch.toggle()`、`VideoItem::startPgvProducer()` 实际工作；不是只改 UI。
