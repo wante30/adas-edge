@@ -109,6 +109,37 @@ ADAS_EDGE_ROOT=/home/cat/competition_cockpit_port_20261018 \
 
 等日志出现 `READY` 后再启动 Qt。AI 结果通过 `MVA2` 返回；无结果超过 1.5 秒时 UI 自动清空检测框、交通灯、危险和导航状态并显示未连接。
 
+### PCIe / 本地回放切换
+
+运行中的 Qt 可以直接切换 PCIe 和本地回放：
+
+- 点击顶部“输入源”卡片右侧的 **切换** 按钮；
+- 或按键盘 **O**；
+- 目标模式显示在卡片第二行：`PCIe LIVE` / `LOCAL REPLAY`；
+- 切换失败时卡片底部显示“本地回放未准备”或“PCIe 未准备”。
+
+本地回放需要先启动 PGVF publisher（官方本地片段）：
+
+```sh
+cd /home/cat/qt_gpu_probe_ai_20261019
+nohup ./tools/run_local_replay.sh \
+  /home/cat/qt_gpu_probe_ai_20261019/local_quad.rgb \
+  /dev/shm/pgv_local/latest.pgv \
+  > /tmp/pgv_local.log 2>&1 &
+```
+
+或直接：
+
+```sh
+python3 tools/pgv_local_publisher.py \
+  --raw /home/cat/qt_gpu_probe_ai_20261019/local_quad.rgb \
+  --output /dev/shm/pgv_local/latest.pgv \
+  --fps 30 --source-fps 30
+```
+
+> 没有 `/dev/shm/pgv_local/latest.pgv` 时，切换按钮会保持 PCIe 模式并显示未准备，不会把黑屏冒充成本地视频。
+> 切换逻辑在 `source_controller.cpp`；之前运行时按钮未接线，本次已补回。
+
 ### 自由选择主视 / 导航源
 
 - **主视**：点击底部四张卡任意一张；被选卡显示 `MAIN`，主画面立即切到该象限，并给 sidecar 发 `MVS1` 更新检测裁剪。

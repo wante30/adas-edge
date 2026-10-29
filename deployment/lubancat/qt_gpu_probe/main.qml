@@ -216,6 +216,7 @@ Item {
         else if (event.key === Qt.Key_T) { root.hudTestOpen = !root.hudTestOpen; event.accepted = true }
         else if (event.key === Qt.Key_I) { root.fpgaOpen = !root.fpgaOpen; event.accepted = true }
         else if (event.key === Qt.Key_L) { root.trackingMode = (root.trackingMode + 1) % 3; event.accepted = true }
+        else if (event.key === Qt.Key_O) { sourceSwitch.toggle(); event.accepted = true }
         else if (event.key === Qt.Key_Escape) { root.hudTestOpen = false; root.fpgaOpen = false; root.modelPickerOpen = false; event.accepted = true }
         else if (event.key === Qt.Key_Q) { Qt.quit() }
     }
@@ -635,11 +636,12 @@ Item {
         }
     }
 
-    // Input source chip. It is a status chip, not a fake dropdown.
+    // Input source chip. Click to toggle PCIe <-> local replay.
     Rectangle {
-        x: 626; y: 15; width: 208; height: 34; radius: 7
+        x: 626; y: 12; width: 208; height: 40; radius: 7; z: 950
         color: "#06141D"
-        border.color: "#214A5C"; border.width: 1
+        border.color: sourceSwitch.mode === "pgv-live" ? "#214A5C" : "#5A4A2C"
+        border.width: 1
         Image {
             x: 11; y: 10; width: 14; height: 13
             source: "assets/icon_camera.png"; fillMode: Image.PreserveAspectFit
@@ -649,18 +651,44 @@ Item {
             color: "#6B919D"; font.family: root.cjk; font.pixelSize: 7
         }
         Text {
-            x: 32; y: 14; text: root.inputSummary()
-            color: root.inkSoft; font.family: root.cjk; font.pixelSize: 10; font.weight: Font.DemiBold
+            x: 32; y: 14; width: 110; height: 13
+            text: root.inputSummary()
+            color: root.inkSoft; font.family: root.cjk; font.pixelSize: 9; font.weight: Font.DemiBold
+            elide: Text.ElideRight
         }
-
-        Rectangle { x: 174; y: 9; width: 1; height: 17; color: "#214A5C" }
         Text {
-            x: 179; y: 10; text: root.inputLayout === "quad" ? "2×2" : "1×1"
+            x: 148; y: 3; text: root.inputLayout === "quad" ? "2×2" : "1×1"
             color: "#84A9B4"; font.family: root.num; font.pixelSize: 6
         }
         Rectangle {
-            x: 198; y: 14; width: 5; height: 5; radius: 2.5
+            x: 148; y: 15; width: 44; height: 15; radius: 2
+            color: sourceSwitch.mode === "pgv-live" ? "#0B302A" : "#2B220E"
+            border.color: sourceSwitch.mode === "pgv-live" ? "#3F7059" : "#6B552A"
+            border.width: 0.7
+            Text {
+                anchors.centerIn: parent; text: "切换"
+                color: sourceSwitch.mode === "pgv-live" ? root.mint : root.amber
+                font.family: root.cjk; font.pixelSize: 6
+            }
+        }
+        Rectangle {
+            x: 198; y: 17; width: 5; height: 5; radius: 2.5
             color: video.sourceOnline ? root.mint : root.amber
+        }
+        Text {
+            x: 32; y: 27; width: 168; height: 10
+            text: sourceSwitch.message
+            color: sourceSwitch.message.indexOf("未准备") >= 0 ? root.amber : "#6F8A93"
+            font.family: root.cjk; font.pixelSize: 5
+            elide: Text.ElideRight
+        }
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: {
+                console.log("SOURCE_CHIP_CLICK mode=" + sourceSwitch.mode)
+                sourceSwitch.toggle()
+            }
         }
     }
 

@@ -85,3 +85,15 @@ def test_ai_status_carries_display_view():
     assert 'status["display_view"]' in bridge
     assert 'status["road_quadrant"]' in bridge
     assert 'ai_display_view_' in video
+
+
+def test_pcie_local_source_switch_is_wired():
+    main = read('main.cpp')
+    qml = read('main.qml')
+    assert 'source_controller.h' in main
+    assert 'sourceSwitch' in main
+    assert 'sourceSwitch->setVideo(video)' in main
+    assert 'sourceSwitch.toggle()' in qml
+    assert 'Qt.Key_O' in qml
+    assert '切换' in qml
+    assert 'run_local_replay.sh' not in qml  # script is a deployment helper

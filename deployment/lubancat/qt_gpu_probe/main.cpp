@@ -6,6 +6,7 @@
 #include "nav_bridge.h"
 #include "pcie_isp_control.h"
 #include "qsg_video_item.h"
+#include "source_controller.h"
 #include "video_item.h"
 #include "vehicle_telemetry_status.h"
 #include "tesla_scene_item.h"
@@ -161,6 +162,10 @@ int main(int argc, char **argv) {
     view.rootContext()->setContextProperty(QStringLiteral("sceneEnabled"), sceneEnabled);
     view.rootContext()->setContextProperty(QStringLiteral("pciePgvFile"), pciePgvFile);
     view.rootContext()->setContextProperty(QStringLiteral("localPgvFile"), localPgvFile);
+    auto *sourceSwitch = new SourceSwitchController(fps, aiFrameFile, aiHz,
+                                                     pciePgvFile, localPgvFile,
+                                                     view.rootContext());
+    view.rootContext()->setContextProperty(QStringLiteral("sourceSwitch"), sourceSwitch);
     const bool protocolPanelTest = qEnvironmentVariableIsSet("QT_PROTOCOL_PANEL_TEST");
     const bool videoQsg = args.contains("--video-qsg") ||
                           qEnvironmentVariableIsSet("QT_VIDEO_QSG");
@@ -187,6 +192,7 @@ int main(int argc, char **argv) {
         qCritical() << "QML VideoItem was not created";
         return 2;
     }
+    sourceSwitch->setVideo(video);
     QObject::connect(&view, &QQuickWindow::sceneGraphError, &app,
                      [&](QQuickWindow::SceneGraphError error, const QString &message) {
                          qCritical().noquote() << "SCENEGRAPH_ERROR" << error << message;
