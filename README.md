@@ -18,7 +18,8 @@
 |---|---|---|
 | FPGA→RK PCIe 视频 | 1280×720 RGB565，**49.49 FPS** | `/dev/shm/pango-video/status.json` |
 | PCIe 链路 | `0755:0755`，5 GT/s **x1**（IP 支持 x4） | `lspci -vv` |
-| 当前检测模型 | **A：BDD-YOLOv8n Raw-head INT8** | 进程参数 + summary |
+| 当前生产检测模型 | **A：BDD-YOLOv8n Raw-head INT8**（尚未切换） | 当前 systemd 进程参数 + summary |
+| 比赛目标默认模型 | **B：B05N P2 十类 Raw-head INT8 单模型** | `tools/zz-b05p-model-B-single.conf`；独立实板验证中 |
 | 模型 SHA256 | `a86ab053...041afb` | `artifacts/manifests/model_manifest.json` |
 | AI 结果率 | **9.98 Hz** | `adas_A_live_default_summary.json` |
 | 主 RKNN 调用 p50 | **29.15 ms** | 同上 |
@@ -195,15 +196,15 @@ QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl \
 
 ## 5. 模型与训练
 
-当前默认：
+当前比赛选型（生产 service 尚未切换）：
 
 ```text
-A · BDD-YOLOv8n Raw-head INT8 单模型
-  /home/cat/cityscapes_arch_compare_20261027/models/bdd_yolov8n_512x288_raw_heads_int8.rknn
-  SHA256 a86ab05338b49be54f95aa4d0cb937f1471924d917840d0f907480e29e041afb
+B · B05N P2 十类 Raw-head INT8 单模型
+  /home/cat/cityscapes_arch_compare_20261027/models/b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn
+  SHA256 65089ef0697bd7378071290baa218905cdcaed768452678da440b8eb116b2a5f
 ```
 
-备选：
+其他可切换方案：
 
 ```text
 B · B05N P2 10 类

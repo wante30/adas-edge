@@ -38,12 +38,14 @@ struct SourceBox {
     double confidence = 0;
     int missed = 0;
     bool predicted = false;
+    bool hazard = false;
 };
 
 struct LiveCar {
     float x = 0, z = 0;
     QString cls = QStringLiteral("car");
     double seen = 0;
+    bool hazard = false;
 };
 
 struct DemoCar {
@@ -152,7 +154,7 @@ void quad3(std::vector<float> &v, const QVector3D &a, const QVector3D &b,
     tri3(v, a, c, d, r, g, bl);
 }
 
-void carMesh(std::vector<float> &v, float x, float z, const QString &cls, bool ego) {
+void carMesh(std::vector<float> &v, float x, float z, const QString &cls, bool ego, bool hazard = false) {
     const bool truck = cls == QStringLiteral("truck");
     const bool bus = cls == QStringLiteral("bus");
     const bool person = cls == QStringLiteral("person");
@@ -160,16 +162,16 @@ void carMesh(std::vector<float> &v, float x, float z, const QString &cls, bool e
     const float w = person ? .55f : (twoWheel ? .8f : (truck ? 2.25f : (bus ? 2.45f : 1.9f)));
     const float h = person ? 1.65f : (twoWheel ? 1.35f : (truck ? 2.7f : (bus ? 2.8f : 1.45f)));
     const float d = person ? .5f : (twoWheel ? 1.7f : (truck ? 7.2f : (bus ? 9.5f : 4.4f)));
-    const float r = ego ? .20f : (truck ? .24f : (bus ? .20f : .36f));
-    const float g = ego ? .28f : (truck ? .28f : (bus ? .30f : .41f));
-    const float b = ego ? .38f : (truck ? .31f : (bus ? .35f : .46f));
+    const float r = ego ? .20f : (hazard ? .82f : (truck ? .24f : (bus ? .20f : .36f)));
+    const float g = ego ? .28f : (hazard ? .16f : (truck ? .28f : (bus ? .30f : .41f)));
+    const float b = ego ? .38f : (hazard ? .18f : (truck ? .31f : (bus ? .35f : .46f)));
 
     // soft ground shadow
     quad(v, x - w * .62f, z - d * .55f, x + w * .62f, z + d * .55f, .012f, .025f, .03f, .035f);
 
     if (person) {
-        box3(v, x, .02f, z, .5f, .9f, .4f, .30f, .38f, .42f);
-        box3(v, x, .92f, z, .34f, .55f, .30f, .38f, .46f, .50f);
+        box3(v, x, .02f, z, .5f, .9f, .4f, hazard ? .85f : .30f, hazard ? .12f : .38f, hazard ? .12f : .42f);
+        box3(v, x, .92f, z, .34f, .55f, .30f, hazard ? .95f : .38f, hazard ? .20f : .46f, hazard ? .18f : .50f);
         return;
     }
     if (twoWheel) {
@@ -448,6 +450,7 @@ public:
             b.confidence = map.value(QStringLiteral("confidence")).toDouble();
             b.missed = map.value(QStringLiteral("missed")).toInt();
             b.predicted = map.value(QStringLiteral("predicted")).toBool();
+            b.hazard = map.value(QStringLiteral("hazard")).toBool();
             // Stale/predicted tracks are retained by the tracker for continuity,
             // but must not be drawn as if they were current detections.
             if (b.id > 0 && b.w > 2 && b.h > 2 && !b.predicted && b.missed == 0 &&
@@ -633,9 +636,10 @@ private:
             const float tz = std::clamp(0.72f * widthDepth + 0.28f * bottomDepth, 4.0f, 62.0f);
             auto it = live_.find(b.id);
             if (it == live_.end()) {
-                live_.insert(b.id, LiveCar{tx, tz, b.cls, now});
+                live_.insert(b.id, LiveCar{tx, tz, b.cls, now, b.hazard});
             } else {
                 it->cls = b.cls;
+                it->hazard = b.hazard;
                 const float k = std::min(1.0f, float(dt_ * 5.0));
                 it->x += (tx - it->x) * k;
                 it->z += (tz - it->z) * k;
@@ -646,7 +650,7 @@ private:
             // Matches the Qt tracker's 900 ms remove window; no ghost target.
             if (now - it->seen > 0.9) it = live_.erase(it); else ++it;
         }
-        for (const LiveCar &car : live_) carMesh(v, car.x, car.z, car.cls, false);
+        for (const LiveCar &car : live_) carMesh(v, car.x, car.z, car.cls, false, car.hazard);
     }
 
     void drawBillboards(const QMatrix4x4 &mvp) {

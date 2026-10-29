@@ -60,6 +60,7 @@ class VideoItem : public QQuickFramebufferObject {
     Q_PROPERTY(int aiDetectionCount READ aiDetectionCount NOTIFY aiBoxesChanged)
     Q_PROPERTY(QVariantMap aiDetectionCounts READ aiDetectionCounts NOTIFY aiBoxesChanged)
     Q_PROPERTY(QVariantList aiBoxes READ aiBoxes NOTIFY aiBoxesChanged)
+    Q_PROPERTY(QVariantList aiHazardDetails READ aiHazardDetails NOTIFY aiStatusChanged)
     // Expose the model through QObject so Qt 5 QML can consume it without
     // requiring a metatype registration for the abstract model pointer.
     Q_PROPERTY(QObject *bboxModel READ bboxModelObject CONSTANT)
@@ -227,6 +228,7 @@ public:
     QObject *bboxModelObject() const { return bbox_model_.get(); }
     int bboxCount() const { return bbox_model_ ? bbox_model_->count() : 0; }
     QVariantList aiHazards() const;
+    QVariantList aiHazardDetails() const;
     qulonglong aiRequestsSent() const { return ai_requests_sent_.load(); }
     qulonglong aiResultsReceived() const { return ai_results_received_.load(); }
     QString sourceMode() const { return source_mode_; }
@@ -390,6 +392,7 @@ private:
     QVariantMap ai_detection_counts_;
     QVariantList ai_boxes_;
     QVariantList ai_hazards_;
+    QVariantList ai_hazard_details_;
     std::atomic<uint64_t> latest_ai_frame_id_{0};
     std::atomic<int> ai_frame_lag_{0};
     std::atomic<int> max_track_prediction_ms_{250};

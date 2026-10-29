@@ -79,6 +79,10 @@ lspci -nn | grep 01:00.0
 
 ### 2.2 `adas-ai-bridge-live.service`
 
+比赛默认选型确定为 **B：B05N P2 十类单模型**。`tools/zz-b05p-model-B-single.conf` 是对应的比赛启动配置；目前 RK3566 生产 service 仍运行 A，尚未安装该 drop-in。危险事件开发先用隔离测试进程，不改生产 unit 配置。
+
+当前板端的 1280×720 PCIe 四路拼图中，道路画面位于 Q4（零基索引 3）；B 启动配置使用 Q4，Qt 的 MVS1 选择消息仍可在运行时改选其他象限。2026-10-29 首次 B 实测错误地使用索引 1（桌面画面），因此那次 0 框不是模型精度结论。修正后，对实时 MFR1 帧 445865 使用 B 模型及 RGA 预处理，正式 raw-head 解码在 conf=0.25、NMS IoU=0.45 下输出 9 框（车辆、自行车、行人、交通标志）；模型 SHA256 为 `65089ef0697bd7378071290baa218905cdcaed768452678da440b8eb116b2a5f`。这是单帧检测证据，不代表连续跟踪或危险事件已通过实测。
+
 当前 drop-in：
 
 ```text
@@ -176,8 +180,8 @@ QT_FRAME_METADATA_HZ=15
 
 ```text
 /home/cat/cityscapes_arch_compare_20261027/models/
-  bdd_yolov8n_512x288_raw_heads_int8.rknn          A（当前）
-  b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn  B
+  bdd_yolov8n_512x288_raw_heads_int8.rknn          A（当前生产）
+  b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn  B（比赛选型）
   b05l_v8n_p2_raw_heads_int8_500_20261026.rknn     C/D Specialist
 ```
 
@@ -185,10 +189,12 @@ QT_FRAME_METADATA_HZ=15
 
 | ID | 主模型 | Specialist | 说明 |
 |---|---|---|---|
-| A | BDD Raw-head INT8 | 无 | 当前默认 |
-| B | B05N P2 Raw-head INT8 | 无 | 小目标对照 |
+| A | BDD Raw-head INT8 | 无 | 当前生产运行，保留回退 |
+| B | B05N P2 Raw-head INT8 | 无 | 比赛选型与独立验证目标 |
 | C | BDD | B05L | 交通灯专模 |
 | D | B05N P2 | B05L | 双模型 |
+
+注意：2026-10-27 的 B 合成 bridge benchmark 曾将道路帧写入零基索引 1，却请求索引 0。其吞吐率不能作为检测精度或正例覆盖证据；当前 benchmark 代码已让回放写入位置和推理象限共用同一常量，修正后的测试结果需单独记录。
 
 切换代码：
 

@@ -390,6 +390,8 @@ Item {
 
     function hazardLabel(kind) {
         if (kind === "LEAD_RAPID_CLOSING") return "前车快速接近"
+        if (kind === "FRONT_COLLISION_RISK") return "前方碰撞风险"
+        if (kind === "VEHICLE_CUT_IN_CANDIDATE") return "车辆切入候选"
         if (kind === "PEDESTRIAN_CROSSING_PATH") return "行人进入预测路径"
         if (kind === "PEDESTRIAN_IN_PATH") return "前方行人"
         if (kind === "RED_SIGNAL_CONFIRMED") return "确认红灯 · 注意信号"
@@ -397,12 +399,29 @@ Item {
         if (kind === "SUSPECTED_BRAKING_WITH_CLOSING") return "制动灯变化且快速接近"
         return "感知风险"
     }
+    function hazardSeverityText(severity) {
+        if (severity === "critical") return "高风险"
+        if (severity === "info") return "提示"
+        return "警告"
+    }
     function hazardRows() {
         var rows = []
         if (video.aiOnline) {
+            var details = (video.aiHazardDetails || []).slice()
+            if (details.length > 0) {
+                for (var d = 0; d < details.length && d < 3; ++d) {
+                    var detail = details[d]
+                    var target = detail.target_class ? (" · " + detail.target_class) : ""
+                    rows.push({ label: hazardLabel(detail.event_type) + target,
+                                live: detail.valid !== false,
+                                value: hazardSeverityText(detail.severity) })
+                }
+                return rows
+            }
             var hs = (video.aiHazards || []).slice()
             var priority = { "RED_SIGNAL_CONFIRMED": 0, "PEDESTRIAN_CROSSING_PATH": 1,
-                             "PEDESTRIAN_IN_PATH": 1, "LEAD_RAPID_CLOSING": 2,
+                             "PEDESTRIAN_IN_PATH": 1, "FRONT_COLLISION_RISK": 2,
+                             "VEHICLE_CUT_IN_CANDIDATE": 3, "LEAD_RAPID_CLOSING": 2,
                              "SUSPECTED_BRAKING_WITH_CLOSING": 3, "LEAD_BRAKE_LAMP_RISE": 4 }
             hs.sort(function(a, b) { var pa = priority[a]; var pb = priority[b]; if (pa === undefined) pa = 9; if (pb === undefined) pb = 9; return pa - pb })
             for (var i = 0; i < hs.length && i < 3; ++i)
@@ -413,7 +432,8 @@ Item {
     }
     function hazardBadge() {
         if (!video.aiOnline) return "离线"
-        var n = (video.aiHazards || []).length
+        var n = (video.aiHazardDetails || []).length > 0
+                ? video.aiHazardDetails.length : (video.aiHazards || []).length
         return n > 0 ? (n + " 项实时") : "监控中"
     }
     function hazardFooter() {
@@ -425,6 +445,11 @@ Item {
         return video.aiOnline && (video.aiHazards || []).length === 0
     }
     function primaryHazard() {
+        var details = video.aiHazardDetails || []
+        if (details.length > 0) {
+            var target = details[0].target_class ? (" · " + details[0].target_class) : ""
+            return hazardLabel(details[0].event_type) + target
+        }
         var hs = video.aiHazards || []
         return hs.length > 0 ? hazardLabel(hs[0]) : "未检测到危险事件"
     }

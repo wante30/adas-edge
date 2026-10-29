@@ -135,12 +135,43 @@ def build_dynamic_status(*, source, frame_id, timestamp_ns, now_ns, hud, navigat
                      if isinstance(hazard_timestamp_ns, int)
                      and 0 <= hazard_timestamp_ns <= now_ns else None)
     hazard_kinds = []
+    hazard_details = []
     if (not source_stopped and source_available and hazard_age_ms is not None
             and hazard_age_ms < DYNAMIC_RESULT_TTL_MS):
-        hazard_kinds = list(dict.fromkeys(
-            str(item.get("kind")) for item in hazards
-            if isinstance(item, dict) and isinstance(item.get("kind"), str)
-        ))
+        for item in hazards:
+            if not isinstance(item, dict) or not isinstance(item.get("kind"), str):
+                continue
+            kind = item["kind"]
+            hazard_kinds.append(kind)
+            severity = item.get("severity", "warning")
+            if severity not in ("info", "warning", "critical"):
+                severity = "warning"
+            detail = {
+                "event_type": kind,
+                "source_id": source,
+                "source_frame_id": int(frame_id),
+                "timestamp": int(hazard_timestamp_ns),
+                "severity": severity,
+                "valid": True,
+                "ttl_ms": DYNAMIC_RESULT_TTL_MS,
+                "evidence": item.get("source") or "IMAGE_PERCEPTION",
+            }
+            track_id = item.get("track_id")
+            if isinstance(track_id, int) and not isinstance(track_id, bool) and track_id > 0:
+                detail["track_id"] = track_id
+            bbox = item.get("bbox")
+            if isinstance(bbox, (list, tuple)) and len(bbox) == 4:
+                try:
+                    values = [float(value) for value in bbox]
+                except (TypeError, ValueError):
+                    values = None
+                if values is not None and all(math.isfinite(value) for value in values):
+                    detail["bbox"] = values
+            target_class = item.get("target_class") or item.get("class_name")
+            if isinstance(target_class, str) and target_class:
+                detail["target_class"] = target_class
+            hazard_details.append(detail)
+        hazard_kinds = list(dict.fromkeys(hazard_kinds))
 
     result_age_ms = ((now_ns - timestamp_ns) / 1_000_000
                      if source_available and not source_stopped
@@ -163,6 +194,7 @@ def build_dynamic_status(*, source, frame_id, timestamp_ns, now_ns, hud, navigat
         "result_age_ms": result_age_ms,
         "navigation": nav,
         "hazards": hazard_kinds,
+        "hazard_details": hazard_details,
         "hazard_age_ms": hazard_age_ms,
         "detections": counts,
         "main_age_ms": None if source_stopped or not source_available else main_age_ms,
@@ -324,6 +356,9 @@ def render_dynamic_hmi_rgba(status, font_path=None):
     hazards = status.get("hazards") or []
     hazard_names = {
         "PEDESTRIAN_CROSSING_PATH": "行人进入预测路径",
+        "PEDESTRIAN_IN_PATH": "行人进入前方路径",
+        "FRONT_COLLISION_RISK": "前方碰撞风险",
+        "VEHICLE_CUT_IN_CANDIDATE": "车辆切入候选",
         "LEAD_RAPID_CLOSING": "前车快速接近",
         "LEAD_BRAKE_LAMP_RISE": "前车制动灯变化",
         "SUSPECTED_BRAKING_WITH_CLOSING": "制动灯变化且快速接近",

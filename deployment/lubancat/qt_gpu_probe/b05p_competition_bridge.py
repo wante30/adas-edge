@@ -21,6 +21,11 @@ MODEL_FILES = {
     "p2": "b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn",
     "specialist": "b05l_v8n_p2_raw_heads_int8_500_20261026.rknn",
 }
+REPLAY_ROAD_QUADRANT = 1
+
+
+def _replay_quadrant_args() -> list[str]:
+    return ["--road-quadrant", str(REPLAY_ROAD_QUADRANT)]
 
 
 def _nchw(value: np.ndarray, channels: int, label: str) -> np.ndarray:
@@ -180,7 +185,9 @@ def _make_replay_frames(data_root: Path, replay_dir: Path, count: int) -> list[P
             raise ValueError(f"cannot read {image_paths[int(image_index)]}")
         road = cv2.resize(image, (640, 360), interpolation=cv2.INTER_AREA)
         frame = np.zeros((720, 1280, 3), dtype=np.uint8)
-        frame[:360, 640:1280] = road
+        row, column = divmod(REPLAY_ROAD_QUADRANT, 2)
+        frame[row * 360:(row + 1) * 360,
+              column * 640:(column + 1) * 640] = road
         packed = cv2.cvtColor(frame, cv2.COLOR_BGR2BGR565)
         output = replay_dir / f"frame_{output_index:03d}.rgb565"
         output.write_bytes(packed.tobytes())
@@ -331,7 +338,7 @@ def run_benchmark(args) -> dict:
     timing_log = args.output_dir / "bridge_timing.jsonl"
     argv = [
         "--source", "SYNTHETIC", "--layout", "quad", "--display-view", "front",
-        "--road-quadrant", "0", "--navigation-quadrant", "1",
+        *_replay_quadrant_args(), "--navigation-quadrant", "1",
         "--main-model", str(main_model),
         "--main-hz", str(args.request_hz), "--hazard-hz", "5", "--specialist-hz", "1",
         "--request-port", str(request_port), "--result-port", str(result_port),
