@@ -1,0 +1,33 @@
+name: RK3566 代码量统计
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/rk3566-code-loc.yml"
+      - "tools/count_rk3566_loc.py"
+
+permissions:
+  contents: read
+
+jobs:
+  source-code-count:
+    name: 统计 ARM / FPGA / 测试与历史代码
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Count source lines and generate report
+        shell: bash
+        run: |
+          python3 tools/count_rk3566_loc.py . --csv rk3566_loc.csv
+
+      - name: Upload detailed CSV report
+        uses: actions/upload-artifact@v4
+        with:
+          name: rk3566-code-loc-report
+          path: rk3566_loc.csv
+          if-no-files-found: error
+          retention-days: 30
