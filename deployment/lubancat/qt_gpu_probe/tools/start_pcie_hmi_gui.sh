@@ -32,7 +32,7 @@ while :; do
         --pgv-file "$PGV" \
         --source-label pgv-live \
         --pgv-layout quad \
-        --road-quadrant 1 \
+        --road-quadrant 0 \
         --ai-frame-file "$AI_FRAME" \
         --ai-hz 10 \
         >>"$LOG" 2>&1

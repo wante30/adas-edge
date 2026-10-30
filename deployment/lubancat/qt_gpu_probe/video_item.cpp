@@ -1,5 +1,13 @@
 #include "video_item.h"
 
+namespace {
+int envPort(const char *name, int fallback) {
+    bool ok = false;
+    const int value = qEnvironmentVariableIntValue(name, &ok);
+    return ok && value > 0 && value < 65536 ? value : fallback;
+}
+} // namespace
+
 #include <QElapsedTimer>
 #include <QColor>
 #include <QJsonArray>
@@ -972,17 +980,17 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
     if (flags >= 0) fcntl(socketFd, F_SETFL, flags | O_NONBLOCK);
     sockaddr_in resultAddress{};
     resultAddress.sin_family = AF_INET;
-    resultAddress.sin_port = htons(38261);
+    resultAddress.sin_port = htons(envPort("ADAS_AI_RESULT_PORT", 38261));
     resultAddress.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     if (bind(socketFd, reinterpret_cast<const sockaddr *>(&resultAddress), sizeof(resultAddress)) != 0) {
         close(socketFd);
         QMutexLocker locker(&ai_metrics_mutex_);
-        ai_status_ = QStringLiteral("AI UDP 38261 绑定失败");
+        ai_status_ = QStringLiteral("AI UDP 绑定失败");
         return;
     }
     sockaddr_in requestAddress{};
     requestAddress.sin_family = AF_INET;
-    requestAddress.sin_port = htons(38260);
+    requestAddress.sin_port = htons(envPort("ADAS_AI_REQUEST_PORT", 38260));
     requestAddress.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     const auto interval = std::chrono::nanoseconds(
         static_cast<int64_t>(std::llround(1.0e9 / std::max(0.1, aiHz))));
@@ -1352,7 +1360,6 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                 for (const QVariantMap &item : ordered) boxes.append(item);
             }
             const qint64 trackEndNs = steadyNs();
-            writeTeslaSceneTracks(boxes, frameId, static_cast<qint64>(timestampNs));
             const qint64 statusStartNs = steadyNs();
             const QByteArray statusData(reinterpret_cast<const char *>(packet.data() + headerBytes + count * boxBytes),
                                         static_cast<int>(statusBytes));
@@ -1371,7 +1378,98 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                 modelOptions.append(item);
             }
             const QString traffic = status.value(QStringLiteral("traffic")).toString(QStringLiteral("UNKNOWN"));
+            const QString displayView = status.value(QStringLiteral("display_view")).toString(QStringLiteral("front"));
             const QJsonArray hazards = status.value(QStringLiteral("hazards")).toArray();
+            const QJsonArray hazardDetailsJson = status.value(QStringLiteral("hazard_details")).toArray();
+            QVariantList hazardDetails;
+            for (const QJsonValue &value : hazardDetailsJson) {
+                if (!value.isObject()) continue;
+                const QJsonObject detail = value.toObject();
+                const QString eventType = detail.value(QStringLiteral("event_type")).toString();
+                if (eventType.isEmpty()) continue;
+                QVariantMap item;
+                item.insert(QStringLiteral("event_type"), eventType);
+                item.insert(QStringLiteral("severity"), detail.value(QStringLiteral("severity")).toString(QStringLiteral("warning")));
+                item.insert(QStringLiteral("evidence"), detail.value(QStringLiteral("evidence")).toString());
+                item.insert(QStringLiteral("valid"), detail.value(QStringLiteral("valid")).toBool(true));
+                if (detail.value(QStringLiteral("track_id")).isDouble())
+                    item.insert(QStringLiteral("track_id"), detail.value(QStringLiteral("track_id")).toInt());
+                const QString targetClass = detail.value(QStringLiteral("target_class")).toString();
+                if (!targetClass.isEmpty()) item.insert(QStringLiteral("target_class"), targetClass);
+                const QJsonArray rawBox = detail.value(QStringLiteral("bbox")).toArray();
+                if (rawBox.size() == 4) {
+                    QVariantList box;
+                    bool valid = true;
+                    for (const QJsonValue &coordinate : rawBox) {
+                        if (!coordinate.isDouble() || !std::isfinite(coordinate.toDouble())) {
+                            valid = false;
+                            break;
+                        }
+                        box.append(coordinate.toDouble());
+                    }
+                    if (valid) item.insert(QStringLiteral("bbox"), box);
+                }
+                hazardDetails.append(item);
+            }
+            // Hazard boxes are emitted in the detector's inference view. Map
+            // them to the same 1280x720 display space used by MVA2 boxes,
+            // then mark the best matching Qt track as the live target.
+            auto displayHazardBox = [&](const QJsonArray &raw) {
+                std::array<double, 4> result{0, 0, 0, 0};
+                if (raw.size() != 4) return result;
+                for (int index = 0; index < 4; ++index) result[static_cast<size_t>(index)] = raw.at(index).toDouble();
+                const QString layout = status.value(QStringLiteral("layout")).toString(QStringLiteral("front"));
+                if (layout == QStringLiteral("quad")) {
+                    if (displayView == QStringLiteral("front")) {
+                        for (double &value : result) value *= 2.0;
+                    } else if (displayView == QStringLiteral("quad")) {
+                        const int quadrant = std::clamp(status.value(QStringLiteral("road_quadrant")).toInt(), 0, 3);
+                        const double offsetX = (quadrant % 2) * 640.0;
+                        const double offsetY = (quadrant / 2) * 360.0;
+                        result[0] += offsetX; result[2] += offsetX;
+                        result[1] += offsetY; result[3] += offsetY;
+                    }
+                }
+                return result;
+            };
+            auto boxIou = [](const QVariantMap &box, const std::array<double, 4> &target) {
+                const double ax1 = box.value(QStringLiteral("x")).toDouble();
+                const double ay1 = box.value(QStringLiteral("y")).toDouble();
+                const double ax2 = ax1 + box.value(QStringLiteral("width")).toDouble();
+                const double ay2 = ay1 + box.value(QStringLiteral("height")).toDouble();
+                const double ix = std::max(0.0, std::min(ax2, target[2]) - std::max(ax1, target[0]));
+                const double iy = std::max(0.0, std::min(ay2, target[3]) - std::max(ay1, target[1]));
+                const double intersection = ix * iy;
+                const double areaA = std::max(0.0, ax2 - ax1) * std::max(0.0, ay2 - ay1);
+                const double areaB = std::max(0.0, target[2] - target[0]) * std::max(0.0, target[3] - target[1]);
+                return intersection / std::max(1e-9, areaA + areaB - intersection);
+            };
+            for (const QJsonValue &value : hazardDetailsJson) {
+                if (!value.isObject()) continue;
+                const QJsonObject detail = value.toObject();
+                const QJsonArray rawBox = detail.value(QStringLiteral("bbox")).toArray();
+                const auto target = displayHazardBox(rawBox);
+                if (rawBox.size() != 4 || target[2] <= target[0] || target[3] <= target[1]) continue;
+                const QString targetClass = detail.value(QStringLiteral("target_class")).toString();
+                double bestScore = 0.18;
+                int bestIndex = -1;
+                for (int index = 0; index < boxes.size(); ++index) {
+                    const QVariantMap candidate = boxes.at(index).toMap();
+                    if (!targetClass.isEmpty() && candidate.value(QStringLiteral("className")).toString() != targetClass)
+                        continue;
+                    const double score = boxIou(candidate, target);
+                    if (score > bestScore) { bestScore = score; bestIndex = index; }
+                }
+                if (bestIndex >= 0) {
+                    QVariantMap marked = boxes.at(bestIndex).toMap();
+                    marked.insert(QStringLiteral("primary"), true);
+                    marked.insert(QStringLiteral("hazard"), true);
+                    marked.insert(QStringLiteral("hazardKind"), detail.value(QStringLiteral("event_type")).toString());
+                    marked.insert(QStringLiteral("hazardSeverity"), detail.value(QStringLiteral("severity")).toString(QStringLiteral("warning")));
+                    boxes[bestIndex] = marked;
+                }
+            }
+            writeTeslaSceneTracks(boxes, frameId, static_cast<qint64>(timestampNs));
             const QJsonObject navigation = status.value(QStringLiteral("navigation")).toObject();
             const QString direction = navigation.value(QStringLiteral("direction")).toString(QStringLiteral("等待识别"));
             const QString navigationRoad = navigation.value(QStringLiteral("road_name")).toString();
@@ -1406,6 +1504,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     || ai_model_message_ != modelMessage
                     || (!modelOptions.isEmpty() && ai_model_options_ != modelOptions);
                 statusChanged = ai_traffic_ != traffic
+                    || ai_display_view_ != displayView
                     || ai_navigation_ != navigationText
                     || ai_navigation_road_ != navigationRoad
                     || ai_navigation_state_ != navigationState
@@ -1413,6 +1512,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     || !qFuzzyCompare(ai_navigation_distance_m_ + 1.0,
                                       navigationDistance + 1.0)
                     || ai_hazards_ != hazardItems
+                    || ai_hazard_details_ != hazardDetails
                     || modelChanged;
                 if (!modelId.isEmpty()) ai_model_id_ = modelId;
                 if (!modelState.isEmpty()) ai_model_state_ = modelState;
@@ -1420,8 +1520,10 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                 if (!modelOptions.isEmpty()) ai_model_options_ = modelOptions;
                 ai_boxes_ = boxes;
                 ai_hazards_ = hazardItems;
+                ai_hazard_details_ = hazardDetails;
                 ai_status_ = summary;
                 ai_traffic_ = traffic;
+                ai_display_view_ = displayView;
                 ai_navigation_ = navigationText;
                 ai_navigation_road_ = navigationRoad;
                 ai_navigation_state_ = navigationState;
@@ -1610,7 +1712,7 @@ void VideoItem::sendAiSelection(int road, int navigation) {
     if (fd < 0) return;
     sockaddr_in address{};
     address.sin_family = AF_INET;
-    address.sin_port = htons(38260);
+    address.sin_port = htons(envPort("ADAS_AI_REQUEST_PORT", 38260));
     address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     const unsigned char packet[6] = {
         'M', 'V', 'S', '1',
@@ -1656,6 +1758,9 @@ void VideoItem::writeTeslaSceneTracks(const QVariantList &boxes, uint64_t frameI
         item.insert(QStringLiteral("vy"), box.value(QStringLiteral("vy")).toDouble());
         item.insert(QStringLiteral("confidence"), box.value(QStringLiteral("confidence")).toDouble());
         item.insert(QStringLiteral("state"), box.value(QStringLiteral("state")).toString());
+        item.insert(QStringLiteral("hazard"), box.value(QStringLiteral("hazard")).toBool());
+        item.insert(QStringLiteral("hazard_kind"), box.value(QStringLiteral("hazardKind")).toString());
+        item.insert(QStringLiteral("hazard_severity"), box.value(QStringLiteral("hazardSeverity")).toString());
         item.insert(QStringLiteral("detect_timestamp_ns"),
                     static_cast<qint64>(box.value(QStringLiteral("detectTimestampNs")).toULongLong()));
         items.append(item);
@@ -1681,6 +1786,7 @@ void VideoItem::setAiRoadQuadrant(int quadrant) {
         tracks_.clear();
         next_track_id_ = 1;
         ai_hazards_.clear();
+        ai_hazard_details_.clear();
         ai_detection_counts_.clear();
         ai_traffic_ = QStringLiteral("UNKNOWN");
         ai_navigation_ = QStringLiteral("等待导航识别");
@@ -1719,6 +1825,11 @@ QVariantList VideoItem::aiBoxes() const {
 QVariantList VideoItem::aiHazards() const {
     QMutexLocker locker(&ai_metrics_mutex_);
     return ai_hazards_;
+}
+
+QVariantList VideoItem::aiHazardDetails() const {
+    QMutexLocker locker(&ai_metrics_mutex_);
+    return ai_hazard_details_;
 }
 
 void VideoItem::updateMetrics() {
@@ -1771,6 +1882,7 @@ void VideoItem::updateMetrics() {
         tracks_.clear();
         next_track_id_ = 1;
         ai_hazards_.clear();
+        ai_hazard_details_.clear();
         ai_detection_counts_.clear();
         ai_traffic_ = QStringLiteral("UNKNOWN");
         ai_navigation_ = QStringLiteral("等待导航识别");

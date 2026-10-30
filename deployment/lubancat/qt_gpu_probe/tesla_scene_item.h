@@ -3,11 +3,15 @@
 #include <QMutex>
 #include <QQuickFramebufferObject>
 #include <QVariantList>
+#include <QVariantMap>
 #include <atomic>
 
 class TeslaSceneItem : public QQuickFramebufferObject {
     Q_OBJECT
     Q_PROPERTY(QVariantList boxes READ boxes WRITE setBoxes NOTIFY boxesChanged)
+    Q_PROPERTY(QVariantMap laneState READ laneState WRITE setLaneState NOTIFY laneStateChanged)
+    Q_PROPERTY(QString displayView READ displayView WRITE setDisplayView NOTIFY displayViewChanged)
+    Q_PROPERTY(int roadQuadrant READ roadQuadrant WRITE setRoadQuadrant NOTIFY roadQuadrantChanged)
     Q_PROPERTY(bool online READ online WRITE setOnline NOTIFY onlineChanged)
     Q_PROPERTY(bool demoMode READ demoMode WRITE setDemoMode NOTIFY demoModeChanged)
     Q_PROPERTY(QString sourceKey READ sourceKey WRITE setSourceKey NOTIFY sourceKeyChanged)
@@ -22,6 +26,12 @@ public:
 
     QVariantList boxes() const;
     void setBoxes(const QVariantList &boxes);
+    QVariantMap laneState() const;
+    void setLaneState(const QVariantMap &state);
+    QString displayView() const;
+    void setDisplayView(const QString &view);
+    int roadQuadrant() const { return road_quadrant_.load(); }
+    void setRoadQuadrant(int quadrant);
     bool online() const { return online_.load(); }
     void setOnline(bool online);
     bool demoMode() const { return demo_mode_.load(); }
@@ -38,6 +48,9 @@ public:
 
 signals:
     void boxesChanged();
+    void laneStateChanged();
+    void displayViewChanged();
+    void roadQuadrantChanged();
     void onlineChanged();
     void demoModeChanged();
     void sourceKeyChanged();
@@ -48,7 +61,10 @@ signals:
 private:
     mutable QMutex mutex_;
     QVariantList boxes_;
+    QVariantMap lane_state_;
+    QString display_view_;
     QString source_key_;
+    std::atomic<int> road_quadrant_{1};
     std::atomic<bool> online_{false};
     std::atomic<bool> demo_mode_{false};
     std::atomic<double> scene_fps_{0.0};

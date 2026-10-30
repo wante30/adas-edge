@@ -18,7 +18,8 @@
 |---|---|---|
 | FPGA→RK PCIe 视频 | 1280×720 RGB565，**49.49 FPS** | `/dev/shm/pango-video/status.json` |
 | PCIe 链路 | `0755:0755`，5 GT/s **x1**（IP 支持 x4） | `lspci -vv` |
-| 当前检测模型 | **A：BDD-YOLOv8n Raw-head INT8** | 进程参数 + summary |
+| 当前生产检测模型 | **A：BDD-YOLOv8n Raw-head INT8**（尚未切换） | 当前 systemd 进程参数 + summary |
+| 比赛目标默认模型 | **B：B05N P2 十类 Raw-head INT8 单模型** | `tools/zz-b05p-model-B-single.conf`；独立实板验证中 |
 | 模型 SHA256 | `a86ab053...041afb` | `artifacts/manifests/model_manifest.json` |
 | AI 结果率 | **9.98 Hz** | `adas_A_live_default_summary.json` |
 | 主 RKNN 调用 p50 | **29.15 ms** | 同上 |
@@ -50,6 +51,30 @@
 - 物理 HDMI scanout FPS：未测，56 FPS 是 Qt 自报。
 
 > 完整的“已完成/未完成/证据/风险”见 [需求矩阵](docs/competition/REQUIREMENT_MATRIX.md) 与 [项目盘点](docs/audit/PROJECT_INVENTORY.md)。
+
+---
+
+## 1.4 LVT1 真实数据升级（独立分支）
+
+分支 `feature/lvt1-ego-bev-20261028` 已完成：
+
+- LVT1 左右车道线型/数量/来源/有效性接入 Qt；
+- 新增本车控制卡（油门/刹车/左右变道请求 + FPGA 判定/原因）；
+- Tesla 3D 道路边界按 LVT1 实线/虚线绘制；
+- YOLO 跟踪目标驱动 3D 车辆/行人，900ms 过期，无检测不生成模拟目标；
+- 默认道路象限改为 Q1（前视），Q2 只作为导航；
+- 修复 3D chase camera 左右镜像。
+
+实板离线截图：
+
+- `docs/hmi/assets/lvt1/single_live_targets_20261029.png`
+- `docs/hmi/assets/lvt1/quad_live_targets_20261029.png`
+- `docs/hmi/assets/lvt1/spatial_live_targets_20261029.png`
+- `docs/hmi/assets/lvt1/single_left_change_denied_20261029.png`
+
+当前状态：**实板 Qt 5.12.8 编译通过、fixture + 本地视频 + 第二 AI sidecar 截图通过；生产二进制未替换，真实 LVT1 驱动/位流未验收。**
+
+详见 [LVT1 真实数据 HMI](docs/hmi/LVT1_REAL_DATA_HMI.md)。
 
 ---
 
@@ -161,7 +186,7 @@ DISPLAY=:0 XAUTHORITY=/home/cat/.Xauthority \
 QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl \
 ./qt_gpu_probe --fps 60 --duration 0 --start-mode 0 \
   --pgv-file /dev/shm/pango-video/latest.pgv --source-label pgv-live \
-  --pgv-layout quad --road-quadrant 1 \
+  --pgv-layout quad --road-quadrant 0 \
   --ai-frame-file /dev/shm/qt_gpu_probe_ai.mfr1 --ai-hz 10
 ```
 
@@ -171,15 +196,17 @@ QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl \
 
 ## 5. 模型与训练
 
-当前默认：
+当前比赛选型（生产 service 尚未切换）：
 
 ```text
-A · BDD-YOLOv8n Raw-head INT8 单模型
-  /home/cat/cityscapes_arch_compare_20261027/models/bdd_yolov8n_512x288_raw_heads_int8.rknn
-  SHA256 a86ab05338b49be54f95aa4d0cb937f1471924d917840d0f907480e29e041afb
+B · B05N P2 十类 Raw-head INT8 单模型
+  /home/cat/cityscapes_arch_compare_20261027/models/b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn
+  SHA256 65089ef0697bd7378071290baa218905cdcaed768452678da440b8eb116b2a5f
 ```
 
-备选：
+板端本地道路视频回放与限制：[B05N B 模型验证记录](docs/deployment/B05N_B_MODEL_REPLAY_20261029.md)。
+
+其他可切换方案：
 
 ```text
 B · B05N P2 10 类

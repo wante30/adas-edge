@@ -45,7 +45,7 @@ Item {
     property color line: "#1B4052"
     property string inputLayout: (typeof pgvInputLayout !== "undefined" ? pgvInputLayout : "front")
     // The user wants the top-right quadrant (Q2) as the default main view.
-    property int roadQuadrant: (typeof pgvRoadQuadrant !== "undefined" ? pgvRoadQuadrant : 1)
+    property int roadQuadrant: (typeof pgvRoadQuadrant !== "undefined" ? pgvRoadQuadrant : 0)
     property int navQuadrant: 1
     property int viewMode: (typeof initialViewMode !== "undefined" ? initialViewMode : 0)
     property bool autoCycle: (typeof autoCycleCapture !== "undefined" ? autoCycleCapture : false)
@@ -71,6 +71,87 @@ Item {
     })
 
     HudControl { id: pcieHud }
+    VehicleTelemetryStatus { id: vehicleTelemetry }
+    function lvtBoundaryText(type, count) {
+        var t = type === "solid" ? "实线" : (type === "dashed" ? "虚线" : "未知")
+        var n = (count === null || count === undefined) ? "?" : String(count)
+        return t + " x" + n
+    }
+    function lvtActionText(value) {
+        var labels = { throttle: "油门", brake: "刹车", lane_left: "左变道",
+                       lane_right: "右变道", none: "空闲" }
+        return labels[value] || "未知"
+    }
+    function lvtDecisionText(value) {
+        var labels = { allow: "允许", deny: "拒绝", warning: "警告",
+                       idle: "空闲", unknown: "未知" }
+        return labels[value] || "未知"
+    }
+    function lvtReasonText(value) {
+        var labels = { red_light: "红灯", left_solid: "左实线",
+                       right_solid: "右实线", sensor_unavailable: "传感器失效",
+                       brake_advisory: "刹车提示" }
+        return labels[value] || ""
+    }
+    function lvtSourceText() {
+        var s = vehicleTelemetry.laneState.source || "none"
+        return s === "hsst" ? "HSST" : (s === "rk" ? "RK" : (s === "none" ? "NONE" : s.toUpperCase()))
+    }
+    function lvtLaneBadge() {
+        if (!vehicleTelemetry.online) return "未接入"
+        if (!vehicleTelemetry.laneState.valid) return "过期/未知"
+        return vehicleTelemetry.laneState.simulated ? "SIM" : "LVT1"
+    }
+    function lvtLaneTone() {
+        if (!vehicleTelemetry.online) return root.amber
+        return vehicleTelemetry.laneState.valid ? root.mint : root.amber
+    }
+    function lvtBoundaryTone(type) {
+        if (type === "solid") return root.mint
+        if (type === "dashed") return root.cyanHot
+        return "#6F8790"
+    }
+    function lvtCountText(count) {
+        return (count === null || count === undefined) ? "—" : String(count)
+    }
+    function lvtActionState(name) {
+        var e = vehicleTelemetry.egoState
+        if (!e.online || !e.valid) return "unknown"
+        if (e.active && e.action === name) return "request"
+        if (e[name + "_allow"]) return "allow"
+        if (e[name + "_deny"]) return "deny"
+        return "idle"
+    }
+    function lvtActionStateText(name) {
+        var s = root.lvtActionState(name)
+        return s === "request" ? "请求" : (s === "allow" ? "允许" :
+               (s === "deny" ? "拒绝" : (s === "idle" ? "待机" : "未知")))
+    }
+    function lvtActionTone(name) {
+        var s = root.lvtActionState(name)
+        return s === "request" ? root.amber : (s === "allow" ? root.mint :
+               (s === "deny" ? root.red : "#6F8790"))
+    }
+    function lvtDecisionTone() {
+        var d = vehicleTelemetry.egoState.decision
+        if (!vehicleTelemetry.egoState.online || !vehicleTelemetry.egoState.valid) return root.amber
+        return d === "allow" ? root.mint : (d === "deny" ? root.red :
+               (d === "warning" ? root.amber : (d === "idle" ? "#6F8790" : root.amber)))
+    }
+    function lvtReasonFull() {
+        var e = vehicleTelemetry.egoState
+        if (!e.online) return "LVT1 未接入"
+        if (!e.valid) return "状态过期/未知，不保留旧许可"
+        var text = root.lvtReasonText(e.reason)
+        if (!text) text = e.reason === "none" ? "无" : (e.reason || "未知")
+        if (e.reason_code !== undefined && e.reason_code !== null)
+            text += " (" + e.reason_code + ")"
+        return text
+    }
+    function lvtEgoBadge() {
+        if (!vehicleTelemetry.online) return "离线"
+        return vehicleTelemetry.egoState.valid ? "在线" : "过期"
+    }
 
     onRoadQuadrantChanged: if (video) video.aiRoadQuadrant = roadQuadrant
     onNavQuadrantChanged: if (video) video.aiNavigationQuadrant = navQuadrant
@@ -135,6 +216,7 @@ Item {
         else if (event.key === Qt.Key_T) { root.hudTestOpen = !root.hudTestOpen; event.accepted = true }
         else if (event.key === Qt.Key_I) { root.fpgaOpen = !root.fpgaOpen; event.accepted = true }
         else if (event.key === Qt.Key_L) { root.trackingMode = (root.trackingMode + 1) % 3; event.accepted = true }
+        else if (event.key === Qt.Key_O) { sourceSwitch.toggle(); event.accepted = true }
         else if (event.key === Qt.Key_Escape) { root.hudTestOpen = false; root.fpgaOpen = false; root.modelPickerOpen = false; event.accepted = true }
         else if (event.key === Qt.Key_Q) { Qt.quit() }
     }
@@ -308,6 +390,8 @@ Item {
 
     function hazardLabel(kind) {
         if (kind === "LEAD_RAPID_CLOSING") return "前车快速接近"
+        if (kind === "FRONT_COLLISION_RISK") return "前方碰撞风险"
+        if (kind === "VEHICLE_CUT_IN_CANDIDATE") return "车辆切入候选"
         if (kind === "PEDESTRIAN_CROSSING_PATH") return "行人进入预测路径"
         if (kind === "PEDESTRIAN_IN_PATH") return "前方行人"
         if (kind === "RED_SIGNAL_CONFIRMED") return "确认红灯 · 注意信号"
@@ -315,23 +399,41 @@ Item {
         if (kind === "SUSPECTED_BRAKING_WITH_CLOSING") return "制动灯变化且快速接近"
         return "感知风险"
     }
+    function hazardSeverityText(severity) {
+        if (severity === "critical") return "高风险"
+        if (severity === "info") return "提示"
+        return "警告"
+    }
     function hazardRows() {
         var rows = []
         if (video.aiOnline) {
+            var details = (video.aiHazardDetails || []).slice()
+            if (details.length > 0) {
+                for (var d = 0; d < details.length && d < 3; ++d) {
+                    var detail = details[d]
+                    var target = detail.target_class ? (" · " + detail.target_class) : ""
+                    rows.push({ label: hazardLabel(detail.event_type) + target,
+                                live: detail.valid !== false,
+                                value: hazardSeverityText(detail.severity) })
+                }
+                return rows
+            }
             var hs = (video.aiHazards || []).slice()
             var priority = { "RED_SIGNAL_CONFIRMED": 0, "PEDESTRIAN_CROSSING_PATH": 1,
-                             "PEDESTRIAN_IN_PATH": 1, "LEAD_RAPID_CLOSING": 2,
+                             "PEDESTRIAN_IN_PATH": 1, "FRONT_COLLISION_RISK": 2,
+                             "VEHICLE_CUT_IN_CANDIDATE": 3, "LEAD_RAPID_CLOSING": 2,
                              "SUSPECTED_BRAKING_WITH_CLOSING": 3, "LEAD_BRAKE_LAMP_RISE": 4 }
             hs.sort(function(a, b) { var pa = priority[a]; var pb = priority[b]; if (pa === undefined) pa = 9; if (pb === undefined) pb = 9; return pa - pb })
             for (var i = 0; i < hs.length && i < 3; ++i)
                 rows.push({ label: hazardLabel(hs[i]), live: true, value: "实时" })
             return rows
         }
-        return [ { label: "AI 源失联", live: false, value: "无数据" } ]
+        return []
     }
     function hazardBadge() {
         if (!video.aiOnline) return "离线"
-        var n = (video.aiHazards || []).length
+        var n = (video.aiHazardDetails || []).length > 0
+                ? video.aiHazardDetails.length : (video.aiHazards || []).length
         return n > 0 ? (n + " 项实时") : "监控中"
     }
     function hazardFooter() {
@@ -343,6 +445,11 @@ Item {
         return video.aiOnline && (video.aiHazards || []).length === 0
     }
     function primaryHazard() {
+        var details = video.aiHazardDetails || []
+        if (details.length > 0) {
+            var target = details[0].target_class ? (" · " + details[0].target_class) : ""
+            return hazardLabel(details[0].event_type) + target
+        }
         var hs = video.aiHazards || []
         return hs.length > 0 ? hazardLabel(hs[0]) : "未检测到危险事件"
     }
@@ -554,11 +661,12 @@ Item {
         }
     }
 
-    // Input source chip. It is a status chip, not a fake dropdown.
+    // Input source chip. Click to toggle PCIe <-> local replay.
     Rectangle {
-        x: 626; y: 15; width: 208; height: 34; radius: 7
+        x: 626; y: 12; width: 208; height: 40; radius: 7; z: 950
         color: "#06141D"
-        border.color: "#214A5C"; border.width: 1
+        border.color: sourceSwitch.mode === "pgv-live" ? "#214A5C" : "#5A4A2C"
+        border.width: 1
         Image {
             x: 11; y: 10; width: 14; height: 13
             source: "assets/icon_camera.png"; fillMode: Image.PreserveAspectFit
@@ -568,18 +676,41 @@ Item {
             color: "#6B919D"; font.family: root.cjk; font.pixelSize: 7
         }
         Text {
-            x: 32; y: 14; text: root.inputSummary()
-            color: root.inkSoft; font.family: root.cjk; font.pixelSize: 10; font.weight: Font.DemiBold
+            x: 32; y: 14; width: 110; height: 13
+            text: root.inputSummary()
+            color: root.inkSoft; font.family: root.cjk; font.pixelSize: 9; font.weight: Font.DemiBold
+            elide: Text.ElideRight
         }
-
-        Rectangle { x: 174; y: 9; width: 1; height: 17; color: "#214A5C" }
         Text {
-            x: 179; y: 10; text: root.inputLayout === "quad" ? "2×2" : "1×1"
+            x: 148; y: 3; text: root.inputLayout === "quad" ? "2×2" : "1×1"
             color: "#84A9B4"; font.family: root.num; font.pixelSize: 6
         }
         Rectangle {
-            x: 198; y: 14; width: 5; height: 5; radius: 2.5
+            x: 148; y: 15; width: 44; height: 15; radius: 2
+            color: sourceSwitch.mode === "pgv-live" ? "#0B302A" : "#2B220E"
+            border.color: sourceSwitch.mode === "pgv-live" ? "#3F7059" : "#6B552A"
+            border.width: 0.7
+            Text {
+                anchors.centerIn: parent; text: "切换"
+                color: sourceSwitch.mode === "pgv-live" ? root.mint : root.amber
+                font.family: root.cjk; font.pixelSize: 6
+            }
+        }
+        Rectangle {
+            x: 198; y: 17; width: 5; height: 5; radius: 2.5
             color: video.sourceOnline ? root.mint : root.amber
+        }
+        Text {
+            x: 32; y: 27; width: 168; height: 10
+            text: sourceSwitch.message
+            color: sourceSwitch.message.indexOf("未准备") >= 0 ? root.amber : "#6F8A93"
+            font.family: root.cjk; font.pixelSize: 5
+            elide: Text.ElideRight
+        }
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.PointingHandCursor
+            onClicked: sourceSwitch.toggle()
         }
     }
 
@@ -1014,7 +1145,7 @@ Item {
                 color: root.ink; font.family: root.cjk; font.pixelSize: 20; font.weight: Font.DemiBold
             }
             Text {
-                x: 25; y: 43; text: "BEV  ·  OCCUPANCY  ·  FUSION  /  RANGE 80 m"
+                x: 25; y: 43; text: "BEV  ·  YOLO TRACKS  ·  RELATIVE_ONLY  /  SCHEMATIC ROAD"
                 color: "#76AAB7"; font.family: root.num; font.pixelSize: 7; font.letterSpacing: 0.7
             }
             Row {
@@ -1091,23 +1222,24 @@ Item {
         id: navCard
         x: 1000
         layer.enabled: true
-        layer.smooth: true; y: 77; width: 260; height: 152
+        layer.smooth: true; y: 467; width: 260; height: 70
         HudPanel {
             anchors.fill: parent
-            cut: 11; accent: root.cyan
+            cut: 11; accent: root.navValid() ? root.cyan : "#3A5B66"
             fillTop: "#0A1D28"; fillBottom: "#040F17"
-            fillOpacity: 0.95; borderOpacity: 0.58
+            fillOpacity: 0.95; borderOpacity: 0.52
         }
         Text {
-            x: 14; y: 9; text: "路径规划"
-            color: "#9EC9D3"; font.family: root.cjk; font.pixelSize: 9; font.weight: Font.DemiBold
+            x: 14; y: 5; text: "路径规划"
+            color: root.navValid() ? "#9EC9D3" : "#78949E"
+            font.family: root.cjk; font.pixelSize: 9; font.weight: Font.DemiBold
         }
         Text {
-            x: 73; y: 10; text: "NAVIGATION"
+            x: 78; y: 7; text: "NAVIGATION"
             color: "#517F8B"; font.family: root.num; font.pixelSize: 6; font.letterSpacing: 0.9
         }
         Rectangle {
-            x: parent.width - 75; y: 9; width: 61; height: 16; radius: 2
+            x: parent.width - 75; y: 6; width: 61; height: 16; radius: 2
             color: root.navValid() ? "#0B302A" : "#2B220E"
             border.color: root.navValid() ? "#436B56" : "#6B552A"; border.width: 0.6
             Text {
@@ -1119,82 +1251,41 @@ Item {
                 font.family: root.cjk; font.pixelSize: 6
             }
         }
-        Image {
-            x: 13; y: 30; width: 62; height: 62
-            source: "assets/route_turn.png"
-            fillMode: Image.PreserveAspectFit
-            visible: root.navValid() && root.navDirectionCode() === "right"
-        }
-        Item {
-            x: 13; y: 30; width: 62; height: 62
-            visible: root.navValid() && root.navDirectionCode() !== "right"
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                y: 8; text: "OCR"; color: root.cyan; font.family: root.num
-                font.pixelSize: 13; font.weight: Font.DemiBold
-            }
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                y: 28; text: "Q" + (root.navQuadrant + 1); color: "#79A8B3"
-                font.family: root.num; font.pixelSize: 7
-            }
-            Rectangle {
-                anchors.horizontalCenter: parent.horizontalCenter
-                y: 44; width: 32; height: 1; color: "#2D5360"
-            }
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                y: 49; text: "LIVE"; color: root.mint; font.family: root.num; font.pixelSize: 6
-            }
-        }
         Text {
-            x: 81; y: 25; width: 56; height: 30
+            x: 14; y: 23; width: 62; height: 22
             text: root.navDistance()
-            color: root.ink; font.family: root.num; font.pixelSize: 28; font.weight: Font.Bold
+            color: root.navValid() ? root.ink : "#78949E"
+            font.family: root.num; font.pixelSize: 19; font.weight: Font.Bold
             verticalAlignment: Text.AlignVCenter
         }
         Text {
-            x: 133; y: 38; text: "m"
-            color: root.muted; font.family: root.num; font.pixelSize: 8
-            visible: root.navValid() && video.aiNavigationDistanceM > 0
-        }
-        Text {
-            x: 153; y: 31; width: 84; height: 24
-            text: root.navDirection()
-            color: root.cyanHot; font.family: root.cjk; font.pixelSize: 17; font.weight: Font.DemiBold
+            x: 80; y: 26; width: 96; height: 18
+            text: root.navValid() ? root.navDirection() : "导航暂不可读"
+            color: root.navValid() ? root.cyanHot : "#8A9AA0"
+            font.family: root.cjk; font.pixelSize: 12; font.weight: Font.DemiBold
             verticalAlignment: Text.AlignVCenter
         }
         Text {
-            x: 82; y: 58; width: 158; height: 17
+            x: 14; y: 45; width: 150; height: 14
             text: root.navRoad()
-            color: root.inkSoft; font.family: root.cjk; font.pixelSize: 10
+            color: root.navValid() ? root.inkSoft : "#8A7D62"
+            font.family: root.cjk; font.pixelSize: 7
             elide: Text.ElideRight
         }
-        Rectangle { x: 14; y: 100; width: parent.width - 28; height: 1; color: "#1A3B47" }
-        Text {
-            x: 14; y: 106; width: 232; height: 13
-            text: root.navMeta()
-            color: root.navValid() ? "#77A8B2" : "#A58E58"
-            font.family: root.cjk; font.pixelSize: 6
-        }
-        Text {
-            x: 14; y: 124; text: "导航源"
-            color: "#7598A3"; font.family: root.cjk; font.pixelSize: 6
-        }
         Row {
-            x: 57; y: 121; spacing: 3
+            x: 170; y: 43; spacing: 2
             Repeater {
                 model: 4
                 delegate: Rectangle {
-                    width: 36; height: 18; radius: 2
+                    width: 18; height: 13; radius: 2
                     color: index === root.navQuadrant ? "#163B47" : "#07161D"
-                    border.width: 0.7
+                    border.width: 0.6
                     border.color: index === root.navQuadrant ? root.amber : "#284752"
                     Text {
                         anchors.centerIn: parent
                         text: "Q" + (index + 1)
                         color: index === root.navQuadrant ? root.amber : "#7F9BA5"
-                        font.family: root.num; font.pixelSize: 6
+                        font.family: root.num; font.pixelSize: 5
                     }
                     MouseArea {
                         anchors.fill: parent
@@ -1204,92 +1295,108 @@ Item {
                 }
             }
         }
+        Text {
+            x: 14; y: 57; width: parent.width - 28
+            text: root.navMeta()
+            color: root.navValid() ? "#77A8B2" : "#A58E58"
+            font.family: root.cjk; font.pixelSize: 6
+            elide: Text.ElideRight
+        }
     }
 
     Item {
         id: hazardCard
         x: 1000
         layer.enabled: true
-        layer.smooth: true; y: 241; width: 260; height: 142
+        layer.smooth: true; y: 359; width: 260; height: 100
+        property bool activeHazard: root.hazardRows().length > 0
         HudPanel {
             anchors.fill: parent
-            cut: 11; accent: root.red
-            fillTop: "#1D0B11"; fillBottom: "#080B0F"
-            fillOpacity: 0.96; borderOpacity: 0.64; glow: true
+            cut: 11; accent: hazardCard.activeHazard ? root.red : "#3A6572"
+            fillTop: hazardCard.activeHazard ? "#1D0B11" : "#0A1A22"
+            fillBottom: hazardCard.activeHazard ? "#080B0F" : "#040F16"
+            fillOpacity: 0.95; borderOpacity: hazardCard.activeHazard ? 0.64 : 0.48
+            glow: hazardCard.activeHazard
         }
-        Image { x: 13; y: 10; width: 15; height: 15; source: "assets/icon_warning.png" }
+        Image { x: 13; y: 8; width: 14; height: 14; source: "assets/icon_warning.png" }
         Text {
-            x: 34; y: 6; text: "危险事件"
-            color: "#FFE7E9"; font.family: root.cjk; font.pixelSize: 10; font.weight: Font.DemiBold
+            x: 33; y: 4; text: "危险事件"
+            color: hazardCard.activeHazard ? "#FFE7E9" : "#A9C3CB"
+            font.family: root.cjk; font.pixelSize: 9; font.weight: Font.DemiBold
         }
         Text {
-            x: 96; y: 10; text: "HAZARD"
-            color: "#A76D73"; font.family: root.num; font.pixelSize: 6; font.letterSpacing: 0.9
+            x: 92; y: 7; text: "HAZARD"
+            color: hazardCard.activeHazard ? "#A76D73" : "#5E7D87"
+            font.family: root.num; font.pixelSize: 6; font.letterSpacing: 0.9
         }
         Rectangle {
-            x: parent.width - 73; y: 8; width: 59; height: 16; radius: 2
-            color: "#2E1119"; border.color: "#65303A"; border.width: 0.6
+            x: parent.width - 73; y: 6; width: 59; height: 15; radius: 2
+            color: hazardCard.activeHazard ? "#2E1119" : "#0B1B22"
+            border.color: hazardCard.activeHazard ? "#65303A" : "#355E6C"; border.width: 0.6
             Text {
                 anchors.centerIn: parent
-                text: root.hazardBadge()
-                color: "#E3A1A8"; font.family: root.cjk; font.pixelSize: 6
+                text: hazardCard.activeHazard ? root.hazardBadge() : (video.aiOnline ? "监控中" : "离线")
+                color: hazardCard.activeHazard ? "#E3A1A8" : "#8AA5AE"
+                font.family: root.cjk; font.pixelSize: 6
             }
         }
-        Rectangle { x: 13; y: 31; width: parent.width - 26; height: 1; color: "#3A1E24" }
+        Rectangle { x: 13; y: 27; width: parent.width - 26; height: 1; color: hazardCard.activeHazard ? "#3A1E24" : "#1A343D" }
         Item {
-            visible: video.aiOnline && root.hazardRows().length === 0
-            x: 0; y: 34; width: parent.width; height: 89
-            Image {
+            visible: video.aiOnline && !hazardCard.activeHazard
+            x: 0; y: 31; width: parent.width; height: 52
+            Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                y: 10; width: 26; height: 26
-                source: "assets/icon_warning.png"
-                opacity: 0.28
+                y: 2; text: "监控中 · 未检测到危险事件"
+                color: "#91B6C0"; font.family: root.cjk; font.pixelSize: 8
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                y: 42; text: "未检测到危险事件"
-                color: "#E2BFC2"; font.family: root.cjk; font.pixelSize: 9
+                y: 19; text: "AI 实时监控中，无强红色报警"
+                color: "#6F8A93"; font.family: root.cjk; font.pixelSize: 6
             }
+        }
+        Item {
+            visible: !video.aiOnline
+            x: 0; y: 31; width: parent.width; height: 52
             Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                y: 60; text: "AI 实时监控中"
-                color: "#A6797E"; font.family: root.cjk; font.pixelSize: 6
+                anchors.centerIn: parent; text: "AI sidecar 未连接"
+                color: root.amber; font.family: root.cjk; font.pixelSize: 8
             }
         }
         Repeater {
-            model: root.hazardRows()
+            model: hazardCard.activeHazard ? root.hazardRows() : []
             delegate: Item {
-                x: 10; y: 37 + index * 28; width: parent.width - 20; height: 25
+                x: 10; y: 30 + index * 20; width: parent.width - 20; height: 18
                 Rectangle {
-                    x: 0; y: 2; width: 2; height: 17; color: root.red
+                    x: 0; y: 2; width: 2; height: 13; color: root.red
                     opacity: modelData.live ? 0.75 : 0.25
                 }
                 Image {
-                    x: 9; y: 4; width: 12; height: 12
+                    x: 9; y: 3; width: 10; height: 10
                     source: "assets/icon_warning.png"
                     opacity: modelData.live ? 0.9 : 0.35
                 }
                 Text {
-                    x: 28; y: 1; width: 176; height: 17
+                    x: 25; y: 0; width: 180; height: 14
                     text: modelData.label
                     color: modelData.live ? "#F5DFE1" : "#8F7376"
-                    font.family: root.cjk; font.pixelSize: 8
+                    font.family: root.cjk; font.pixelSize: 7
                     verticalAlignment: Text.AlignVCenter
                     elide: Text.ElideRight
                 }
                 Text {
-                    anchors.right: parent.right; y: 2
+                    anchors.right: parent.right; y: 1
                     text: modelData.value
                     color: modelData.live ? "#FF9DA5" : "#69585A"
                     font.family: root.num; font.pixelSize: 6
                 }
-                Rectangle { x: 28; anchors.bottom: parent.bottom; width: parent.width - 28; height: 1; color: "#332027" }
             }
         }
         Text {
-            x: 14; y: parent.height - 17
+            x: 14; y: parent.height - 14
             text: root.hazardFooter()
-            color: "#B8848A"; font.family: root.cjk; font.pixelSize: 6
+            color: hazardCard.activeHazard ? "#B8848A" : "#6F8A93"
+            font.family: root.cjk; font.pixelSize: 6
             elide: Text.ElideRight; width: parent.width - 28
         }
     }
@@ -1298,43 +1405,196 @@ Item {
         id: laneCard
         x: 1000
         layer.enabled: true
-        layer.smooth: true; y: 395; width: 260; height: 142
+        layer.smooth: true; y: 77; width: 260; height: 126
         HudPanel {
             anchors.fill: parent
-            cut: 11; accent: root.cyan
+            cut: 11; accent: root.lvtLaneTone()
             fillTop: "#091D27"; fillBottom: "#040F16"
-            fillOpacity: 0.95; borderOpacity: 0.52
+            fillOpacity: 0.95; borderOpacity: 0.58
         }
-        Image { x: 13; y: 10; width: 14; height: 14; source: "assets/icon_lane.png" }
+        Image { x: 13; y: 9; width: 14; height: 14; source: "assets/icon_lane.png" }
         Text {
-            x: 34; y: 6; text: "车道状态"
+            x: 33; y: 5; text: "车道感知"
             color: root.inkSoft; font.family: root.cjk; font.pixelSize: 9; font.weight: Font.DemiBold
         }
         Rectangle {
-            x: parent.width - 72; y: 8; width: 58; height: 16; radius: 2
-            color: "#0B1B22"; border.color: "#355E6C"; border.width: 0.6
+            x: parent.width - 82; y: 6; width: 68; height: 16; radius: 2
+            color: "#0B1B22"; border.color: root.lvtLaneTone(); border.width: 0.6
             Text {
-                anchors.centerIn: parent; text: "未接入"; color: root.amber
-                font.family: root.cjk; font.pixelSize: 6
+                anchors.centerIn: parent; text: root.lvtLaneBadge()
+                color: root.lvtLaneTone(); font.family: root.cjk; font.pixelSize: 6
             }
         }
-        Image {
-            x: 12; y: 33; width: 78; height: 96
-            source: "assets/lane_diagram.png"
-            fillMode: Image.PreserveAspectFit
+        Canvas {
+            id: laneCanvas
+            x: 10; y: 29; width: 88; height: 84
+            onPaint: {
+                var ctx = getContext("2d")
+                ctx.clearRect(0, 0, width, height)
+                function line(x, type, color) {
+                    ctx.strokeStyle = color
+                    ctx.lineWidth = 2
+                    ctx.beginPath()
+                    if (type === "solid") {
+                        ctx.moveTo(x, 8); ctx.lineTo(x, 76)
+                    } else if (type === "dashed") {
+                        for (var y = 8; y < 76; y += 10) { ctx.moveTo(x, y); ctx.lineTo(x, y + 5) }
+                    } else {
+                        for (var y2 = 8; y2 < 76; y2 += 8) { ctx.moveTo(x, y2); ctx.lineTo(x, y2 + 2) }
+                    }
+                    ctx.stroke()
+                }
+                var lane = vehicleTelemetry.laneState
+                line(24, lane.valid ? lane.left_type : "unknown", lane.valid ? root.lvtBoundaryTone(lane.left_type) : "#536B74")
+                line(64, lane.valid ? lane.right_type : "unknown", lane.valid ? root.lvtBoundaryTone(lane.right_type) : "#536B74")
+                ctx.fillStyle = "#2E5663"
+                ctx.fillRect(36, 67, 16, 9)
+                ctx.fillStyle = "#8CB6C2"
+                ctx.fillRect(38, 63, 12, 5)
+                ctx.fillStyle = "#6F8E99"
+                ctx.font = "7px sans-serif"
+                ctx.fillText("L", 17, 84)
+                ctx.fillText("R", 57, 84)
+            }
         }
-        Text { x: 104; y: 35; text: "当前车道"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 7 }
-        Text { x: 178; y: 35; text: "—"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
-        Rectangle { x: 104; y: 53; width: parent.width - 118; height: 1; color: "#1A343D" }
-        Text { x: 104; y: 59; text: "左侧车道"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 7 }
-        Text { x: 178; y: 59; text: "—"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
-        Rectangle { x: 104; y: 77; width: parent.width - 118; height: 1; color: "#1A343D" }
-        Text { x: 104; y: 83; text: "右侧车道"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 7 }
-        Text { x: 178; y: 83; text: "—"; color: "#78949E"; font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold }
+        Connections {
+            target: vehicleTelemetry
+            onStatusChanged: laneCanvas.requestPaint()
+        }
         Text {
-            x: 104; y: parent.height - 23; width: parent.width - 118
-            text: "车道信息未接入"
+            x: 104; y: 29; text: "来源"
+            color: "#78949E"; font.family: root.cjk; font.pixelSize: 7
+        }
+        Text {
+            x: 142; y: 28; text: vehicleTelemetry.online ? root.lvtSourceText() : "—"
+            color: root.lvtLaneTone(); font.family: root.num; font.pixelSize: 8; font.weight: Font.DemiBold
+        }
+        Rectangle { x: 104; y: 44; width: parent.width - 118; height: 1; color: "#1A343D" }
+        Text {
+            x: 104; y: 50; text: "左边界"
+            color: "#78949E"; font.family: root.cjk; font.pixelSize: 7
+        }
+        Text {
+            x: 154; y: 48; width: 94
+            text: vehicleTelemetry.online ? (root.lvtBoundaryText(vehicleTelemetry.laneState.left_type, vehicleTelemetry.laneState.left_count)) : "—"
+            color: vehicleTelemetry.online ? root.lvtBoundaryTone(vehicleTelemetry.laneState.left_type) : "#6F8790"
+            font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold
+        }
+        Rectangle { x: 104; y: 68; width: parent.width - 118; height: 1; color: "#1A343D" }
+        Text {
+            x: 104; y: 74; text: "右边界"
+            color: "#78949E"; font.family: root.cjk; font.pixelSize: 7
+        }
+        Text {
+            x: 154; y: 72; width: 94
+            text: vehicleTelemetry.online ? (root.lvtBoundaryText(vehicleTelemetry.laneState.right_type, vehicleTelemetry.laneState.right_count)) : "—"
+            color: vehicleTelemetry.online ? root.lvtBoundaryTone(vehicleTelemetry.laneState.right_type) : "#6F8790"
+            font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold
+        }
+        Text {
+            x: 104; y: 92; width: parent.width - 118; height: 14
+            text: vehicleTelemetry.online
+                  ? (vehicleTelemetry.laneState.valid ? "有效 · 数量≠车道数" : "过期/未知 · 不保留旧许可")
+                  : "LVT1 未接入 · 等待真实数据"
+            color: vehicleTelemetry.laneState.valid ? "#7FB3B8" : "#B99A5E"
+            font.family: root.cjk; font.pixelSize: 6
+            elide: Text.ElideRight
+        }
+        Text {
+            x: 104; y: 108; width: parent.width - 118; height: 12
+            text: "示意道路只改线型，不虚构像素坐标"
+            color: "#6F8790"; font.family: root.cjk; font.pixelSize: 6
+            elide: Text.ElideRight
+        }
+    }
+
+    Item {
+        id: egoCard
+        x: 1000
+        layer.enabled: true
+        layer.smooth: true; y: 211; width: 260; height: 140
+        HudPanel {
+            anchors.fill: parent
+            cut: 11; accent: root.lvtDecisionTone()
+            fillTop: "#0A1D27"; fillBottom: "#040F16"
+            fillOpacity: 0.95; borderOpacity: 0.58
+        }
+        Text {
+            x: 13; y: 5; text: "本车控制"
+            color: root.inkSoft; font.family: root.cjk; font.pixelSize: 9; font.weight: Font.DemiBold
+        }
+        Rectangle {
+            x: parent.width - 78; y: 6; width: 64; height: 16; radius: 2
+            color: "#0B1B22"; border.color: root.lvtDecisionTone(); border.width: 0.6
+            Text {
+                anchors.centerIn: parent; text: root.lvtEgoBadge()
+                color: root.lvtDecisionTone(); font.family: root.cjk; font.pixelSize: 6
+            }
+        }
+        Row {
+            x: 12; y: 29; spacing: 4
+            Repeater {
+                model: [
+                    { key: "throttle", label: "油门" },
+                    { key: "brake", label: "刹车" },
+                    { key: "lane_left", label: "左变道" },
+                    { key: "lane_right", label: "右变道" }
+                ]
+                delegate: Rectangle {
+                    width: 56; height: 40; radius: 3
+                    color: root.lvtActionState(modelData.key) === "request" ? "#2A2410" : "#07161D"
+                    border.width: root.lvtActionState(modelData.key) === "request" ? 1.0 : 0.7
+                    border.color: root.lvtActionTone(modelData.key)
+                    Text {
+                        x: 5; y: 4; text: modelData.label
+                        color: "#A9C3CB"; font.family: root.cjk; font.pixelSize: 7
+                    }
+                    Text {
+                        x: 5; y: 20; text: root.lvtActionStateText(modelData.key)
+                        color: root.lvtActionTone(modelData.key)
+                        font.family: root.cjk; font.pixelSize: 8; font.weight: Font.DemiBold
+                    }
+                }
+            }
+        }
+        Text {
+            x: 13; y: 75; text: "FPGA 判定"
+            color: "#78949E"; font.family: root.cjk; font.pixelSize: 7
+        }
+        Text {
+            x: 82; y: 73; text: root.lvtDecisionText(vehicleTelemetry.egoState.decision)
+            color: root.lvtDecisionTone(); font.family: root.cjk; font.pixelSize: 9; font.weight: Font.DemiBold
+        }
+        Text {
+            x: 140; y: 75; width: parent.width - 152
+            text: root.lvtReasonFull()
+            color: root.lvtDecisionTone(); font.family: root.cjk; font.pixelSize: 7
+            elide: Text.ElideRight
+        }
+        Rectangle { x: 13; y: 92; width: parent.width - 26; height: 1; color: "#1A343D" }
+        Text {
+            x: 13; y: 98; width: parent.width - 26
+            text: vehicleTelemetry.egoState.active
+                  ? ("当前动作 " + root.lvtActionText(vehicleTelemetry.egoState.action))
+                  : "当前空闲 · 历史动作不当作当前请求"
             color: "#8A9AA0"; font.family: root.cjk; font.pixelSize: 6
+            elide: Text.ElideRight
+        }
+        Text {
+            x: 13; y: 111; width: parent.width - 26
+            text: vehicleTelemetry.egoState.sensor_stale
+                  ? "FPGA 状态过期/失联：不保留旧许可"
+                  : "允许≠物理执行 · 刹车允许≠已制动"
+            color: vehicleTelemetry.egoState.sensor_stale ? root.amber : "#6F8790"
+            font.family: root.cjk; font.pixelSize: 6
+            elide: Text.ElideRight
+        }
+        Text {
+            x: 13; y: 124; width: parent.width - 26
+            text: vehicleTelemetry.egoState.simulated ? "SIM 模拟数据 · 非 FPGA 实板" : "LVT1 · 只读遥测"
+            color: vehicleTelemetry.egoState.simulated ? root.amber : "#5E7D87"
+            font.family: root.cjk; font.pixelSize: 6
+            elide: Text.ElideRight
         }
     }
 
@@ -1447,6 +1707,10 @@ Item {
                 id: teslaLive
                 anchors.fill: parent
                 boxes: video.aiBoxes
+                laneState: vehicleTelemetry.laneState
+                displayView: video.aiDisplayView
+                roadQuadrant: video.aiRoadQuadrant
+                demoMode: false
                 online: video.aiOnline
                 visible: root.sceneEnabled
                 sourceKey: video.sourceMode
@@ -1456,7 +1720,8 @@ Item {
         }
         Text {
             x: 16; y: parent.height - 15
-            text: "LIVE · Q1 · F" + video.displayFrameId + " · " + video.aiDetectionCount + " targets · RELATIVE_ONLY"
+            text: "LIVE · Q" + (video.aiRoadQuadrant + 1) + " · F" + video.displayFrameId + " · "
+                  + video.aiDetectionCount + " targets · RELATIVE_ONLY · SCHEMATIC ROAD / LVT1 STYLE"
             color: "#7FB3B8"; font.family: root.cjk; font.pixelSize: 6
         }
     }

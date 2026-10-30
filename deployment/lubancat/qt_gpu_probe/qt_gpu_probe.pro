@@ -7,6 +7,7 @@ TARGET = qt_gpu_probe
 SOURCES += \
     main.cpp \
     video_item.cpp \
+    vehicle_telemetry_status.cpp \
     video_texture_item.cpp \
     tesla_scene_item.cpp \
     hud_control.cpp \
@@ -18,6 +19,7 @@ SOURCES += \
 
 HEADERS += \
     video_item.h \
+    vehicle_telemetry_status.h \
     video_texture_item.h \
     tesla_scene_item.h \
     hud_control.h \

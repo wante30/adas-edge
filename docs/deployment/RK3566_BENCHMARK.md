@@ -200,3 +200,32 @@ PCIe Gen2 x1 理论 500 MB/s（8b/10b 后约 500 MB/s 量级）
 - `docs/models/evidence/B05P/B05P_qt_raw_replay_runtime_20261027.json`
 - `docs/hmi/assets/current_live_20261028.png`
 - 历史：`docs/competition_ai_inventory.md`、`docs/competition_multistream_budget.md`、`docs/rk3566_innovation_audit_20261025.md`
+---
+
+## 9. LVT1 升级测试环境性能（不是生产）
+
+2026-10-29 在实板独立目录 `/home/cat/qt_gpu_probe_lvt1_dev_20261028` 测试，**未停止生产服务**。测试同时运行：
+
+- 生产 Qt / 生产 AI；
+- 测试 Qt；
+- 测试 AI sidecar（端口 38280/38281，A 模型 5 Hz）；
+- 本地 PGVF publisher（60 帧 1280×720，30 FPS）。
+
+单路测试 JSON `docs/deployment/evidence/lvt1_fixture_mode_0_20261029.json`：
+
+| 指标 | 数值 |
+|---|---:|
+| source_fps | 20.48 |
+| Qt scene-graph callback | 10.24 FPS |
+| AI result (Qt) | 4.36 FPS |
+| AI result (test sidecar summary) | 4.07 Hz |
+| NPU | 100% |
+| GPU | 81% |
+| CPU（整机） | 15.36% |
+| RSS | 191.82 MB |
+| duration | 16.37 s |
+
+原因：两个 AI sidecar 共用 NPU，本地 publisher + 双 Qt，不是生产配置。  
+**不能把 10.2 FPS / 4.36 Hz 当作升级后生产性能。** 生产基线仍是 49.49 FPS 视频 / 9.98 Hz AI / 56 FPS HMI；本次未部署、未重测生产。
+
+截图与详情见 `docs/hmi/LVT1_REAL_DATA_HMI.md`。

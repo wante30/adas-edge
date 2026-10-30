@@ -6,7 +6,9 @@
 #include "nav_bridge.h"
 #include "pcie_isp_control.h"
 #include "qsg_video_item.h"
+#include "source_controller.h"
 #include "video_item.h"
+#include "vehicle_telemetry_status.h"
 #include "tesla_scene_item.h"
 
 #include <QFile>
@@ -130,7 +132,7 @@ int main(int argc, char **argv) {
     const bool autoCycleCapture = args.contains("--capture-cycle");
     const bool sceneEnabled = !args.contains("--scene-off");
     const QString pgvLayout = stringArg(args, "--pgv-layout");
-    const int roadQuadrant = intArg(args, "--road-quadrant", 1);
+    const int roadQuadrant = intArg(args, "--road-quadrant", 0);
     const int startMode = std::clamp(intArg(args, "--start-mode", 0), 0, 2);
     const QString effectiveLayout = pgvLayout.isEmpty()
                                         ? ((pgvFile.isEmpty() && rawReplay.isEmpty())
@@ -149,6 +151,7 @@ int main(int argc, char **argv) {
     qmlRegisterType<HudControl>("QtGpuProbe", 1, 0, "HudControl");
     qmlRegisterType<PcieIspControl>("QtGpuProbe", 1, 0, "PcieIspControl");
     qmlRegisterType<QsgVideoItem>("QtGpuProbe", 1, 0, "QsgVideoItem");
+    qmlRegisterType<VehicleTelemetryStatus>("QtGpuProbe", 1, 0, "VehicleTelemetryStatus");
     QQuickView view;
     view.setTitle(QStringLiteral("Qt Quick GPU Probe - RK3566"));
     view.setResizeMode(QQuickView::SizeRootObjectToView);
@@ -159,6 +162,10 @@ int main(int argc, char **argv) {
     view.rootContext()->setContextProperty(QStringLiteral("sceneEnabled"), sceneEnabled);
     view.rootContext()->setContextProperty(QStringLiteral("pciePgvFile"), pciePgvFile);
     view.rootContext()->setContextProperty(QStringLiteral("localPgvFile"), localPgvFile);
+    auto *sourceSwitch = new SourceSwitchController(fps, aiFrameFile, aiHz,
+                                                     pciePgvFile, localPgvFile,
+                                                     view.rootContext());
+    view.rootContext()->setContextProperty(QStringLiteral("sourceSwitch"), sourceSwitch);
     const bool protocolPanelTest = qEnvironmentVariableIsSet("QT_PROTOCOL_PANEL_TEST");
     const bool videoQsg = args.contains("--video-qsg") ||
                           qEnvironmentVariableIsSet("QT_VIDEO_QSG");
@@ -185,6 +192,7 @@ int main(int argc, char **argv) {
         qCritical() << "QML VideoItem was not created";
         return 2;
     }
+    sourceSwitch->setVideo(video);
     QObject::connect(&view, &QQuickWindow::sceneGraphError, &app,
                      [&](QQuickWindow::SceneGraphError error, const QString &message) {
                          qCritical().noquote() << "SCENEGRAPH_ERROR" << error << message;

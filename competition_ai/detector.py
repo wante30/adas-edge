@@ -54,6 +54,10 @@ class CompetitionDetector:
 
     def infer(self, frame: np.ndarray, stream_id: int | str = 0, frame_id: int = 0, timestamp_ns: int | None = None) -> FrameResult:
         from deployment.rknn.decode_yolo_output import decode_outputs
+        from deployment.rknn.decode_raw_heads import (
+            decode_raw_heads_thresholded,
+            looks_like_raw_head_triplets,
+        )
         from tools.profile_rknn_single_stream import decode_yolo11_raw
         preprocess_started = time.perf_counter_ns()
         image, scale, px, py = self.preprocess(frame)
@@ -69,6 +73,17 @@ class CompetitionDetector:
             for row in detections:
                 row[0], row[2] = (row[0] - px) / scale, (row[2] - px) / scale
                 row[1], row[3] = (row[1] - py) / scale, (row[3] - py) / scale
+        elif looks_like_raw_head_triplets(outputs):
+            detections = decode_raw_heads_thresholded(
+                outputs,
+                input_width=int(self.input_size[0]),
+                input_height=int(self.input_size[1]),
+                confidence=self.conf_threshold,
+                iou=self.nms_threshold,
+                scale=scale,
+                pad_x=px,
+                pad_y=py,
+            )
         else:
             detections = decode_yolo11_raw(outputs, self.input_size, self.conf_threshold, self.nms_threshold, scale, px, py)
         postprocess_ms = (time.perf_counter_ns() - postprocess_started) / 1e6

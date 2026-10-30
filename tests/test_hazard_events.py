@@ -51,6 +51,27 @@ def test_uniform_scene_zoom_does_not_become_a_lead_collision_warning():
         assert not observed.obstacle_hazard
 
 
+def test_front_collision_risk_is_emitted_for_confirmed_lead_expansion():
+    _, observations = run_vehicle(np.linspace(28, 66, 18))
+    assert any(any(e['kind'] == 'FRONT_COLLISION_RISK' for e in o.events)
+               for o in observations)
+
+
+def test_vehicle_lateral_motion_is_only_a_cut_in_candidate():
+    engine = HazardEvents()
+    observations = []
+    for i in range(32):
+        x = 55 + i * 3.0
+        observations.append(engine.update(
+            FRAME, [{'class_name': 'car', 'confidence': .9,
+                     'bbox': [x - 18, 74, x + 18, 128]}],
+            i, i * 100_000_000, motion=STILL))
+    candidates = [e for o in observations for e in o.events
+                  if e['kind'] == 'VEHICLE_CUT_IN_CANDIDATE']
+    assert candidates
+    assert all(e.get('lane_crossing') == 'UNVERIFIED' for e in candidates)
+
+
 def test_pedestrian_crossing_path_warns_without_using_vehicle_red_signal():
     engine = HazardEvents()
     observations = []
@@ -61,6 +82,28 @@ def test_pedestrian_crossing_path_warns_without_using_vehicle_red_signal():
                                           i, i*100_000_000, motion=STILL))
     assert any(o.pedestrian_hazard for o in observations)
     assert all(o.pedestrian_red_violation.startswith('UNKNOWN') for o in observations)
+
+
+def test_pedestrian_entering_path_warns_but_stationary_center_does_not():
+    engine = HazardEvents()
+    observations = []
+    for i in range(32):
+        x = 80 + i * 2.5
+        observations.append(engine.update(
+            FRAME, [{'class_name': 'person', 'confidence': .9,
+                     'bbox': [x - 16, 88, x + 16, 138]}],
+            i, i * 100_000_000, motion=STILL))
+    assert any(any(e['kind'] == 'PEDESTRIAN_IN_PATH' for e in o.events)
+               for o in observations)
+    assert any(o.pedestrian_hazard for o in observations)
+
+    engine.reset()
+    for i in range(18):
+        observation = engine.update(
+            FRAME, [{'class_name': 'person', 'confidence': .9,
+                     'bbox': [144, 88, 176, 138]}],
+            i, i * 100_000_000, motion=STILL)
+        assert not observation.pedestrian_hazard
 
 
 def test_pedestrian_camera_displacement_and_rider_are_not_crossing_on_foot():

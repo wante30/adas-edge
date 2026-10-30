@@ -221,6 +221,61 @@ def test_dynamic_status_expires_navigation_and_never_carries_old_road_name():
     assert status["source"] == "LOCAL_REPLAY"
 
 
+def test_timing_log_detection_counts_keep_b05n_class_breakdown():
+    bridge = _load_qt_ai_bridge()
+
+    assert bridge.timing_detection_counts({
+        "detections": {"car": 3, "person": 1},
+    }) == {"car": 3, "person": 1}
+    assert bridge.timing_detection_counts({"detections": None}) == {}
+
+
+def test_dynamic_status_preserves_hazard_target_and_severity_for_mva2():
+    bridge = _load_ai_bridge()
+    now_ns = 2_000_000_000
+    status = bridge.build_dynamic_status(
+        source="LOCAL_REPLAY",
+        frame_id=120,
+        timestamp_ns=now_ns,
+        now_ns=now_ns,
+        hud={"traffic": "OFF", "traffic_evidence": "NO_SIGNAL_ROI"},
+        navigation={},
+        hazard_timestamp_ns=now_ns,
+        hazards=[{
+            "kind": "FRONT_COLLISION_RISK", "track_id": 7,
+            "bbox": [100, 80, 180, 150], "target_class": "car",
+            "severity": "critical", "source": "IMAGE_TRAJECTORY_EXPERIMENTAL",
+        }],
+        detections=[{"class_name": "car", "confidence": .9}],
+        signal_age_ms=None, main_age_ms=10.0, specialist_age_ms=None,
+    )
+    assert status["hazard_details"] == [{
+        "event_type": "FRONT_COLLISION_RISK",
+        "source_id": "LOCAL_REPLAY",
+        "source_frame_id": 120,
+        "timestamp": now_ns,
+        "severity": "critical",
+        "valid": True,
+        "ttl_ms": 250.0,
+        "evidence": "IMAGE_TRAJECTORY_EXPERIMENTAL",
+        "track_id": 7,
+        "bbox": [100.0, 80.0, 180.0, 150.0],
+        "target_class": "car",
+    }]
+
+
+def test_hazard_analysis_has_explicit_disable_flag():
+    bridge_module = _load_qt_ai_bridge()
+
+    args = bridge_module.parser().parse_args([
+        "--live-frame-file", "/tmp/frame.mfr1",
+        "--main-model", "/tmp/model.rknn",
+        "--no-hazards",
+    ])
+
+    assert args.hazards is False
+
+
 def test_dynamic_status_expires_detection_counts_with_the_drawn_box_ttl():
     bridge = _load_ai_bridge()
     now_ns = 2_000_000_000
