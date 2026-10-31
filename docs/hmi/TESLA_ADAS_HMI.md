@@ -209,3 +209,18 @@ RKNN Raw-head 输出
 | 左变道拒绝 | `docs/hmi/assets/lvt1/single_left_change_denied_20261029.png` |
 
 详细：[LVT1_REAL_DATA_HMI.md](LVT1_REAL_DATA_HMI.md)。
+
+---
+
+## 9. 2026-10-31 更新：MTL 分割覆盖层
+
+- 默认模型已为 B（B05N P2 Raw-head INT8）；模型菜单共 21 项。
+- 新增 MTL-FULL / MTL-FAST 分割覆盖层：车道类别、实线/虚线、斑马线、可行驶区域。
+- 分割走 `/dev/shm/adas_mtl_overlay.png` + `.json`，不进入 MVA2。
+- 切回 B/B-CAPI 后覆盖层立即清除。
+- 截图：`docs/hmi/assets/mtl/screenshot_mtl_fast.png`、`screenshot_mtl_full.png`、
+  `screenshot_b_overlay_cleared.png`。
+- 详细实现：`docs/hmi/MTL_SEGMENTATION_OVERLAY.md`。
+- 多模型架构：`docs/architecture/MULTIMODEL_AI_BRIDGE.md`。
+
+> 第 1–8 节是 2026-10-28 的 HMI 快照；其中“实际 A / UI 标签 B”的描述已被本次更新取代。

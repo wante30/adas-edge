@@ -782,6 +782,41 @@ Item {
             }
         }
 
+        // Multi-task segmentation overlay (MTL-FULL / MTL-FAST). The detector
+        // writes an atomically replaced RGBA PNG in /dev/shm; the video texture
+        // path is never blocked by mask transfer. A URL fragment is used as the
+        // cache buster because Qt does not render file URLs with a query string.
+        Image {
+            id: mtlOverlay
+            readonly property bool active: (video.aiModelId === "MTL-FULL"
+                                            || video.aiModelId === "MTL-FAST")
+                                           && video.aiOnline
+            visible: active && root.viewMode !== 2 && !root.videoQsg
+            source: ""
+            cache: false
+            asynchronous: true
+            smooth: true
+            opacity: 0.92
+            fillMode: Image.Stretch
+            x: (root.viewMode === 1 && root.inputLayout === "quad")
+               ? video.x + (root.roadQuadrant % 2) * video.width * 0.5 : video.x
+            y: (root.viewMode === 1 && root.inputLayout === "quad")
+               ? video.y + Math.floor(root.roadQuadrant / 2) * video.height * 0.5 : video.y
+            width: (root.viewMode === 1 && root.inputLayout === "quad")
+                   ? video.width * 0.5 : video.width
+            height: (root.viewMode === 1 && root.inputLayout === "quad")
+                    ? video.height * 0.5 : video.height
+        }
+
+        Timer {
+            id: mtlOverlayTimer
+            interval: 160
+            repeat: true
+            running: mtlOverlay.visible
+            onRunningChanged: if (!running) mtlOverlay.source = ""
+            onTriggered: mtlOverlay.source = "file:///dev/shm/adas_mtl_overlay.png#g=" + Date.now()
+        }
+
         Item {
             id: spatialSceneHost
             x: 0; y: 0; width: mainView.width; height: mainView.height
