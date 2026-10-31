@@ -1,0 +1,36 @@
+n_input=1 n_output=15
+out[0] name=reg_s4 type=2 fmt=0 qnt=2 zp=36 scale=0.19330889 n_elems=589824 size=589824 dims=1x64x72x128
+out[1] name=cls_s4 type=2 fmt=0 qnt=2 zp=-128 scale=0.00371830 n_elems=92160 size=92160 dims=1x10x72x128
+out[2] name=cls_sum_s4 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 n_elems=9216 size=9216 dims=1x1x72x128
+out[3] name=reg_s8 type=2 fmt=0 qnt=2 zp=31 scale=0.15732503 n_elems=147456 size=147456 dims=1x64x36x64
+out[4] name=cls_s8 type=2 fmt=0 qnt=2 zp=-128 scale=0.00369840 n_elems=23040 size=23040 dims=1x10x36x64
+out[5] name=cls_sum_s8 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 n_elems=2304 size=2304 dims=1x1x36x64
+out[6] name=reg_s16 type=2 fmt=0 qnt=2 zp=39 scale=0.15076739 n_elems=36864 size=36864 dims=1x64x18x32
+out[7] name=cls_s16 type=2 fmt=0 qnt=2 zp=-128 scale=0.00370295 n_elems=5760 size=5760 dims=1x10x18x32
+out[8] name=cls_sum_s16 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 n_elems=576 size=576 dims=1x1x18x32
+out[9] name=reg_s32 type=2 fmt=0 qnt=2 zp=-7 scale=0.14230219 n_elems=9216 size=9216 dims=1x64x9x16
+out[10] name=cls_s32 type=2 fmt=0 qnt=2 zp=-128 scale=0.00196078 n_elems=1440 size=1440 dims=1x10x9x16
+out[11] name=cls_sum_s32 type=2 fmt=0 qnt=2 zp=-128 scale=0.00000000 n_elems=144 size=144 dims=1x1x9x16
+out[12] name=lane_cat type=2 fmt=0 qnt=2 zp=66 scale=0.49434447 n_elems=1327104 size=1327104 dims=1x9x288x512
+out[13] name=lane_style type=2 fmt=0 qnt=2 zp=88 scale=0.35206303 n_elems=442368 size=442368 dims=1x3x288x512
+out[14] name=drivable type=2 fmt=0 qnt=2 zp=-1 scale=0.12870458 n_elems=442368 size=442368 dims=1x3x288x512
+in type=2 fmt=1 qnt=2 scale=0.00392157 dims=1x288x512x3
+in size=442368
+preprocess_ms=18.264 frame_bytes=1843200
+run_ms=68.525 get_float_ms=36.461 perf_run_us=68515
+run_ms=73.144 get_int8_ms=16.932 perf_run_us=73128
+int8 out[0] size=589824 type=2 qnt=2 zp=36 scale=0.19330889
+int8 out[1] size=92160 type=2 qnt=2 zp=-128 scale=0.00371830
+int8 out[2] size=9216 type=2 qnt=2 zp=-128 scale=0.00392157
+int8 out[3] size=147456 type=2 qnt=2 zp=31 scale=0.15732503
+int8 out[4] size=23040 type=2 qnt=2 zp=-128 scale=0.00369840
+int8 out[5] size=2304 type=2 qnt=2 zp=-128 scale=0.00392157
+int8 out[6] size=36864 type=2 qnt=2 zp=39 scale=0.15076739
+int8 out[7] size=5760 type=2 qnt=2 zp=-128 scale=0.00370295
+int8 out[8] size=576 type=2 qnt=2 zp=-128 scale=0.00392157
+int8 out[9] size=9216 type=2 qnt=2 zp=-7 scale=0.14230219
+int8 out[10] size=1440 type=2 qnt=2 zp=-128 scale=0.00196078
+int8 out[11] size=144 type=2 qnt=2 zp=-128 scale=0.00000000
+int8 out[12] size=1327104 type=2 qnt=2 zp=66 scale=0.49434447
+int8 out[13] size=442368 type=2 qnt=2 zp=88 scale=0.35206303
+int8 out[14] size=442368 type=2 qnt=2 zp=-1 scale=0.12870458

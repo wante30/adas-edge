@@ -1,13 +1,13 @@
 # 模型清单与 SHA256
 
-更新日期：2026-10-28  
+更新日期：2026-10-31
 机器可读版本：`artifacts/manifests/model_manifest.json`
 
 > 权重、ONNX、RKNN 文件默认不进入普通 Git 历史（`.gitignore` 已排除 `*.pt`、`*.onnx`、`*.rknn`）。本清单用于把“文件名”与“真实文件”绑定，避免旧模型/新模型混淆。需要复现时，从训练机或板端按路径取回并校验 SHA256。
 
 ---
 
-## 1. 比赛选型模型 B（生产 service 尚未切换）
+## 1. 正式默认模型 B（2026-10-31）
 
 | 项目 | 值 |
 |---|---|
@@ -18,7 +18,7 @@
 | SHA256 | `65089ef0697bd7378071290baa218905cdcaed768452678da440b8eb116b2a5f` |
 | 输入 | `[1,288,512,3]` uint8 NHWC |
 | 类别 | 10（person/rider/car/truck/bus/train/motor/bike/traffic light/traffic sign） |
-| 状态 | 板端已有该正式 RKNN 文件；本分支正在做独立真实 PCIe 验证；生产 service 仍为 A |
+| 状态 | 板端正式 RKNN；`adas-ai-bridge-live` 默认 B；B-CAPI/MTL 为可切换扩展 |
 | 来源 | B05N P2 checkpoint → raw-head ONNX → RKNN INT8 |
 
 ---
@@ -41,6 +41,15 @@
 | `yolo11n-split-416` | 历史 YOLO11n COCO 416 | .rknn | 3,954,625 | `87dfd6d480760d105e0abd7d04829d5059c8c5721bd7e3d6c53784de9793bb43` | 历史 smoke |
 | `legacy-yolo11n-split-512x288` | 旧生产 YOLO11n 512×288 | .rknn | 3,927,489 | `7a697ccc476954f6f36f7441b842257a2d7a019653cc4bad2fbf8de327c50591` | 回滚候选 |
 | `legacy-tl-specialist-hybrid2` | 旧交通灯专模 | .rknn | 4,246,080 | `becfaada5da49c4dd6c143e815f8f957fb7b7ed759040d4e18c685a9c434e6f8` | 回滚候选 |
+| `b05n-p2-mtl-b1-ckpt` | B-1 MTL checkpoint | .pt | 12,809,989 | `6c22062a90e810452f98420fae235be8cfc7159b503a15fa3e2e72dfef96b4c6` | 研究阶段 |
+| `b05n-p2-mtl-b2a-ckpt` | B-2a MTL checkpoint | .pt | 12,810,053 | `34fd31c3470b7435a764c3ef3623685a3c8f60c38537fa6c38b7866d4c3df8fb` | MTL 源权重 |
+| `b05n-p2-mtl-b2b-ckpt` | B-2b 对照 checkpoint | .pt | 12,810,053 | `3f087fa7dc02c6b485a941f5cd96bfae0b525b59862dec11aff9ade026bc2c75` | 对照，不部署 |
+| `b05n-p2-mtl-b2a-onnx` | B-2a ONNX 转换源 | .onnx | 12,630,960 | `303e67511383c95638f51c4e6a0b53e5e3d904df141f548ee22561dff84de6d7` | 转换源 |
+| `b05n-p2-mtl-b2a-fp16` | B-2a FP16 | .rknn | 8,360,418 | `e92b71e9c9dfc52befa5738741c12340517b2993fa7ea11c28599b0bbb8b85d6` | 精度参考 |
+| `b05n-p2-mtl-b2a-int8` | B-2a INT8（MTL-FULL） | .rknn | 4,954,226 | `16b267ab5c2823a08e4dd86b77544dcdd09038c9e37c04a65140fd00dc44a68b` | **已部署/实测** |
+| `b05n-p2-mtl-b2a-seg256-onnx` | Seg-256 ONNX | .onnx | 12,631,431 | `9d1e95ffb691c3a17f8ec3b93dfac30fa7005e378da9f6a06b19eea765a7a2cd` | 转换源 |
+| `b05n-p2-mtl-b2a-seg256-int8` | Seg-256 INT8（MTL-FAST） | .rknn | 4,933,694 | `22f910ed5a40b0db32158c1175fb96b7ae1495565bb1e5d6d5d3d834b9e14732` | **已部署/实测** |
+| `b05n-p2-mtl-b1-int8` | B-1 INT8 | .rknn | 4,954,290 | `29e232a3f1d3439dadde82f02613c6c929b35cd5f7e9a55fd48fecccfae9b413` | B-1 证据 |
 
 ---
 
@@ -67,9 +76,16 @@ D:\Datasets\adas_edge_training\
 
 ```text
 /home/cat/cityscapes_arch_compare_20261027/models/
-  bdd_yolov8n_512x288_raw_heads_int8.rknn          ← 当前 A
-  b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn
+  bdd_yolov8n_512x288_raw_heads_int8.rknn          ← A
+  b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn  ← 默认 B
+  b05n_p2_multiclass_capi.rknn                     ← B-CAPI 符号链接
   b05l_v8n_p2_raw_heads_int8_500_20261026.rknn
+
+/home/cat/models/b05n_p2_mtl_b2a/
+  b05n_p2_mtl_b2a_int8.rknn                        ← MTL-FULL
+  b05n_p2_mtl_b2a_fp16.rknn
+/home/cat/models/b05n_p2_mtl_b2a_seg256/
+  b05n_p2_mtl_b2a_seg256_int8.rknn                 ← MTL-FAST
 
 /home/cat/adas-edge-rect/rect_models/
   yolo11n_rk3566_int8_split_512x288.rknn            ← 旧生产回滚

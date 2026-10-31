@@ -1,0 +1,30 @@
+ATTR 0 reg_s4 type=2 fmt=0 qnt=2 zp=27 scale=0.18364507 dims=1x64x72x128
+ATTR 1 cls_s4 type=2 fmt=0 qnt=2 zp=-128 scale=0.00373981 dims=1x10x72x128
+ATTR 2 cls_sum_s4 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 dims=1x1x72x128
+ATTR 3 reg_s8 type=2 fmt=0 qnt=2 zp=28 scale=0.15086217 dims=1x64x36x64
+ATTR 4 cls_s8 type=2 fmt=0 qnt=2 zp=-128 scale=0.00378245 dims=1x10x36x64
+ATTR 5 cls_sum_s8 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 dims=1x1x36x64
+ATTR 6 reg_s16 type=2 fmt=0 qnt=2 zp=22 scale=0.14068078 dims=1x64x18x32
+ATTR 7 cls_s16 type=2 fmt=0 qnt=2 zp=-128 scale=0.00375419 dims=1x10x18x32
+ATTR 8 cls_sum_s16 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 dims=1x1x18x32
+ATTR 9 reg_s32 type=2 fmt=0 qnt=2 zp=-7 scale=0.15605359 dims=1x64x9x16
+ATTR 10 cls_s32 type=2 fmt=0 qnt=2 zp=-128 scale=0.00196078 dims=1x10x9x16
+ATTR 11 cls_sum_s32 type=2 fmt=0 qnt=2 zp=-128 scale=0.00000002 dims=1x1x9x16
+MODE float outputs=12 infer=0 frames=300 det=4430 wall=23.980 fps=12.51
+pre mean=18.64 p50=16.64 p95=26.02
+run mean=29.50 p50=23.55 p95=62.21
+get mean=27.39 p50=8.70 p95=111.58
+det mean=3.74 p50=3.29 p95=5.53
+seg mean=0.00 p50=0.00 p95=0.00
+rel mean=0.17 p50=0.01 p95=0.04
+total mean=79.93 p50=54.16 p95=194.28
+perf mean=29.49 p50=23.54 p95=62.20
+MODE int8 outputs=12 infer=0 frames=300 det=4430 wall=20.939 fps=14.33
+pre mean=18.79 p50=16.77 p95=28.41
+run mean=29.14 p50=23.92 p95=58.88
+get mean=18.71 p50=4.39 p95=105.57
+det mean=2.51 p50=2.08 p95=3.06
+seg mean=0.00 p50=0.00 p95=0.00
+rel mean=0.15 p50=0.01 p95=0.04
+total mean=69.80 p50=49.02 p95=165.18
+perf mean=29.13 p50=23.91 p95=58.88

@@ -1,0 +1,68 @@
+W rknn-toolkit-lite2 version: 2.3.2
+W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
+W rknn-toolkit-lite2 version: 2.3.2
+W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
+{
+  "orig_seg_shapes": [
+    [
+      1,
+      9,
+      288,
+      512
+    ],
+    [
+      1,
+      3,
+      288,
+      512
+    ],
+    [
+      1,
+      3,
+      288,
+      512
+    ]
+  ],
+  "seg256_seg_shapes": [
+    [
+      1,
+      9,
+      144,
+      256
+    ],
+    [
+      1,
+      3,
+      144,
+      256
+    ],
+    [
+      1,
+      3,
+      144,
+      256
+    ]
+  ],
+  "lane_fg_iou": 0.7942646358876725,
+  "crosswalk_iou": 0.7676355170534913,
+  "style_agreement_in_lane": 0.9634476081043619,
+  "solid_agreement_in_lane": 0.9196249482632366,
+  "dashed_agreement_in_lane": 0.9782411263669828,
+  "drivable_miou": 0.8717829457050299,
+  "seg256_fraction_mean": {
+    "lane_fg": 0.028110532407407407,
+    "crosswalk": 0.01822509765625,
+    "solid_in_lane": 0.2577605357488403,
+    "dashed_in_lane": 0.7422394642511597,
+    "direct": 0.031858543113425924,
+    "alternative": 0.013685890480324075
+  }
+}
+I RKNN: [02:36:46.456] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [02:36:46.456] RKNN Driver Information, version: 0.8.2
+I RKNN: [02:36:46.459] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+W RKNN: [02:36:46.512] query RKNN_QUERY_INPUT_DYNAMIC_RANGE error, rknn model is static shape type, please export rknn with dynamic_shapes
+I RKNN: [02:37:04.684] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [02:37:04.684] RKNN Driver Information, version: 0.8.2
+I RKNN: [02:37:04.687] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+W RKNN: [02:37:04.792] query RKNN_QUERY_INPUT_DYNAMIC_RANGE error, rknn model is static shape type, please export rknn with dynamic_shapes

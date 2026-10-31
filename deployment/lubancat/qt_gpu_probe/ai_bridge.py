@@ -44,7 +44,9 @@ from tools.competition_console.pipeline import FrontPipeline
 from tools.competition_console.rknn_detector import RknnConsoleDetector
 from tools.competition_console.latest_frame_slot import LatestFrameSlot
 from model_profiles import (
+    DEFAULT_MODEL_ID,
     build_model_profiles,
+    default_main_model_path,
     decode_model_switch_request,
     encode_model_switch_reply,
 )
@@ -838,6 +840,8 @@ class AiReplayBridge:
             for profile in build_model_profiles(model_root, legacy_root)
         }
         self.model_switch_lock = threading.Lock()
+        self._model_options_dirty = True
+        self._packets_built = 0
         self.pending_model_switch = None
         self.model_switch_peer = None
         self.model_switch_state = "READY"
@@ -878,9 +882,12 @@ class AiReplayBridge:
             (320, 192) if "320x192" in args.main_model else
             ((416, 256) if "416x256" in args.main_model else (512, 288))
         )
+        self.active_backend = active_profile.backend if active_profile else "rknn_lite"
+        self.active_task = active_profile.task if active_profile else "detect"
         main = RknnConsoleDetector(
             args.main_model, main_size,
             class_profile=active_profile.class_profile if active_profile else None,
+            backend=self.active_backend, task=self.active_task,
         )
         main.single_model = not bool(args.specialist_model)
         try:
@@ -970,7 +977,7 @@ class AiReplayBridge:
 
     def start(self):
         status = initial_dynamic_status(self.args.source, time.monotonic_ns())
-        status["model_selection"] = self._model_selection_status()
+        status["model_selection"] = self._model_selection_status(include_options=True)
         status["layout"] = self.args.layout
         status["display_view"] = self.args.display_view
         status["road_quadrant"] = int(self.args.road_quadrant)
@@ -1074,20 +1081,20 @@ class AiReplayBridge:
                 )
 
     def _profile_id_for_paths(self, main_model, specialist_model):
-        main_path = Path(main_model).resolve()
-        specialist_path = Path(specialist_model).resolve() if specialist_model else None
+        main_path = Path(main_model).absolute()
+        specialist_path = Path(specialist_model).absolute() if specialist_model else None
         for profile_id, profile in self.model_profiles.items():
-            if profile.main_model.resolve() != main_path:
+            if profile.main_model.absolute() != main_path:
                 continue
             expected_specialist = (
-                profile.specialist_model.resolve()
+                profile.specialist_model.absolute()
                 if profile.specialist_model is not None else None
             )
             if expected_specialist == specialist_path:
                 return profile_id
         return None
 
-    def _model_selection_status(self):
+    def _model_selection_status(self, include_options=False):
         with self.model_switch_lock:
             active_id = self.active_model_id
             state = self.model_switch_state
@@ -1095,14 +1102,16 @@ class AiReplayBridge:
             pending = self.pending_model_switch
             requested_id = pending["profile_id"] if pending else ""
         active = self.model_profiles.get(active_id)
-        return {
+        status = {
             "active_id": active_id,
             "active_label": active.label if active else "自定义模型",
             "requested_id": requested_id,
             "state": state,
             "message": message,
-            "options": [profile.public() for profile in self.model_profiles.values()],
         }
+        if include_options:
+            status["options"] = [profile.wire() for profile in self.model_profiles.values()]
+        return status
 
     def _send_model_switch_reply(self, request_id, peer, state, requested_id, message):
         if peer is None:
@@ -1167,7 +1176,11 @@ class AiReplayBridge:
         profile = self.model_profiles[profile_id]
         old_main = self.pipeline.main_detector
         old_specialist = self.pipeline.specialist_detector
-        same_main = Path(self.args.main_model).resolve() == profile.main_model.resolve()
+        same_main = (
+            Path(self.args.main_model).absolute() == profile.main_model.absolute()
+            and self.active_backend == profile.backend
+            and self.active_task == profile.task
+        )
         current_specialist = (
             Path(self.args.specialist_model).resolve()
             if self.args.specialist_model else None
@@ -1184,6 +1197,7 @@ class AiReplayBridge:
                 new_main = RknnConsoleDetector(
                     profile.main_model, profile.input_size,
                     class_profile=profile.class_profile,
+                    backend=profile.backend, task=profile.task,
                 )
             if profile.specialist_model is not None and new_specialist is None:
                 new_specialist = RknnConsoleDetector(
@@ -1212,6 +1226,8 @@ class AiReplayBridge:
         self.args.specialist_model = (
             str(profile.specialist_model) if profile.specialist_model else ""
         )
+        self.active_backend = profile.backend
+        self.active_task = profile.task
         with self.model_switch_lock:
             self.active_model_id = profile_id
             self.model_switch_state = "APPLIED"
@@ -1419,7 +1435,11 @@ class AiReplayBridge:
             submitted_fps=submitted_fps,
             ai_fps=ai_fps,
         )
-        status["model_selection"] = self._model_selection_status()
+        self._packets_built += 1
+        include_options = self._model_options_dirty or (self._packets_built % 50 == 0)
+        status["model_selection"] = self._model_selection_status(
+            include_options=include_options
+        )
         status["layout"] = self.args.layout
         status["display_view"] = self.args.display_view
         status["road_quadrant"] = int(self.args.road_quadrant)
@@ -1433,15 +1453,31 @@ class AiReplayBridge:
             (time.perf_counter_ns() - hmi_started) / 1e6
         )
         packet_started = time.perf_counter_ns()
-        packet = encode_ai_result_packet(
-            frame_id=frame_id,
-            timestamp_ns=timestamp_ns,
-            flags=flags,
-            nav_direction=nav_direction,
-            nav_distance_m=float(nav_distance) if nav_distance is not None else -1.0,
-            boxes=boxes,
-            status=status,
-        )
+        try:
+            packet = encode_ai_result_packet(
+                frame_id=frame_id,
+                timestamp_ns=timestamp_ns,
+                flags=flags,
+                nav_direction=nav_direction,
+                nav_distance_m=float(nav_distance) if nav_distance is not None else -1.0,
+                boxes=boxes,
+                status=status,
+            )
+            self._model_options_dirty = False
+        except ValueError:
+            # Never let an oversized option list break inference: retry with
+            # the compact per-frame status and keep the menu from the last
+            # packet that fit.
+            status["model_selection"].pop("options", None)
+            packet = encode_ai_result_packet(
+                frame_id=frame_id,
+                timestamp_ns=timestamp_ns,
+                flags=flags,
+                nav_direction=nav_direction,
+                nav_distance_m=float(nav_distance) if nav_distance is not None else -1.0,
+                boxes=boxes,
+                status=status,
+            )
         self.stage_timings["packet_encode"].append(
             (time.perf_counter_ns() - packet_started) / 1e6
         )
@@ -1749,7 +1785,12 @@ def parser():
                         default="LOCAL_REPLAY")
     result.add_argument("--layout", choices=("quad", "front"), default="quad")
     result.add_argument("--display-view", choices=("quad", "front"), default="quad")
-    result.add_argument("--main-model", required=True)
+    default_model_root = Path.home() / "cityscapes_arch_compare_20261027" / "models"
+    result.add_argument(
+        "--main-model",
+        default=str(default_main_model_path(default_model_root)),
+        help=f"main RKNN model (default profile: {DEFAULT_MODEL_ID})",
+    )
     result.add_argument("--specialist-model", default="")
     result.add_argument("--legacy-model-root", default="")
     result.add_argument("--request-port", type=int, default=38260)

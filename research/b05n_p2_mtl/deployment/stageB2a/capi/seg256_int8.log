@@ -1,0 +1,26 @@
+ATTR 0 reg_s4 type=2 fmt=0 qnt=2 zp=36 scale=0.19330889 dims=1x64x72x128
+ATTR 1 cls_s4 type=2 fmt=0 qnt=2 zp=-128 scale=0.00371830 dims=1x10x72x128
+ATTR 2 cls_sum_s4 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 dims=1x1x72x128
+ATTR 3 reg_s8 type=2 fmt=0 qnt=2 zp=31 scale=0.15732503 dims=1x64x36x64
+ATTR 4 cls_s8 type=2 fmt=0 qnt=2 zp=-128 scale=0.00369840 dims=1x10x36x64
+ATTR 5 cls_sum_s8 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 dims=1x1x36x64
+ATTR 6 reg_s16 type=2 fmt=0 qnt=2 zp=39 scale=0.15076739 dims=1x64x18x32
+ATTR 7 cls_s16 type=2 fmt=0 qnt=2 zp=-128 scale=0.00370295 dims=1x10x18x32
+ATTR 8 cls_sum_s16 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 dims=1x1x18x32
+ATTR 9 reg_s32 type=2 fmt=0 qnt=2 zp=-7 scale=0.14230219 dims=1x64x9x16
+ATTR 10 cls_s32 type=2 fmt=0 qnt=2 zp=-128 scale=0.00196078 dims=1x10x9x16
+ATTR 11 cls_sum_s32 type=2 fmt=0 qnt=2 zp=-128 scale=0.00000000 dims=1x1x9x16
+ATTR 12 lane_cat_256 type=2 fmt=0 qnt=2 zp=66 scale=0.49434447 dims=1x9x144x256
+ATTR 13 lane_style_256 type=2 fmt=0 qnt=2 zp=88 scale=0.35206303 dims=1x3x144x256
+ATTR 14 drivable_256 type=2 fmt=0 qnt=2 zp=-1 scale=0.12870458 dims=1x3x144x256
+MODE int8 outputs=15 infer=1 frames=300 det=3380 wall=52.598 fps=5.70
+pre mean=20.18 p50=17.18 p95=31.67
+run mean=107.01 p50=81.31 p95=206.31
+get mean=24.53 p50=8.67 p95=111.06
+det mean=2.27 p50=2.04 p95=2.97
+seg mean=8.47 p50=7.17 p95=11.91
+rel mean=12.19 p50=0.41 p95=48.59
+total mean=175.33 p50=141.70 p95=335.80
+perf mean=106.99 p50=81.30 p95=206.30
+SEG int8 lane=0.0282 cross=0.0183 solid_in_lane=0.2486 dash_in_lane=0.7514 direct=0.0318 alt=0.0140
+CONSISTENCY lane_agree=1.000000 style_agree_in_lane=1.000000 drv_agree=1.000000 pixels=2211840

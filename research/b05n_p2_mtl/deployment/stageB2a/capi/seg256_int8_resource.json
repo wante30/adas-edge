@@ -1,0 +1,7 @@
+{
+  "returncode": 0,
+  "cpu_percent": 38.14176245210727,
+  "npu_mean": 66.57997010463379,
+  "npu_max": 82,
+  "npu_samples": 669
+}

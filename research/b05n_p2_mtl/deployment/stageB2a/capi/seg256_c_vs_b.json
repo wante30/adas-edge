@@ -1,0 +1,21 @@
+{
+  "frames": 60,
+  "pixels": 2211840,
+  "seg_hw": 36864,
+  "lane_agreement": 1.0,
+  "style_agreement_in_lane": 1.0,
+  "drivable_agreement": 1.0,
+  "lane_fg_iou": 1.0,
+  "crosswalk_iou": 1.0,
+  "drivable_miou": 1.0,
+  "ref_fractions": {
+    "lane": 0.028110532407407407,
+    "solid": 0.24995174987133298,
+    "dashed": 0.750048250128667
+  },
+  "c_fractions": {
+    "lane": 0.028110532407407407,
+    "solid": 0.24995174987133298,
+    "dashed": 0.750048250128667
+  }
+}

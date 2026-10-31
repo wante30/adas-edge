@@ -1,0 +1,30 @@
+n_input=1 n_output=12
+out[0] name=reg_s4 type=2 fmt=0 qnt=2 zp=27 scale=0.18364507 n_elems=589824 size=589824 dims=1x64x72x128
+out[1] name=cls_s4 type=2 fmt=0 qnt=2 zp=-128 scale=0.00373981 n_elems=92160 size=92160 dims=1x10x72x128
+out[2] name=cls_sum_s4 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 n_elems=9216 size=9216 dims=1x1x72x128
+out[3] name=reg_s8 type=2 fmt=0 qnt=2 zp=28 scale=0.15086217 n_elems=147456 size=147456 dims=1x64x36x64
+out[4] name=cls_s8 type=2 fmt=0 qnt=2 zp=-128 scale=0.00378245 n_elems=23040 size=23040 dims=1x10x36x64
+out[5] name=cls_sum_s8 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 n_elems=2304 size=2304 dims=1x1x36x64
+out[6] name=reg_s16 type=2 fmt=0 qnt=2 zp=22 scale=0.14068078 n_elems=36864 size=36864 dims=1x64x18x32
+out[7] name=cls_s16 type=2 fmt=0 qnt=2 zp=-128 scale=0.00375419 n_elems=5760 size=5760 dims=1x10x18x32
+out[8] name=cls_sum_s16 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 n_elems=576 size=576 dims=1x1x18x32
+out[9] name=reg_s32 type=2 fmt=0 qnt=2 zp=-7 scale=0.15605359 n_elems=9216 size=9216 dims=1x64x9x16
+out[10] name=cls_s32 type=2 fmt=0 qnt=2 zp=-128 scale=0.00196078 n_elems=1440 size=1440 dims=1x10x9x16
+out[11] name=cls_sum_s32 type=2 fmt=0 qnt=2 zp=-128 scale=0.00000002 n_elems=144 size=144 dims=1x1x9x16
+in type=2 fmt=1 qnt=2 scale=0.00392157 dims=1x288x512x3
+in size=442368
+preprocess_ms=18.769 frame_bytes=1843200
+run_ms=22.744 get_float_ms=14.258 perf_run_us=22735
+run_ms=25.509 get_int8_ms=5.206 perf_run_us=25496
+int8 out[0] size=589824 type=2 qnt=2 zp=27 scale=0.18364507
+int8 out[1] size=92160 type=2 qnt=2 zp=-128 scale=0.00373981
+int8 out[2] size=9216 type=2 qnt=2 zp=-128 scale=0.00392157
+int8 out[3] size=147456 type=2 qnt=2 zp=28 scale=0.15086217
+int8 out[4] size=23040 type=2 qnt=2 zp=-128 scale=0.00378245
+int8 out[5] size=2304 type=2 qnt=2 zp=-128 scale=0.00392157
+int8 out[6] size=36864 type=2 qnt=2 zp=22 scale=0.14068078
+int8 out[7] size=5760 type=2 qnt=2 zp=-128 scale=0.00375419
+int8 out[8] size=576 type=2 qnt=2 zp=-128 scale=0.00392157
+int8 out[9] size=9216 type=2 qnt=2 zp=-7 scale=0.15605359
+int8 out[10] size=1440 type=2 qnt=2 zp=-128 scale=0.00196078
+int8 out[11] size=144 type=2 qnt=2 zp=-128 scale=0.00000002

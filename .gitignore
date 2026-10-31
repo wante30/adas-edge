@@ -30,3 +30,8 @@ rtl/**/build/
 *.xwd
 *.rgba
 
+
+# compiled native libraries / objects from deployment builds
+*.so
+*.o
+*.a

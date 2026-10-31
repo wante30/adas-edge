@@ -1,0 +1,10 @@
+{
+  "lane_fg_iou": 0.4281195331405979,
+  "crosswalk_iou": 0.3079143477176517,
+  "style_acc": 0.8756064289794884,
+  "solid_acc": 0.8386876218184427,
+  "dashed_acc": 0.9210844750817974,
+  "drivable_miou": 0.6479609809595887,
+  "images": 1000,
+  "checkpoint": "runs/stageB2a/mtl_best.pt"
+}

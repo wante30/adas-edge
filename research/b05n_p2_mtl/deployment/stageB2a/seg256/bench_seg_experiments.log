@@ -1,0 +1,225 @@
+W rknn-toolkit-lite2 version: 2.3.2
+W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
+W rknn-toolkit-lite2 version: 2.3.2
+W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
+W rknn-toolkit-lite2 version: 2.3.2
+W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
+W rknn-toolkit-lite2 version: 2.3.2
+W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
+W rknn-toolkit-lite2 version: 2.3.2
+W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
+{
+  "input": "/home/cat/b05g_113421_3s.rgb",
+  "frames": 60,
+  "rounds": 5,
+  "orig_full": {
+    "model": "/home/cat/models/b05n_p2_mtl_b2a/b05n_p2_mtl_b2a_int8.rknn",
+    "mode": "full",
+    "size_bytes": 4954226,
+    "timing": {
+      "pre": {
+        "samples": 300,
+        "mean_ms": 10.628546686666667,
+        "p50_ms": 8.443157,
+        "p95_ms": 15.445958900000003
+      },
+      "rknn": {
+        "samples": 300,
+        "mean_ms": 198.30742051,
+        "p50_ms": 158.762177,
+        "p95_ms": 411.9417049500001
+      },
+      "det": {
+        "samples": 300,
+        "mean_ms": 14.193820096666665,
+        "p50_ms": 10.666198999999999,
+        "p95_ms": 19.039998900000004
+      },
+      "seg": {
+        "samples": 300,
+        "mean_ms": 51.24921581333333,
+        "p50_ms": 48.773351,
+        "p95_ms": 63.86186435000001
+      },
+      "total": {
+        "samples": 300,
+        "mean_ms": 274.3790031066667,
+        "p50_ms": 244.611657,
+        "p95_ms": 512.1875719000001
+      }
+    },
+    "round_seconds": [
+      19.640156814,
+      16.519477891,
+      16.315197991,
+      15.953171707,
+      16.018029011
+    ],
+    "round_fps": [
+      3.0549654245749442,
+      3.632076049612239,
+      3.677552674083267,
+      3.76100759786049,
+      3.745779206592548
+    ],
+    "fps": 3.5525607435225166,
+    "wall_s": 84.446128204,
+    "cpu_percent": 47.15210621209638,
+    "npu_mean": 48.779672578444746,
+    "npu_max": 66,
+    "detections": 3395,
+    "tl_boxes": 315,
+    "rss_kb": 602928
+  },
+  "orig_skip_seg": {
+    "model": "/home/cat/models/b05n_p2_mtl_b2a/b05n_p2_mtl_b2a_int8.rknn",
+    "mode": "skip",
+    "size_bytes": 4954226,
+    "timing": {
+      "pre": {
+        "samples": 300,
+        "mean_ms": 10.562010006666666,
+        "p50_ms": 8.6509655,
+        "p95_ms": 15.238792100000015
+      },
+      "rknn": {
+        "samples": 300,
+        "mean_ms": 193.5688231433333,
+        "p50_ms": 133.8696145,
+        "p95_ms": 480.75071335000007
+      },
+      "det": {
+        "samples": 300,
+        "mean_ms": 13.241505173333332,
+        "p50_ms": 10.947798500000001,
+        "p95_ms": 20.060682300000018
+      },
+      "seg": {
+        "samples": 300,
+        "mean_ms": 0.006081156666666666,
+        "p50_ms": 0.00525,
+        "p95_ms": 0.010529150000000008
+      },
+      "total": {
+        "samples": 300,
+        "mean_ms": 217.37841948,
+        "p50_ms": 156.4265535,
+        "p95_ms": 509.1285846000003
+      }
+    },
+    "round_seconds": [
+      14.227746185,
+      13.060365458,
+      12.664451466,
+      13.709238079,
+      12.32213861
+    ],
+    "round_fps": [
+      4.217112058356556,
+      4.594052149072719,
+      4.737670649303746,
+      4.376610841116606,
+      4.8692846184433565
+    ],
+    "fps": 4.546552709876337,
+    "wall_s": 65.984058504,
+    "cpu_percent": 43.521790341578324,
+    "npu_mean": 61.482608695652175,
+    "npu_max": 75,
+    "detections": 3395,
+    "tl_boxes": 315,
+    "rss_kb": 611176
+  },
+  "seg256": {
+    "model": "/home/cat/models/b05n_p2_mtl_b2a_seg256/b05n_p2_mtl_b2a_seg256_int8.rknn",
+    "mode": "seg256",
+    "size_bytes": 4933694,
+    "timing": {
+      "pre": {
+        "samples": 300,
+        "mean_ms": 9.970366283333332,
+        "p50_ms": 8.4018865,
+        "p95_ms": 15.427350400000002
+      },
+      "rknn": {
+        "samples": 300,
+        "mean_ms": 167.9589724,
+        "p50_ms": 117.756058,
+        "p95_ms": 340.22409055000054
+      },
+      "det": {
+        "samples": 300,
+        "mean_ms": 13.71760528,
+        "p50_ms": 10.8270505,
+        "p95_ms": 23.00500300000001
+      },
+      "seg": {
+        "samples": 300,
+        "mean_ms": 16.911889473333336,
+        "p50_ms": 14.733124,
+        "p95_ms": 23.237982200000005
+      },
+      "total": {
+        "samples": 300,
+        "mean_ms": 208.55883343666665,
+        "p50_ms": 161.10130049999998,
+        "p95_ms": 436.16620180000047
+      }
+    },
+    "round_seconds": [
+      13.046526963,
+      12.404182514,
+      12.498750354,
+      11.823114769,
+      12.915723166
+    ],
+    "round_fps": [
+      4.59892507562819,
+      4.837078133305512,
+      4.800479912041613,
+      5.0748048354667885,
+      4.64550062190455
+    ],
+    "fps": 4.785570390731742,
+    "wall_s": 62.688452056,
+    "cpu_percent": 43.57380688124306,
+    "npu_mean": 61.33303249097473,
+    "npu_max": 73,
+    "detections": 3395,
+    "tl_boxes": 315,
+    "rss_kb": 611176
+  },
+  "consistency_seg256_vs_orig": {
+    "lane_fg_iou": 0.7942646358876725,
+    "crosswalk_iou": 0.7676355170534913,
+    "style_agreement_in_lane": 0.9634476081043619,
+    "drivable_miou": 0.8717829457050299,
+    "frames": 60
+  },
+  "seg_tensor": {
+    "orig_values": 2211840,
+    "orig_float32_bytes": 8847360,
+    "seg256_values": 552960,
+    "seg256_float32_bytes": 2211840
+  }
+}
+I RKNN: [02:30:49.779] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [02:30:49.779] RKNN Driver Information, version: 0.8.2
+I RKNN: [02:30:49.837] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+W RKNN: [02:30:49.925] query RKNN_QUERY_INPUT_DYNAMIC_RANGE error, rknn model is static shape type, please export rknn with dynamic_shapes
+I RKNN: [02:31:08.965] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [02:31:08.965] RKNN Driver Information, version: 0.8.2
+I RKNN: [02:31:08.968] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+W RKNN: [02:31:09.024] query RKNN_QUERY_INPUT_DYNAMIC_RANGE error, rknn model is static shape type, please export rknn with dynamic_shapes
+I RKNN: [02:31:24.756] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [02:31:24.756] RKNN Driver Information, version: 0.8.2
+I RKNN: [02:31:24.758] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+W RKNN: [02:31:24.827] query RKNN_QUERY_INPUT_DYNAMIC_RANGE error, rknn model is static shape type, please export rknn with dynamic_shapes
+I RKNN: [02:32:54.421] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [02:32:54.421] RKNN Driver Information, version: 0.8.2
+I RKNN: [02:32:54.424] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+W RKNN: [02:32:54.488] query RKNN_QUERY_INPUT_DYNAMIC_RANGE error, rknn model is static shape type, please export rknn with dynamic_shapes
+I RKNN: [02:34:04.319] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [02:34:04.320] RKNN Driver Information, version: 0.8.2
+I RKNN: [02:34:04.322] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+W RKNN: [02:34:04.378] query RKNN_QUERY_INPUT_DYNAMIC_RANGE error, rknn model is static shape type, please export rknn with dynamic_shapes

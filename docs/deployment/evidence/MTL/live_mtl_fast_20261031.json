@@ -1,0 +1,20 @@
+{
+  "captured_at": "2026-10-31T11:50:00+08:00",
+  "board": "LubanCat RK3566",
+  "model": "MTL-FAST",
+  "source": "running live AI bridge + Qt PGV replay (no PCIe)",
+  "ui_ai_fps": 8.3,
+  "user_reported_peak_fps": 9.9,
+  "live_window_s": 19.84,
+  "live_result_packets": 149,
+  "live_result_fps": 7.51,
+  "live_result_delta_p50_ms": 130.7,
+  "live_result_delta_p95_ms": 155.0,
+  "live_pipeline_p50_ms": 118.7,
+  "live_pipeline_p95_ms": 133.9,
+  "bench_18s_average_fps": 6.78,
+  "bench_p50_ms": 104.4,
+  "bench_p95_ms": 248.5,
+  "bench_latest_only_replaced": 64,
+  "note": "6.78 FPS is the 18 s fixed-10Hz benchmark average with p95 stalls and latest-only replacements. The live UI rolling AI FPS was 8.3 and the user observed 9.9 peaks; a 20 s log window gives 7.51 result FPS. Both describe different windows/conditions, not the model's peak throughput."
+}

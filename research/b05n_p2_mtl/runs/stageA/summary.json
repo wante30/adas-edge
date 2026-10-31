@@ -1,0 +1,8 @@
+{
+  "epochs": 4,
+  "batch": 16,
+  "limit_train": 45000,
+  "seg_params_m": 0.218671,
+  "best_val_loss": 4.101454410552979,
+  "minutes": 14.551978389422098
+}
