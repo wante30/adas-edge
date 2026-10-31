@@ -1,0 +1,173 @@
+{
+  "raw": "/home/cat/b05g_113421_3s.rgb",
+  "raw_format": "RGB565 little-endian 1280x720, 90 frames total; first 60 used",
+  "source_note": "b05g_113421_3s.rgb decoded as RGB565; 60 distinct frames repeated 5 rounds = 300 inferences",
+  "nice": -10,
+  "b05n": {
+    "model": "/home/cat/cityscapes_arch_compare_20261027/models/b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn",
+    "size_bytes": 4393465,
+    "frames_distinct": 60,
+    "rounds": 5,
+    "inferences": 300,
+    "warmup": 10,
+    "conf": 0.25,
+    "iou": 0.45,
+    "timing": {
+      "pre": {
+        "samples": 300,
+        "mean_ms": 9.898518443333332,
+        "p50_ms": 8.3098675,
+        "p95_ms": 17.144564600000002
+      },
+      "rknn": {
+        "samples": 300,
+        "mean_ms": 71.85487691666667,
+        "p50_ms": 46.0450055,
+        "p95_ms": 180.77248415000003
+      },
+      "det": {
+        "samples": 300,
+        "mean_ms": 11.350137153333336,
+        "p50_ms": 10.111021999999998,
+        "p95_ms": 16.642980850000043
+      },
+      "seg": {
+        "samples": 300,
+        "mean_ms": 0.0048590533333333335,
+        "p50_ms": 0.0035,
+        "p95_ms": 0.008167
+      },
+      "total": {
+        "samples": 300,
+        "mean_ms": 93.10839156666667,
+        "p50_ms": 65.5389165,
+        "p95_ms": 205.0314408
+      }
+    },
+    "round_seconds": [
+      6.046820141,
+      5.496721283,
+      6.223092933,
+      5.594453773,
+      5.344252427
+    ],
+    "round_fps": [
+      9.922570640587537,
+      10.915598028512955,
+      9.641507952071587,
+      10.724907637913198,
+      11.227014595506494
+    ],
+    "wall_seconds": 28.705403555,
+    "continuous_fps": 10.450993988821489,
+    "cpu_percent": 47.69864341085272,
+    "npu_load_samples": 507,
+    "npu_load_mean": 47.053254437869825,
+    "npu_load_max": 66,
+    "rss_kb": 399468,
+    "detections_total": 4440,
+    "det_classes": {
+      "car": 1860,
+      "rider": 250,
+      "traffic light": 610,
+      "person": 470,
+      "bicycle": 110,
+      "traffic sign": 1040,
+      "truck": 70,
+      "motorcycle": 20,
+      "bus": 10
+    },
+    "tl_count": 610,
+    "tl_max": 0.5124225616455078,
+    "tl_mean": 0.35306080052110017
+  },
+  "b2a": {
+    "model": "/home/cat/models/b05n_p2_mtl_b2a/b05n_p2_mtl_b2a_int8.rknn",
+    "size_bytes": 4954226,
+    "frames_distinct": 60,
+    "rounds": 5,
+    "inferences": 300,
+    "warmup": 10,
+    "conf": 0.25,
+    "iou": 0.45,
+    "timing": {
+      "pre": {
+        "samples": 300,
+        "mean_ms": 10.196983243333333,
+        "p50_ms": 8.2846385,
+        "p95_ms": 16.354731150000003
+      },
+      "rknn": {
+        "samples": 300,
+        "mean_ms": 203.85297869666667,
+        "p50_ms": 161.1877785,
+        "p95_ms": 463.68269515
+      },
+      "det": {
+        "samples": 300,
+        "mean_ms": 13.275657733333334,
+        "p50_ms": 10.3984545,
+        "p95_ms": 24.29421875000022
+      },
+      "seg": {
+        "samples": 300,
+        "mean_ms": 51.939900863333335,
+        "p50_ms": 48.978826,
+        "p95_ms": 76.42833835000003
+      },
+      "total": {
+        "samples": 300,
+        "mean_ms": 279.26552053666666,
+        "p50_ms": 232.27934249999998,
+        "p95_ms": 569.4639431500001
+      }
+    },
+    "round_seconds": [
+      17.951993064,
+      17.054775314,
+      17.569754528,
+      17.800211736,
+      17.650297959
+    ],
+    "round_fps": [
+      3.342247280627626,
+      3.518076251098244,
+      3.4149594921420863,
+      3.370746420878417,
+      3.3993760410942873
+    ],
+    "wall_seconds": 88.027171431,
+    "continuous_fps": 3.4080386217470893,
+    "cpu_percent": 47.2589339189459,
+    "npu_load_samples": 1519,
+    "npu_load_mean": 48.17972350230415,
+    "npu_load_max": 70,
+    "rss_kb": 535260,
+    "detections_total": 3395,
+    "det_classes": {
+      "car": 1830,
+      "person": 480,
+      "traffic light": 315,
+      "truck": 25,
+      "traffic sign": 685,
+      "rider": 50,
+      "bicycle": 10
+    },
+    "tl_count": 315,
+    "tl_max": 0.4349384307861328,
+    "tl_mean": 0.33450901697552393,
+    "seg_fraction_mean": {
+      "lane_fg": 0.028133024992766202,
+      "crosswalk": 0.018075787579571755,
+      "solid": 0.4991221110026042,
+      "dashed": 0.5008778889973958,
+      "direct": 0.03194207085503473,
+      "alternative": 0.013988240559895834
+    },
+    "seg_nonzero_frames": {
+      "lane": 300,
+      "drivable": 300,
+      "frames": 300
+    }
+  }
+}

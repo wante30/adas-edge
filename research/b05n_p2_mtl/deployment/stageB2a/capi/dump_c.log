@@ -1,0 +1,2 @@
+seg shapes: lane 144x256 style 144x256 drv 144x256 frames=60
+wrote seg256_c_masks.bin frames=60

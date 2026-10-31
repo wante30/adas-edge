@@ -1,0 +1,350 @@
+{
+  "model": "b05n_p2_mtl_b1_fp16.rknn",
+  "precision": "fp16",
+  "images": 10,
+  "conf": 0.25,
+  "rgb_outputs": [
+    {
+      "shape": [
+        1,
+        64,
+        72,
+        128
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        10,
+        72,
+        128
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        1,
+        72,
+        128
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        64,
+        36,
+        64
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        10,
+        36,
+        64
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        1,
+        36,
+        64
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        64,
+        18,
+        32
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        10,
+        18,
+        32
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        1,
+        18,
+        32
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        64,
+        9,
+        16
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        10,
+        9,
+        16
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        1,
+        9,
+        16
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        9,
+        288,
+        512
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        3,
+        288,
+        512
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        3,
+        288,
+        512
+      ],
+      "dtype": "float32"
+    }
+  ],
+  "rgb_seg": {
+    "lane_fg_iou": 0.9986020160400265,
+    "crosswalk_iou": 0.9970586238884992,
+    "style_acc_fg": 0.999249267578125,
+    "drivable_miou": 0.9986708787448997
+  },
+  "rgb_det": {
+    "counts": {
+      "ref": 141,
+      "pred": 141
+    },
+    "per_class": {
+      "0": {
+        "ref": 2,
+        "pred": 2,
+        "matched": 2,
+        "match_rate": 1.0,
+        "score_delta": 3.725290298461914e-05
+      },
+      "2": {
+        "ref": 77,
+        "pred": 77,
+        "matched": 77,
+        "match_rate": 1.0,
+        "score_delta": 4.9920156598091126e-05
+      },
+      "8": {
+        "ref": 36,
+        "pred": 36,
+        "matched": 36,
+        "match_rate": 1.0,
+        "score_delta": 8.987667108023609e-05
+      }
+    }
+  },
+  "bgr_outputs": [
+    {
+      "shape": [
+        1,
+        64,
+        72,
+        128
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        10,
+        72,
+        128
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        1,
+        72,
+        128
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        64,
+        36,
+        64
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        10,
+        36,
+        64
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        1,
+        36,
+        64
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        64,
+        18,
+        32
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        10,
+        18,
+        32
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        1,
+        18,
+        32
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        64,
+        9,
+        16
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        10,
+        9,
+        16
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        1,
+        9,
+        16
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        9,
+        288,
+        512
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        3,
+        288,
+        512
+      ],
+      "dtype": "float32"
+    },
+    {
+      "shape": [
+        1,
+        3,
+        288,
+        512
+      ],
+      "dtype": "float32"
+    }
+  ],
+  "bgr_seg": {
+    "lane_fg_iou": 0.8461272176546949,
+    "crosswalk_iou": 0.772584422603439,
+    "style_acc_fg": 0.8960822211371527,
+    "drivable_miou": 0.8444008787559804
+  },
+  "bgr_det": {
+    "counts": {
+      "ref": 141,
+      "pred": 122
+    },
+    "per_class": {
+      "0": {
+        "ref": 2,
+        "pred": 3,
+        "matched": 2,
+        "match_rate": 1.0,
+        "score_delta": -0.02596372365951538
+      },
+      "2": {
+        "ref": 77,
+        "pred": 72,
+        "matched": 67,
+        "match_rate": 0.8701298701298701,
+        "score_delta": -0.05856275347562937
+      },
+      "8": {
+        "ref": 36,
+        "pred": 22,
+        "matched": 20,
+        "match_rate": 0.5555555555555556,
+        "score_delta": -0.10606199582417805
+      }
+    }
+  }
+}

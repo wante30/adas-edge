@@ -1,0 +1,36 @@
+ATTR 0 reg_s4 type=2 fmt=0 qnt=2 zp=36 scale=0.19330889 dims=1x64x72x128
+ATTR 1 cls_s4 type=2 fmt=0 qnt=2 zp=-128 scale=0.00371830 dims=1x10x72x128
+ATTR 2 cls_sum_s4 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 dims=1x1x72x128
+ATTR 3 reg_s8 type=2 fmt=0 qnt=2 zp=31 scale=0.15732503 dims=1x64x36x64
+ATTR 4 cls_s8 type=2 fmt=0 qnt=2 zp=-128 scale=0.00369840 dims=1x10x36x64
+ATTR 5 cls_sum_s8 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 dims=1x1x36x64
+ATTR 6 reg_s16 type=2 fmt=0 qnt=2 zp=39 scale=0.15076739 dims=1x64x18x32
+ATTR 7 cls_s16 type=2 fmt=0 qnt=2 zp=-128 scale=0.00370295 dims=1x10x18x32
+ATTR 8 cls_sum_s16 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 dims=1x1x18x32
+ATTR 9 reg_s32 type=2 fmt=0 qnt=2 zp=-7 scale=0.14230219 dims=1x64x9x16
+ATTR 10 cls_s32 type=2 fmt=0 qnt=2 zp=-128 scale=0.00196078 dims=1x10x9x16
+ATTR 11 cls_sum_s32 type=2 fmt=0 qnt=2 zp=-128 scale=0.00000000 dims=1x1x9x16
+ATTR 12 lane_cat_256 type=2 fmt=0 qnt=2 zp=66 scale=0.49434447 dims=1x9x144x256
+ATTR 13 lane_style_256 type=2 fmt=0 qnt=2 zp=88 scale=0.35206303 dims=1x3x144x256
+ATTR 14 drivable_256 type=2 fmt=0 qnt=2 zp=-1 scale=0.12870458 dims=1x3x144x256
+MODE float outputs=15 infer=1 frames=300 det=3380 wall=64.118 fps=4.68
+pre mean=21.29 p50=17.10 p95=61.41
+run mean=112.85 p50=85.63 p95=245.05
+get mean=44.77 p50=19.85 p95=163.05
+det mean=4.05 p50=3.74 p95=5.64
+seg mean=18.38 p50=17.00 p95=27.60
+rel mean=11.52 p50=1.95 p95=48.00
+total mean=213.72 p50=173.39 p95=476.88
+perf mean=112.84 p50=85.62 p95=245.04
+SEG float lane=0.0282 cross=0.0183 solid_in_lane=0.2486 dash_in_lane=0.7514 direct=0.0318 alt=0.0140
+MODE int8 outputs=15 infer=1 frames=300 det=3380 wall=50.226 fps=5.97
+pre mean=19.02 p50=17.70 p95=27.18
+run mean=107.28 p50=80.46 p95=215.62
+get mean=29.25 p50=7.98 p95=112.09
+det mean=2.57 p50=2.02 p95=3.01
+seg mean=8.74 p50=7.40 p95=12.04
+rel mean=0.02 p50=0.01 p95=0.04
+total mean=167.42 p50=122.28 p95=373.48
+perf mean=107.27 p50=80.45 p95=215.58
+SEG int8 lane=0.0282 cross=0.0183 solid_in_lane=0.2486 dash_in_lane=0.7514 direct=0.0318 alt=0.0140
+CONSISTENCY lane_agree=1.000000 style_agree_in_lane=1.000000 drv_agree=1.000000 pixels=2211840

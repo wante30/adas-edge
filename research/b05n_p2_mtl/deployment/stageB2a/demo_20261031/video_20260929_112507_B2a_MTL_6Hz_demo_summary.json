@@ -1,0 +1,73 @@
+{
+  "video": {
+    "source": "D:\\BaiduNetdiskDownload\\紫光同创杯赛题三参考素材\\video_20260929_112507.mp4",
+    "fps": 30.0,
+    "frames": 1349,
+    "width": 1920,
+    "height": 1080,
+    "duration_s": 44.9667,
+    "layout": "single front view, full frame used (16:9)"
+  },
+  "ai": {
+    "model": "B-2a MTL Seg-256 INT8 + RKNN C API (int8 outputs)",
+    "update_hz_nominal": 6.0,
+    "sample_step_frames": 5,
+    "inference_frames": 270,
+    "detections_total": 2588,
+    "detections_by_class": {
+      "0": 133,
+      "1": 92,
+      "2": 1498,
+      "3": 152,
+      "4": 132,
+      "6": 21,
+      "7": 80,
+      "8": 60,
+      "9": 420
+    },
+    "traffic_light_frames": 51,
+    "traffic_light_boxes": 60,
+    "seg_nonempty": {
+      "lane_frames": 267,
+      "crosswalk_frames": 261,
+      "drivable_frames": 266,
+      "total_frames": 270
+    },
+    "seg_fraction_mean": {
+      "lane_fg": 0.0360229994534465,
+      "crosswalk": 0.009226707175925926,
+      "solid_in_lane": 0.3814060639190957,
+      "dashed_in_lane": 0.6185939360809043,
+      "direct": 0.05439633969907407,
+      "alternative": 0.05785861545138889
+    },
+    "board_timing": {
+      "frames": 270,
+      "detections": 2588,
+      "seg_hw": 36864,
+      "mean_run_ms": 112.096,
+      "mean_get_ms": 25.813,
+      "mean_det_ms": 2.911,
+      "mean_seg_ms": 5.618,
+      "mean_total_ms": 180.002,
+      "wall_s": 48.601,
+      "fps": 5.555
+    }
+  },
+  "output": {
+    "path": "D:\\BaiduNetdiskDownload\\紫光同创杯赛题三参考素材\\video_20260929_112507_B2a_MTL_6Hz_demo.mp4",
+    "size_bytes": 101746123,
+    "width": 2560,
+    "height": 720,
+    "fps": 30.0,
+    "codec": "h264",
+    "pix_fmt": "yuv420p",
+    "audio": "aac 44.1kHz stereo",
+    "layout": "left original | right B-2a MTL overlay"
+  },
+  "notes": [
+    "AI results are real RK3566 INT8 inferences at 6 Hz nominal cadence; non-AI frames reuse the last result, no fabricated boxes or masks.",
+    "Header label says AI Updates: ~6 Hz (simulated cadence); it is not a measured playback FPS.",
+    "Seg-256 outputs are decoded at 144x256 and upscaled only for display."
+  ]
+}

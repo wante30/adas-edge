@@ -1,0 +1,292 @@
+{
+  "schema": "b05p-competition-bridge-runtime-v1",
+  "scheme": "B",
+  "source": "Local image replay from data_root/images through the board's actual AI bridge request, scheduler, detector adapter, result mapping and UDP publication path; PCIe capture and Qt display excluded.",
+  "models": {
+    "main": {
+      "path": "/home/cat/b05n_mtl_b2a_bench_20261031/models/b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn",
+      "sha256": "16b267ab5c2823a08e4dd86b77544dcdd09038c9e37c04a65140fd00dc44a68b"
+    },
+    "specialist": null
+  },
+  "input": {
+    "data_root": "/home/cat/b05n_mtl_b2a_bench_20261031",
+    "frame_format": "1280x720 BGR565 packed replay, road image in quadrant 3",
+    "road_quadrant": 3,
+    "road_crop": "640x360",
+    "requests_hz": 10.0,
+    "warmup_requests": 10,
+    "measured_requests": 180,
+    "replay_frames": 60,
+    "fusion": "single model keeps main traffic-light detections; dual models replace main traffic-light detections with specialist results, matching the live bridge adapter."
+  },
+  "measurement": {
+    "measured_frames_analyzed": 60,
+    "measured_result_fps": 3.3333333333333335,
+    "measured_input_span_seconds": 18.0,
+    "all_requests_received": 190,
+    "all_results_published": 64,
+    "requests_replaced_latest_only": 126,
+    "inference_errors": 0,
+    "main_model_timing": {
+      "samples": 60,
+      "mean_ms": 276.46855545,
+      "p50_ms": 228.28576950000001,
+      "p95_ms": 495.45607254999993
+    },
+    "main_npu_timing": {
+      "samples": 60,
+      "mean_ms": 203.67185186666666,
+      "p50_ms": 159.2566885,
+      "p95_ms": 428.29150855
+    },
+    "main_decode_nms_timing": {
+      "samples": 60,
+      "mean_ms": 12.674826683333334,
+      "p50_ms": 10.818008500000001,
+      "p95_ms": 17.09412215
+    },
+    "bridge_pipeline_timing": {
+      "samples": 60,
+      "mean_ms": 283.74460550000003,
+      "p50_ms": 237.571391,
+      "p95_ms": 496.4589347
+    },
+    "result_latency_timing": {
+      "samples": 60,
+      "mean_ms": 356.66899356666664,
+      "p50_ms": 341.2967905,
+      "p95_ms": 542.5220086999999
+    },
+    "specialist_model_timing": {
+      "samples": 0,
+      "mean_ms": null,
+      "p50_ms": null,
+      "p95_ms": null
+    },
+    "bridge_summary": {
+      "evidence": "SYNTHETIC",
+      "layout": "quad",
+      "display_view": "front",
+      "frame_format": "1280x720 RGB565_LE packed, decoded using the existing PGV BGR565 conversion",
+      "model_paths": {
+        "yolo11n": "/home/cat/b05n_mtl_b2a_bench_20261031/models/b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn",
+        "traffic_light_specialist": ""
+      },
+      "source_frames_loaded": 60,
+      "source_prepare_ms": 421.67135099953157,
+      "shared_frame_file_reads": 0,
+      "shared_frame_identity_mismatches": 0,
+      "input_requests_received": 190,
+      "input_request_fps": 10.038213900091451,
+      "source_ids_analyzed": 64,
+      "source_id_analysis_fps": 3.3812931031886992,
+      "source_ids_replaced_before_analysis": 126,
+      "result_packets_sent": 64,
+      "dynamic_hmi_texture_updates": 0,
+      "inference_errors": 0,
+      "last_error": null,
+      "updates_per_second": {
+        "yolo11n_rknn": 3.3812931031886992,
+        "traffic_light_specialist_rknn": 0.0,
+        "navigation_ocr": 0.0
+      },
+      "timings_ms": {
+        "main_rknn": {
+          "samples": 64,
+          "p50_ms": 223.17498949999998,
+          "p95_ms": 477.50322639999973,
+          "mean_ms": 264.5078920625
+        },
+        "specialist_rknn": {
+          "samples": 0,
+          "p50_ms": null,
+          "p95_ms": null,
+          "mean_ms": null
+        },
+        "navigation_ocr": {
+          "samples": 0,
+          "p50_ms": null,
+          "p95_ms": null,
+          "mean_ms": null
+        },
+        "hazard_postprocess": {
+          "samples": 59,
+          "p50_ms": 25.511904997983947,
+          "p95_ms": 88.58680909797826,
+          "mean_ms": 28.910173932117534
+        },
+        "all_ai_work": {
+          "samples": 64,
+          "p50_ms": 268.2804075,
+          "p95_ms": 519.5524713999998,
+          "mean_ms": 303.04670254687494
+        },
+        "shared_frame_read": {
+          "samples": 0,
+          "p50_ms": null,
+          "p95_ms": null,
+          "mean_ms": null
+        },
+        "shared_frame_validate": {
+          "samples": 0,
+          "p50_ms": null,
+          "p95_ms": null,
+          "mean_ms": null
+        },
+        "rgb565_decode": {
+          "samples": 64,
+          "p50_ms": 0.06547800000000001,
+          "p95_ms": 0.149331,
+          "mean_ms": 0.077477046875
+        },
+        "pipeline": {
+          "samples": 64,
+          "p50_ms": 237.571391,
+          "p95_ms": 492.01922259999986,
+          "mean_ms": 285.403204234375
+        },
+        "navigation_submit": {
+          "samples": 64,
+          "p50_ms": 0.011083,
+          "p95_ms": 0.028757949999999977,
+          "mean_ms": 0.013671640624999998
+        },
+        "box_mapping": {
+          "samples": 64,
+          "p50_ms": 0.4173675,
+          "p95_ms": 0.6180006499999999,
+          "mean_ms": 0.42791271875000003
+        },
+        "status_build": {
+          "samples": 64,
+          "p50_ms": 3.034007,
+          "p95_ms": 9.603137199999987,
+          "mean_ms": 5.18163171875
+        },
+        "dynamic_hmi": {
+          "samples": 64,
+          "p50_ms": 0.007291499999999999,
+          "p95_ms": 0.014495549999999998,
+          "mean_ms": 0.008467265625000001
+        },
+        "packet_encode": {
+          "samples": 64,
+          "p50_ms": 0.943962,
+          "p95_ms": 1.704293899999998,
+          "mean_ms": 1.0438238281249999
+        },
+        "result_publish": {
+          "samples": 64,
+          "p50_ms": 0.222392,
+          "p95_ms": 0.5020660499999998,
+          "mean_ms": 0.257190515625
+        },
+        "main_preprocess_ms": {
+          "samples": 64,
+          "p50_ms": 3.2794395,
+          "p95_ms": 54.869334199999955,
+          "mean_ms": 11.72122465625
+        },
+        "main_rknn_call_ms": {
+          "samples": 64,
+          "p50_ms": 159.2566885,
+          "p95_ms": 420.84298964999977,
+          "mean_ms": 202.72519921875
+        },
+        "main_decode_nms_ms": {
+          "samples": 64,
+          "p50_ms": 10.818008500000001,
+          "p95_ms": 17.058641700000003,
+          "mean_ms": 12.562790468749998
+        },
+        "main_total_ms": {
+          "samples": 64,
+          "p50_ms": 228.28576950000001,
+          "p95_ms": 487.7198004999997,
+          "mean_ms": 276.22911671875
+        },
+        "specialist_preprocess_ms": {
+          "samples": 0,
+          "p50_ms": null,
+          "p95_ms": null,
+          "mean_ms": null
+        },
+        "specialist_rknn_call_ms": {
+          "samples": 0,
+          "p50_ms": null,
+          "p95_ms": null,
+          "mean_ms": null
+        },
+        "specialist_decode_nms_ms": {
+          "samples": 0,
+          "p50_ms": null,
+          "p95_ms": null,
+          "mean_ms": null
+        },
+        "specialist_total_ms": {
+          "samples": 0,
+          "p50_ms": null,
+          "p95_ms": null,
+          "mean_ms": null
+        }
+      },
+      "resources": {
+        "process_cpu_one_core_percent": 62.78800909806078,
+        "process_cpu_machine_percent": 15.697002274515196,
+        "inference_worker_cpu_one_core_percent": 46.76125339362168,
+        "online_cpus": 4,
+        "rss_end_mb": 330.29296875,
+        "rss_peak_mb": 400.96484375,
+        "board_telemetry": {
+          "devices": {
+            "npu": {
+              "load_percent": {
+                "samples": 74,
+                "p50_percent": 100.0,
+                "p95_percent": 100.0,
+                "mean_percent": 100.0
+              },
+              "frequency_mhz": {
+                "samples": 74,
+                "p50_mhz": 600.0,
+                "p95_mhz": 600.0,
+                "mean_mhz": 600.0
+              }
+            },
+            "gpu": {
+              "load_percent": {
+                "samples": 74,
+                "p50_percent": 37.0,
+                "p95_percent": 92.09999999999997,
+                "mean_percent": 37.04054054054054
+              },
+              "frequency_mhz": {
+                "samples": 74,
+                "p50_mhz": 800.0,
+                "p95_mhz": 800.0,
+                "mean_mhz": 647.2972972972973
+              }
+            }
+          },
+          "temperatures_c": {
+            "soc-thermal": {
+              "samples": 74,
+              "min_c": 32.5,
+              "max_c": 34.375,
+              "end_c": 33.75
+            },
+            "gpu-thermal": {
+              "samples": 74,
+              "min_c": 30.625,
+              "max_c": 32.5,
+              "end_c": 31.25
+            }
+          },
+          "sample_period_ms": 250
+        }
+      },
+      "display_note": "AI runs in a separate latest-only worker and never blocks EGL frame submission."
+    }
+  }
+}
