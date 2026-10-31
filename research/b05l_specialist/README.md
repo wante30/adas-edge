@@ -1,5 +1,8 @@
 # B05L 交通灯 Specialist（C/D 方案）
 
+
+> 运行：从仓库根目录执行，或设置 `PYTHONPATH=.`。共享模块已放在 `tools/`，颜色分类依赖 `competition_ai/traffic_light_tracking.py`。
+
 B05L 是基于 B05N P2 的单类交通灯专模，输入 512×192（top60 ROI），
 用于 C（BDD + Specialist）和 D（B05N P2 + Specialist）双模型方案。
 它不是当前默认模型的替代品；默认 B 仍是单模型 B05N P2。

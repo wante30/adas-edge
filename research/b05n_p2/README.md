@@ -1,5 +1,8 @@
 # B05N P2 十类检测研究
 
+
+> 运行：从仓库根目录执行，或设置 `PYTHONPATH=.`。共享模块已放在 `tools/`（b05k_common / b05k_runtime / b05n_tl_eval / b05l_eval）。
+
 本目录保存 B05N P2（YOLOv8n-P2）的训练、评估、ONNX/RKNN 转换和交通灯专项工具。
 权重、ONNX、RKNN 和数据集不进入普通 Git；SHA256 见
 `artifacts/manifests/model_manifest.json`。
