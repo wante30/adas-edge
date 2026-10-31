@@ -8,12 +8,17 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+
 import socket
 import sys
 import time
 
 import cv2
 import numpy as np
+
+BRIDGE_DIR = Path(__file__).resolve().parent
+if str(BRIDGE_DIR) not in sys.path:
+    sys.path.insert(0, str(BRIDGE_DIR))
 
 
 MODEL_FILES = {
@@ -267,22 +272,41 @@ def _install_raw_head_adapter(bridge_module, scheme: str):
 
     detector_module.CompetitionDetector = RawHeadCompetitionDetector
     base_console_detector = bridge_module.RknnConsoleDetector
-    single_model = scheme in {"A", "B"}
-    p2_model = scheme in {"B", "D"}
+    from competition_ai.detector import BDD_NAMES
 
     class CompetitionConsoleDetector(base_console_detector):
         def __init__(self, model_path, input_size, *, specialist=False,
-                     class_names=None, class_profile=None):
-            self.single_model = single_model
+                     class_names=None, class_profile=None,
+                     backend=None, task=None):
+            filename = Path(model_path).name
+            if backend is None:
+                backend = ("rknn_capi" if filename == "b05n_p2_multiclass_capi.rknn"
+                           else "rknn_lite")
+            if task is None:
+                task = "mtl" if "mtl" in filename.lower() else "detect"
+            self.backend = backend
+            self.task = task
+            self.single_model = scheme in {"A", "B"}
             self.specialist = specialist
             self.source = "TL_SPECIALIST_RKNN" if specialist else "MAIN_RKNN"
             self.frame_id = 0
-            if p2_model and not specialist:
-                class_profile = "bdd10"
+            self.capi = None
+            if not specialist and backend == "rknn_capi":
+                from capi_detector import CapiDetector, CapiMtlDetector
+                backend_class = CapiMtlDetector if task == "mtl" else CapiDetector
+                self.capi = backend_class(model_path, input_size,
+                                          class_names=BDD_NAMES,
+                                          class_profile=class_profile)
+                self.detector = self.capi
+                self.single_model = True
+                self.source = "MAIN_RKNN"
+                return
             super().__init__(model_path, input_size, specialist=specialist,
                              class_names=class_names, class_profile=class_profile)
 
         def detect(self, frame):
+            if self.capi is not None:
+                return self.capi.detect(frame)
             result = self.detector.infer(frame, stream_id=0,
                                          frame_id=self.frame_id, timestamp_ns=None)
             self.frame_id += 1
@@ -312,7 +336,10 @@ def _install_raw_head_adapter(bridge_module, scheme: str):
             return items, result.inference_ms
 
         def close(self):
-            super().close()
+            if self.capi is not None:
+                self.capi.close()
+            else:
+                super().close()
 
     bridge_module.RknnConsoleDetector = CompetitionConsoleDetector
 
@@ -323,7 +350,7 @@ def run_benchmark(args) -> dict:
     args.output_dir.mkdir(parents=True)
     replay_paths = _make_replay_frames(args.data_root, args.replay_dir, args.frame_count)
     main_kind = "p2" if args.scheme in {"B", "D"} else "bdd"
-    main_model = args.model_dir / MODEL_FILES[main_kind]
+    main_model = args.main_model or (args.model_dir / MODEL_FILES[main_kind])
     specialist_model = args.model_dir / MODEL_FILES["specialist"]
     for path in (main_model, specialist_model):
         if not path.is_file():
@@ -460,6 +487,8 @@ def main():
     parser.add_argument("--model-dir", type=Path, required=True)
     parser.add_argument("--replay-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--main-model", type=Path,
+                        help="override the scheme's main model (for MTL / C API tests)")
     parser.add_argument("--frame-count", type=int, default=32)
     parser.add_argument("--warmup", type=int, default=10)
     parser.add_argument("--requests", type=int, default=120)

@@ -10,6 +10,8 @@ import struct
 
 MODEL_SWITCH_REQUEST_MAGIC = b"MVM1"
 MODEL_SWITCH_REPLY_MAGIC = b"MMS1"
+DEFAULT_MODEL_ID = "B"
+B05N_P2_FILENAME = "b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn"
 _MODEL_ID = re.compile(r"^[A-Za-z0-9_-]{1,48}$")
 _REQUEST_HEADER = struct.Struct("<IB")
 _REQUEST_ID = struct.Struct("<I")
@@ -24,6 +26,8 @@ class ModelProfile:
     input_size: tuple[int, int]
     class_profile: str
     legacy: bool = False
+    backend: str = "rknn_lite"
+    task: str = "detect"
 
     @property
     def available(self) -> bool:
@@ -37,12 +41,25 @@ class ModelProfile:
                    if path is not None and not path.is_file()]
         return "模型文件未安装" if missing else ""
 
+    def wire(self) -> dict[str, object]:
+        """Compact option record used by the bounded MVA2 status payload."""
+        return {
+            "id": self.id,
+            "label": self.label,
+            "available": self.available,
+            "legacy": self.legacy,
+            "has_specialist": self.specialist_model is not None,
+            "reason": self.unavailable_reason,
+        }
+
     def public(self) -> dict[str, object]:
         return {
             "id": self.id,
             "label": self.label,
             "available": self.available,
             "legacy": self.legacy,
+            "backend": self.backend,
+            "task": self.task,
             "has_specialist": self.specialist_model is not None,
             "reason": self.unavailable_reason,
         }
@@ -53,7 +70,10 @@ def build_model_profiles(model_root: str | Path,
     model_root = Path(model_root)
     legacy_root = Path(legacy_root)
     bdd = model_root / "bdd_yolov8n_512x288_raw_heads_int8.rknn"
-    p2 = model_root / "b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn"
+    p2 = default_main_model_path(model_root)
+    capi = model_root / "b05n_p2_multiclass_capi.rknn"
+    mtl_full = Path("/home/cat/models/b05n_p2_mtl_b2a/b05n_p2_mtl_b2a_int8.rknn")
+    mtl_fast = Path("/home/cat/models/b05n_p2_mtl_b2a_seg256/b05n_p2_mtl_b2a_seg256_int8.rknn")
     specialist = model_root / "b05l_v8n_p2_raw_heads_int8_500_20261026.rknn"
     old_rect_models = legacy_root / "adas-edge-rect" / "rect_models"
     old_tl_models = legacy_root / "adas-edge-rect" / "tl_check"
@@ -67,8 +87,11 @@ def build_model_profiles(model_root: str | Path,
     old_specialist = old_tl_models / "tl_specialist_512x192_hybrid2.rknn"
 
     profiles = [
+        ModelProfile(DEFAULT_MODEL_ID, "B · B05N P2 十类 Raw-head INT8", p2, None, (512, 288), "bdd10"),
+        ModelProfile("B-capi", "B-CAPI · B05N P2 Raw-head INT8 (C API)", capi, None, (512, 288), "bdd10", backend="rknn_capi"),
+        ModelProfile("MTL-FULL", "B-2a · Full Resolution MTL (C API)", mtl_full, None, (512, 288), "bdd10", backend="rknn_capi", task="mtl"),
+        ModelProfile("MTL-FAST", "B-2a · Seg-256 MTL (C API)", mtl_fast, None, (512, 288), "bdd10", backend="rknn_capi", task="mtl"),
         ModelProfile("A", "A · BDD-YOLOv8n Raw-head INT8", bdd, None, (512, 288), "bdd10"),
-        ModelProfile("B", "B · B05N P2 十类 Raw-head INT8", p2, None, (512, 288), "bdd10"),
         ModelProfile("C", "C · BDD + B05L Specialist", bdd, specialist, (512, 288), "bdd10"),
         ModelProfile("D", "D · B05N P2 + B05L Specialist", p2, specialist, (512, 288), "bdd10"),
         ModelProfile("legacy-bdd-kl", "旧版 · BDD-YOLOv8n KL INT8", old_bdd_kl, None,
@@ -107,6 +130,10 @@ def build_model_profiles(model_root: str | Path,
         ))
 
     return tuple(profiles)
+
+
+def default_main_model_path(model_root: str | Path) -> Path:
+    return Path(model_root) / B05N_P2_FILENAME
 
 
 def encode_model_switch_request(request_id: int, profile_id: str) -> bytes | None:
