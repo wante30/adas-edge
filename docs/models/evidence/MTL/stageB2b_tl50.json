@@ -1,0 +1,11 @@
+{
+  "checkpoint": "runs/stageB2b/mtl_best.pt",
+  "images": 50,
+  "gt_full": 154,
+  "gt_roi": 150,
+  "ap50_full": 0.5221217015366365,
+  "ap50_roi": 0.5151311510818356,
+  "recall_small_8_16_at_conf": 0.4166666666666667,
+  "small_gt": 84,
+  "small_hit": 35
+}

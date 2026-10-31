@@ -1,5 +1,8 @@
 # RK3566 实板性能基准
 
+> 本文件是 2026-10-28 的 A 方案实板快照；2026-10-31 默认已切为 **B（B05N P2）**，B-CAPI/MTL 的回放数据见 `docs/deployment/MTL_CAPI_DEPLOYMENT.md`。
+
+
 更新日期：2026-10-28  
 板卡：EmbedFire LubanCat-1，RK3566，4×Cortex-A55，3.8 GiB，Mali-G52，RKNPU  
 系统：Ubuntu 20.04.6 LTS，Linux 4.19.232，Qt 5.12.8，RKNN Lite2 2.3.2，驱动 0.8.2  

@@ -1,7 +1,7 @@
 {
   "schema": "adas-edge/model-manifest/v1",
-  "updated": "2026-10-28",
-  "note": "Weights are intentionally not stored in normal Git history. This manifest is the version index; local Windows and board paths are recorded for reproducibility. SHA256 values were computed from the actual files listed.",
+  "updated": "2026-10-31",
+  "note": "Weights are intentionally not stored in normal Git history. This manifest is the version index; Windows/Mac/board paths are recorded for reproducibility. SHA256 values were computed from the actual files listed. MTL entries were added after the 2026-10-31 B-2a / Seg-256 / C API integration. The demo video is kept outside Git.",
   "artifacts": [
     {
       "id": "bdd-main-fp32",
@@ -208,6 +208,132 @@
       "status": "legacy rollback candidate; not current default",
       "evidence": [
         "docs/deployment/DEPLOYMENT_GUIDE.md"
+      ]
+    },
+    {
+      "id": "b05n-p2-mtl-b1-ckpt",
+      "role": "B-1 MTL checkpoint: frozen detector + full-data seg decoder",
+      "format": "PyTorch .pt",
+      "local_archive": "research/b05n_p2_mtl/runs/stageB1/mtl_best.pt",
+      "size_bytes": 12809989,
+      "sha256": "6c22062a90e810452f98420fae235be8cfc7159b503a15fa3e2e72dfef96b4c6",
+      "input": "512x288 RGB",
+      "outputs": "12 detection raw-head + lane_cat/lane_style/drivable",
+      "status": "research checkpoint; not deployed",
+      "evidence": [
+        "research/b05n_p2_mtl/runs/stageB1/eval.json"
+      ]
+    },
+    {
+      "id": "b05n-p2-mtl-b2a-ckpt",
+      "role": "B-2a checkpoint: selective unfreeze + detection loss (deployed MTL source)",
+      "format": "PyTorch .pt",
+      "local_archive": "research/b05n_p2_mtl/runs/stageB2a/mtl_best.pt",
+      "size_bytes": 12810053,
+      "sha256": "34fd31c3470b7435a764c3ef3623685a3c8f60c38537fa6c38b7866d4c3df8fb",
+      "input": "512x288 RGB",
+      "outputs": "12 detection raw-head + lane_cat/lane_style/drivable",
+      "status": "source checkpoint for MTL-FULL/MTL-FAST",
+      "evidence": [
+        "research/b05n_p2_mtl/runs/stageB2a/eval_seg.json"
+      ]
+    },
+    {
+      "id": "b05n-p2-mtl-b2b-ckpt",
+      "role": "B-2b control checkpoint: second 3-epoch joint fine-tune",
+      "format": "PyTorch .pt",
+      "local_archive": "research/b05n_p2_mtl/runs/stageB2b/mtl_best.pt",
+      "size_bytes": 12810053,
+      "sha256": "3f087fa7dc02c6b485a941f5cd96bfae0b525b59862dec11aff9ade026bc2c75",
+      "input": "512x288 RGB",
+      "outputs": "12 detection raw-head + lane_cat/lane_style/drivable",
+      "status": "segmentation-best control; not deployed",
+      "evidence": [
+        "research/b05n_p2_mtl/runs/stageB2b/eval_seg.json"
+      ]
+    },
+    {
+      "id": "b05n-p2-mtl-b2a-onnx",
+      "role": "B-2a raw-head + MTL ONNX conversion source",
+      "format": "ONNX",
+      "local_archive": "research/b05n_p2_mtl/deployment/stageB2a/b05n_p2_mtl_b2a.onnx",
+      "size_bytes": 12630960,
+      "sha256": "303e67511383c95638f51c4e6a0b53e5e3d904df141f548ee22561dff84de6d7",
+      "input": "[1,3,288,512] NCHW RGB float32 0..1",
+      "outputs": "12 raw-head + lane_cat[1,9,288,512] + lane_style[1,3,288,512] + drivable[1,3,288,512]",
+      "status": "ONNX parity checked; conversion source",
+      "evidence": [
+        "research/b05n_p2_mtl/deployment/stageB2a/conversion_report.md"
+      ]
+    },
+    {
+      "id": "b05n-p2-mtl-b2a-fp16",
+      "role": "B-2a MTL FP16 RKNN",
+      "format": "RKNN",
+      "board_path": "/home/cat/models/b05n_p2_mtl_b2a/b05n_p2_mtl_b2a_fp16.rknn",
+      "size_bytes": 8360418,
+      "sha256": "e92b71e9c9dfc52befa5738741c12340517b2993fa7ea11c28599b0bbb8b85d6",
+      "input": "512x288 RGB",
+      "outputs": "15 (12 detection + 3 segmentation, 288x512)",
+      "status": "accuracy reference; not deployed (slower)",
+      "evidence": [
+        "research/b05n_p2_mtl/deployment/stageB2a/fp16_analysis.json"
+      ]
+    },
+    {
+      "id": "b05n-p2-mtl-b2a-int8",
+      "role": "B-2a MTL INT8 RKNN (MTL-FULL)",
+      "format": "RKNN",
+      "board_path": "/home/cat/models/b05n_p2_mtl_b2a/b05n_p2_mtl_b2a_int8.rknn",
+      "size_bytes": 4954226,
+      "sha256": "16b267ab5c2823a08e4dd86b77544dcdd09038c9e37c04a65140fd00dc44a68b",
+      "input": "512x288 RGB",
+      "outputs": "15 (12 detection + 3 segmentation, 288x512)",
+      "status": "deployed as MTL-FULL; verified on RK3566",
+      "evidence": [
+        "research/b05n_p2_mtl/deployment/stageB2a/int8_analysis.json"
+      ]
+    },
+    {
+      "id": "b05n-p2-mtl-b2a-seg256-onnx",
+      "role": "B-2a Seg-256 ONNX (2x2 average-pool segmentation outputs)",
+      "format": "ONNX",
+      "local_archive": "research/b05n_p2_mtl/deployment/stageB2a/seg256/b05n_p2_mtl_b2a_seg256.onnx",
+      "size_bytes": 12631431,
+      "sha256": "9d1e95ffb691c3a17f8ec3b93dfac30fa7005e378da9f6a06b19eea765a7a2cd",
+      "input": "[1,3,288,512] NCHW RGB float32 0..1",
+      "outputs": "12 raw-head + lane_cat[1,9,144,256] + lane_style[1,3,144,256] + drivable[1,3,144,256]",
+      "status": "conversion source for Seg-256",
+      "evidence": [
+        "research/b05n_p2_mtl/deployment/stageB2a/seg256/seg256_report.md"
+      ]
+    },
+    {
+      "id": "b05n-p2-mtl-b2a-seg256-int8",
+      "role": "B-2a Seg-256 MTL INT8 RKNN (MTL-FAST)",
+      "format": "RKNN",
+      "board_path": "/home/cat/models/b05n_p2_mtl_b2a_seg256/b05n_p2_mtl_b2a_seg256_int8.rknn",
+      "size_bytes": 4933694,
+      "sha256": "22f910ed5a40b0db32158c1175fb96b7ae1495565bb1e5d6d5d3d834b9e14732",
+      "input": "512x288 RGB",
+      "outputs": "15 (12 detection + 3 segmentation, 144x256)",
+      "status": "deployed as MTL-FAST; verified on RK3566",
+      "evidence": [
+        "research/b05n_p2_mtl/deployment/stageB2a/seg256/consistency_extra.json"
+      ]
+    },
+    {
+      "id": "b05n-p2-mtl-b1-int8",
+      "role": "B-1 MTL INT8 RKNN (historical stage)",
+      "format": "RKNN",
+      "local_archive": "research/b05n_p2_mtl/deployment/stageB1/b05n_p2_mtl_b1_int8.rknn",
+      "size_bytes": 4954290,
+      "sha256": "29e232a3f1d3439dadde82f02613c6c929b35cd5f7e9a55fd48fecccfae9b413",
+      "input": "512x288 RGB",
+      "outputs": "15 (12 detection + 3 segmentation, 288x512)",
+      "status": "stage-B1 evidence; superseded by B-2a",
+      "evidence": [
+        "research/b05n_p2_mtl/deployment/stageB1/conversion_report.md"
       ]
     }
   ]

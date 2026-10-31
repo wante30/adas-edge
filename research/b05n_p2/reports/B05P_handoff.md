@@ -69,7 +69,7 @@ P2：   [1,288,512,3]  输出 boxes [1,4,12240] + scores [1,10,12240]
 Spec： [1,192,512,3]  输出 boxes [1,4,8160]  + scores [1,1,8160]
 ```
 
-**注意**：`*_split_fp16/int8` 是从 `*_split_logits.onnx` 转的，scores 是 **logits**，解码前需要 `sigmoid`。  
+**注意**：`*_split_fp16/int8` 是从 `*_split_logits.onnx` 转的，scores 是 **logits**，解码前需要 `sigmoid`。
 原始 `bdd_yolov8n_512x288_split.onnx` 是概率，不需要 sigmoid。不要混用。
 
 ## 4. 板端待办（P0）
@@ -182,7 +182,7 @@ deployment/rknn_work/
   run_bdd_spec_rknn.sh
 ```
 
-完整报告：`research/rk3566_models/reports/B05P_quantization_investigation.md`  
+完整报告：`research/rk3566_models/reports/B05P_quantization_investigation.md`
 视频对比：见 B05O 报告与 `D:\Datasets\adas_edge_training\b05o_video_scheduling\`
 
 ## 8. Git

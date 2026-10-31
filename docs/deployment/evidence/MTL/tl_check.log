@@ -1,0 +1,21 @@
+W rknn-toolkit-lite2 version: 2.3.2
+I RKNN: [04:50:10.907] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [04:50:10.907] RKNN Driver Information, version: 0.8.2
+I RKNN: [04:50:10.910] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+W RKNN: [04:50:10.938] query RKNN_QUERY_INPUT_DYNAMIC_RANGE error, rknn model is static shape type, please export rknn with dynamic_shapes
+W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
+librga fail to get driver version! Compatibility mode will be enabled.
+
+rga_api version 1.9.2_[1]
+base-B n= 8 ms= 73.6 [('car', 0.258), ('car', 0.516), ('car', 0.756), ('car', 0.9), ('car', 0.92), ('person', 0.284), ('person', 0.318), ('truck', 0.458)]
+W rknn-toolkit-lite2 version: 2.3.2
+I RKNN: [04:50:12.384] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [04:50:12.385] RKNN Driver Information, version: 0.8.2
+I RKNN: [04:50:12.386] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+W RKNN: [04:50:12.415] query RKNN_QUERY_INPUT_DYNAMIC_RANGE error, rknn model is static shape type, please export rknn with dynamic_shapes
+W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
+adapter-B n= 10 ms= 66.0 [('car', 0.258), ('car', 0.516), ('car', 0.756), ('car', 0.9), ('car', 0.92), ('person', 0.284), ('person', 0.318), ('traffic light', 0.273), ('traffic light', 0.367), ('truck', 0.458)]
+I RKNN: [04:50:12.512] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [04:50:12.512] RKNN Driver Information, version: 0.8.2
+I RKNN: [04:50:12.513] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+adapter-capi n= 11 ms= 26.9 [('car', 0.31), ('car', 0.497), ('car', 0.745), ('car', 0.889), ('car', 0.924), ('pedestrian', 0.284), ('pedestrian', 0.359), ('rider', 0.486), ('traffic light', 0.288), ('traffic light', 0.337), ('truck', 0.424)]

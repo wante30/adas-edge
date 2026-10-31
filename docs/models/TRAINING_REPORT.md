@@ -1,5 +1,8 @@
 # 模型训练报告（B01 → B05P）
 
+> 2026-10-31 更新：正式默认模型已切为 **B（B05N P2）**；第 1–5 节为 2026-10-28 的 A 方案选型记录，B-2a/MTL 见第 6 节。
+
+
 更新日期：2026-10-28  
 范围：BDD100K 道路检测、YOLOv8n/P2 对比、交通灯 Specialist、RKNN Raw-head 量化前后精度。  
 原则：只记录能从权重、训练元数据、评估 JSON 或报告中追溯的数字；PC、RKNN 仿真、RK3566 实板分开标注。
@@ -261,14 +264,14 @@ conf=0.25、IoU=0.5、一对一匹配，ROI 内 150 GT：
 ### 4.3 当前正式选型
 
 ```text
-默认：A = BDD-YOLOv8n Raw-head INT8 单模型
-保留：B = B05N P2 10 类
+默认（2026-10-31）：B = B05N P2 10 类 Raw-head INT8
+保留：A = BDD-YOLOv8n Raw-head INT8
 保留：C = BDD + B05L Specialist
 保留：D = B05N P2 + B05L Specialist
 ```
 
 模型切换代码：`deployment/lubancat/qt_gpu_probe/model_profiles.py`、`ai_bridge.py`、`video_item.cpp`。  
-板端当前实际运行 A（进程参数 + summary 证明），但 UI 截图曾显示“方案 B”，属于待修的状态显示不一致。
+2026-10-31 板端默认已切为 B；A/C/D 与历史方案保留。UI 状态显示不一致的问题在本次模型注册/状态包更新中处理。
 
 ---
 
@@ -284,3 +287,38 @@ conf=0.25、IoU=0.5、一对一匹配，ROI 内 150 GT：
 | 模型 hash | `artifacts/manifests/model_manifest.json` |
 
 > 训练权重、完整数据集、中间 checkpoint 不上传普通 Git；需要时按 manifest 路径从训练机取回并校验 SHA256。
+
+---
+
+## 6. 2026-10-31 更新：B-2a MTL 训练
+
+> 第 1–5 节是 2026-10-28 的检测选型记录。此后新增了 B-2a 多任务分支；
+> 正式默认模型在 2026-10-31 为 **B（B05N P2）**，A/C/D 保留。
+
+### 6.1 分阶段
+
+| 阶段 | 训练内容 | 关键结果 |
+|---|---|---|
+| 阶段 A | 冻结检测，只训分割头，45k 子集 | 车道 0.3726 / 斑马线 0.2440 |
+| B-1 | 全量 70k，检测冻结，14 epoch | 0.3868 / 0.2646 / 线型 0.8468 / 可行驶 0.5885 |
+| B-2a | 选择性解冻 P2/P3 + 检测头 + 检测损失，3 epoch | 0.4281 / 0.3079 / 0.8756 / 0.6480；mAP 0.3707 |
+| B-2b | 从 B-2a 再接 3 epoch（对照） | 0.4396 / 0.3236 / 0.8830 / 0.6683；mAP 0.3667 |
+
+B-2a 最终被选为部署版本：检测 mAP、traffic light AP、BDD50 TL AP 最好；B-2b 分割更好，但检测和小交通灯回退，作为“分割最佳”对照保留。
+
+### 6.2 训练代码
+
+- `research/b05n_p2_mtl/mtl/model.py`：B05NMTL + SegDecoder。
+- `research/b05n_p2_mtl/mtl/losses.py`：CE / Dice / 前景 Dice / Tversky。
+- `research/b05n_p2_mtl/mtl/data.py`、`label_render.py`：BDD lane/drivable mask。
+- `research/b05n_p2_mtl/scripts/train_stage_a.py`：阶段 A / B-1。
+- `research/b05n_p2_mtl/scripts/train_stage_b2a.py`：B-2a / B-2b 联合微调。
+- `research/b05n_p2_mtl/scripts/eval_mtl.py`、`eval_det_map.py`、`eval_tl_50.py`。
+
+### 6.3 证据
+
+- `research/b05n_p2_mtl/runs/stageB1/`
+- `research/b05n_p2_mtl/runs/stageB2a/`
+- `research/b05n_p2_mtl/runs/stageB2b/`
+- `docs/models/evidence/MTL/`
+- `docs/research/MTL_RESEARCH_SUMMARY.md`

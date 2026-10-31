@@ -1,8 +1,8 @@
 # Qt 多任务分割显示
 
-更新日期：2026-10-31  
-代码：`deployment/lubancat/qt_gpu_probe/main.qml`  
-通道：`/dev/shm/adas_mtl_overlay.png` + `.json`  
+更新日期：2026-10-31
+代码：`deployment/lubancat/qt_gpu_probe/main.qml`
+通道：`/dev/shm/adas_mtl_overlay.png` + `.json`
 模型：`MTL-FULL` / `MTL-FAST`
 
 ---
@@ -17,7 +17,7 @@
 
 ![B cleared](assets/mtl/screenshot_b_overlay_cleared.png)
 
-截图条件：RK3566 板端 Qt，1280×720，本地 PGV 回放，道路 Q4，llvmpipe 软件 OpenGL。  
+截图条件：RK3566 板端 Qt，1280×720，本地 PGV 回放，道路 Q4，llvmpipe 软件 OpenGL。
 演示视频（2.1 MB，不进入普通 Git）：本机归档
 `/Users/a1/Documents/默认项目/research/b05n_p2_mtl/deployment/qt_overlay/mtl_demo.mp4`，
 16 s，B → MTL-FAST → MTL-FULL → B。需要公开时放 GitHub Release 或对象存储。

@@ -218,3 +218,54 @@ python3 -c "from rknnlite.api import RKNNLite; r=RKNNLite(); print(r.load_rknn('
 - `docs/deployment/evidence/current_live_summary_20261028.json`
 - `artifacts/manifests/model_manifest.json`
 - 原始报告：`B05P_quantization_investigation.md`、`B05P_INT8_accuracy_followup.md`、`B05P_multi_model_raw_heads_20261026.md`、`B05P_architecture_selection_20261027.md`
+
+---
+
+## 8. 2026-10-31 更新：B-2a 多任务 / Seg-256
+
+### 8.1 B-2a 输出与量化
+
+B-2a 在 B05N P2 的 12 路 Raw-head 之外增加 3 路分割：
+
+| 输出 | shape | 类别 |
+|---|---|---|
+| `lane_cat` | 1×9×288×512 | crosswalk / double other / double white / double yellow / road curb / single other / single white / single yellow / background |
+| `lane_style` | 1×3×288×512 | solid / dashed / background |
+| `drivable` | 1×3×288×512 | direct / alternative / background |
+
+全部为 logits + per-tensor affine INT8。与 PyTorch FP32 的一致性（Toolkit2 模拟器，10 张）：
+
+| 指标 | FP16 | INT8 |
+|---|---:|---:|
+| 车道前景 IoU | 0.9992 | 0.9302 |
+| 斑马线 IoU | 0.9990 | 0.8875 |
+| 线型准确率 | 0.9994 | 0.9163 |
+| 实线准确率 | 0.9990 | 0.9659 |
+| 虚线准确率 | 0.9996 | 0.8929 |
+| 可行驶 mIoU | 0.9994 | 0.9264 |
+| traffic light 框匹配率 | 1.000 | 0.967 |
+| traffic light 分数变化 | ~0 | −0.0088 |
+
+检测端可用；分割端可用，但虚线（lane_style dashed）是弱项。B-2a INT8 的分割一致性高于 B-1 INT8，说明联合微调特征对量化更稳。
+
+### 8.2 Seg-256
+
+在 ONNX 图内对三个分割输出加 2×2 AveragePool（stride 2），输出 144×256；权重不重新初始化，校准集不变。
+
+- ONNX 校验：新分割输出与原 logits 的 2×2 均值池化最大差 3.8e-6；12 个检测输出逐元素一致。
+- RKNN 文件 4,933,694 B；分割张量 4× 减少。
+- 60 帧一致性（恢复到 512×288）：车道 IoU 0.794、斑马线 0.768、线型一致率 0.963、可行驶 mIoU 0.872。
+- 速度：RKNN 调用 158.8 → 117.8 ms，完整单帧 244.6 → 161.1 ms，Python 连续 3.55 → 4.79 FPS；C API 5.97 FPS。
+
+### 8.3 原生 INT8 argmax
+
+三个分割头均为 per-tensor affine；同一像素 9/3/3 通道共享 scale/zp，因此直接对 int8 取 argmax 与反量化后取 argmax 等价。C API `want_float=0` 在 60 帧、8,847,360 像素上与 `want_float=1` 一致率 **1.000000**。
+
+### 8.4 证据
+
+- `research/b05n_p2_mtl/deployment/stageB2a/conversion_report.md`
+- `research/b05n_p2_mtl/deployment/stageB2a/seg256/seg256_report.md`
+- `research/b05n_p2_mtl/deployment/stageB2a/capi/capi_report.md`
+- `research/b05n_p2_mtl/deployment/stageB2a/capi/capi_bc_report.md`
+- `docs/models/evidence/MTL/`
+- `docs/research/MTL_RESEARCH_SUMMARY.md`

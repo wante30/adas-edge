@@ -1,0 +1,265 @@
+W rknn-toolkit-lite2 version: 2.3.2
+I RKNN: [05:41:51.201] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [05:41:51.201] RKNN Driver Information, version: 0.8.2
+I RKNN: [05:41:51.253] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+W RKNN: [05:41:51.292] query RKNN_QUERY_INPUT_DYNAMIC_RANGE error, rknn model is static shape type, please export rknn with dynamic_shapes
+W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
+options [('B', True), ('B-capi', True), ('MTL-FULL', True), ('MTL-FAST', True), ('A', True), ('C', True), ('D', True)]
+B model= B {'type': 'CompetitionConsoleDetector', 'backend': 'rknn_lite', 'task': 'detect', 'capi': None, 'mask': (None, None), 'overlay': False}
+librga fail to get driver version! Compatibility mode will be enabled.
+
+3 im2d_rga_impl rga_version_below_minimun_range_user_driver(304): The driver may be compatible, but it is best to update the driver to version 1.2.4. You can try to update the SDK or update the <SDK>/kernel/drivers/video/rockchip/rga3 directory individually. current version: librga 1.9.2, driver .
+rga_api version 1.9.2_[1]
+  result 5001 ['person', 'person', 'person', 'person', 'traffic light', 'car', 'car'] options= True status_bytes= 3690
+  result 5003 ['person', 'person', 'person', 'person', 'person', 'traffic light', 'car', 'car'] options= False status_bytes= 827
+  after {'type': 'CompetitionConsoleDetector', 'backend': 'rknn_lite', 'task': 'detect', 'capi': None, 'mask': (None, None), 'overlay': False} meta None
+I RKNN: [05:41:55.700] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [05:41:55.700] RKNN Driver Information, version: 0.8.2
+I RKNN: [05:41:55.702] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+switch B-capi APPLIED 204.7
+B-capi model= B-capi {'type': 'CompetitionConsoleDetector', 'backend': 'rknn_capi', 'task': 'detect', 'capi': 'CapiDetector', 'mask': (None, None), 'overlay': False}
+  result 5005 ['person', 'person', 'person', 'person', 'person', 'person', 'person', 'person', 'car', 'car', 'traffic light', 'traffic light'] options= False status_bytes= 890
+  result 5006 ['person', 'person', 'person', 'person', 'person', 'person', 'person', 'car', 'car', 'car', 'traffic light', 'traffic light', 'traffic light'] options= False status_bytes= 861
+  result 5007 ['person', 'person', 'person', 'person', 'person', 'person', 'person', 'person', 'car', 'car', 'car', 'traffic light'] options= False status_bytes= 861
+  after {'type': 'CompetitionConsoleDetector', 'backend': 'rknn_capi', 'task': 'detect', 'capi': 'CapiDetector', 'mask': (None, None), 'overlay': False} meta None
+I RKNN: [05:41:56.588] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [05:41:56.588] RKNN Driver Information, version: 0.8.2
+I RKNN: [05:41:56.590] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+switch MTL-FULL APPLIED 296.0
+MTL-FULL model= MTL-FULL {'type': 'CompetitionConsoleDetector', 'backend': 'rknn_capi', 'task': 'mtl', 'capi': 'CapiMtlDetector', 'mask': (512, 288), 'overlay': False}
+  result 5009 ['person', 'person', 'person', 'person', 'person', 'person', 'person', 'car', 'car', 'car', 'traffic light', 'traffic light'] options= False status_bytes= 889
+  result 5010 ['person', 'person', 'person', 'person', 'car', 'car', 'car', 'traffic light', 'traffic light', 'traffic light', 'traffic light'] options= False status_bytes= 904
+  result 5011 ['person', 'person', 'person', 'person', 'car', 'car', 'car', 'car', 'traffic light', 'traffic light'] options= False status_bytes= 884
+  after {'type': 'CompetitionConsoleDetector', 'backend': 'rknn_capi', 'task': 'mtl', 'capi': 'CapiMtlDetector', 'mask': (512, 288), 'overlay': True} meta {'frame_id': 2, 'timestamp_ns': 37351119451619, 'mask_width': 512, 'mask_height': 288, 'display_width': 512, 'display_height': 288, 'generation': 2, 'model_path': 'b05n_p2_mtl_b2a_int8.rknn'}
+I RKNN: [05:41:57.308] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [05:41:57.308] RKNN Driver Information, version: 0.8.2
+I RKNN: [05:41:57.310] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+switch MTL-FAST APPLIED 288.0
+MTL-FAST model= MTL-FAST {'type': 'CompetitionConsoleDetector', 'backend': 'rknn_capi', 'task': 'mtl', 'capi': 'CapiMtlDetector', 'mask': (256, 144), 'overlay': False}
+  result 5013 ['person', 'person', 'person', 'person', 'person', 'person', 'car', 'car', 'car', 'car'] options= False status_bytes= 851
+  result 5015 ['person', 'person', 'person', 'person', 'car', 'car', 'car', 'car', 'truck', 'traffic light', 'traffic light'] options= False status_bytes= 906
+  after {'type': 'CompetitionConsoleDetector', 'backend': 'rknn_capi', 'task': 'mtl', 'capi': 'CapiMtlDetector', 'mask': (256, 144), 'overlay': True} meta {'frame_id': 2, 'timestamp_ns': 37351983231319, 'mask_width': 256, 'mask_height': 144, 'display_width': 256, 'display_height': 144, 'generation': 2, 'model_path': 'b05n_p2_mtl_b2a_seg256_int8.rknn'}
+W rknn-toolkit-lite2 version: 2.3.2
+I RKNN: [05:42:01.696] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [05:42:01.697] RKNN Driver Information, version: 0.8.2
+I RKNN: [05:42:01.698] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+W RKNN: [05:42:01.779] query RKNN_QUERY_INPUT_DYNAMIC_RANGE error, rknn model is static shape type, please export rknn with dynamic_shapes
+W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
+switch B APPLIED 1028.3
+B model= B {'type': 'CompetitionConsoleDetector', 'backend': 'rknn_lite', 'task': 'detect', 'capi': None, 'mask': (None, None), 'overlay': False}
+  result 5017 ['person', 'person', 'person', 'car', 'car', 'car', 'car', 'traffic light', 'traffic light', 'traffic light'] options= False status_bytes= 888
+  result 5018 ['person', 'person', 'person', 'car', 'car', 'car'] options= False status_bytes= 857
+  result 5019 ['person', 'person', 'person', 'car', 'car', 'car'] options= False status_bytes= 833
+  after {'type': 'CompetitionConsoleDetector', 'backend': 'rknn_lite', 'task': 'detect', 'capi': None, 'mask': (None, None), 'overlay': False} meta None
+{
+  "evidence": "SYNTHETIC",
+  "layout": "quad",
+  "display_view": "front",
+  "frame_format": "1280x720 RGB565_LE packed, decoded using the existing PGV BGR565 conversion",
+  "model_paths": {
+    "yolo11n": "/home/cat/cityscapes_arch_compare_20261027/models/b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn",
+    "traffic_light_specialist": ""
+  },
+  "source_frames_loaded": 60,
+  "source_prepare_ms": 469.33638799964683,
+  "shared_frame_file_reads": 0,
+  "shared_frame_identity_mismatches": 0,
+  "input_requests_received": 15,
+  "input_request_fps": 1.4500248649007146,
+  "source_ids_analyzed": 13,
+  "source_id_analysis_fps": 1.2566882162472859,
+  "source_ids_replaced_before_analysis": 2,
+  "result_packets_sent": 13,
+  "dynamic_hmi_texture_updates": 0,
+  "inference_errors": 0,
+  "last_error": null,
+  "updates_per_second": {
+    "yolo11n_rknn": 1.2566882162472859,
+    "traffic_light_specialist_rknn": 0.0,
+    "navigation_ocr": 0.0
+  },
+  "timings_ms": {
+    "main_rknn": {
+      "samples": 13,
+      "p50_ms": 90.2332935333252,
+      "p95_ms": 427.1831069999998,
+      "mean_ms": 138.1963883555955
+    },
+    "specialist_rknn": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    },
+    "navigation_ocr": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    },
+    "hazard_postprocess": {
+      "samples": 9,
+      "p50_ms": 10.603055001411121,
+      "p95_ms": 91.75599999725816,
+      "mean_ms": 27.19381799882588
+    },
+    "all_ai_work": {
+      "samples": 13,
+      "p50_ms": 136.841352,
+      "p95_ms": 487.11757759999983,
+      "mean_ms": 203.12880630769234
+    },
+    "shared_frame_read": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    },
+    "shared_frame_validate": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    },
+    "rgb565_decode": {
+      "samples": 13,
+      "p50_ms": 0.078457,
+      "p95_ms": 0.14612239999999996,
+      "mean_ms": 0.09191823076923077
+    },
+    "pipeline": {
+      "samples": 13,
+      "p50_ms": 123.296311,
+      "p95_ms": 475.22322199999985,
+      "mean_ms": 184.44644246153848
+    },
+    "navigation_submit": {
+      "samples": 13,
+      "p50_ms": 0.009041,
+      "p95_ms": 0.02018319999999999,
+      "mean_ms": 0.011688846153846154
+    },
+    "box_mapping": {
+      "samples": 13,
+      "p50_ms": 0.597614,
+      "p95_ms": 1.0493392,
+      "mean_ms": 0.6389404615384616
+    },
+    "status_build": {
+      "samples": 13,
+      "p50_ms": 0.851067,
+      "p95_ms": 3.998734199999992,
+      "mean_ms": 1.4741906923076924
+    },
+    "dynamic_hmi": {
+      "samples": 13,
+      "p50_ms": 0.008459,
+      "p95_ms": 0.015457599999999998,
+      "mean_ms": 0.009176230769230768
+    },
+    "packet_encode": {
+      "samples": 13,
+      "p50_ms": 0.73732,
+      "p95_ms": 1.770501199999999,
+      "mean_ms": 0.9381397692307692
+    },
+    "result_publish": {
+      "samples": 13,
+      "p50_ms": 0.243828,
+      "p95_ms": 14.1452808,
+      "mean_ms": 3.446337153846154
+    },
+    "main_preprocess_ms": {
+      "samples": 3,
+      "p50_ms": 14.793935,
+      "p95_ms": 48.182794699999995,
+      "mean_ms": 24.736474
+    },
+    "main_rknn_call_ms": {
+      "samples": 3,
+      "p50_ms": 64.937511,
+      "p95_ms": 322.8261435,
+      "mean_ms": 159.13263533333335
+    },
+    "main_decode_nms_ms": {
+      "samples": 3,
+      "p50_ms": 18.972567,
+      "p95_ms": 52.991152199999995,
+      "mean_ms": 28.89196733333333
+    },
+    "main_total_ms": {
+      "samples": 3,
+      "p50_ms": 132.544889,
+      "p95_ms": 393.3655928,
+      "mean_ms": 212.76107666666667
+    },
+    "specialist_preprocess_ms": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    },
+    "specialist_rknn_call_ms": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    },
+    "specialist_decode_nms_ms": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    },
+    "specialist_total_ms": {
+      "samples": 0,
+      "p50_ms": null,
+      "p95_ms": null,
+      "mean_ms": null
+    }
+  },
+  "resources": {
+    "process_cpu_one_core_percent": 30.096932304253418,
+    "process_cpu_machine_percent": 7.5242330760633545,
+    "inference_worker_cpu_one_core_percent": 10.623688122749876,
+    "online_cpus": 4,
+    "rss_end_mb": 259.2109375,
+    "rss_peak_mb": 278.49609375,
+    "board_telemetry": {
+      "devices": {
+        "npu": {
+          "load_percent": {
+            "samples": 0,
+            "p50_percent": null,
+            "p95_percent": null,
+            "mean_percent": null
+          },
+          "frequency_mhz": {
+            "samples": 0,
+            "p50_mhz": null,
+            "p95_mhz": null,
+            "mean_mhz": null
+          }
+        },
+        "gpu": {
+          "load_percent": {
+            "samples": 0,
+            "p50_percent": null,
+            "p95_percent": null,
+            "mean_percent": null
+          },
+          "frequency_mhz": {
+            "samples": 0,
+            "p50_mhz": null,
+            "p95_mhz": null,
+            "mean_mhz": null
+          }
+        }
+      },
+      "temperatures_c": {},
+      "sample_period_ms": 250
+    }
+  },
+  "display_note": "AI runs in a separate latest-only worker and never blocks EGL frame submission."
+}
+done
