@@ -418,6 +418,13 @@ Python `RKNNLite.inference()` 在 B-2a 上约 161 ms RKNN 调用；其中大量�
 
 **不要把这组数字写成 PCIe 实时整机性能**：它是本地 60 帧回放 + 10 Hz 请求 + 同时运行 Qt/HUD 的条件。独立 C API 的 14.33/4.95/5.97 FPS 也不能直接与 bridge FPS 混用。
 
+**MTL-FAST 的 6.78 FPS 是全窗口平均，不是峰值。** 同一套正式代码在 live Qt 中
+显示 AI FPS **8.3**，用户观测峰值 **9.9**；20 s 日志结果率 7.51 FPS，
+result delta p50/p95 130.7/155.0 ms，pipeline p50/p95 118.7/133.9 ms。
+基准的 6.78 受 64 次 latest-only 替换和 p95 248.5 ms 抖动影响；模型 p50
+104–119 ms 对应约 8.4–9.6 FPS，短窗口 9.9 合理。原始记录：
+`docs/deployment/evidence/MTL/live_mtl_fast_20261031.json`。
+
 ### 8.5 消融结论
 
 1. Raw-head 是 INT8 精度的关键，不是后处理技巧。

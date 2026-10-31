@@ -129,6 +129,10 @@ lane_style 背景但 lane 前景非背景的像素按实线红色处理，避免
 覆盖层开销在噪声范围内。Qt 的 scene-graph FPS 受软件 OpenGL 限制，不代表
 Mali 正常显示上限；生产环境若使用 Mali，应重新测。
 
+注意：`scene_graph_fps` 是 Qt 渲染帧率，不是 AI 推理率。MTL-FAST 在同一
+live 画面上的 AI FPS 为 **8.3**，用户观测峰值 **9.9**；完整的 18 s 基准平均
+6.78 FPS 及其口径见 `docs/deployment/MTL_CAPI_DEPLOYMENT.md` 的 10.1.1 节。
+
 ## 7. 构建
 
 ```bash

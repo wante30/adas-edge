@@ -15,6 +15,8 @@
 | `qt_phase.txt` | 同上 | B 与 MTL-FAST 的时间边界 |
 | `validate_*.json` | 板端 | B-2a 输出/FP16 校验 |
 | `mtl_integration_report_20261031.md` | 正式安装文件 + 本地直播回放 | 完整集成报告：C API、MTL、切换、Qt、回退 |
+| `live_mtl_fast_20261031.json` | 当前 live MTL-FAST | UI AI FPS 8.3、20 s 结果率 7.51、峰值 9.9（用户观测） |
+| `live_mtl_fast_top_20261031.png` | 当前 live Qt 顶部栏 | MTL-FAST / AI 8.3 FPS 截图 |
 | `capi_bridge_report_20261031.md` | B-CAPI 早期接入 | 8.50 / 9.22 FPS 的历史运行；最终生产数据以 `bench_prod_*` 为准 |
 | `bench_legacy_b60.json` / `bench_legacy_capi60.json` | 早期 60 帧回放 | 8.50 / 9.22 FPS 的原始 JSON |
 

@@ -187,6 +187,26 @@ Qt 模型菜单与 `switch_cli.py` 使用同一 `MVM1/MMS1` 协议。
 
 `inference_errors=0`。不要把该表写成 PCIe 实时整机性能。
 
+### 10.1.1 为什么 live 会看到 8–9.9 FPS
+
+`MTL-FAST` 的 **6.78 FPS 是 18 秒固定 10 Hz 全窗口平均**：包含 64 次 latest-only 替换、
+p95 248.5 ms 的抖动和基准客户端/日志开销，不是模型上限。
+
+同一套正式代码在 live Qt 回放中：
+
+| 口径 | 数值 |
+|---|---:|
+| Qt 顶部 AI FPS（滚动/累计） | **8.3** |
+| 用户观测峰值 | **9.9** |
+| 20 s 日志结果包速率 | 7.51 |
+| 20 s result delta p50 / p95 | 130.7 / 155.0 ms |
+| 20 s pipeline p50 / p95 | 118.7 / 133.9 ms |
+| 基准 p50 / p95 | 104.4 / 248.5 ms |
+
+模型 p50 104–119 ms 对应约 **8.4–9.6 FPS**，短窗口达到 9.9 是合理的；6.78 是保守的
+全窗口平均，不能当作 MTL-FAST 的峰值或唯一速度。原始记录：
+`docs/deployment/evidence/MTL/live_mtl_fast_20261031.json`。
+
 ### 10.2 独立 C API
 
 | 模型 | RKNN p50 | 单帧 p50 | FPS |
