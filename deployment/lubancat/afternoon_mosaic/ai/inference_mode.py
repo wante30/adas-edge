@@ -144,6 +144,8 @@ class ModeControl:
                 self.bridge.pipeline.reset()
             with self.lock:
                 self.mode, self.epoch = mode, epoch
+            if mode == MOSAIC:
+                self.bridge._cancel_pending_road_model_switch()
             self.last_result_key = None
             self.bridge._model_options_dirty = True
             print("INFERENCE_MODE " + json.dumps(self.status(), separators=(",", ":")), flush=True)

@@ -994,14 +994,22 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
     requestAddress.sin_family = AF_INET;
     requestAddress.sin_port = htons(envPort("ADAS_AI_REQUEST_PORT", 38260));
     requestAddress.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    const bool adaptive = aiHz <= 0.0;
+    bool capOk = false;
+    double capHz = QString::fromLatin1(qgetenv("ADAS_AI_MAX_HZ")).toDouble(&capOk);
+    capHz = capOk ? std::clamp(capHz, 1.0, 60.0) : 30.0;
     const auto interval = std::chrono::nanoseconds(
-        static_cast<int64_t>(std::llround(1.0e9 / std::max(0.1, aiHz))));
+        static_cast<int64_t>(std::llround(1.0e9 / (adaptive ? capHz : std::max(0.1, aiHz)))));
+    qInfo() << "AI scheduler" << (adaptive ? "adaptive" : "fixed") << "cap_hz" << (adaptive ? capHz : aiHz);
+    qint64 lastModelSendNs = 0;
+    quint32 sentModelRequestId = 0;
+    uint64_t lastSubmittedId = 0;
     auto nextRequest = std::chrono::steady_clock::now();
     uint64_t latestResultId = 0;
     quint64 loopModeEpoch = 0;
     qint64 lastModeSendNs = 0;
     unsigned modeAttempts = 0;
-    struct Submitted { quint64 epoch; quint64 timestamp; };
+    struct Submitted { quint64 epoch; quint64 timestamp; qint64 sentNs; };
     std::map<quint64, Submitted> submitted;
     std::array<unsigned char, 8192> packet{};
     const std::string outputPath = frameFile.toUtf8().toStdString();
@@ -1030,13 +1038,22 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
             lastModeSendNs = loopNowNs;
             ++modeAttempts;
         }
-        if (modeReady && now >= nextRequest) {
+        for (auto it = submitted.begin(); it != submitted.end();) {
+            if (loopNowNs - it->second.sentNs > 1500000000LL) it = submitted.erase(it);
+            else ++it;
+        }
+        // One outstanding inference bounds memory and avoids a stale request queue.
+        // Rendering and the OCR worker keep independent clocks.
+        const double guiMs = ai_gui_update_ms_.load();
+        const double renderFps = render_metrics_->render_fps.load();
+        const bool guiBusy = adaptive && (guiMs > 12.0 || (renderFps > 1.0 && renderFps < 25.0));
+        if (modeReady && !ai_model_switching_.load() && submitted.empty() && now >= nextRequest) {
             std::shared_ptr<Frame> frame;
             {
                 std::lock_guard<std::mutex> locker(ai_frame_mutex_);
                 frame = std::move(latest_ai_frame_);
             }
-            if (frame && !frame->pixels.empty()) {
+            if (frame && frame->id != lastSubmittedId && !frame->pixels.empty()) {
                 QByteArray header(28, '\0');
                 std::memcpy(header.data(), "MFR1", 4);
                 qToLittleEndian<quint64>(frame->id, reinterpret_cast<uchar *>(header.data() + 4));
@@ -1073,23 +1090,27 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     if (sendto(socketFd, request.constData(), request.size(), 0,
                                reinterpret_cast<const sockaddr *>(&requestAddress), sizeof(requestAddress)) == request.size()) {
                         ai_requests_sent_.fetch_add(1);
-                        submitted[frame->id] = {modeEpoch, static_cast<quint64>(frame->producedNs)};
+                        submitted[frame->id] = {modeEpoch, static_cast<quint64>(frame->producedNs), steadyNs()};
+                        lastSubmittedId = frame->id;
                         while (submitted.size() > 32) submitted.erase(submitted.begin());
                     }
                 }
             }
-            nextRequest += interval;
-            if (nextRequest <= now) nextRequest = now + interval;
+            nextRequest = now + interval + (guiBusy ? std::chrono::milliseconds(30) : std::chrono::milliseconds(0));
         }
 
         QString modelProfileId;
         quint32 modelRequestId = 0;
         {
             QMutexLocker locker(&ai_metrics_mutex_);
-            if (modeReady && !pending_model_switch_id_.isEmpty()) {
+            if (modeReady && !pending_model_switch_id_.isEmpty()
+                && (sentModelRequestId != pending_model_switch_request_id_
+                    || loopNowNs - lastModelSendNs > 2000000000LL)) {
                 modelProfileId = pending_model_switch_id_;
                 modelRequestId = pending_model_switch_request_id_;
-                pending_model_switch_id_.clear();
+                sentModelRequestId = modelRequestId;
+                lastModelSendNs = loopNowNs;
+                submitted.clear();
             }
         }
         if (!modelProfileId.isEmpty()) {
@@ -1108,6 +1129,8 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     if (pending_model_switch_request_id_ == modelRequestId) {
                         ai_model_state_ = QStringLiteral("FAILED");
                         ai_model_message_ = QStringLiteral("模型切换请求发送失败");
+                        ai_model_switching_.store(false);
+                        pending_model_switch_id_.clear();
                     }
                 }
                 QMetaObject::invokeMethod(this, "notifyAiModelChanged", Qt::QueuedConnection);
@@ -1129,6 +1152,8 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     const QString bridge = ack.value(QStringLiteral("bridge_id")).toString();
                     {
                         QMutexLocker locker(&ai_metrics_mutex_);
+                        const quint64 ackEpoch = ack.value(QStringLiteral("epoch")).toString().toULongLong();
+                        if (ackEpoch != inference_epoch_.load()) continue;
                         if (inference_bridge_id_ != bridge) {
                             inference_bridge_id_ = bridge;
                             submitted.clear();
@@ -1136,6 +1161,8 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                             tracks_.clear();
                             ai_boxes_.clear();
                             latest_ai_frame_id_.store(0);
+                            ai_completion_ns_.clear();
+                            ai_fps_.store(0.0);
                             ai_dirty_.store(true);
                         }
                     }
@@ -1159,6 +1186,18 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                         changed = ai_model_state_ != state || ai_model_message_ != message;
                         ai_model_state_ = state;
                         ai_model_message_ = message;
+                        if (state == QStringLiteral("APPLIED") || state == QStringLiteral("FAILED")
+                            || state == QStringLiteral("REJECTED")) {
+                            pending_model_switch_id_.clear();
+                            ai_model_switching_.store(false);
+                            ai_completion_ns_.clear();
+                            ai_fps_.store(0.0);
+                            submitted.clear();
+                            tracks_.clear();
+                            ai_boxes_.clear();
+                            ai_epoch_.fetch_add(1);
+                            ai_dirty_.store(true);
+                        }
                         if (state == QStringLiteral("APPLIED") && !activeId.isEmpty()) {
                             changed = changed || ai_model_id_ != activeId;
                             ai_model_id_ = activeId;
@@ -1189,6 +1228,8 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                                         static_cast<int>(statusBytes));
             const QJsonObject status = QJsonDocument::fromJson(statusData).object();
             const QJsonObject inference = status.value(QStringLiteral("inference")).toObject();
+            const quint64 resultModeEpoch = inference.value(QStringLiteral("epoch")).toString().toULongLong();
+            if (ai_model_switching_.load()) continue;
             const auto submittedIt = submitted.find(frameId);
             const QString expectedSpace = inference_mode_.load() ? QStringLiteral("MOSAIC_1280x720") : QStringLiteral("ROAD_VIEW_1280x720");
             if (submittedIt == submitted.end() || submittedIt->second.timestamp != timestampNs
@@ -1234,6 +1275,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
             const qint64 trackStartNs = boxesParseEndNs;
             {
                 QMutexLocker locker(&ai_metrics_mutex_);
+                if (resultModeEpoch != inference_epoch_.load() || ai_model_switching_.load()) continue;
                 const uint32_t resultEpoch = ai_epoch_.load();
                 if (resultEpoch != last_ai_epoch_) {
                     tracks_.clear();
@@ -1480,12 +1522,16 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                 }
                 hazardDetails.append(item);
             }
-            if (!hazardDetails.isEmpty()) {
-                ai_hazard_latch_details_ = hazardDetails;
-                ai_hazard_latch_ns_ = nowNs;
-            } else if (ai_hazard_latch_ns_ > 0
-                       && nowNs - ai_hazard_latch_ns_ < 1000000000LL) {
-                hazardDetails = ai_hazard_latch_details_;
+            {
+                QMutexLocker locker(&ai_metrics_mutex_);
+                if (resultModeEpoch != inference_epoch_.load() || ai_model_switching_.load()) continue;
+                if (!hazardDetails.isEmpty()) {
+                    ai_hazard_latch_details_ = hazardDetails;
+                    ai_hazard_latch_ns_ = nowNs;
+                } else if (ai_hazard_latch_ns_ > 0
+                           && nowNs - ai_hazard_latch_ns_ < 1000000000LL) {
+                    hazardDetails = ai_hazard_latch_details_;
+                }
             }
             // Hazard boxes are emitted in the detector's inference view. Map
             // them to the same 1280x720 display space used by MVA2 boxes,
@@ -1549,7 +1595,11 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     boxes[bestIndex] = marked;
                 }
             }
-            writeTeslaSceneTracks(boxes, frameId, static_cast<qint64>(timestampNs));
+            {
+                QMutexLocker locker(&ai_metrics_mutex_);
+                if (resultModeEpoch != inference_epoch_.load() || ai_model_switching_.load()) continue;
+                writeTeslaSceneTracks(boxes, frameId, static_cast<qint64>(timestampNs));
+            }
             const QJsonObject navigation = status.value(QStringLiteral("navigation")).toObject();
             const QString direction = navigation.value(QStringLiteral("direction")).toString(QStringLiteral("等待识别"));
             const QString navigationRoad = navigation.value(QStringLiteral("road_name")).toString();
@@ -1576,6 +1626,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
             bool statusChanged = false;
             {
                 QMutexLocker locker(&ai_metrics_mutex_);
+                if (resultModeEpoch != inference_epoch_.load() || ai_model_switching_.load()) continue;
                 const QString modelId = modelSelection.value(QStringLiteral("active_id")).toString();
                 const QString modelState = modelSelection.value(QStringLiteral("state")).toString();
                 const QString modelMessage = modelSelection.value(QStringLiteral("message")).toString();
@@ -1610,7 +1661,9 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                 ai_navigation_direction_ = navigationDirection;
                 ai_navigation_distance_m_ = navigationDistance;
                 ai_detection_counts_ = counts;
-                ai_fps_.store(status.value(QStringLiteral("ai_fps")).toDouble());
+                ai_completion_ns_.push_back(nowNs);
+                last_ai_result_ns_.store(nowNs);
+                ai_online_.store(true);
                 const QJsonValue hazardAge = status.value(QStringLiteral("hazard_age_ms"));
                 if (hazardAge.isDouble()) ai_hazard_age_ms_.store(qRound(hazardAge.toDouble()));
                 else ai_hazard_age_ms_.store(0);
@@ -1620,8 +1673,6 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                                         ? static_cast<int>(std::min<uint64_t>(displayId - frameId, 99))
                                         : 0);
             }
-            last_ai_result_ns_.store(nowNs);
-            ai_online_.store(true);
             if (statusChanged) ai_status_dirty_.store(true);
             ai_dirty_.store(true);
             ai_results_received_.fetch_add(1);
@@ -1696,6 +1747,13 @@ void VideoItem::requestInferenceMode(const QString &mode) {
         ai_hazard_latch_ns_ = 0;
         latest_ai_frame_id_.store(0);
         ai_fps_.store(0.0);
+        ai_completion_ns_.clear();
+        ai_hazards_.clear();
+        ai_hazard_details_.clear();
+        if (requested == 1) {
+            pending_model_switch_id_.clear();
+            ai_model_switching_.store(false);
+        }
     }
     ai_dirty_.store(true);
     emit aiStatusChanged();
@@ -1722,6 +1780,9 @@ void VideoItem::requestModelSwitch(const QString &profileId) {
             if (next_model_switch_request_id_ == 0) ++next_model_switch_request_id_;
             pending_model_switch_id_ = profileId;
             pending_model_switch_request_id_ = next_model_switch_request_id_;
+            ai_model_switching_.store(true);
+            ai_completion_ns_.clear();
+            ai_fps_.store(0.0);
             ai_model_state_ = QStringLiteral("SENDING");
             ai_model_message_ = QStringLiteral("正在请求板端切换");
         }
@@ -1970,6 +2031,14 @@ void VideoItem::updateMetrics() {
         source_online_.store(online);
     }
 
+    {
+        QMutexLocker locker(&ai_metrics_mutex_);
+        while (!ai_completion_ns_.empty() && nowNs - ai_completion_ns_.front() > 1200000000LL)
+            ai_completion_ns_.pop_front();
+        const double span = ai_completion_ns_.empty() ? 0.0 : (nowNs - ai_completion_ns_.front()) / 1.0e9;
+        ai_fps_.store(ai_completion_ns_.size() >= 2 && span > 0.0
+                      ? (ai_completion_ns_.size() - 1) / span : 0.0);
+    }
     const qint64 lastAi = last_ai_result_ns_.load();
     const qint64 aiAgeNs = lastAi > 0 ? std::max<qint64>(0, nowNs - lastAi) : 0;
     const bool aiOnlineNow = ai_running_.load() && lastAi > 0 && aiAgeNs < 1500000000LL;
@@ -2011,7 +2080,6 @@ void VideoItem::updateMetrics() {
     last_consumed_for_stats_ = consumed;
     last_rendered_for_stats_ = rendered;
     last_cpu_ticks_ = cpuTicks;
-    stats_clock_.restart();
     emit metricsChanged();
 }
 

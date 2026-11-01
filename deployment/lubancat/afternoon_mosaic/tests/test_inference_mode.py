@@ -26,6 +26,7 @@ class ModeTests(unittest.TestCase):
         self.resets = 0
         def reset(): self.resets += 1
         self.bridge = types.SimpleNamespace(result_socket=Socket(),
+            _cancel_pending_road_model_switch=lambda: None,
             pipeline=types.SimpleNamespace(main_detector=self.detector, specialist_detector=None, reset=reset))
         self.control = m.ModeControl(self.bridge, mosaic_factory=lambda road: road)
     def command(self, epoch, mode):
@@ -56,6 +57,21 @@ class ModeTests(unittest.TestCase):
         for packet in (b"MVM1model", b"MVS1\x00\x01"):
             self.assertEqual(self.control.frame_request(packet), packet)
         self.assertEqual(self.control.frame_request(b"MVR2oldframe"), b"")
+    def test_owned_full_frame_context_released_once(self):
+        detector=Detector()
+        detector.closed=0
+        def close(): detector.closed+=1
+        detector.close=close
+        adapter=m.MosaicRoadAdapter(detector, owns_detector=True)
+        adapter.close(); adapter.close()
+        self.assertEqual(detector.closed,1)
+    def test_mosaic_load_failure_retains_road_detector(self):
+        def fail(_): raise RuntimeError("bad library")
+        self.control.mosaic_factory=fail
+        self.command(10,1); self.control.apply()
+        self.assertEqual(self.control.mode,m.ROAD)
+        self.assertIs(self.bridge.pipeline.main_detector,self.detector)
+        self.assertIn(b'"state":"FAILED"',self.bridge.result_socket.messages[-1][0])
     def test_full_frame_once_and_only_q1_enters_road_logic(self):
         adapter=m.MosaicRoadAdapter(self.detector)
         full=object(); adapter.full_frame=full

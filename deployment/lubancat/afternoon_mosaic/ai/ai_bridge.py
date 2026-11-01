@@ -1020,7 +1020,10 @@ class AiReplayBridge:
                 break
             if self.modes.receive(packet, peer):
                 continue
+            raw_magic = packet[:4]
             packet = self.modes.frame_request(packet)
+            if raw_magic == b"MVR3" and self.request_count < 3:
+                self._debug(f"FRAME_REQUEST gated={not bool(packet)} mode={self.modes.status()}")
             model_request = decode_model_switch_request(packet)
             if model_request is not None:
                 self._queue_model_switch(model_request, peer)
@@ -1067,6 +1070,8 @@ class AiReplayBridge:
                 )
                 if payload is None:
                     self.shared_frame_mismatches += 1
+                    if self.shared_frame_mismatches <= 3:
+                        self._debug(f"FRAME_IDENTITY_MISMATCH requested={requested_id}/{requested_timestamp_ns} header={snapshot[:28].hex()}")
                     continue
                 try:
                     frame = PackedRgb565(payload)
@@ -1129,7 +1134,7 @@ class AiReplayBridge:
         if include_options:
             status["options"] = [profile.wire() for profile in self.model_profiles.values()]
             from fast_mosaic_backend import available
-            status["options"].append({"id": "FAST-MOSAIC", "label": "FAST-MOSAIC · BDD 整图",
+            status["options"].insert(4, {"id": "FAST-MOSAIC", "label": "FAST-MOSAIC · BDD 整图",
                 "available": available(), "legacy": False, "has_specialist": False,
                 "reason": "" if available() else "BDD model / independent generic library missing"})
         return status
@@ -1166,6 +1171,10 @@ class AiReplayBridge:
             )
             return
         with self.model_switch_lock:
+            if self.modes.mode == "MOSAIC_FULL":
+                self._send_model_switch_reply(request_id, peer, "REJECTED", profile_id,
+                                              "先切换到 ROAD_Q1 再选择道路模型")
+                return
             if profile_id == self.active_model_id and self.pending_model_switch is None:
                 self.model_switch_state = "READY"
                 self.model_switch_message = "当前已是该方案"
@@ -1183,6 +1192,17 @@ class AiReplayBridge:
         self._send_model_switch_reply(
             request_id, peer, immediate_state, profile_id, message
         )
+
+    def _cancel_pending_road_model_switch(self):
+        # A newer full-frame choice supersedes a queued road model change.
+        with self.model_switch_lock:
+            pending, peer = self.pending_model_switch, self.model_switch_peer
+            self.pending_model_switch = self.model_switch_peer = None
+            self.model_switch_state = "READY"
+            self.model_switch_message = "四路模式使用 FAST-MOSAIC"
+        if pending is not None:
+            self._send_model_switch_reply(pending["request_id"], peer, "REJECTED",
+                                          pending["profile_id"], "已切换四路模式")
 
     def _apply_pending_model_switch(self):
         if self.modes.mode == "MOSAIC_FULL":
@@ -1522,6 +1542,8 @@ class AiReplayBridge:
 
     def _infer(self):
         priority_reapplied = False
+        completed_times = deque()
+        rate_token = None
         while self.running.is_set():
             self.modes.apply()
             request = self.latest.take(timeout=0.2)
@@ -1552,10 +1574,16 @@ class AiReplayBridge:
                 now_ns = time.monotonic_ns()
                 if self.analysis_start_ns is None:
                     self.analysis_start_ns = now_ns
-                analysis_duration_s = max((now_ns - self.analysis_start_ns) / 1e9, 1e-6)
-                ai_fps = (self.result_count + 1) / analysis_duration_s
-                main_count_before = len(self.pipeline.main_timings)
-                specialist_count_before = len(self.pipeline.specialist_timings)
+                token = (self.modes.token(), self.active_model_id)
+                if token != rate_token:
+                    completed_times.clear()
+                    rate_token = token
+                while completed_times and now_ns - completed_times[0] > 1_200_000_000:
+                    completed_times.popleft()
+                span = (completed_times[-1] - completed_times[0]) / 1e9 if len(completed_times) > 1 else 0
+                ai_fps = (len(completed_times) - 1) / span if span else 0.0
+                main_count_before = self.pipeline.main_update_count
+                specialist_count_before = self.pipeline.specialist_update_count
                 packet = self._analyze(
                     frame_id, timestamp_ns, full_frame, input_fps, submitted_fps,
                     ai_fps, schedule_timestamp_ns=ai_recv_ns,
@@ -1575,6 +1603,7 @@ class AiReplayBridge:
                 publish_started = time.perf_counter_ns()
                 self.result_socket.sendto(packet, self.result_address)
                 publish_ns = time.monotonic_ns()
+                completed_times.append(publish_ns)
                 self.modes.last_result_key = key
                 self.stage_timings["result_publish"].append(
                     (time.perf_counter_ns() - publish_started) / 1e6
@@ -1586,6 +1615,8 @@ class AiReplayBridge:
                     self.timing_stream.write(json.dumps({
                         "frame_id": int(frame_id),
                         "inference": self.modes.status(frame_id),
+                        "model_id": "FAST-MOSAIC" if self.modes.adapter else self.active_model_id,
+                        "ai_fps": ai_fps,
                         "capture_timestamp_ns": int(timestamp_ns),
                         "ai_receive_timestamp_ns": int(ai_recv_ns),
                         "infer_start_ns": int(infer_start_ns),
@@ -1601,13 +1632,13 @@ class AiReplayBridge:
                         "dynamic_hmi_ms": self.stage_timings["dynamic_hmi"][-1] if self.stage_timings["dynamic_hmi"] else None,
                         "packet_encode_ms": self.stage_timings["packet_encode"][-1] if self.stage_timings["packet_encode"] else None,
                         "result_publish_ms": self.stage_timings["result_publish"][-1] if self.stage_timings["result_publish"] else None,
-                        "main_ran": len(self.pipeline.main_timings) > main_count_before,
-                        "specialist_ran": len(self.pipeline.specialist_timings) > specialist_count_before,
-                        "main_count": len(self.pipeline.main_timings),
-                        "specialist_count": len(self.pipeline.specialist_timings),
+                        "main_ran": self.pipeline.main_update_count > main_count_before,
+                        "specialist_ran": self.pipeline.specialist_update_count > specialist_count_before,
+                        "main_count": self.pipeline.main_update_count,
+                        "specialist_count": self.pipeline.specialist_update_count,
                         "main_ms": (self.pipeline.main_timings[-1] if self.pipeline.main_timings else None),
-                        "main_timing": main_timing if len(self.pipeline.main_timings) > main_count_before else None,
-                        "specialist_timing": specialist_timing if len(self.pipeline.specialist_timings) > specialist_count_before else None,
+                        "main_timing": main_timing if self.pipeline.main_update_count > main_count_before else None,
+                        "specialist_timing": specialist_timing if self.pipeline.specialist_update_count > specialist_count_before else None,
                         "result_publish_timestamp_ns": int(publish_ns),
                         "boxes": int(struct.unpack_from("<I", packet, 20)[0]),
                         "traffic": self.latest_dynamic_status.get("traffic"),
@@ -1648,7 +1679,7 @@ class AiReplayBridge:
                 if should_refresh_stopped_status(
                         now_ns, idle_origin_ns, self.last_stopped_refresh_ns):
                     self._publish_stopped_status(now_ns)
-                if (self.args.source != "PGV_LIVE" and
+                if (self.args.source != "PGV_LIVE" and self.args.idle_timeout > 0 and
                         now_ns - idle_origin_ns > int(self.args.idle_timeout * 1e9)):
                     break
         except KeyboardInterrupt:

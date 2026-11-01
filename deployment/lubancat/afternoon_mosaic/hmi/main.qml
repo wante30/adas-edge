@@ -896,7 +896,7 @@ Item {
             Repeater {
                 model: video.bboxModel
                 delegate: Item {
-                    property bool nearHazard: model.hazard
+                    property bool nearHazard: Boolean(model.hazard)
                                                  && model.hazardKind === "NEAR_OBJECT_IN_PATH"
                     property bool hazardIsPerson: String(model.hazardTargetClass || "").toLowerCase() === "person"
                     property color hazardTone: "#FF5064"
@@ -2130,6 +2130,7 @@ Item {
                             onClicked: {
                                 root.viewMode = option.id === "FAST-MOSAIC" ? 1 : 0
                                 if (option.id !== "FAST-MOSAIC") video.requestModelSwitch(option.id)
+                                root.modelPickerOpen = false
                             }
                         }
                     }

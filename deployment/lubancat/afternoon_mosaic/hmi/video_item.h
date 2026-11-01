@@ -378,6 +378,8 @@ private:
     std::atomic<bool> ai_dirty_{false};
     std::atomic<bool> ai_status_dirty_{false};
     std::atomic<double> ai_fps_{0.0};
+    std::deque<qint64> ai_completion_ns_; // Protected by ai_metrics_mutex_.
+    std::atomic<bool> ai_model_switching_{false};
     std::atomic<int> ai_result_age_ms_{0};
     std::atomic<int> ai_hazard_age_ms_{0};
     std::atomic<double> ai_gui_update_ms_{0.0};

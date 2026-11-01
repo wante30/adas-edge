@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
     const QStringList replayFrames = readReplayManifest(manifestPath);
     if (!manifestPath.isEmpty() && replayFrames.isEmpty()) return 4;
     const QString aiFrameFile = stringArg(args, "--ai-frame-file");
-    const double aiHz = std::max(0.1, static_cast<double>(intArg(args, "--ai-hz", 10)));
+    const double aiHz = std::max(0.0, static_cast<double>(intArg(args, "--ai-hz", 0)));
     const QString pgvFile = stringArg(args, "--pgv-file");
     const QString pgvRing = stringArg(args, "--pgv-ring");
     const QString inprocRam = stringArg(args, "--inproc-ram");
@@ -235,6 +235,12 @@ int main(int argc, char **argv) {
                 sample["texture_upload_fps"] = video->consumedFps();
                 sample["scene_graph_fps"] = video->renderFps();
                 sample["ai_requests"] = static_cast<qint64>(video->aiRequestsSent());
+                sample["ai_fps"] = video->aiFps();
+                sample["ai_online"] = video->aiOnline();
+                sample["inference_mode"] = video->inferenceMode();
+                sample["inference_ready"] = video->inferenceReady();
+                sample["model_id"] = video->aiModelId();
+                sample["model_state"] = video->aiModelState();
                 sample["ai_results"] = static_cast<qint64>(video->aiResultsReceived());
                 sample["ai_frame_id"] = static_cast<qint64>(video->latestAiFrameId());
                 sample["ai_result_age_ms"] = video->aiResultAgeMs();
