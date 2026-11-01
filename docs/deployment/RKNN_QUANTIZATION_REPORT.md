@@ -46,7 +46,7 @@ PyTorch .pt
 | 结构 | 输出 | 特点 |
 |---|---|---|
 | post-DFL split | boxes `[1,4,N]` + scores `[1,C,N]` | 旧方案；DFL/坐标已在模型内完成，INT8 对输出范围敏感 |
-| raw-head | 每尺度 3 个张量：回归 logits、分类分数、分数和；4 尺度共 12 路 | DFL/坐标解码移到 host；INT8 精度显著更好 |
+| raw-head | 每尺度 3 个张量：回归 logits、分类分数、分数和；BDD 3 尺度共 9 路，P2/B-2a 4 尺度共 12 路 | DFL/坐标解码移到 host；INT8 精度显著更好 |
 
 Raw-head 的代价：host 端要做 DFL softmax、坐标解码和 NMS；板端 Python 后处理可能成为瓶颈。当前正式 bridge 已实现 Raw-head adapter。
 

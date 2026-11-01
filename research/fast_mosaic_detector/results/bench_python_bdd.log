@@ -1,0 +1,13 @@
+W rknn-toolkit-lite2 version: 2.3.2
+I RKNN: [17:27:57.666] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [17:27:57.667] RKNN Driver Information, version: 0.8.2
+I RKNN: [17:27:57.669] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+W RKNN: [17:27:57.694] query RKNN_QUERY_INPUT_DYNAMIC_RANGE error, rknn model is static shape type, please export rknn with dynamic_shapes
+W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
+librga fail to get driver version! Compatibility mode will be enabled.
+
+3 im2d_rga_impl rga_version_below_minimun_range_user_driver(304): The driver may be compatible, but it is best to update the driver to version 1.2.4. You can try to update the SDK or update the <SDK>/kernel/drivers/video/rockchip/rga3 directory individually. current version: librga 1.9.2, driver g.
+rga_api version 1.9.2_[1]
+BDD_PYTHON frames 300 fps 21.43 wall_s 13.996 detections 2575
+BDD_PYTHON wall_ms p50/p95/mean (46.0, 51.72, 46.63)
+BDD_PYTHON infer_ms p50/p95/mean (40.58, 45.97, 40.84)

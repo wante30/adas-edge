@@ -1,0 +1,190 @@
+{
+  "source": "four replay road frames tiled 2x2; one inference",
+  "input": "1280x720 -> 512x288",
+  "inference_ms": 19.64,
+  "detections": 10,
+  "quadrant_counts": {
+    "Q1": 3,
+    "Q2": 2,
+    "Q3": 3,
+    "Q4": 2
+  },
+  "frame_files": [
+    "frame_000.rgb565",
+    "frame_015.rgb565",
+    "frame_030.rgb565",
+    "frame_045.rgb565"
+  ],
+  "boxes": [
+    {
+      "class_name": "car",
+      "confidence": 0.8579,
+      "bbox": [
+        799.97,
+        211.25,
+        978.2,
+        337.82
+      ],
+      "center": [
+        889.09,
+        274.54
+      ],
+      "quadrant": 1,
+      "quadrant_name": "Q2",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.8505,
+      "bbox": [
+        142.83,
+        205.77,
+        345.3,
+        345.11
+      ],
+      "center": [
+        244.07,
+        275.44
+      ],
+      "quadrant": 0,
+      "quadrant_name": "Q1",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.8505,
+      "bbox": [
+        814.91,
+        581.34,
+        960.03,
+        696.06
+      ],
+      "center": [
+        887.47,
+        638.7
+      ],
+      "quadrant": 3,
+      "quadrant_name": "Q4",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.8357,
+      "bbox": [
+        171.26,
+        574.89,
+        331.08,
+        696.82
+      ],
+      "center": [
+        251.17,
+        635.85
+      ],
+      "quadrant": 2,
+      "quadrant_name": "Q3",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.7607,
+      "bbox": [
+        312.18,
+        592.34,
+        374.38,
+        655.27
+      ],
+      "center": [
+        343.28,
+        623.81
+      ],
+      "quadrant": 2,
+      "quadrant_name": "Q3",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.7107,
+      "bbox": [
+        949.23,
+        597.44,
+        1008.97,
+        655.18
+      ],
+      "center": [
+        979.1,
+        626.31
+      ],
+      "quadrant": 3,
+      "quadrant_name": "Q4",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.6786,
+      "bbox": [
+        327.83,
+        231.74,
+        398.74,
+        306.79
+      ],
+      "center": [
+        363.28,
+        269.26
+      ],
+      "quadrant": 0,
+      "quadrant_name": "Q1",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.355,
+      "bbox": [
+        959.88,
+        233.88,
+        1026.95,
+        300.82
+      ],
+      "center": [
+        993.42,
+        267.35
+      ],
+      "quadrant": 1,
+      "quadrant_name": "Q2",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.325,
+      "bbox": [
+        57.37,
+        249.99,
+        87.81,
+        272.91
+      ],
+      "center": [
+        72.59,
+        261.45
+      ],
+      "quadrant": 0,
+      "quadrant_name": "Q1",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.3107,
+      "bbox": [
+        54.02,
+        612.35,
+        93.68,
+        633.6
+      ],
+      "center": [
+        73.85,
+        622.97
+      ],
+      "quadrant": 2,
+      "quadrant_name": "Q3",
+      "crosses_boundary": false
+    }
+  ]
+}

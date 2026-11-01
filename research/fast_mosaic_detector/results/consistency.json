@@ -1,0 +1,27 @@
+{
+  "model": "bdd_yolov8n_512x288_raw_heads_int8",
+  "compare": "Python RKNN Lite adapter vs C API",
+  "conf": 0.25,
+  "nms_iou": 0.45,
+  "cases": [
+    {
+      "input": "road Q4 640x360",
+      "python_boxes": 4,
+      "capi_boxes": 4,
+      "matched_iou_0_5": 4,
+      "mean_iou": 0.986,
+      "class_mismatches": 0,
+      "max_confidence_delta": 0.007
+    },
+    {
+      "input": "full 1280x720",
+      "python_boxes": 7,
+      "capi_boxes": 7,
+      "matched_iou_0_5": 7,
+      "mean_iou": 0.952,
+      "class_mismatches": 0,
+      "max_confidence_delta": 0.05
+    }
+  ],
+  "note": "Residual differences come from C bilinear resize vs OpenCV and NMS edge handling; no class or coordinate offset."
+}

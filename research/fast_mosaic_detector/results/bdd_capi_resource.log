@@ -1,0 +1,18 @@
+ATTR 0 reg_s8 type=2 fmt=0 qnt=2 zp=-44 scale=0.25297725 dims=1x64x36x64
+ATTR 1 cls_s8 type=2 fmt=0 qnt=2 zp=-128 scale=0.00357134 dims=1x10x36x64
+ATTR 2 cls_sum_s8 type=2 fmt=0 qnt=2 zp=-128 scale=0.00380126 dims=1x1x36x64
+ATTR 3 reg_s16 type=2 fmt=0 qnt=2 zp=-22 scale=0.30721191 dims=1x64x18x32
+ATTR 4 cls_s16 type=2 fmt=0 qnt=2 zp=-128 scale=0.00369781 dims=1x10x18x32
+ATTR 5 cls_sum_s16 type=2 fmt=0 qnt=2 zp=-128 scale=0.00377034 dims=1x1x18x32
+ATTR 6 reg_s32 type=2 fmt=0 qnt=2 zp=-50 scale=0.07916766 dims=1x64x9x16
+ATTR 7 cls_s32 type=2 fmt=0 qnt=2 zp=-128 scale=0.00369936 dims=1x10x9x16
+ATTR 8 cls_sum_s32 type=2 fmt=0 qnt=2 zp=-128 scale=0.00392157 dims=1x1x9x16
+MODE int8 outputs=9 infer=0 frames=300 det=2640 wall=11.682 fps=25.68
+pre mean=17.57 p50=17.41 p95=19.46
+run mean=17.30 p50=17.30 p95=19.40
+get mean=2.78 p50=2.50 p95=4.92
+det mean=0.64 p50=0.61 p95=0.87
+seg mean=0.00 p50=0.00 p95=0.00
+rel mean=0.01 p50=0.01 p95=0.04
+total mean=38.94 p50=38.66 p95=42.83
+perf mean=17.29 p50=17.29 p95=19.39

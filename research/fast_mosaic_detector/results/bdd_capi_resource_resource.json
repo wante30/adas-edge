@@ -1,0 +1,14 @@
+{
+  "returncode": 0,
+  "cpu_percent": 88.64,
+  "npu_mean": 100.0,
+  "npu_max": 100,
+  "npu_samples": 114,
+  "gpu_mean": 37.78,
+  "gpu_max": 100,
+  "gpu_samples": 114,
+  "temp_min_c": 37.22,
+  "temp_max_c": 40.0,
+  "temp_mean_c": 38.54,
+  "note": "Qt/HMI was running; values include whole-board load, not model-only."
+}

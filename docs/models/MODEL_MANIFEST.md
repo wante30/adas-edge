@@ -1,6 +1,6 @@
 # 模型清单与 SHA256
 
-更新日期：2026-10-31
+更新日期：2026-11-01
 机器可读版本：`artifacts/manifests/model_manifest.json`
 
 > 权重、ONNX、RKNN 文件默认不进入普通 Git 历史（`.gitignore` 已排除 `*.pt`、`*.onnx`、`*.rknn`）。本清单用于把“文件名”与“真实文件”绑定，避免旧模型/新模型混淆。需要复现时，从训练机或板端按路径取回并校验 SHA256。
@@ -18,6 +18,7 @@
 | SHA256 | `65089ef0697bd7378071290baa218905cdcaed768452678da440b8eb116b2a5f` |
 | 输入 | `[1,288,512,3]` uint8 NHWC |
 | 类别 | 10（person/rider/car/truck/bus/train/motor/bike/traffic light/traffic sign） |
+| 输出 | 9 路 Raw-head（3 尺度 P3/P4/P5；每尺度 reg/cls/cls_sum） |
 | 状态 | 板端正式 RKNN；`adas-ai-bridge-live` 默认 B；B-CAPI/MTL 为可切换扩展 |
 | 来源 | B05N P2 checkpoint → raw-head ONNX → RKNN INT8 |
 

@@ -1,0 +1,309 @@
+{
+  "model": "bdd_yolov8n_512x288_raw_heads_int8",
+  "backend": "rknn_capi",
+  "source": "real FPGA PCIe /dev/shm/pango-video/latest.pgv",
+  "input": "1280x720 RGB565 full mosaic -> 512x288 RGB letterbox",
+  "inference": "one rknn_run per frame",
+  "pgv_frame_id": 782606,
+  "inference_ms": 17.49,
+  "detections": 17,
+  "quadrant_counts": {
+    "Q1": 7,
+    "Q2": 3,
+    "Q3": 0,
+    "Q4": 7
+  },
+  "boundary_policy": "quadrant assigned by bbox center; crossing boxes marked; global bbox preserved",
+  "boxes": [
+    {
+      "class_name": "person",
+      "confidence": 0.3964,
+      "bbox": [
+        1250.98,
+        480.09,
+        1280.02,
+        609.0
+      ],
+      "center": [
+        1265.5,
+        544.55
+      ],
+      "quadrant": 3,
+      "quadrant_name": "Q4",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "person",
+      "confidence": 0.3036,
+      "bbox": [
+        822.45,
+        542.61,
+        840.01,
+        580.17
+      ],
+      "center": [
+        831.23,
+        561.39
+      ],
+      "quadrant": 3,
+      "quadrant_name": "Q4",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "person",
+      "confidence": 0.2607,
+      "bbox": [
+        753.13,
+        538.51,
+        776.4,
+        574.1
+      ],
+      "center": [
+        764.76,
+        556.31
+      ],
+      "quadrant": 3,
+      "quadrant_name": "Q4",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.8468,
+      "bbox": [
+        673.99,
+        231.3,
+        796.9,
+        330.98
+      ],
+      "center": [
+        735.45,
+        281.14
+      ],
+      "quadrant": 1,
+      "quadrant_name": "Q2",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.8036,
+      "bbox": [
+        231.11,
+        222.48,
+        336.34,
+        304.78
+      ],
+      "center": [
+        283.73,
+        263.63
+      ],
+      "quadrant": 0,
+      "quadrant_name": "Q1",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.7821,
+      "bbox": [
+        937.3,
+        246.52,
+        1016.32,
+        303.69
+      ],
+      "center": [
+        976.81,
+        275.1
+      ],
+      "quadrant": 1,
+      "quadrant_name": "Q2",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.7178,
+      "bbox": [
+        185.77,
+        230.55,
+        245.35,
+        277.53
+      ],
+      "center": [
+        215.56,
+        254.04
+      ],
+      "quadrant": 0,
+      "quadrant_name": "Q1",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.6857,
+      "bbox": [
+        948.65,
+        537.22,
+        996.33,
+        574.42
+      ],
+      "center": [
+        972.49,
+        555.82
+      ],
+      "quadrant": 3,
+      "quadrant_name": "Q4",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.6393,
+      "bbox": [
+        141.19,
+        231.44,
+        191.85,
+        272.76
+      ],
+      "center": [
+        166.52,
+        252.1
+      ],
+      "quadrant": 0,
+      "quadrant_name": "Q1",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.375,
+      "bbox": [
+        21.04,
+        241.29,
+        62.09,
+        282.51
+      ],
+      "center": [
+        41.56,
+        261.9
+      ],
+      "quadrant": 0,
+      "quadrant_name": "Q1",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.3643,
+      "bbox": [
+        102.45,
+        223.04,
+        149.52,
+        270.89
+      ],
+      "center": [
+        125.98,
+        246.96
+      ],
+      "quadrant": 0,
+      "quadrant_name": "Q1",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.3571,
+      "bbox": [
+        335.0,
+        233.16,
+        360.04,
+        253.6
+      ],
+      "center": [
+        347.52,
+        243.38
+      ],
+      "quadrant": 0,
+      "quadrant_name": "Q1",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.3357,
+      "bbox": [
+        922.46,
+        248.12,
+        938.82,
+        264.79
+      ],
+      "center": [
+        930.64,
+        256.45
+      ],
+      "quadrant": 1,
+      "quadrant_name": "Q2",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.3321,
+      "bbox": [
+        646.01,
+        542.44,
+        676.45,
+        574.27
+      ],
+      "center": [
+        661.23,
+        558.35
+      ],
+      "quadrant": 3,
+      "quadrant_name": "Q4",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.3214,
+      "bbox": [
+        -0.01,
+        249.81,
+        30.77,
+        286.93
+      ],
+      "center": [
+        15.38,
+        268.37
+      ],
+      "quadrant": 0,
+      "quadrant_name": "Q1",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.2893,
+      "bbox": [
+        917.2,
+        538.69,
+        930.94,
+        555.35
+      ],
+      "center": [
+        924.07,
+        547.02
+      ],
+      "quadrant": 3,
+      "quadrant_name": "Q4",
+      "crosses_boundary": false
+    },
+    {
+      "class_name": "car",
+      "confidence": 0.2607,
+      "bbox": [
+        992.64,
+        539.97,
+        1014.4,
+        555.33
+      ],
+      "center": [
+        1003.52,
+        547.65
+      ],
+      "quadrant": 3,
+      "quadrant_name": "Q4",
+      "crosses_boundary": false
+    }
+  ],
+  "image": "/home/cat/fast_mosaic_20261101/results/mosaic_pcie_bdd_capi.png"
+}

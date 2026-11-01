@@ -1,6 +1,6 @@
 {
   "schema": "adas-edge/model-manifest/v1",
-  "updated": "2026-10-31",
+  "updated": "2026-11-01",
   "note": "Weights are intentionally not stored in normal Git history. This manifest is the version index; Windows/Mac/board paths are recorded for reproducibility. SHA256 values were computed from the actual files listed. MTL entries were added after the 2026-10-31 B-2a / Seg-256 / C API integration. The demo video is kept outside Git.",
   "artifacts": [
     {
@@ -26,11 +26,12 @@
       "size_bytes": 12081311,
       "sha256": "d6ea1651a1bdcef1868bcb1651191e53d4568668df9e7f50cd5f2e9abe528adb",
       "input": "[1,3,288,512]",
-      "outputs": "12 raw-head tensors (3 per scale, 4 scales: regression logits, class scores, score sum)",
+      "outputs": "9 raw-head tensors (3 per scale, 3 scales: P3/P4/P5; regression logits, class scores, score sum)",
       "status": "conversion source; ONNX parity checked",
       "evidence": [
         "docs/models/evidence/B05P/B05P_bridge_runtime_20261027_A.json"
-      ]
+      ],
+      "note": "Verified with rknn_query on RK3566 on 2026-11-01: 9 outputs, 3 scales. Earlier manifest said 12 outputs; corrected."
     },
     {
       "id": "bdd-main-raw-head-int8",
@@ -46,7 +47,9 @@
       "evidence": [
         "docs/deployment/evidence/current_live_summary_20261028.json",
         "docs/models/evidence/B05P/B05P_bridge_runtime_20261027_A.json"
-      ]
+      ],
+      "outputs": "9 raw-head tensors (3 scales: P3/P4/P5)",
+      "note": "Verified with rknn_query on RK3566 on 2026-11-01: 9 outputs, 3 scales; input 1x288x512x3 NHWC uint8."
     },
     {
       "id": "b05n-p2-fp32",

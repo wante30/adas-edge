@@ -1,0 +1,22 @@
+W rknn-toolkit-lite2 version: 2.3.2
+I RKNN: [17:23:24.806] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [17:23:24.807] RKNN Driver Information, version: 0.8.2
+I RKNN: [17:23:24.809] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+W RKNN: [17:23:24.837] query RKNN_QUERY_INPUT_DYNAMIC_RANGE error, rknn model is static shape type, please export rknn with dynamic_shapes
+W Query dynamic range failed. Ret code: RKNN_ERR_MODEL_INVALID. (If it is a static shape RKNN model, please ignore the above warning message.)
+I RKNN: [17:23:24.851] RKNN Runtime Information, librknnrt version: 2.3.2 (429f97ae6b@2025-04-09T09:09:27)
+I RKNN: [17:23:24.851] RKNN Driver Information, version: 0.8.2
+I RKNN: [17:23:24.852] RKNN Model Information, version: 6, toolkit version: 2.3.2(compiler version: 2.3.2 (e045de294f@2025-04-07T19:48:25)), target: RKNPU lite, target platform: rk3566, framework name: ONNX, framework layout: NCHW, model inference type: static_shape
+librga fail to get driver version! Compatibility mode will be enabled.
+
+rga_api version 1.9.2_[1]
+Q4 python 4 57.1 capi 4 17.8
+  py classes [('car', 0.407), ('car', 0.891), ('person', 0.332), ('person', 0.614)]
+  c  classes [('car', 0.407), ('car', 0.891), ('person', 0.332), ('person', 0.607)]
+  matched@0.5 4 / 4 mean_iou 0.986
+  capi output_count 9 scales 3 timing {'preprocess_ms': 5.5, 'rknn_call_ms': 17.1, 'decode_nms_ms': 0.7, 'total_ms': 30.8}
+FULL python 7 43.7 capi 7 19.4
+  py classes [('car', 0.539), ('car', 0.689), ('car', 0.865), ('car', 0.892), ('person', 0.332), ('person', 0.45), ('traffic light', 0.339)]
+  c  classes [('car', 0.5), ('car', 0.671), ('car', 0.862), ('car', 0.892), ('person', 0.318), ('person', 0.504), ('traffic light', 0.3)]
+  matched@0.5 7 / 7 mean_iou 0.952
+  capi output_count 9 scales 3 timing {'preprocess_ms': 12.9, 'rknn_call_ms': 18.8, 'decode_nms_ms': 0.6, 'total_ms': 35.6}

@@ -251,3 +251,15 @@ B05N 14.33、B-2a 4.95、Seg-256 5.97 FPS。
 2. B-2a 是“检测 + 三组分割”的可切换扩展，不替代 B。
 3. MTL-FULL 精度优先，MTL-FAST 速度优先；两者都通过 `/dev/shm` PNG 叠加到 Qt。
 4. 默认模型不因本次归档改变。
+
+---
+
+## 8. 2026-11-01：BDD C API 与 FAST-MOSAIC
+
+- 板端 `rknn_query` 核实：BDD Raw-head 是 **9 输出 / 3 尺度（P3/P4/P5）**；B05N P2 是 12 输出 / 4 尺度。
+- BDD C API（独立 300 帧，完整 1280×720→512×288）：**25.52 FPS**，单帧 p50 38.98 ms。
+- BDD Python RKNN Lite 同条件：21.43 FPS，单帧 p50 46.0 ms。
+- P2 C API 同条件：18.76 FPS，单帧 p50 52.96 ms。
+- 真实 PCIe 四宫格一次推理，Q1/Q2/Q4 检测正常，Q3 车内无误检；详见
+  [`docs/research/FAST_MOSAIC_BDD_CAPI.md`](../research/FAST_MOSAIC_BDD_CAPI.md)。
+- 因已超过 20 FPS 目标，本轮不重新训练轻量模型；保留 BDD 为最终 FAST-MOSAIC 方案。

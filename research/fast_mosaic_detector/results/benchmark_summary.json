@@ -1,0 +1,80 @@
+{
+  "date": "2026-11-01",
+  "board": "LubanCat RK3566 / 4xA55 / RKNN Runtime 2.3.2",
+  "input": "1280x720 RGB565 full frame -> 512x288 RGB letterbox",
+  "frames": 300,
+  "rounds": 5,
+  "notes": "Qt/HMI was running; AI Bridge was inactive. Full-frame model throughput, not AI Bridge result rate.",
+  "python_bdd": {
+    "fps": 21.43,
+    "wall_ms_p50": 46.0,
+    "wall_ms_p95": 51.72,
+    "infer_ms_p50": 40.58,
+    "infer_ms_p95": 45.97
+  },
+  "capi_bdd_c": {
+    "fps": 25.52,
+    "total_ms_p50": 38.98,
+    "total_ms_p95": 42.6,
+    "preprocess_ms_p50": 17.69,
+    "rknn_run_ms_p50": 17.51,
+    "outputs_get_ms_p50": 2.45,
+    "decode_nms_ms_p50": 0.62,
+    "wanted_float": 0
+  },
+  "capi_bdd_float": {
+    "fps": 24.49,
+    "total_ms_p50": 40.73,
+    "total_ms_p95": 44.46,
+    "outputs_get_ms_p50": 3.84,
+    "wanted_float": 1
+  },
+  "capi_bdd_python": {
+    "fps": 29.99,
+    "wall_ms_p50": 32.48,
+    "wall_ms_p95": 41.48,
+    "rknn_ms_p50": 17.19,
+    "preprocess_ms_p50": 10.04,
+    "decode_nms_ms_p50": 0.62
+  },
+  "capi_p2_c": {
+    "fps": 18.76,
+    "total_ms_p50": 52.96,
+    "total_ms_p95": 57.38,
+    "rknn_run_ms_p50": 27.18,
+    "outputs_get_ms_p50": 5.38,
+    "decode_nms_ms_p50": 2.2
+  },
+  "resources": {
+    "cpu_percent": 88.64,
+    "npu_mean_percent": 100.0,
+    "npu_max_percent": 100,
+    "gpu_mean_percent": 37.78,
+    "gpu_max_percent": 100,
+    "temp_min_c": 37.22,
+    "temp_max_c": 40.0,
+    "temp_mean_c": 38.54,
+    "note": "whole-board load including Qt/HMI"
+  },
+  "fast_mosaic_pcie": {
+    "fps": 25.61,
+    "frames": 100,
+    "unique_pgv_frames": 100,
+    "wall_ms_p50": 31.32,
+    "wall_ms_p95": 39.22,
+    "detections": 1865,
+    "input": "real 1280x720 FPGA PCIe 2x2 mosaic -> one inference",
+    "note": "Qt/HMI running; live PGV stream."
+  },
+  "synthetic_mosaic": {
+    "input": "4 road frames tiled 2x2, one inference",
+    "inference_ms": 19.64,
+    "detections": 10,
+    "quadrant_counts": {
+      "Q1": 3,
+      "Q2": 2,
+      "Q3": 3,
+      "Q4": 2
+    }
+  }
+}
