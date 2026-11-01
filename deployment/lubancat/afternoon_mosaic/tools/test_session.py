@@ -80,7 +80,8 @@ def start(args):
                "--idle-timeout", "0", "--timing-log", str(EVIDENCE / f"{args.label}_ai.jsonl"),
                "--summary", str(EVIDENCE / f"{args.label}_ai_summary.json")]
     env = {"ADAS_EDGE_ROOT": str(ROOT / "ai"), "ADAS_DISABLE_ROAD_SCENE": "1",
-           "ADAS_LEGACY_HAZARD": "1", "ADAS_AUTO_BRAKE": "1", "ADAS_AI_DEBUG": "1"}
+           "ADAS_LEGACY_HAZARD": "1", "ADAS_AUTO_BRAKE": "1", "ADAS_AI_DEBUG": "1",
+           "ADAS_TEST_ACTION_PORT": str(args.action_port)}
     state["test_ai_pid"] = launch(ai_args, ROOT / "ai", env, f"{args.label}_ai.log")
     hmi_args = state["baseline_hmi"]["args"][:]
     hmi_args[0] = str(ROOT / args.build / "qt_gpu_probe")
@@ -111,6 +112,7 @@ if __name__ == "__main__":
     parser.add_argument("--build", default="build-baseline")
     parser.add_argument("--label", default="stage1_after_reboot")
     parser.add_argument("--ai-hz", default="10")
+    parser.add_argument("--action-port", default="38362")
     args = parser.parse_args()
     EVIDENCE.mkdir(exist_ok=True)
     start(args) if args.action == "start" else restore()

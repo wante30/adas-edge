@@ -44,6 +44,8 @@ class VideoItem : public QQuickFramebufferObject {
     Q_PROPERTY(QString aiStatus READ aiStatus NOTIFY metricsChanged)
     Q_PROPERTY(bool aiOnline READ aiOnline NOTIFY metricsChanged)
     Q_PROPERTY(double aiFps READ aiFps NOTIFY metricsChanged)
+    Q_PROPERTY(QString inferenceMode READ inferenceMode NOTIFY aiStatusChanged)
+    Q_PROPERTY(bool inferenceReady READ inferenceReady NOTIFY aiStatusChanged)
     Q_PROPERTY(QString aiModelId READ aiModelId NOTIFY aiStatusChanged)
     Q_PROPERTY(QString aiModelState READ aiModelState NOTIFY aiStatusChanged)
     Q_PROPERTY(QString aiModelMessage READ aiModelMessage NOTIFY aiStatusChanged)
@@ -281,6 +283,9 @@ public:
     void setAiRoadQuadrant(int quadrant);
     void setAiNavigationQuadrant(int quadrant);
     Q_INVOKABLE void requestModelSwitch(const QString &profileId);
+    Q_INVOKABLE void requestInferenceMode(const QString &mode);
+    QString inferenceMode() const { return inference_mode_.load() ? QStringLiteral("MOSAIC_FULL") : QStringLiteral("ROAD_Q1"); }
+    bool inferenceReady() const { return inference_applied_epoch_.load() == inference_epoch_.load(); }
     qulonglong uniqueReplayContentFramesUploaded() const {
         return render_metrics_->unique_replay_content_frames.load();
     }
@@ -363,6 +368,10 @@ private:
     std::atomic<uint64_t> ai_requests_sent_{0};
     std::atomic<uint64_t> ai_results_received_{0};
     std::atomic<bool> ai_running_{false};
+    std::atomic<int> inference_mode_{0};
+    std::atomic<quint64> inference_epoch_{1};
+    std::atomic<quint64> inference_applied_epoch_{0};
+    QString inference_bridge_id_;
     std::atomic<uint32_t> ai_epoch_{0};
     uint32_t last_ai_epoch_ = 0;
     std::atomic<bool> ai_online_{false};

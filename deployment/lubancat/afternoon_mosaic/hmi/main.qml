@@ -166,11 +166,15 @@ Item {
     }
 
     onViewModeChanged: {
-        if (video) video.spatialViewActive = (viewMode === 2)
+        if (video) {
+            video.spatialViewActive = (viewMode === 2)
+            video.requestInferenceMode(viewMode === 1 ? "MOSAIC_FULL" : "ROAD_Q1")
+        }
         attachTeslaScene()
     }
 
     Component.onCompleted: {
+        video.requestInferenceMode(viewMode === 1 ? "MOSAIC_FULL" : "ROAD_Q1")
         video.aiRoadQuadrant = roadQuadrant
         video.aiNavigationQuadrant = navQuadrant
         attachTeslaScene()
@@ -831,7 +835,8 @@ Item {
             readonly property bool active: (video.aiModelId === "MTL-FULL"
                                             || video.aiModelId === "MTL-FAST")
                                            && video.aiOnline
-            visible: active && root.viewMode !== 2 && !root.videoQsg
+            visible: active && root.viewMode === 0 && root.roadQuadrant === 0
+                     && video.inferenceReady && !root.videoQsg
             source: ""
             cache: false
             asynchronous: true
@@ -886,7 +891,8 @@ Item {
             anchors.fill: parent
             clip: true
             visible: (root.viewMode === 0 || root.viewMode === 1)
-                     && video.aiOnline && video.bboxCount > 0
+                     && video.aiOnline && video.inferenceReady && video.bboxCount > 0
+                     && (root.viewMode === 1 || root.roadQuadrant === 0)
             Repeater {
                 model: video.bboxModel
                 delegate: Item {

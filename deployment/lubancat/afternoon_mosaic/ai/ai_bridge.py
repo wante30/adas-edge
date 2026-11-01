@@ -918,6 +918,8 @@ class AiReplayBridge:
             # dropping requests when PGV timestamps jitter around 100 ms.
             main_every_request=True,
         )
+        from inference_mode import ModeControl
+        self.modes = ModeControl(self)
         self.auto_brake = AutoBrakeController()
         self.navigation = None
         self.nav_request = None
@@ -988,8 +990,9 @@ class AiReplayBridge:
         status = initial_dynamic_status(self.args.source, time.monotonic_ns())
         status["model_selection"] = self._model_selection_status(include_options=True)
         status["layout"] = self.args.layout
-        status["display_view"] = self.args.display_view
-        status["road_quadrant"] = int(self.args.road_quadrant)
+        status["display_view"] = "quad" if self.modes.adapter is not None else "front"
+        status["road_quadrant"] = 0
+        status["inference"] = self.modes.status()
         self._write_dynamic_hmi(status)
         self.listener.start()
         self.worker.start()
@@ -1015,6 +1018,9 @@ class AiReplayBridge:
                 continue
             except OSError:
                 break
+            if self.modes.receive(packet, peer):
+                continue
+            packet = self.modes.frame_request(packet)
             model_request = decode_model_switch_request(packet)
             if model_request is not None:
                 self._queue_model_switch(model_request, peer)
@@ -1075,6 +1081,7 @@ class AiReplayBridge:
                 now = time.monotonic_ns()
                 request = (requested_id, requested_timestamp_ns, None,
                            input_fps, submitted_fps, now)
+            request = (*request, self.modes.token())
             self.request_count += 1
             if self.first_request_ns is None:
                 self.first_request_ns = now
@@ -1173,6 +1180,8 @@ class AiReplayBridge:
         )
 
     def _apply_pending_model_switch(self):
+        if self.modes.mode == "MOSAIC_FULL":
+            return False
         with self.model_switch_lock:
             request = self.pending_model_switch
             if request is None:
@@ -1252,7 +1261,8 @@ class AiReplayBridge:
 
     def _detections_to_boxes(self, snapshot):
         boxes = []
-        for detections in (snapshot.main, snapshot.specialist):
+        groups = (snapshot.main, snapshot.specialist) if self.modes.adapter is None else (self.modes.adapter.all_detections,)
+        for detections in groups:
             for item in detections or ():
                 if len(boxes) >= MAX_BOXES:
                     return boxes
@@ -1263,11 +1273,16 @@ class AiReplayBridge:
                 if not all(math.isfinite(value) for value in (x1, y1, x2, y2)):
                     continue
                 try:
-                    x1, y1, x2, y2 = map_detection_box(
-                        (x1, y1, x2, y2), input_layout=self.args.layout,
-                        display_view=self.args.display_view,
-                        road_quadrant=self.args.road_quadrant,
-                    )
+                    if self.modes.adapter is None:
+                        x1, y1, x2, y2 = map_detection_box(
+                            (x1, y1, x2, y2), input_layout=self.args.layout,
+                            display_view="front", road_quadrant=0,
+                        )
+                    else:
+                        x1, x2 = max(0.0, x1), min(1280.0, x2)
+                        y1, y2 = max(0.0, y1), min(720.0, y2)
+                        if x2 <= x1 or y2 <= y1:
+                            continue
                 except ValueError:
                     continue
                 r, g, b = _box_color(item.get("class_name", ""))
@@ -1355,13 +1370,15 @@ class AiReplayBridge:
             full_frame = self.frames[frame_id % len(self.frames)]
         decode_start_ns = time.perf_counter_ns()
         road, navigation_image = select_inference_frames(
-            full_frame, self.args.layout, self.args.road_quadrant,
+            full_frame, self.args.layout, 0,
             self.args.navigation_quadrant,
         )
         self._last_decode_ms = (time.perf_counter_ns() - decode_start_ns) / 1e6
         self.stage_timings["rgb565_decode"].append(self._last_decode_ms)
         self.latest_source_timestamp_ns = int(timestamp_ns)
         pipeline_start_ns = time.perf_counter_ns()
+        if self.modes.adapter is not None:
+            self.modes.adapter.full_frame = (full_frame.full_bgr() if isinstance(full_frame, PackedRgb565) else full_frame)
         self.pipeline.advance(
             road, int(frame_id), int(timestamp_ns),
             schedule_timestamp_ns=schedule_timestamp_ns,
@@ -1452,8 +1469,9 @@ class AiReplayBridge:
             include_options=include_options
         )
         status["layout"] = self.args.layout
-        status["display_view"] = self.args.display_view
-        status["road_quadrant"] = int(self.args.road_quadrant)
+        status["display_view"] = "quad" if self.modes.adapter is not None else "front"
+        status["road_quadrant"] = 0
+        status["inference"] = self.modes.status(frame_id)
         road = getattr(snapshot.hazards, "road", None)
         if road:
             status["road_scene"] = road
@@ -1500,6 +1518,7 @@ class AiReplayBridge:
     def _infer(self):
         priority_reapplied = False
         while self.running.is_set():
+            self.modes.apply()
             request = self.latest.take(timeout=0.2)
             if request is None:
                 self._apply_pending_model_switch()
@@ -1509,11 +1528,18 @@ class AiReplayBridge:
                     f"WORKER_TAKE frame={request[0]} result_count={self.result_count}"
                 )
             self._apply_pending_model_switch()
+            if len(request) == 7:
+                *request, mode_token = request
+                if mode_token != self.modes.token():
+                    continue
             if len(request) == 6:
                 frame_id, timestamp_ns, full_frame, input_fps, submitted_fps, ai_recv_ns = request
             else:
                 frame_id, timestamp_ns, full_frame, input_fps, submitted_fps = request
                 ai_recv_ns = time.monotonic_ns()
+            key = (frame_id, timestamp_ns, self.modes.epoch)
+            if key == self.modes.last_result_key:
+                continue
             infer_start_ns = time.monotonic_ns()
             started = time.perf_counter_ns()
             cpu_started = time.thread_time_ns()
@@ -1544,6 +1570,7 @@ class AiReplayBridge:
                 publish_started = time.perf_counter_ns()
                 self.result_socket.sendto(packet, self.result_address)
                 publish_ns = time.monotonic_ns()
+                self.modes.last_result_key = key
                 self.stage_timings["result_publish"].append(
                     (time.perf_counter_ns() - publish_started) / 1e6
                 )
@@ -1553,6 +1580,7 @@ class AiReplayBridge:
                     specialist_timing = getattr(specialist_runtime, "last_timing", None)
                     self.timing_stream.write(json.dumps({
                         "frame_id": int(frame_id),
+                        "inference": self.modes.status(frame_id),
                         "capture_timestamp_ns": int(timestamp_ns),
                         "ai_receive_timestamp_ns": int(ai_recv_ns),
                         "infer_start_ns": int(infer_start_ns),
@@ -1651,6 +1679,7 @@ class AiReplayBridge:
             self.debug_stream.close()
             self.debug_stream = None
         self.telemetry.stop()
+        self.modes.shutdown()
         self.pipeline.main_detector.close()
         if self.pipeline.specialist_detector is not None:
             self.pipeline.specialist_detector.close()

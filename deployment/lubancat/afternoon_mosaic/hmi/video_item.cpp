@@ -25,6 +25,7 @@ int envPort(const char *name, int fallback) {
 #include <EGL/egl.h>
 #include <algorithm>
 #include <array>
+#include <map>
 #include <cerrno>
 #include <chrono>
 #include <cstring>
@@ -401,6 +402,7 @@ private:
 };
 
 VideoItem::VideoItem(QQuickItem *parent) : QQuickFramebufferObject(parent) {
+    inference_epoch_.store(static_cast<quint64>(steadyNs()));
     display_queue_ = std::make_shared<DisplayQueue>();
     bbox_model_ = std::make_unique<AiBoxModel>();
     const QByteArray timingPath = qgetenv("QT_AI_TIMING_LOG");
@@ -996,13 +998,39 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
         static_cast<int64_t>(std::llround(1.0e9 / std::max(0.1, aiHz))));
     auto nextRequest = std::chrono::steady_clock::now();
     uint64_t latestResultId = 0;
+    quint64 loopModeEpoch = 0;
+    qint64 lastModeSendNs = 0;
+    unsigned modeAttempts = 0;
+    struct Submitted { quint64 epoch; quint64 timestamp; };
+    std::map<quint64, Submitted> submitted;
     std::array<unsigned char, 8192> packet{};
     const std::string outputPath = frameFile.toUtf8().toStdString();
     const std::string temporaryPath = outputPath + ".tmp";
 
     while (ai_running_.load()) {
         const auto now = std::chrono::steady_clock::now();
-        if (now >= nextRequest) {
+        const qint64 loopNowNs = steadyNs();
+        const quint64 modeEpoch = inference_epoch_.load();
+        if (loopModeEpoch != modeEpoch) {
+            loopModeEpoch = modeEpoch;
+            submitted.clear();
+            latestResultId = 0;
+            lastModeSendNs = 0;
+            modeAttempts = 0;
+        }
+        const bool modeReady = inference_applied_epoch_.load() == modeEpoch;
+        const qint64 retryNs = modeReady ? 1000000000LL : (modeAttempts < 8 ? 250000000LL : 2000000000LL);
+        if (lastModeSendNs == 0 || loopNowNs - lastModeSendNs >= retryNs) {
+            QByteArray command(16, '\0');
+            std::memcpy(command.data(), "MVI1", 4);
+            qToLittleEndian<quint64>(modeEpoch, reinterpret_cast<uchar *>(command.data() + 4));
+            qToLittleEndian<quint32>(inference_mode_.load(), reinterpret_cast<uchar *>(command.data() + 12));
+            ::sendto(socketFd, command.constData(), command.size(), 0,
+                     reinterpret_cast<const sockaddr *>(&requestAddress), sizeof(requestAddress));
+            lastModeSendNs = loopNowNs;
+            ++modeAttempts;
+        }
+        if (modeReady && now >= nextRequest) {
             std::shared_ptr<Frame> frame;
             {
                 std::lock_guard<std::mutex> locker(ai_frame_mutex_);
@@ -1021,8 +1049,9 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                                static_cast<std::streamsize>(frame->pixels.size()));
                 snapshot.close();
                 if (snapshot && std::rename(temporaryPath.c_str(), outputPath.c_str()) == 0) {
-                    QByteArray request(28, '\0');
-                    std::memcpy(request.data(), "MVR2", 4);
+                    QByteArray request(36, '\0');
+                    std::memcpy(request.data(), "MVR3", 4);
+                    qToLittleEndian<quint64>(modeEpoch, reinterpret_cast<uchar *>(request.data() + 20));
                     qToLittleEndian<quint64>(frame->id, reinterpret_cast<uchar *>(request.data() + 4));
                     qToLittleEndian<quint64>(static_cast<quint64>(frame->producedNs), reinterpret_cast<uchar *>(request.data() + 12));
                     const float inputRate = static_cast<float>(fps);
@@ -1031,8 +1060,8 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     quint32 submittedRateBits = 0;
                     std::memcpy(&inputRateBits, &inputRate, sizeof(inputRateBits));
                     std::memcpy(&submittedRateBits, &submittedRate, sizeof(submittedRateBits));
-                    qToLittleEndian<quint32>(inputRateBits, reinterpret_cast<uchar *>(request.data() + 20));
-                    qToLittleEndian<quint32>(submittedRateBits, reinterpret_cast<uchar *>(request.data() + 24));
+                    qToLittleEndian<quint32>(inputRateBits, reinterpret_cast<uchar *>(request.data() + 28));
+                    qToLittleEndian<quint32>(submittedRateBits, reinterpret_cast<uchar *>(request.data() + 32));
                     const unsigned char selection[6] = {
                         'M', 'V', 'S', '1',
                         static_cast<unsigned char>(ai_road_quadrant_.load()),
@@ -1044,6 +1073,8 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     if (sendto(socketFd, request.constData(), request.size(), 0,
                                reinterpret_cast<const sockaddr *>(&requestAddress), sizeof(requestAddress)) == request.size()) {
                         ai_requests_sent_.fetch_add(1);
+                        submitted[frame->id] = {modeEpoch, static_cast<quint64>(frame->producedNs)};
+                        while (submitted.size() > 32) submitted.erase(submitted.begin());
                     }
                 }
             }
@@ -1055,7 +1086,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
         quint32 modelRequestId = 0;
         {
             QMutexLocker locker(&ai_metrics_mutex_);
-            if (!pending_model_switch_id_.isEmpty()) {
+            if (modeReady && !pending_model_switch_id_.isEmpty()) {
                 modelProfileId = pending_model_switch_id_;
                 modelRequestId = pending_model_switch_request_id_;
                 pending_model_switch_id_.clear();
@@ -1088,6 +1119,30 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
             if (received < 0) {
                 if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) break;
                 break;
+            }
+            if (received > 4 && std::memcmp(packet.data(), "MIA1", 4) == 0) {
+                const QJsonObject ack = QJsonDocument::fromJson(QByteArray(
+                    reinterpret_cast<const char *>(packet.data() + 4), static_cast<int>(received) - 4)).object();
+                if (ack.value(QStringLiteral("epoch")).toString().toULongLong() == inference_epoch_.load()
+                    && ack.value(QStringLiteral("mode")).toString() == inferenceMode()
+                    && ack.value(QStringLiteral("state")).toString() == QStringLiteral("APPLIED")) {
+                    const QString bridge = ack.value(QStringLiteral("bridge_id")).toString();
+                    {
+                        QMutexLocker locker(&ai_metrics_mutex_);
+                        if (inference_bridge_id_ != bridge) {
+                            inference_bridge_id_ = bridge;
+                            submitted.clear();
+                            latestResultId = 0;
+                            tracks_.clear();
+                            ai_boxes_.clear();
+                            latest_ai_frame_id_.store(0);
+                            ai_dirty_.store(true);
+                        }
+                    }
+                    if (inference_applied_epoch_.exchange(inference_epoch_.load()) != inference_epoch_.load())
+                        QMetaObject::invokeMethod(this, "notifyAiModelChanged", Qt::QueuedConnection);
+                }
+                continue;
             }
             if (received >= 10 && std::memcmp(packet.data(), "MMS1", 4) == 0) {
                 const quint32 requestId = qFromLittleEndian<quint32>(packet.data() + 4);
@@ -1130,6 +1185,23 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
 
             if (nowNs < static_cast<qint64>(timestampNs) || nowNs - static_cast<qint64>(timestampNs) > 2000000000) continue;
 
+            const QByteArray statusData(reinterpret_cast<const char *>(packet.data() + headerBytes + count * boxBytes),
+                                        static_cast<int>(statusBytes));
+            const QJsonObject status = QJsonDocument::fromJson(statusData).object();
+            const QJsonObject inference = status.value(QStringLiteral("inference")).toObject();
+            const auto submittedIt = submitted.find(frameId);
+            const QString expectedSpace = inference_mode_.load() ? QStringLiteral("MOSAIC_1280x720") : QStringLiteral("ROAD_VIEW_1280x720");
+            if (submittedIt == submitted.end() || submittedIt->second.timestamp != timestampNs
+                || submittedIt->second.epoch != inference_epoch_.load()
+                || inference.value(QStringLiteral("epoch")).toString().toULongLong() != inference_epoch_.load()
+                || inference.value(QStringLiteral("mode")).toString() != inferenceMode()
+                || inference.value(QStringLiteral("box_space")).toString() != expectedSpace
+                || inference.value(QStringLiteral("frame_id")).toDouble(-1) != static_cast<double>(frameId)) continue;
+            {
+                QMutexLocker locker(&ai_metrics_mutex_);
+                if (inference.value(QStringLiteral("bridge_id")).toString() != inference_bridge_id_) continue;
+            }
+            submitted.erase(submittedIt);
             QVariantList detectionMaps;
             for (uint32_t index = 0; index < count; ++index) {
                 const unsigned char *box = packet.data() + headerBytes + index * boxBytes;
@@ -1361,9 +1433,6 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
             }
             const qint64 trackEndNs = steadyNs();
             const qint64 statusStartNs = steadyNs();
-            const QByteArray statusData(reinterpret_cast<const char *>(packet.data() + headerBytes + count * boxBytes),
-                                        static_cast<int>(statusBytes));
-            const QJsonObject status = QJsonDocument::fromJson(statusData).object();
             const QJsonObject modelSelection = status.value(QStringLiteral("model_selection")).toObject();
             QVariantList modelOptions;
             for (const QJsonValue &value : modelSelection.value(QStringLiteral("options")).toArray()) {
@@ -1612,6 +1681,24 @@ QString VideoItem::aiModelMessage() const {
 QVariantList VideoItem::aiModelOptions() const {
     QMutexLocker locker(&ai_metrics_mutex_);
     return ai_model_options_;
+}
+
+void VideoItem::requestInferenceMode(const QString &mode) {
+    const int requested = mode == QStringLiteral("MOSAIC_FULL") ? 1 : 0;
+    if (inference_mode_.exchange(requested) == requested) return;
+    inference_epoch_.fetch_add(1);
+    inference_applied_epoch_.store(0);
+    {
+        QMutexLocker locker(&ai_metrics_mutex_);
+        tracks_.clear();
+        ai_boxes_.clear();
+        ai_hazard_latch_details_.clear();
+        ai_hazard_latch_ns_ = 0;
+        latest_ai_frame_id_.store(0);
+        ai_fps_.store(0.0);
+    }
+    ai_dirty_.store(true);
+    emit aiStatusChanged();
 }
 
 void VideoItem::requestModelSwitch(const QString &profileId) {
