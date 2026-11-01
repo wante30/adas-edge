@@ -409,6 +409,10 @@ Item {
     function hazardLabel(kind, targetClass) {
         var eventKind = String(kind || "").toUpperCase()
         var target = String(targetClass || "").toLowerCase()
+        if (eventKind === "PEDESTRIAN_NEAR_CROSSWALK") return "斑马线附近行人"
+        if (eventKind === "CROSSWALK_BRAKE_PULSE") return "斑马线点刹 · DRY RUN"
+        if (eventKind === "TWO_WHEELER_PATH_CONFLICT") return "两轮车路径冲突"
+        if (eventKind === "ONCOMING_PATH_CONFLICT") return "对向车辆路径冲突"
         if (eventKind === "NEAR_OBJECT_IN_PATH")
             return target === "person" ? "行人距离过近" : "前车距离过近"
         if (eventKind === "LEAD_RAPID_CLOSING") return "前车快速接近"

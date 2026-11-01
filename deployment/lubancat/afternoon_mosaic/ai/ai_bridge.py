@@ -38,6 +38,7 @@ if str(ROOT) not in sys.path:
 from competition_ai.scenario import Lane
 from tools.competition_console.fpga_perception import TrafficCode, build_hud_perception
 from auto_brake import AutoBrakeController
+from light_semantics import SemanticWorker
 from light_risk import LightRiskEngine
 from primary_tracks import PrimaryTracks
 from risk_events import EventStore, RiskObservation
@@ -928,6 +929,7 @@ class AiReplayBridge:
         self.event_store = EventStore()
         self.primary_tracks = PrimaryTracks()
         self.light_risk = LightRiskEngine()
+        self.semantics = SemanticWorker()
         self.auto_brake = AutoBrakeController()
         self.navigation = None
         self.nav_request = None
@@ -1474,8 +1476,14 @@ class AiReplayBridge:
         self.primary_tracks.update(detections,(mode["mode"],mode["epoch"],self.active_model_id),timestamp_ns)
         self.stage_timings.setdefault("risk_fast",deque(maxlen=3600))
         risk_start=time.perf_counter_ns()
+        risk_context=(mode["mode"],mode["epoch"],self.active_model_id)
+        detector=getattr(self.pipeline.main_detector,"detector",None)
+        masks=getattr(detector,"last_masks",None) if self.modes.adapter is None else None
+        letterbox=getattr(detector,"last_letterbox",None) if masks is not None else None
+        self.semantics.submit(road,self.primary_tracks.current,timestamp_ns,risk_context,masks,letterbox)
+        semantic_result=self.semantics.current(timestamp_ns,risk_context)
         candidates=self.light_risk.update(self.primary_tracks.current,timestamp_ns,
-            (mode["mode"],mode["epoch"],self.active_model_id)) if self.args.hazards else []
+            risk_context,semantic_result) if self.args.hazards else []
         events = self.event_store.update(candidates, mode=mode["mode"], epoch=mode["epoch"],
             bridge_id=mode["bridge_id"], model_id=self.active_model_id, frame_id=frame_id,
             timestamp_ns=timestamp_ns, measurement_ns=timestamp_ns)
@@ -1533,6 +1541,7 @@ class AiReplayBridge:
         status["display_view"] = "quad" if self.modes.adapter is not None else "front"
         status["road_quadrant"] = 0
         status["inference"] = self.modes.status(frame_id)
+        status["semantics"] = dict(semantic_result,metrics=self.semantics.metrics())
         status["risk_rules"] = self.light_risk.metrics()
         status["box_identities"] = self.box_identities
         status["event_updates"] = [{k:e[k] for k in ("event_id", "lifecycle_state", "cleared_ns") if k in e}
@@ -1729,6 +1738,7 @@ class AiReplayBridge:
             self.close()
 
     def close(self):
+        self.semantics.close()
         self.event_store.journal.close()
         self.running.clear()
         self.latest.close()

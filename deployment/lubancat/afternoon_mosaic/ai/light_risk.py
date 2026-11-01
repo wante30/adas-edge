@@ -6,7 +6,7 @@ import time
 
 VEHICLES={"car","truck","bus"}
 TWO_WHEELERS={"motorcycle","bicycle"}
-RULES=("front","pedestrian","two_wheeler","cut_in","oncoming","braking")
+RULES=("front","pedestrian","two_wheeler","cut_in","oncoming","braking","crosswalk")
 
 class LightRiskEngine:
     def __init__(self):
@@ -82,6 +82,17 @@ class LightRiskEngine:
             lamp_fresh=0<=timestamp_ns-lamp.get("timestamp_ns",-10**18)<=1000000000
             self._run("braking",vehicle and in_path and bool(lamp.get("rise")) and lamp_fresh,
                 "SUSPECTED_BRAKING_WITH_CLOSING",closing and near and foot>.84,d,"PAIRED_RED_LAMP_RISE_AND_MEASURED_CLOSING",events)
+            crossings=semantics.get("crosswalks",[])
+            associated=False
+            for crossing in crossings:
+                a,b,c,f=crossing["bbox"]
+                if a-.08<=x<=c+.08 and b-.15<=foot<=f+.15:associated=True;break
+            self._run("crosswalk",person and associated and near_path,"PEDESTRIAN_NEAR_CROSSWALK",
+                False,d,"MTL_CROSSWALK_AND_MEASURED_PERSON",events)
+            if associated:
+                for event in events:
+                    if event["track_id"]==d["track_id"] and event["kind"]=="PEDESTRIAN_CROSSING_PATH":
+                        event["evidence"]="MTL_CROSSWALK_AND_MEASURED_LATERAL_PATH_ENTRY"
         self.history={k:v for k,v in self.history.items() if timestamp_ns-v[-1][0]<800000000}
         self.confirm={k:v for k,v in self.confirm.items() if k[:2] in seen}
         return events
