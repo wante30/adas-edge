@@ -26,7 +26,11 @@ class AutoBrakeController:
             enabled = os.environ.get("ADAS_AUTO_BRAKE") == "1"
         self.enabled = bool(enabled)
         self.address = ("127.0.0.1", int(port))
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        if os.environ.get("ADAS_CONTROL_MODE") == "DRY_RUN":
+            from control_transport import DryRunSocket
+            self.sock = DryRunSocket()
+        else:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.settimeout(0.08)
         self.last_key = None
         self.blocked_key = None

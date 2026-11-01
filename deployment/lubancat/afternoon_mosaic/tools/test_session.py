@@ -104,12 +104,9 @@ def start(args):
         if active:
             subprocess.run(["sudo", "-n", "systemctl", "stop", SERVICE], check=True)
         stop(hmis[0] if hmis else None)
-    if str(args.action_port) == "38362" and not state.get("mock_pid"):
-        state["mock_pid"] = launch(["python3", str(ROOT / "tools/mock_actions.py"), "38362",
-                                    str(EVIDENCE / "mock_actions.jsonl")], ROOT, {}, "mock.log")
     if not args.raw_replay:
         resume_telemetry(state)
-    shared_frame = Path("/dev/shm/adas_mosaic_dev_20261101.mfr1")
+    shared_frame = Path("/dev/shm") / (ROOT.name + ".mfr1")
     ai_args = ["/usr/bin/python3", "-u", str(ROOT / "tools/isolated_ai.py"),
                "--live-frame-file", str(shared_frame),
                "--source", "LOCAL_REPLAY" if args.raw_replay else "PGV_LIVE", "--layout", "quad", "--display-view", "front",
@@ -120,7 +117,8 @@ def start(args):
                "--summary", str(EVIDENCE / f"{args.label}_ai_summary.json")]
     env = {"ADAS_EDGE_ROOT": str(ROOT / "ai"), "ADAS_DISABLE_ROAD_SCENE": "1",
            "ADAS_LEGACY_HAZARD": "1", "ADAS_AUTO_BRAKE": "1", "ADAS_AI_DEBUG": "1",
-           "ADAS_TEST_ACTION_PORT": str(args.action_port)}
+           "ADAS_TEST_ACTION_PORT": str(args.action_port),
+           "ADAS_CONTROL_MODE": getattr(args, "control_mode", None) or ("DRY_RUN" if args.raw_replay else "HARDWARE")}
     state["test_ai_pid"] = launch(ai_args, ROOT / "ai", env, f"{args.label}_ai.log")
     hmi_args = state["baseline_hmi"]["args"][:]
     hmi_args[0] = str(ROOT / args.build / "qt_gpu_probe")
@@ -164,7 +162,8 @@ if __name__ == "__main__":
     parser.add_argument("--ai-hz", default="10")
     parser.add_argument("--external-qml", action="store_true")
     parser.add_argument("--raw-replay", default="")
-    parser.add_argument("--action-port", default="38362")
+    parser.add_argument("--action-port", default="38262")
+    parser.add_argument("--control-mode", choices=["DRY_RUN", "HARDWARE"])
     args = parser.parse_args()
     EVIDENCE.mkdir(exist_ok=True)
     start(args) if args.action == "start" else restore()
