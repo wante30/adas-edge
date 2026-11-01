@@ -1,0 +1,12 @@
+runtime/
+build*/
+evidence/
+*.tgz
+baseline_embedded_main.qml
+__pycache__/
+*.pyc
+*.so*
+*.bak*
+*.pre-audit*
+*.model-picker-backup*
+*/moc_*.cpp

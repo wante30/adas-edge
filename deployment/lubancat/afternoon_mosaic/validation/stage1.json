@@ -1,0 +1,15 @@
+{
+  "local_date": "2026-11-01",
+  "stage": 1,
+  "base_commit": "9b396e8b346bfbbfa9856950937e1cd3f54516f4",
+  "board_boot_id": "a8e1e510-095c-4dc8-a9f3-301d793ab63e",
+  "unique_results": 1719,
+  "seconds": 223.645947548,
+  "completed_fps": 7.681784619107727,
+  "mean_pipeline_ms": 109.03960327923211,
+  "navigation_valid_results": 1410,
+  "window": "IsViewable",
+  "brake_output": "UDP simulator port 38362",
+  "lvt1_simulated": false,
+  "status": "baseline reproduced; no inference mode changes yet"
+}

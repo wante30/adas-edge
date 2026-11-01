@@ -1,0 +1,153 @@
+{
+  "input": "local-raw 1280x720 RGB565, requested 60 FPS",
+  "source_path": "/home/cat/qt_gpu_probe_ai_20261019/local_quad_full.rgb",
+  "continuous_seconds": 612.179008347,
+  "window_is_viewable": true,
+  "hmi_counter_continuity_through_ai_restart": true,
+  "counter_span_seconds": 611.834,
+  "source_fps": 54.60304592422128,
+  "texture_upload_fps": 28.676078805689126,
+  "qt_scene_graph_fps_mean": 29.443816735417652,
+  "accepted_ai_fps_across_modes": 10.695711581899667,
+  "cpu_percent_all_cores_mean": 23.856280802844637,
+  "gpu_load_percent_mean": 36.23888888888889,
+  "npu_driver_reported_percent_mean": 100,
+  "steady_mode_rates": {
+    "ROAD_Q1/MTL-FAST": {
+      "completed_fps": 6.899240146305736,
+      "results": 2109,
+      "mean_pipeline_ms": 104.88251872593646,
+      "mean_rknn_ms": 81.18926298341349
+    },
+    "MOSAIC_FULL/FAST-MOSAIC": {
+      "completed_fps": 14.533654390542297,
+      "results": 4445,
+      "mean_pipeline_ms": 31.980652643644543,
+      "mean_rknn_ms": 16.149844898657268
+    }
+  },
+  "all_model_rates": {
+    "ROAD_Q1/MTL-FAST": {
+      "completed_fps": 6.8589735592413295,
+      "results": 4033,
+      "mean_pipeline_ms": 106.76444921100918,
+      "mean_rknn_ms": 82.38637121906655
+    },
+    "ROAD_Q1/B": {
+      "completed_fps": 9.284550207635068,
+      "results": 32,
+      "mean_pipeline_ms": 72.520422125,
+      "mean_rknn_ms": 54.41517371875
+    },
+    "ROAD_Q1/B-capi": {
+      "completed_fps": 13.739247621263091,
+      "results": 29,
+      "mean_pipeline_ms": 42.39804734482759,
+      "mean_rknn_ms": 25.778915339502795
+    },
+    "ROAD_Q1/MTL-FULL": {
+      "completed_fps": 5.123541888186494,
+      "results": 12,
+      "mean_pipeline_ms": 127.0968755,
+      "mean_rknn_ms": 82.27677345275879
+    },
+    "MOSAIC_FULL/FAST-MOSAIC": {
+      "completed_fps": 14.541049974678872,
+      "results": 4530,
+      "mean_pipeline_ms": 31.99398808322296,
+      "mean_rknn_ms": 16.148734399025013
+    }
+  },
+  "navigation_states": {
+    "UNREADABLE": 6468,
+    "VALID": 83,
+    "STALE": 4
+  },
+  "hazard_result_frames": 384,
+  "normal_brake_attempts": 125,
+  "normal_brake_timeouts": 125,
+  "live_pcie_available": false,
+  "lvt1_available": false,
+  "runtime_errors": [],
+  "duplicate_result_keys": 0,
+  "mode_events": [
+    {
+      "event": "model_B",
+      "mode": "ROAD_Q1",
+      "model": "B",
+      "fps": 9.111072746842318
+    },
+    {
+      "event": "model_B-capi",
+      "mode": "ROAD_Q1",
+      "model": "B-capi",
+      "fps": 0
+    },
+    {
+      "event": "model_MTL-FULL",
+      "mode": "ROAD_Q1",
+      "model": "MTL-FULL",
+      "fps": 0
+    },
+    {
+      "event": "model_MTL-FAST",
+      "mode": "ROAD_Q1",
+      "model": "MTL-FAST",
+      "fps": 6.302892103471511
+    },
+    {
+      "event": "mode_0_ROAD_Q1",
+      "mode": "ROAD_Q1",
+      "model": "MTL-FAST",
+      "fps": 5.5453592777785445
+    },
+    {
+      "event": "mode_1_MOSAIC_FULL",
+      "mode": "MOSAIC_FULL",
+      "model": "FAST-MOSAIC",
+      "fps": 14.563650803784293
+    },
+    {
+      "event": "mode_2_ROAD_Q1",
+      "mode": "ROAD_Q1",
+      "model": "MTL-FAST",
+      "fps": 7.015398107829974
+    },
+    {
+      "event": "mode_3_MOSAIC_FULL",
+      "mode": "MOSAIC_FULL",
+      "model": "FAST-MOSAIC",
+      "fps": 13.633805988585543
+    },
+    {
+      "event": "mode_4_ROAD_Q1",
+      "mode": "ROAD_Q1",
+      "model": "MTL-FAST",
+      "fps": 5.445434984395997
+    },
+    {
+      "event": "ai_offline_zero_fps",
+      "mode": "ROAD_Q1",
+      "model": "MTL-FAST",
+      "fps": 0
+    },
+    {
+      "event": "ai_reconnected",
+      "mode": "ROAD_Q1",
+      "model": "MTL-FAST",
+      "fps": 7.033893874476721
+    },
+    {
+      "event": "finished",
+      "mode": "ROAD_Q1",
+      "model": "FAST-MOSAIC",
+      "fps": 0
+    }
+  ],
+  "log_sha256": {
+    "final_replay_ai.jsonl": "744f147e0f047b0b991f9755add7aadd2670b6f83f497e6d0f3c211ef083ef47",
+    "final_replay_hmi.jsonl": "43e18776238dcc30e407a3bf7e86714faceaca775f0745f5e977d94f76c829fb",
+    "final_replay_ai.log": "09687aff616a3e55d42fa6c92ca57aba5b239eba1c302bdf7b7eab275e4dd8ed",
+    "final_replay_hmi.log": "5322e790e23c29f20c084dfabdbd0057516a961480e6e34861985d250bf8efbb"
+  }
+}

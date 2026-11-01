@@ -1,0 +1,47 @@
+[
+  {
+    "mode": "ROAD_Q1",
+    "epoch": "1913819364840",
+    "box_space": "ROAD_VIEW_1280x720",
+    "bridge_id": "5ccfc435ee31437f99638ba7d436edb8",
+    "frame_id": 121296,
+    "navigation": "VALID",
+    "boxes": 9
+  },
+  {
+    "mode": "MOSAIC_FULL",
+    "epoch": "1913819364841",
+    "box_space": "MOSAIC_1280x720",
+    "bridge_id": "5ccfc435ee31437f99638ba7d436edb8",
+    "frame_id": 121386,
+    "navigation": "VALID",
+    "boxes": 9
+  },
+  {
+    "mode": "ROAD_Q1",
+    "epoch": "1913819364842",
+    "box_space": "ROAD_VIEW_1280x720",
+    "bridge_id": "5ccfc435ee31437f99638ba7d436edb8",
+    "frame_id": 121468,
+    "navigation": "STALE",
+    "boxes": 9
+  },
+  {
+    "mode": "MOSAIC_FULL",
+    "epoch": "1913819364843",
+    "box_space": "MOSAIC_1280x720",
+    "bridge_id": "5ccfc435ee31437f99638ba7d436edb8",
+    "frame_id": 121577,
+    "navigation": "VALID",
+    "boxes": 12
+  },
+  {
+    "mode": "ROAD_Q1",
+    "epoch": "1913819364844",
+    "box_space": "ROAD_VIEW_1280x720",
+    "bridge_id": "5ccfc435ee31437f99638ba7d436edb8",
+    "frame_id": 121674,
+    "navigation": "VALID",
+    "boxes": 9
+  }
+]
