@@ -1,0 +1,14 @@
+pgv frame=782606 boxes=17 quadrants=3 infer=17.5 ms
+pgv frame=782617 boxes=15 quadrants=3 infer=18.7 ms
+pgv frame=782622 boxes=14 quadrants=3 infer=18.3 ms
+pgv frame=782628 boxes=13 quadrants=3 infer=17.0 ms
+pgv frame=782634 boxes=13 quadrants=3 infer=16.5 ms
+pgv frame=782639 boxes=12 quadrants=3 infer=18.9 ms
+pgv frame=782645 boxes=15 quadrants=3 infer=17.2 ms
+pgv frame=782650 boxes=13 quadrants=3 infer=17.4 ms
+pgv frame=782656 boxes=16 quadrants=3 infer=17.3 ms
+pgv frame=782661 boxes=13 quadrants=3 infer=16.0 ms
+pgv frame=782666 boxes=12 quadrants=3 infer=16.3 ms
+pgv frame=782672 boxes=15 quadrants=3 infer=16.8 ms
+BEST 782606 boxes 17 quadrants 3 infer_ms 17.5
+wrote /home/cat/fast_mosaic_20261101/results/mosaic_pcie_bdd_capi.png /home/cat/fast_mosaic_20261101/results/mosaic_pcie_bdd_capi.json

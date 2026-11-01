@@ -1,0 +1,15 @@
+{
+  "source": "real FPGA PCIe /dev/shm/pango-video/latest.pgv",
+  "frames": 100,
+  "fps": 25.61,
+  "wall_s": 3.905,
+  "unique_pgv_frames": 100,
+  "detections": 1865,
+  "wall_ms_p50_p95_mean": [
+    31.32,
+    39.22,
+    32.7
+  ],
+  "inference_ms_last": 18.71,
+  "note": "Qt/HMI running; one inference per full 1280x720 mosaic frame."
+}
