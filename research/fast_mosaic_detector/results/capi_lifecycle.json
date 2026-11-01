@@ -1,0 +1,80 @@
+[
+  {
+    "cycle": 0,
+    "model": "BDD",
+    "type": "CapiDetector",
+    "output_count": 9,
+    "mask": null,
+    "detections": 7,
+    "inference_ms": 16.6
+  },
+  {
+    "cycle": 0,
+    "model": "P2",
+    "type": "CapiDetector",
+    "output_count": 12,
+    "mask": null,
+    "detections": 10,
+    "inference_ms": 31.92
+  },
+  {
+    "cycle": 0,
+    "model": "MTL-FAST",
+    "type": "CapiMtlDetector",
+    "output_count": 15,
+    "mask": [
+      256,
+      144
+    ],
+    "detections": 10,
+    "inference_ms": 93.97
+  },
+  {
+    "cycle": 0,
+    "model": "BDD",
+    "type": "CapiDetector",
+    "output_count": 9,
+    "mask": null,
+    "detections": 7,
+    "inference_ms": 20.0
+  },
+  {
+    "cycle": 1,
+    "model": "BDD",
+    "type": "CapiDetector",
+    "output_count": 9,
+    "mask": null,
+    "detections": 7,
+    "inference_ms": 18.02
+  },
+  {
+    "cycle": 1,
+    "model": "P2",
+    "type": "CapiDetector",
+    "output_count": 12,
+    "mask": null,
+    "detections": 10,
+    "inference_ms": 28.53
+  },
+  {
+    "cycle": 1,
+    "model": "MTL-FAST",
+    "type": "CapiMtlDetector",
+    "output_count": 15,
+    "mask": [
+      256,
+      144
+    ],
+    "detections": 10,
+    "inference_ms": 95.16
+  },
+  {
+    "cycle": 1,
+    "model": "BDD",
+    "type": "CapiDetector",
+    "output_count": 9,
+    "mask": null,
+    "detections": 7,
+    "inference_ms": 16.75
+  }
+]

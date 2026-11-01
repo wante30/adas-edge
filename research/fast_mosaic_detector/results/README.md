@@ -3,6 +3,7 @@
 | 文件 | 说明 |
 |---|---|
 | `benchmark_summary.json` | BDD Python / BDD C API / P2 C API 的统一性能表 |
+| `capi_lifecycle.json` | BDD→P2→MTL-FAST→BDD 独立 C API 生命周期切换 |
 | `consistency.json` | BDD Python vs C API 同帧一致性 |
 | `mosaic_pcie_bench.json` | 真实 PCIe PGV 100 帧连续 FAST-MOSAIC：25.61 FPS |
 | `mosaic_synthetic_bdd_capi.png` | 四路道路帧拼成 2×2，一次推理，Q1–Q4 均有框 |

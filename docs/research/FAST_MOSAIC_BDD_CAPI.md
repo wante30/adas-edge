@@ -114,7 +114,19 @@ BDD C API 相对 Python：单帧 p50 −29.4%，FPS +19.1%（C 层）；Python c
 
 结构化结果：`research/fast_mosaic_detector/results/mosaic_pcie_bdd_capi.json`。
 
-## 7. 为什么没有训练新模型
+## 7. C API 生命周期切换
+
+独立进程内连续执行 2 轮 `BDD → P2 → MTL-FAST → BDD`：
+
+- BDD：9 输出，7 框
+- P2：12 输出，10 框
+- MTL-FAST：15 输出，256×144 mask，10 框
+- 回到 BDD：9 输出，7 框，无崩溃、无 context 复用错误
+
+原始记录：`research/fast_mosaic_detector/results/capi_lifecycle.json`。
+这是 C API 层的资源释放验证，不是正式 MVM1/MMS1 车机热切换；生产模型注册表未修改。
+
+## 8. 为什么没有训练新模型
 
 任务目标是 **≥20 FPS**。BDD C API 已达到 25.52 FPS（C 层）/ 29.99 FPS（Python ctypes），P2 C API 为 18.76 FPS。再训练更小模型需要：
 
@@ -126,7 +138,7 @@ BDD C API 相对 Python：单帧 p50 −29.4%，FPS +19.1%（C 层）；Python c
 
 如果后续要求 >35 FPS，可优先尝试 416×256 或更小 width 的 BDD 变体；这需要新的训练/量化实验，不能直接把 512×288 权重改输入尺寸冒充新模型。
 
-## 8. 复现
+## 9. 复现
 
 ```bash
 cd research/fast_mosaic_detector/capi
@@ -138,7 +150,7 @@ python3 ../scripts/bench_resource_sampler.py <bdd.rknn> bdd_capi_resource
 ADAS_P2CAPI_LIB=$PWD/libp2capi_fast.so python3 ../scripts/run_mosaic_pcie.py
 ```
 
-## 9. 约束与生产状态
+## 10. 约束与生产状态
 
 - 没有修改正式 Qt、`ai_bridge.py`、systemd、PCIe 驱动、FPGA bitstream、HUD 或默认模型 B。
 - 没有替换生产 `libp2capi.so`；测试使用独立目录和独立 `.so`。
