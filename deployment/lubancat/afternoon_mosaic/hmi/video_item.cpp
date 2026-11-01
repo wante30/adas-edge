@@ -1284,6 +1284,23 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
 
             QVariantList boxes;
             const qint64 trackStartNs = boxesParseEndNs;
+            const QJsonArray identities=status.value(QStringLiteral("box_identities")).toArray();
+            if (identities.size()==detectionMaps.size()) {
+                for(int i=0;i<detectionMaps.size();++i) {
+                    auto item=detectionMaps[i].toMap();
+                    const auto identity=identities[i].toObject();
+                    const int id=identity.value(QStringLiteral("track_id")).toInt();
+                    item.insert(QStringLiteral("serverTrackId"),id);
+                    item.insert(QStringLiteral("sourceId"),identity.value(QStringLiteral("source_id")).toString());
+                    item.insert(QStringLiteral("trackId"),id>0?id:1000000000+i);
+                    item.insert(QStringLiteral("frameId"),static_cast<qulonglong>(frameId));
+                    item.insert(QStringLiteral("detectTimestampNs"),static_cast<qulonglong>(timestampNs));
+                    item.insert(QStringLiteral("predicted"),false);item.insert(QStringLiteral("missed"),0);
+                    item.insert(QStringLiteral("state"),QStringLiteral("measured"));
+                    item.insert(QStringLiteral("label"),item.value(QStringLiteral("className")).toString().toUpper());
+                    boxes.append(item);
+                }
+            } else
             {
                 QMutexLocker locker(&ai_metrics_mutex_);
                 if (resultModeEpoch != inference_epoch_.load() || ai_model_switching_.load()) continue;

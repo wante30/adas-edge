@@ -38,6 +38,7 @@ if str(ROOT) not in sys.path:
 from competition_ai.scenario import Lane
 from tools.competition_console.fpga_perception import TrafficCode, build_hud_perception
 from auto_brake import AutoBrakeController
+from primary_tracks import PrimaryTracks
 from risk_events import EventStore, RiskObservation
 from q2_navigation_reader import CARD_ROI, Q2NavigationReader
 from tools.competition_console.navigation_reader import NavigationObservation
@@ -924,6 +925,7 @@ class AiReplayBridge:
         from inference_mode import ModeControl
         self.modes = ModeControl(self)
         self.event_store = EventStore()
+        self.primary_tracks = PrimaryTracks()
         self.auto_brake = AutoBrakeController()
         self.navigation = None
         self.nav_request = None
@@ -1303,7 +1305,8 @@ class AiReplayBridge:
 
     def _detections_to_boxes(self, snapshot):
         boxes = []
-        groups = (snapshot.main, snapshot.specialist) if self.modes.adapter is None else (self.modes.adapter.all_detections,)
+        self.box_identities = []
+        groups = (self.primary_tracks.current,)
         for detections in groups:
             for item in detections or ():
                 if len(boxes) >= MAX_BOXES:
@@ -1334,6 +1337,7 @@ class AiReplayBridge:
                     confidence = 0.0
                 if not math.isfinite(confidence):
                     confidence = 0.0
+                self.box_identities.append(dict(track_id=item.get("track_id",0),source_id=item.get("source_id","UNASSIGNED")))
                 boxes.append((x1, y1, x2, y2, r, g, b,
                               CLASS_IDS.get(str(item.get("class_name", "")), 255),
                               min(1.0, max(0.0, confidence))))
@@ -1463,11 +1467,15 @@ class AiReplayBridge:
         )
         lane = next(iter(Lane))
         snapshot = self.pipeline.snapshot(lane, int(timestamp_ns))
+        mode = self.modes.status()
+        detections=(list(snapshot.main)+list(snapshot.specialist) if self.modes.adapter is None else self.modes.adapter.all_detections)
+        self.primary_tracks.update(detections,(mode["mode"],mode["epoch"],self.active_model_id),timestamp_ns)
         measured = snapshot.hazards
         classes = {int(t.get("id", t.get("track_id", 0))):t.get("class_name", "") for t in measured.tracks}
         candidates = [dict(e, target_class=e.get("target_class") or classes.get(int(e.get("track_id") or 0), ""))
                       for e in measured.events]
         mode = self.modes.status()
+        candidates = self.primary_tracks.associate_legacy(candidates)
         events = self.event_store.update(candidates, mode=mode["mode"], epoch=mode["epoch"],
             bridge_id=mode["bridge_id"], model_id=self.active_model_id, frame_id=frame_id,
             timestamp_ns=timestamp_ns, measurement_ns=measured.timestamp_ns)
@@ -1525,6 +1533,7 @@ class AiReplayBridge:
         status["display_view"] = "quad" if self.modes.adapter is not None else "front"
         status["road_quadrant"] = 0
         status["inference"] = self.modes.status(frame_id)
+        status["box_identities"] = self.box_identities
         status["event_updates"] = [{k:e[k] for k in ("event_id", "lifecycle_state", "cleared_ns") if k in e}
                                    for e in self.event_store.updates if e["lifecycle_state"] == "CLEARED"]
         status["control"] = self.auto_brake.last_result or {"control_mode": os.environ.get("ADAS_CONTROL_MODE", "HARDWARE")}

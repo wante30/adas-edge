@@ -30,3 +30,5 @@ Report source/texture/scene/AI counters independently; log p95 rule times, guiBu
 - Stage 1: base commit verified against PR #6; independent Git worktree created. Board baseline remains running pending isolated deployment.
 
 Stage 3 checkpoint: 22 Python tests, native association/source/expiry test, native build and 280 actual replay completions passed. Unified event receiver removes Qt latch and maps warning/critical to yellow/red; full scenario and latency acceptance follows.
+
+Stage 4 checkpoint: shared per-camera measured IDs feed binary-box metadata and event association. Explicit IDs never fall back to a different target; seam detections cannot control. Epoch resets and stable IDs covered by tests. Native receiver change awaits the combined stage 8 build.

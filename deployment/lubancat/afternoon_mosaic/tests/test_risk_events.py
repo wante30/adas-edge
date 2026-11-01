@@ -35,4 +35,4 @@ class RiskEventTests(unittest.TestCase):
     def test_stale_measurement_is_not_refreshed_by_new_detection_frame(self):
         self.assertEqual(self.step([self.candidate("critical")],age=500_000_000),())
     def test_other_quadrant_cannot_enter_control(self):
-        self.assertFalse(self.step([self.candidate("critical")],source="Q2")[0]["control_eligible"])
+        self.assertEqual(self.step([self.candidate("critical")],source="Q2"),())
