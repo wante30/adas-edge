@@ -1,0 +1,66 @@
+{
+  "name": "adas_afternoon_20261101",
+  "title": "ADAS afternoon stable snapshot",
+  "date": "2026-11-01",
+  "board": "lubancat",
+  "verified_screenshot": "adas_afternoon_hmi_20261101.png",
+  "verified_metrics": {
+    "ai_fps": 7.7,
+    "pcie_fps": 55,
+    "navigation_ocr_valid": true,
+    "navigation_ocr_infer_ms": 1055.2,
+    "navigation_distance_m": 3411,
+    "navigation_example": "2.2 km right",
+    "lvt1_simulated": false
+  },
+  "runtime": {
+    "hmi_path": "/home/cat/hmi_recover_20261101/qt_gpu_probe_build_20261030_time",
+    "ai_path": "/home/cat/adas_afternoon_20261101/adas_hazard_scene_20261031",
+    "ai_env": {
+      "ADAS_DISABLE_ROAD_SCENE": "1",
+      "ADAS_LEGACY_HAZARD": "1",
+      "ADAS_AUTO_BRAKE": "1"
+    },
+    "ai_args": {
+      "layout": "quad",
+      "display_view": "front",
+      "road_quadrant": 0,
+      "navigation_quadrant": 1,
+      "main_hz": 10,
+      "hazard_hz": 5,
+      "ocr_hz": 2,
+      "navigation_ocr": true,
+      "idle_timeout": 0
+    },
+    "main_model": "/home/cat/models/b05n_p2_mtl_b2a_seg256/b05n_p2_mtl_b2a_seg256_int8.rknn"
+  },
+  "artifacts": {
+    "archives/adas_afternoon_ai_source_20261101.tgz": {
+      "sha256": "aa06b74852b8f89ba2253041beca6e0a16a57e943fc7d6fdd91df444869a23bd",
+      "bytes": 800290
+    },
+    "archives/adas_afternoon_hmi_runtime_20261101.tgz": {
+      "sha256": "20878407b85020313c4696a216fe1bea2bbcbc606ef1c6c30f923ab80d394d5a",
+      "bytes": 7348265
+    },
+    "adas_afternoon_hmi_20261101.png": {
+      "sha256": "c8a6d0521a22e835b060453ca30d293c4c5ad6876de16545c5eac2d7bc88f4a4",
+      "bytes": 1112290
+    }
+  },
+  "original_backups": {
+    "/home/cat/backups/pre_mode_fix_20261101/ai.tgz": {
+      "sha256": "ec1b270514ea4709d943adb42aea800ebf11d7e7751dcfffeacb578a017537c1",
+      "bytes": 30744416
+    },
+    "/home/cat/backups/pre_mode_fix_20261101/hmi.tgz": {
+      "sha256": "f6db5e296be24b1b03934a0af6b59cf502a839270c127f77aef43312a1644c99",
+      "bytes": 15936438
+    }
+  },
+  "notes": [
+    "The systemd service file in this snapshot is a reference; it uses --ocr-hz 0.1. Use scripts/run_afternoon_ai.sh for the verified 2 Hz configuration.",
+    "Model files are external and are not included.",
+    "Logs, results, screenshots other than the verified screenshot, build objects, and experiment artifacts are excluded from the source archive."
+  ]
+}

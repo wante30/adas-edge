@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=ADAS PCIe HMI
+Comment=Live FPGA PCIe video and AI cockpit
+Exec=/home/cat/.local/bin/start-pcie-hmi-gui.sh
+Terminal=false
+OnlyShowIn=XFCE;
+X-GNOME-Autostart-enabled=true
