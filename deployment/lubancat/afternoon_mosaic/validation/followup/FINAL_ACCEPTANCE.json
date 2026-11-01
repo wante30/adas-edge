@@ -1,0 +1,100 @@
+{
+  "schema": "ADAS_FOLLOWUP_FINAL_ACCEPTANCE_V1",
+  "kind": "ACTUAL_VIDEO_SEPARATE_FROM_SYNTHETIC",
+  "base_commit": "d397af411d592447197fa2f194144dca52c765dd",
+  "source_commit": "be56effd",
+  "passed": true,
+  "control_mode": "DRY_RUN",
+  "control_socket_used": false,
+  "continuous_seconds": 610.6716688869983,
+  "started_ns": 12057109862661,
+  "ended_ns": 12667242500362,
+  "completion_counting": "PR6: sum(n-1) / sum(last_publish-first_publish), grouped by bridge/epoch/model; all completions in the test interval",
+  "mode_schedule": "ROAD first; alternate approximately every 60 seconds; final MOSAIC window is 69.37 seconds",
+  "performance": {
+    "ROAD_Q1": {
+      "completed_fps": 6.647523548116769,
+      "results": 1997,
+      "measured_seconds": 299.66046537200003
+    },
+    "MOSAIC_FULL": {
+      "completed_fps": 14.037366989031316,
+      "results": 4341,
+      "measured_seconds": 308.889836918
+    }
+  },
+  "qt_scene_graph_fps_mean": 28.094813101837335,
+  "source_fps": 58.014302913873294,
+  "texture_upload_fps": 27.388698461153837,
+  "cpu_percent_all_cores_mean": 27.38979703923471,
+  "gpu_load_percent_mean": 36.11668305473615,
+  "npu_driver_reported_percent_mean": 100.0,
+  "navigation_states": {
+    "VALID": 98,
+    "UNREADABLE": 6235,
+    "STALE": 5
+  },
+  "event_validation": {
+    "transitions": 963,
+    "critical_decisions": 246,
+    "requests": 73,
+    "accepted": 73,
+    "timeouts": 0,
+    "unmatched_hazard": 2,
+    "confirm_to_ui_ms": {
+      "count": 394,
+      "mean": 112.88008685786801,
+      "p50": 111.994435,
+      "p95": 204.541187,
+      "max": 225.720464
+    },
+    "clear_to_ui_ms": {
+      "count": 394,
+      "mean": 117.96693440609138,
+      "p50": 119.437048,
+      "p95": 204.398857,
+      "max": 240.125906
+    }
+  },
+  "control_consistency": {
+    "identity_color_mismatches": 0,
+    "warning_requests": 0,
+    "non_q1_requests": 0,
+    "cleared_requests": 0,
+    "missing_critical_decisions": 0
+  },
+  "duplicate_result_keys": 0,
+  "runtime_errors": [],
+  "early_late": {
+    "ROAD_Q1": {
+      "first_two_windows_mean": 6.669171249744352,
+      "last_two_windows_mean": 6.619715337637345,
+      "change_percent": -0.7415600867784367
+    },
+    "MOSAIC_FULL": {
+      "first_two_windows_mean": 14.071329919830054,
+      "last_two_windows_mean": 13.980079928306854,
+      "change_percent": -0.6484816434771168
+    }
+  },
+  "actual_event_result_counts": {
+    "FRONT_COLLISION_RISK:warning": 1402,
+    "VEHICLE_CUT_IN:warning": 1441,
+    "PEDESTRIAN_IN_PATH:warning": 37,
+    "PEDESTRIAN_NEAR_CROSSWALK:warning": 24,
+    "SUSPECTED_BRAKING_WITH_CLOSING:warning": 132,
+    "VEHICLE_CUT_IN:critical": 246
+  },
+  "hardware_pcie_verified": false,
+  "hardware_brake_executed": false,
+  "lvt1_online_verified": false,
+  "independent_oncoming_direction_source_available": false,
+  "evidence": [
+    "final_replay_v2_acceptance.json",
+    "final_replay_v2_additional.json",
+    "final_replay_v2_model_menu_acceptance.json",
+    "final_replay_v2_restart_acceptance.json",
+    "actual_replay_logs.zip"
+  ],
+  "notes": "Event counts and latencies use only the 610-second interval in additional.json; the initial run report also contains pre-run menu/restart session totals."
+}
