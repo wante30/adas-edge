@@ -13,6 +13,16 @@ spec=importlib.util.spec_from_file_location('test_session',Path(__file__).parent
 session=importlib.util.module_from_spec(spec);spec.loader.exec_module(session)
 
 class SessionContract(unittest.TestCase):
+    def test_stop_tolerates_exit_before_signal(self):
+        with patch.object(Path,'exists',return_value=True), patch.object(session.os,'kill',side_effect=ProcessLookupError):
+            session.stop(12345)
+    def test_restore_never_signals_process_group_zero(self):
+        with tempfile.TemporaryDirectory() as name:
+            root=Path(name);boot=root/'boot';boot.write_text('test',encoding='utf-8')
+            state=root/'session.json';state.write_text(json.dumps({'boot_id':'test','autostart_parent':0,'ai_service_was_active':False}),encoding='utf-8')
+            with patch.multiple(session,STATE=state,BOOT=boot,EVIDENCE=root), patch.object(session.os,'kill') as kill:
+                with contextlib.redirect_stdout(io.StringIO()):session.restore()
+                kill.assert_not_called()
     def test_local_replay_preserves_shared_identity_and_normal_commands(self):
         with tempfile.TemporaryDirectory() as name:
             root=Path(name);evidence=root/'evidence';evidence.mkdir()

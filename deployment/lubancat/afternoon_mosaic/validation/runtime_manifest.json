@@ -1,0 +1,28 @@
+{
+  "base_commit": "9b396e8b346bfbbfa9856950937e1cd3f54516f4",
+  "native_implementation_commit": "4944bc2f827007137e762f89684aa0fe0157f20b",
+  "upstream_pr5_commit": "f98f3c9272ba8daa97b2db14a9421ee3e1cee2f5",
+  "validation_date_local": "2026-11-01",
+  "board": "RK3566, 4 GB, Ubuntu / Python 3.8",
+  "validation_boot_id": "e0f2ad22-e300-4730-a6cd-bfee20e8c67a",
+  "validation_hmi_pid": 15062,
+  "validation_input": "local_quad_full.rgb: 1350 frames, 1280x720 RGB565, requested 60 FPS; physical PCIe absent",
+  "binaries": {
+    "build-stage4/qt_gpu_probe": {
+      "sha256": "03b4e216891b385419e33ee0de97e530d073ec3e5c5b19011d69ac4855dd434d",
+      "bytes": 2930768,
+      "architecture": "ELF AArch64"
+    },
+    "fast_mosaic/capi/libp2capi_generic.so": {
+      "sha256": "24d00d0192730ede670ec264d379be729bbf0efd5265c6ca3466fafed8f29fa5",
+      "bytes": 22352,
+      "architecture": "ELF AArch64"
+    }
+  },
+  "external_model": {
+    "path": "/home/cat/cityscapes_arch_compare_20261027/models/bdd_yolov8n_512x288_raw_heads_int8_capi.rknn",
+    "sha256": "a86ab05338b49be54f95aa4d0cb937f1471924d917840d0f907480e29e041afb",
+    "included": false
+  },
+  "delivery_date_local": "2026-11-02"
+}
