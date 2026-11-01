@@ -17,7 +17,7 @@ BRAKE_KINDS = {
     "PEDESTRIAN_IN_PATH",
     "PEDESTRIAN_CROSSING_PATH",
 }
-SEVERITIES = {"warning", "critical"}
+SEVERITIES = {"critical"}
 
 
 class AutoBrakeController:
@@ -50,6 +50,9 @@ class AutoBrakeController:
             event for event in events
             if event.get("kind") in BRAKE_KINDS
             and event.get("severity") in SEVERITIES
+            and event.get("lifecycle_state") == "ACTIVE"
+            and event.get("control_eligible") is True
+            and event.get("path_valid") is True
         )
 
     def update(self, hazards):
@@ -78,6 +81,7 @@ class AutoBrakeController:
             "source": "hazard",
             "events": [
                 {
+                    "event_id": event.get("event_id"),
                     "kind": event.get("kind"),
                     "severity": event.get("severity"),
                     "track_id": event.get("track_id"),

@@ -38,6 +38,7 @@ if str(ROOT) not in sys.path:
 from competition_ai.scenario import Lane
 from tools.competition_console.fpga_perception import TrafficCode, build_hud_perception
 from auto_brake import AutoBrakeController
+from risk_events import EventStore, RiskObservation
 from q2_navigation_reader import CARD_ROI, Q2NavigationReader
 from tools.competition_console.navigation_reader import NavigationObservation
 from tools.competition_console.navigation_reader import NavigationObservation
@@ -199,6 +200,8 @@ def build_dynamic_status(*, source, frame_id, timestamp_ns, now_ns, hud, navigat
             target_class = item.get("target_class") or item.get("class_name")
             if isinstance(target_class, str) and target_class:
                 detail["target_class"] = target_class
+            if item.get("event_id"):
+                detail = dict(item)  # Preserve the canonical identity/lifecycle for every consumer.
             hazard_details.append(detail)
     if (not source_stopped and source_available and traffic == "RED"
             and signal_age_ms is not None and signal_age_ms < 2500):
@@ -516,7 +519,7 @@ def encode_ai_result_packet(*, frame_id, timestamp_ns, flags, nav_direction,
     boxes = list(boxes[:MAX_BOXES])
     if status is not None:
         status_payload = json.dumps(status, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-        if len(status_payload) > 4096:
+        if len(status_payload) > 32768:
             raise ValueError("AI status payload exceeds the bounded result packet size")
         payload = bytearray(RESULT_HEADER_V2.pack(
             b"MVA2", int(frame_id), int(timestamp_ns), len(boxes), int(flags),
@@ -920,6 +923,7 @@ class AiReplayBridge:
         )
         from inference_mode import ModeControl
         self.modes = ModeControl(self)
+        self.event_store = EventStore()
         self.auto_brake = AutoBrakeController()
         self.navigation = None
         self.nav_request = None
@@ -1459,6 +1463,17 @@ class AiReplayBridge:
         )
         lane = next(iter(Lane))
         snapshot = self.pipeline.snapshot(lane, int(timestamp_ns))
+        measured = snapshot.hazards
+        classes = {int(t.get("id", t.get("track_id", 0))):t.get("class_name", "") for t in measured.tracks}
+        candidates = [dict(e, target_class=e.get("target_class") or classes.get(int(e.get("track_id") or 0), ""))
+                      for e in measured.events]
+        mode = self.modes.status()
+        events = self.event_store.update(candidates, mode=mode["mode"], epoch=mode["epoch"],
+            bridge_id=mode["bridge_id"], model_id=self.active_model_id, frame_id=frame_id,
+            timestamp_ns=timestamp_ns, measurement_ns=measured.timestamp_ns)
+        snapshot = replace(snapshot, hazards=RiskObservation(timestamp_ns=measured.timestamp_ns,
+            events=events, tracks=measured.tracks, frame_id=frame_id,
+            road=getattr(measured, "road", {})))
         self.auto_brake.update(snapshot.hazards)
         nav = self.navigation.current(int(timestamp_ns)).to_dict() if self.navigation else {}
         hud = build_hud_perception(road, snapshot)
@@ -1510,6 +1525,9 @@ class AiReplayBridge:
         status["display_view"] = "quad" if self.modes.adapter is not None else "front"
         status["road_quadrant"] = 0
         status["inference"] = self.modes.status(frame_id)
+        status["event_updates"] = [{k:e[k] for k in ("event_id", "lifecycle_state", "cleared_ns") if k in e}
+                                   for e in self.event_store.updates if e["lifecycle_state"] == "CLEARED"]
+        status["control"] = self.auto_brake.last_result or {"control_mode": os.environ.get("ADAS_CONTROL_MODE", "HARDWARE")}
         road = getattr(snapshot.hazards, "road", None)
         if road:
             status["road_scene"] = road
@@ -1701,6 +1719,7 @@ class AiReplayBridge:
             self.close()
 
     def close(self):
+        self.event_store.journal.close()
         self.running.clear()
         self.latest.close()
         try:

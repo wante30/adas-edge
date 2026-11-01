@@ -38,14 +38,14 @@ struct SourceBox {
     double confidence = 0;
     int missed = 0;
     bool predicted = false;
-    bool hazard = false;
+    int hazard = 0;
 };
 
 struct LiveCar {
     float x = 0, z = 0;
     QString cls = QStringLiteral("car");
     double seen = 0;
-    bool hazard = false;
+    int hazard = 0;
 };
 
 struct DemoCar {
@@ -154,7 +154,7 @@ void quad3(std::vector<float> &v, const QVector3D &a, const QVector3D &b,
     tri3(v, a, c, d, r, g, bl);
 }
 
-void carMesh(std::vector<float> &v, float x, float z, const QString &cls, bool ego, bool hazard = false) {
+void carMesh(std::vector<float> &v, float x, float z, const QString &cls, bool ego, int hazard = 0) {
     const bool truck = cls == QStringLiteral("truck");
     const bool bus = cls == QStringLiteral("bus");
     const bool person = cls == QStringLiteral("person");
@@ -162,16 +162,16 @@ void carMesh(std::vector<float> &v, float x, float z, const QString &cls, bool e
     const float w = person ? .55f : (twoWheel ? .8f : (truck ? 2.25f : (bus ? 2.45f : 1.9f)));
     const float h = person ? 1.65f : (twoWheel ? 1.35f : (truck ? 2.7f : (bus ? 2.8f : 1.45f)));
     const float d = person ? .5f : (twoWheel ? 1.7f : (truck ? 7.2f : (bus ? 9.5f : 4.4f)));
-    const float r = ego ? .20f : (hazard ? .82f : (truck ? .24f : (bus ? .20f : .36f)));
-    const float g = ego ? .28f : (hazard ? .16f : (truck ? .28f : (bus ? .30f : .41f)));
+    const float r = ego ? .20f : (hazard ? (hazard == 2 ? .82f : .95f) : (truck ? .24f : (bus ? .20f : .36f)));
+    const float g = ego ? .28f : (hazard ? (hazard == 2 ? .16f : .69f) : (truck ? .28f : (bus ? .30f : .41f)));
     const float b = ego ? .38f : (hazard ? .18f : (truck ? .31f : (bus ? .35f : .46f)));
 
     // soft ground shadow
     quad(v, x - w * .62f, z - d * .55f, x + w * .62f, z + d * .55f, .012f, .025f, .03f, .035f);
 
     if (person) {
-        box3(v, x, .02f, z, .5f, .9f, .4f, hazard ? .85f : .30f, hazard ? .12f : .38f, hazard ? .12f : .42f);
-        box3(v, x, .92f, z, .34f, .55f, .30f, hazard ? .95f : .38f, hazard ? .20f : .46f, hazard ? .18f : .50f);
+        box3(v, x, .02f, z, .5f, .9f, .4f, hazard ? .85f : .30f, hazard ? (hazard == 2 ? .12f : .69f) : .38f, hazard ? .12f : .42f);
+        box3(v, x, .92f, z, .34f, .55f, .30f, hazard ? .95f : .38f, hazard ? (hazard == 2 ? .20f : .74f) : .46f, hazard ? .18f : .50f);
         return;
     }
     if (twoWheel) {
@@ -450,7 +450,8 @@ public:
             b.confidence = map.value(QStringLiteral("confidence")).toDouble();
             b.missed = map.value(QStringLiteral("missed")).toInt();
             b.predicted = map.value(QStringLiteral("predicted")).toBool();
-            b.hazard = map.value(QStringLiteral("hazard")).toBool();
+            b.hazard = !map.value(QStringLiteral("hazard")).toBool() ? 0 :
+                (map.value(QStringLiteral("hazardSeverity")).toString() == QStringLiteral("critical") ? 2 : 1);
             // Stale/predicted tracks are retained by the tracker for continuity,
             // but must not be drawn as if they were current detections.
             if (b.id > 0 && b.w > 2 && b.h > 2 && !b.predicted && b.missed == 0 &&

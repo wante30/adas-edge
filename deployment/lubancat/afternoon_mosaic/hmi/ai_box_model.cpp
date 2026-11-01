@@ -7,7 +7,7 @@ const char *const kRoleKeys[] = {
     "trackId", "classId", "className", "color", "x", "y", "width", "height",
     "vx", "vy", "vw", "vh", "frameId", "detectTimestampNs", "missed",
     "predicted", "state", "confidence", "label", "primary", "hazard",
-    "hazardKind", "hazardSeverity", "hazardTrackId", "hazardTargetClass"
+    "hazardKind", "hazardSeverity", "hazardTrackId", "hazardTargetClass", "hazardEventId", "hazardExpiresNs", "sourceId", "serverTrackId"
 };
 constexpr int kRoleCount = int(sizeof(kRoleKeys) / sizeof(kRoleKeys[0]));
 

@@ -118,7 +118,8 @@ def start(args):
     env = {"ADAS_EDGE_ROOT": str(ROOT / "ai"), "ADAS_DISABLE_ROAD_SCENE": "1",
            "ADAS_LEGACY_HAZARD": "1", "ADAS_AUTO_BRAKE": "1", "ADAS_AI_DEBUG": "1",
            "ADAS_TEST_ACTION_PORT": str(args.action_port),
-           "ADAS_CONTROL_MODE": getattr(args, "control_mode", None) or ("DRY_RUN" if args.raw_replay else "HARDWARE")}
+           "ADAS_CONTROL_MODE": getattr(args, "control_mode", None) or ("DRY_RUN" if args.raw_replay else "HARDWARE"),
+           "ADAS_EVENT_TIMELINE": str(EVIDENCE / (args.label + "_events.jsonl"))}
     state["test_ai_pid"] = launch(ai_args, ROOT / "ai", env, f"{args.label}_ai.log")
     hmi_args = state["baseline_hmi"]["args"][:]
     hmi_args[0] = str(ROOT / args.build / "qt_gpu_probe")
@@ -132,6 +133,8 @@ def start(args):
         hmi_args += ["--raw-replay", args.raw_replay]
     hmi_args += ["--metrics-jsonl", str(EVIDENCE / f"{args.label}_hmi.jsonl")]
     hmi_env = dict(state["baseline_hmi"]["env"])
+    hmi_env["QT_RISK_TIMELINE_LOG"] = str(EVIDENCE / (args.label + "_risk_ui.jsonl"))
+    hmi_env["QT_AI_TIMING_LOG"] = str(EVIDENCE / (args.label + "_qt_ai.jsonl"))
     if args.external_qml:
         hmi_env["QT_QML_FILE"] = str(ROOT / "hmi/main.qml")
     state["test_hmi_pid"] = launch(hmi_args, ROOT / args.build, hmi_env, f"{args.label}_hmi.log")

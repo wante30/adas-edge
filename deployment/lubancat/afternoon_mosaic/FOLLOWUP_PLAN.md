@@ -28,3 +28,5 @@ Report source/texture/scene/AI counters independently; log p95 rule times, guiBu
 ## Progress
 
 - Stage 1: base commit verified against PR #6; independent Git worktree created. Board baseline remains running pending isolated deployment.
+
+Stage 3 checkpoint: 22 Python tests, native association/source/expiry test, native build and 280 actual replay completions passed. Unified event receiver removes Qt latch and maps warning/critical to yellow/red; full scenario and latency acceptance follows.

@@ -244,7 +244,7 @@ Item {
     function hazardHasVehicleTarget() {
         var details = video.aiHazardDetails || []
         for (var i = 0; i < details.length; ++i) {
-            if (details[i].valid === false) continue
+            if (details[i].valid === false || details[i].severity !== "critical") continue
             var target = String(details[i].target_class || "").toLowerCase()
             if (target === "car" || target === "truck" || target === "bus") return true
         }
@@ -897,9 +897,9 @@ Item {
                 model: video.bboxModel
                 delegate: Item {
                     property bool nearHazard: Boolean(model.hazard)
-                                                 && model.hazardKind === "NEAR_OBJECT_IN_PATH"
+                                                 && (model.hazardSeverity === "warning" || model.hazardSeverity === "critical")
                     property bool hazardIsPerson: String(model.hazardTargetClass || "").toLowerCase() === "person"
-                    property color hazardTone: "#FF5064"
+                    property color hazardTone: model.hazardSeverity === "critical" ? "#FF5064" : "#FFD34D"
                     property color tone: nearHazard ? hazardTone : root.targetTone(model.className)
                     property bool hot: model.primary
                     property real predictSeconds: {
@@ -950,7 +950,7 @@ Item {
                             id: labelText
                             x: 7; anchors.verticalCenter: parent.verticalCenter
                             text: nearHazard
-                                  ? (hazardIsPerson ? "前方行人危险" : "前车距离过近")
+                                  ? root.hazardLabel(model.hazardKind, model.hazardTargetClass)
                                   : root.compactName(model.className) + "  "
                                     + Math.round((model.confidence || 0) * 100) + "%"
                             color: nearHazard ? hazardTone : Qt.rgba(tone.r, tone.g, tone.b, 0.95)
