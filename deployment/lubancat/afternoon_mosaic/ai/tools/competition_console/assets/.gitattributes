@@ -1,0 +1,3 @@
+# Preserve the upstream mesh bytes used by ego_car_source.json.
+source/*.obj -text
+source/*.mtl -text
