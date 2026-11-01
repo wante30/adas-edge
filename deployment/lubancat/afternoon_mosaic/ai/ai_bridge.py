@@ -38,6 +38,7 @@ if str(ROOT) not in sys.path:
 from competition_ai.scenario import Lane
 from tools.competition_console.fpga_perception import TrafficCode, build_hud_perception
 from auto_brake import AutoBrakeController
+from light_risk import LightRiskEngine
 from primary_tracks import PrimaryTracks
 from risk_events import EventStore, RiskObservation
 from q2_navigation_reader import CARD_ROI, Q2NavigationReader
@@ -914,7 +915,7 @@ class AiReplayBridge:
             raise
         self.pipeline = FrontPipeline(
             main, specialist, main_hz=args.main_hz,
-            specialist_hz=args.specialist_hz, hazards=args.hazards,
+            specialist_hz=args.specialist_hz, hazards=False,
             hazards_async=True,
             hazard_hz=(args.hazard_hz if args.hazard_hz > 0 else args.main_hz),
             # Qt already rate-limits live requests to --ai-hz. Running the
@@ -926,6 +927,7 @@ class AiReplayBridge:
         self.modes = ModeControl(self)
         self.event_store = EventStore()
         self.primary_tracks = PrimaryTracks()
+        self.light_risk = LightRiskEngine()
         self.auto_brake = AutoBrakeController()
         self.navigation = None
         self.nav_request = None
@@ -1470,18 +1472,16 @@ class AiReplayBridge:
         mode = self.modes.status()
         detections=(list(snapshot.main)+list(snapshot.specialist) if self.modes.adapter is None else self.modes.adapter.all_detections)
         self.primary_tracks.update(detections,(mode["mode"],mode["epoch"],self.active_model_id),timestamp_ns)
-        measured = snapshot.hazards
-        classes = {int(t.get("id", t.get("track_id", 0))):t.get("class_name", "") for t in measured.tracks}
-        candidates = [dict(e, target_class=e.get("target_class") or classes.get(int(e.get("track_id") or 0), ""))
-                      for e in measured.events]
-        mode = self.modes.status()
-        candidates = self.primary_tracks.associate_legacy(candidates)
+        self.stage_timings.setdefault("risk_fast",deque(maxlen=3600))
+        risk_start=time.perf_counter_ns()
+        candidates=self.light_risk.update(self.primary_tracks.current,timestamp_ns,
+            (mode["mode"],mode["epoch"],self.active_model_id)) if self.args.hazards else []
         events = self.event_store.update(candidates, mode=mode["mode"], epoch=mode["epoch"],
             bridge_id=mode["bridge_id"], model_id=self.active_model_id, frame_id=frame_id,
-            timestamp_ns=timestamp_ns, measurement_ns=measured.timestamp_ns)
-        snapshot = replace(snapshot, hazards=RiskObservation(timestamp_ns=measured.timestamp_ns,
-            events=events, tracks=measured.tracks, frame_id=frame_id,
-            road=getattr(measured, "road", {})))
+            timestamp_ns=timestamp_ns, measurement_ns=timestamp_ns)
+        self.stage_timings["risk_fast"].append((time.perf_counter_ns()-risk_start)/1e6)
+        snapshot=replace(snapshot,hazards=RiskObservation(timestamp_ns=timestamp_ns,
+            events=events,tracks=tuple(self.primary_tracks.current),frame_id=frame_id))
         self.auto_brake.update(snapshot.hazards)
         nav = self.navigation.current(int(timestamp_ns)).to_dict() if self.navigation else {}
         hud = build_hud_perception(road, snapshot)
@@ -1533,6 +1533,7 @@ class AiReplayBridge:
         status["display_view"] = "quad" if self.modes.adapter is not None else "front"
         status["road_quadrant"] = 0
         status["inference"] = self.modes.status(frame_id)
+        status["risk_rules"] = self.light_risk.metrics()
         status["box_identities"] = self.box_identities
         status["event_updates"] = [{k:e[k] for k in ("event_id", "lifecycle_state", "cleared_ns") if k in e}
                                    for e in self.event_store.updates if e["lifecycle_state"] == "CLEARED"]
