@@ -1296,6 +1296,9 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     item.insert(QStringLiteral("frameId"),static_cast<qulonglong>(frameId));
                     item.insert(QStringLiteral("detectTimestampNs"),static_cast<qulonglong>(timestampNs));
                     item.insert(QStringLiteral("predicted"),false);item.insert(QStringLiteral("missed"),0);
+                    const auto velocity=identity.value(QStringLiteral("velocity")).toArray();
+                    const char *velocityKeys[]={"vx","vy","vw","vh"};
+                    for(int k=0;k<4;++k)item.insert(QString::fromLatin1(velocityKeys[k]),velocity[k].toDouble());
                     item.insert(QStringLiteral("state"),QStringLiteral("measured"));
                     item.insert(QStringLiteral("label"),item.value(QStringLiteral("className")).toString().toUpper());
                     boxes.append(item);

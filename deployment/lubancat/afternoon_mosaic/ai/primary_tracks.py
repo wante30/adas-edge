@@ -29,8 +29,10 @@ class PrimaryTracks:
                 groups[q].append(row)
             output.append(det)
         for q,rows in groups.items():
-            for row in self.trackers[q].update(rows):
+            for row in self.trackers[q].update(rows,timestamp_ns):
                 row["original"]["track_id"]=row["trackId"]
+                vx,vy,vw,vh=row.get("velocity",[0,0,0,0])
+                row["original"]["velocity"]=[vx-vw/2,vy-vh/2,vw,vh]
         self.current=output
         return output
 

@@ -1341,7 +1341,8 @@ class AiReplayBridge:
                     confidence = 0.0
                 if not math.isfinite(confidence):
                     confidence = 0.0
-                self.box_identities.append(dict(track_id=item.get("track_id",0),source_id=item.get("source_id","UNASSIGNED")))
+                self.box_identities.append(dict(track_id=item.get("track_id",0),source_id=item.get("source_id","UNASSIGNED"),
+                    velocity=[v*(2 if self.modes.adapter is None else 1) for v in item.get("velocity",[0,0,0,0])]))
                 boxes.append((x1, y1, x2, y2, r, g, b,
                               CLASS_IDS.get(str(item.get("class_name", "")), 255),
                               min(1.0, max(0.0, confidence))))

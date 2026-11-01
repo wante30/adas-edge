@@ -1806,7 +1806,7 @@ Item {
                 demoMode: false
                 online: video.aiOnline
                 visible: root.sceneEnabled
-                sourceKey: video.sourceMode
+                sourceKey: video.sourceMode + ":" + video.inferenceMode + ":" + video.aiModelId
                 sourceFrameId: video.displayFrameId
                 sourceTimestampNs: video.displayTimestampNs
             }

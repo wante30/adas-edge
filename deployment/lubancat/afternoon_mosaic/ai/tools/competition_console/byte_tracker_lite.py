@@ -63,7 +63,8 @@ class _Track:
         z = np.array([[x + w / 2], [y + h / 2], [w], [h]], dtype=np.float32)
         self.kf.statePost = np.vstack([z, np.zeros((4, 1), dtype=np.float32)])
 
-    def predict(self):
+    def predict(self,dt=1.):
+        for i in range(4):self.kf.transitionMatrix[i,i+4]=dt
         self.kf.predict()
         self.time_since_update += 1
         s = self.kf.statePre
@@ -94,6 +95,8 @@ class ByteTracker:
         self.high = high_thresh
         self.low = low_thresh
         self.new_thresh = new_track_thresh
+        self.last_timestamp_ns=None
+        self.retention_ns=600000000
 
     @staticmethod
     def _cost(track: _Track, det: dict) -> float:
@@ -127,9 +130,15 @@ class ByteTracker:
         return matched, [i for i in range(len(tracks)) if i not in used_t], \
                [j for j in range(len(dets)) if j not in used_d]
 
-    def update(self, dets: list[dict]) -> list[dict]:
+    def update(self, dets: list[dict], timestamp_ns=None) -> list[dict]:
+        if timestamp_ns is not None:
+            if self.last_timestamp_ns is not None and timestamp_ns<=self.last_timestamp_ns:return []
+            dt=.1 if self.last_timestamp_ns is None else min(.6,(timestamp_ns-self.last_timestamp_ns)/1e9)
+            self.last_timestamp_ns=timestamp_ns
+            self.tracks=[t for t in self.tracks if timestamp_ns-getattr(t,"last_seen_ns",timestamp_ns)<=self.retention_ns]
+        else:dt=1.
         for track in self.tracks:
-            track.predict()
+            track.predict(dt)
         high = [d for d in dets if d["confidence"] >= self.high]
         low = [d for d in dets if self.low <= d["confidence"] < self.high]
         output = []
@@ -139,6 +148,8 @@ class ByteTracker:
         for track, det in matched:
             track.update(det)
             det["trackId"] = track.id
+            track.last_seen_ns=timestamp_ns
+            det["velocity"]=[float(track.kf.statePost[i,0]) for i in range(4,8)]
             output.append(det)
 
         remaining = [self.tracks[i] for i in unmatched_tracks]
@@ -147,6 +158,8 @@ class ByteTracker:
         for track, det in matched_low:
             track.update(det)
             det["trackId"] = track.id
+            track.last_seen_ns=timestamp_ns
+            det["velocity"]=[float(track.kf.statePost[i,0]) for i in range(4,8)]
             output.append(det)
 
         for det in [high[i] for i in unmatched_high]:
@@ -154,11 +167,13 @@ class ByteTracker:
                 track = _Track(det)
                 self.tracks.append(track)
                 det["trackId"] = track.id
+                track.last_seen_ns=timestamp_ns
+                det["velocity"]=[0.,0.,0.,0.]
                 output.append(det)
 
         # Standard ByteTrack: an unmatched low-score box is not promoted to
         # a new track. It may still be a detector output, but it has no stable
         # identity for the 3D scene yet.
         self.tracks = [t for t in self.tracks
-                       if t.time_since_update <= self.buffer]
+                       if timestamp_ns is not None or t.time_since_update <= self.buffer]
         return output
