@@ -31,6 +31,8 @@ def main():
     events = []
     wait(lambda m: m["ai_online"] and m["ai_results"] > 10)
     for index, (model, mode, y) in enumerate([
+        ("B", "ROAD_Q1", 172),
+        ("MTL-FULL", "ROAD_Q1", 260),
         ("FAST-MOSAIC", "MOSAIC_FULL", 348),
         ("MTL-FAST", "ROAD_Q1", 304),
         ("FAST-MOSAIC", "MOSAIC_FULL", 348),
@@ -67,13 +69,13 @@ def main():
         row["actual_completions"] = len(completions)
         row["actual_last_result"] = {k:completions[-1].get(k) for k in ("model_id", "inference", "main_timing", "pipeline_ms")}
         row["selection"] = model; events.append(row)
-        subprocess.run(["xwd", "-display", ":0", "-root", "-silent", "-out",
+        subprocess.run(["xwd", "-display", ":0", "-name","Qt Quick GPU Probe - RK3566", "-silent", "-out",
                         str(EVIDENCE / ("menu_" + str(index) + ".xwd"))],
                        env=dict(os.environ, XAUTHORITY="/home/cat/.Xauthority"), check=True)
         print(json.dumps(row), flush=True)
     report = {"passed": True, "input": "1350-frame local RGB565 replay, requested 60 FPS",
               "control_mode": "DRY_RUN", "events": events}
-    (EVIDENCE / "stage2_menu_acceptance.json").write_text(json.dumps(report, indent=2))
+    (EVIDENCE / (LABEL + "_model_menu_acceptance.json")).write_text(json.dumps(report, indent=2))
     print("MODEL_MENU_ACCEPTANCE_COMPLETE", flush=True)
 
 if __name__ == "__main__": main()

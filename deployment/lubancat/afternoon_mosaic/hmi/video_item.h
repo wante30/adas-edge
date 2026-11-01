@@ -63,6 +63,7 @@ class VideoItem : public QQuickFramebufferObject {
     Q_PROPERTY(QVariantMap aiDetectionCounts READ aiDetectionCounts NOTIFY aiBoxesChanged)
     Q_PROPERTY(QVariantList aiBoxes READ aiBoxes NOTIFY aiBoxesChanged)
     Q_PROPERTY(QVariantList aiHazardDetails READ aiHazardDetails NOTIFY aiStatusChanged)
+    Q_PROPERTY(QVariantMap aiControlState READ aiControlState NOTIFY aiStatusChanged)
     // Expose the model through QObject so Qt 5 QML can consume it without
     // requiring a metatype registration for the abstract model pointer.
     Q_PROPERTY(QObject *bboxModel READ bboxModelObject CONSTANT)
@@ -231,6 +232,7 @@ public:
     int bboxCount() const { return bbox_model_ ? bbox_model_->count() : 0; }
     QVariantList aiHazards() const;
     QVariantList aiHazardDetails() const;
+    QVariantMap aiControlState() const;
     qulonglong aiRequestsSent() const { return ai_requests_sent_.load(); }
     qulonglong aiResultsReceived() const { return ai_results_received_.load(); }
     QString sourceMode() const { return source_mode_; }
@@ -404,6 +406,11 @@ private:
     QVariantList ai_boxes_;
     QVariantList ai_hazards_;
     QVariantList ai_hazard_details_;
+    QVariantMap ai_control_state_;
+    // GUI presentation is one snapshot; the receiver may complete again during signals.
+    QVariantList presented_hazards_;
+    QVariantList presented_hazard_details_;
+    QVariantMap presented_control_state_;
     QVariantList ai_hazard_latch_details_;
     qint64 ai_hazard_latch_ns_ = 0;
     std::atomic<uint64_t> latest_ai_frame_id_{0};

@@ -52,7 +52,10 @@ class AutoBrakeController:
         return None
 
     def _record(self,stage,event,now,**fields):
-        row=dict(event_id=event.get("event_id"),track_id=event.get("track_id"),timestamp_ns=now,control_mode=self.mode,**fields)
+        row=dict(event_id=event.get("event_id"),track_id=event.get("track_id"),timestamp_ns=now,control_mode=self.mode,
+            event_type=event.get("kind"),severity=event.get("severity"),source_id=event.get("source_id"),
+            lifecycle_state=event.get("lifecycle_state"),frame_id=event.get("frame_id"),
+            event_timestamp_ns=event.get("timestamp_ns"),mode_epoch=event.get("mode_epoch"),**fields)
         self.journal.write(stage,**row)
         return row
 
@@ -92,20 +95,22 @@ class AutoBrakeController:
                 del self.pulses[event_id]
         for event_id in self.previous-active_ids:
             self.journal.write("control_event_cleared",event_id=event_id,timestamp_ns=now,control_mode=self.mode)
+        if self.previous and not active_ids and (self.last_result or {}).get("stage") in ("brake_accepted","brake_rejected"):
+            self.last_result=dict(stage="control_event_cleared",control_mode=self.mode,executed=False)
         self.pulse_sent.intersection_update(active_ids)
         self.previous=active_ids
         vehicle=self.vehicle_state(now) if vehicle is None else vehicle
         candidates=[]
         for e in events:
             if e.get("severity")!="critical":continue
-            reason=self._reason(e,now,context,vehicle)
-            if not reason and e["event_id"] in self.pulse_sent:reason="pulse_already_requested"
+            reason="pulse_already_requested" if e["event_id"] in self.pulse_sent else self._reason(e,now,context,vehicle)
             if not reason and now-self.last_send.get(e["event_id"],-10**18)<400000000:reason="request_cooldown"
             if not reason and self.pending:reason="awaiting_ack"
             self._record("control_decision",e,now,reason=reason or "eligible",eligible=reason is None,vehicle_source=vehicle.get("source"),vehicle_simulated=bool(vehicle.get("simulated")))
             if reason:
                 if reason not in ("request_cooldown","awaiting_ack","pulse_already_requested"):
                     self._record("brake_rejected",e,now,reason=reason,request_id=None)
+                    self.last_result=dict(stage="brake_rejected",reason=reason,event_id=e["event_id"],control_mode=self.mode,executed=False)
                 continue
             candidates.append(e)
         if not candidates:return None

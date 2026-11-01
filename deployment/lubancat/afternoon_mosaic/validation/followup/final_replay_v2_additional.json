@@ -1,0 +1,407 @@
+{
+  "kind": "ACTUAL_VIDEO_ADDITIONAL_EVIDENCE",
+  "timing_by_mode": {
+    "ROAD_Q1": {
+      "decode_ms": {
+        "count": 1997,
+        "mean": 2.392953957936906,
+        "p50": 1.844466,
+        "p95": 4.951534,
+        "max": 9.786111
+      },
+      "shared_frame_read_ms": {
+        "count": 1997,
+        "mean": 3.209917521281926,
+        "p50": 2.99332,
+        "p95": 4.743288,
+        "max": 11.928363
+      },
+      "pipeline_ms": {
+        "count": 1997,
+        "mean": 101.34700578517774,
+        "p50": 101.351714,
+        "p95": 108.65958,
+        "max": 116.845929
+      },
+      "tracking_ms": {
+        "count": 1997,
+        "mean": 12.228659449173742,
+        "p50": 11.346499,
+        "p95": 21.781849,
+        "max": 131.931234
+      },
+      "risk_fast_ms": {
+        "count": 1997,
+        "mean": 2.170581724086128,
+        "p50": 1.899882,
+        "p95": 4.151798,
+        "max": 19.287561
+      },
+      "navigation_submit_ms": {
+        "count": 1997,
+        "mean": 4.2307786294441705,
+        "p50": 1.432348,
+        "p95": 14.345944,
+        "max": 30.748975
+      },
+      "box_mapping_ms": {
+        "count": 1997,
+        "mean": 0.7863591311967957,
+        "p50": 0.671696,
+        "p95": 1.32035,
+        "max": 14.394651
+      },
+      "status_build_ms": {
+        "count": 1997,
+        "mean": 4.6729758532799215,
+        "p50": 1.082939,
+        "p95": 27.004044,
+        "max": 48.549063
+      },
+      "packet_encode_ms": {
+        "count": 1997,
+        "mean": 1.8332731832749116,
+        "p50": 1.550763,
+        "p95": 3.303356,
+        "max": 14.367235
+      },
+      "result_publish_ms": {
+        "count": 1997,
+        "mean": 0.5843783740610916,
+        "p50": 0.29662,
+        "p95": 1.884423,
+        "max": 11.833865
+      },
+      "rknn_ms": {
+        "count": 1997,
+        "mean": 78.7190328683027,
+        "p50": 78.80425262451172,
+        "p95": 84.71331024169922,
+        "max": 90.05450439453125
+      },
+      "capture_to_publish_ms": {
+        "count": 1997,
+        "mean": 154.14341101952942,
+        "p50": 151.480999,
+        "p95": 184.497348,
+        "max": 311.622588
+      }
+    },
+    "MOSAIC_FULL": {
+      "decode_ms": {
+        "count": 4341,
+        "mean": 2.1382238691545665,
+        "p50": 1.658677,
+        "p95": 4.329129,
+        "max": 12.795764
+      },
+      "shared_frame_read_ms": {
+        "count": 4341,
+        "mean": 3.0212223374798475,
+        "p50": 2.897072,
+        "p95": 4.34342,
+        "max": 11.808491
+      },
+      "pipeline_ms": {
+        "count": 4341,
+        "mean": 30.83042773370193,
+        "p50": 30.473938,
+        "p95": 35.653259,
+        "max": 47.091631
+      },
+      "tracking_ms": {
+        "count": 4341,
+        "mean": 11.960760851877447,
+        "p50": 11.063296,
+        "p95": 20.781742,
+        "max": 38.73641
+      },
+      "risk_fast_ms": {
+        "count": 4341,
+        "mean": 1.49931277079014,
+        "p50": 1.36235,
+        "p95": 2.755032,
+        "max": 13.605416
+      },
+      "navigation_submit_ms": {
+        "count": 4341,
+        "mean": 1.590620839668277,
+        "p50": 0.398409,
+        "p95": 8.315264,
+        "max": 25.074413
+      },
+      "box_mapping_ms": {
+        "count": 4341,
+        "mean": 0.6175545127850695,
+        "p50": 0.566115,
+        "p95": 1.063105,
+        "max": 5.629063
+      },
+      "status_build_ms": {
+        "count": 4341,
+        "mean": 2.6908786659755832,
+        "p50": 0.948191,
+        "p95": 21.343773,
+        "max": 45.796072
+      },
+      "packet_encode_ms": {
+        "count": 4341,
+        "mean": 1.6979513759502438,
+        "p50": 1.549596,
+        "p95": 2.727908,
+        "max": 11.247918
+      },
+      "result_publish_ms": {
+        "count": 4341,
+        "mean": 0.32477462888735326,
+        "p50": 0.218454,
+        "p95": 0.641655,
+        "max": 9.059875
+      },
+      "rknn_ms": {
+        "count": 4341,
+        "mean": 15.845237799598115,
+        "p50": 15.792292594909668,
+        "p95": 18.09495735168457,
+        "max": 22.397254943847656
+      },
+      "capture_to_publish_ms": {
+        "count": 4341,
+        "mean": 74.84474850334048,
+        "p50": 73.017696,
+        "p95": 97.546701,
+        "max": 147.579446
+      }
+    }
+  },
+  "window_rates": [
+    {
+      "mode": "ROAD_Q1",
+      "full_window": true,
+      "results": 362,
+      "fps": 6.707883562321857
+    },
+    {
+      "mode": "MOSAIC_FULL",
+      "full_window": true,
+      "results": 752,
+      "fps": 14.08894698202512
+    },
+    {
+      "mode": "ROAD_Q1",
+      "full_window": true,
+      "results": 354,
+      "fps": 6.630458937166847
+    },
+    {
+      "mode": "MOSAIC_FULL",
+      "full_window": true,
+      "results": 750,
+      "fps": 14.053712857634988
+    },
+    {
+      "mode": "ROAD_Q1",
+      "full_window": true,
+      "results": 354,
+      "fps": 6.660369000104473
+    },
+    {
+      "mode": "MOSAIC_FULL",
+      "full_window": true,
+      "results": 749,
+      "fps": 14.088644820572894
+    },
+    {
+      "mode": "ROAD_Q1",
+      "full_window": true,
+      "results": 352,
+      "fps": 6.625185594577669
+    },
+    {
+      "mode": "MOSAIC_FULL",
+      "full_window": true,
+      "results": 743,
+      "fps": 13.926693837506576
+    },
+    {
+      "mode": "ROAD_Q1",
+      "full_window": true,
+      "results": 353,
+      "fps": 6.614245080697021
+    },
+    {
+      "mode": "MOSAIC_FULL",
+      "full_window": true,
+      "results": 889,
+      "fps": 14.033466019107129
+    }
+  ],
+  "early_late": {
+    "ROAD_Q1": {
+      "first_two_windows_mean": 6.669171249744352,
+      "last_two_windows_mean": 6.619715337637345,
+      "change_percent": -0.7415600867784367
+    },
+    "MOSAIC_FULL": {
+      "first_two_windows_mean": 14.071329919830054,
+      "last_two_windows_mean": 13.980079928306854,
+      "change_percent": -0.6484816434771168
+    }
+  },
+  "runtime_errors": [],
+  "event_validation": {
+    "transitions": 963,
+    "critical_decisions": 246,
+    "requests": 73,
+    "accepted": 73,
+    "timeouts": 0,
+    "unmatched_hazard": 2,
+    "confirm_to_ui_ms": {
+      "count": 394,
+      "mean": 112.88008685786801,
+      "p50": 111.994435,
+      "p95": 204.541187,
+      "max": 225.720464
+    },
+    "clear_to_ui_ms": {
+      "count": 394,
+      "mean": 117.96693440609138,
+      "p50": 119.437048,
+      "p95": 204.398857,
+      "max": 240.125906
+    }
+  },
+  "control_consistency": {
+    "identity_color_mismatches": 0,
+    "warning_requests": 0,
+    "non_q1_requests": 0,
+    "cleared_requests": 0,
+    "missing_critical_decisions": 0
+  },
+  "actual_event_result_counts": {
+    "FRONT_COLLISION_RISK:warning": 1402,
+    "VEHICLE_CUT_IN:warning": 1441,
+    "PEDESTRIAN_IN_PATH:warning": 37,
+    "PEDESTRIAN_NEAR_CROSSWALK:warning": 24,
+    "SUSPECTED_BRAKING_WITH_CLOSING:warning": 132,
+    "VEHICLE_CUT_IN:critical": 246
+  },
+  "last_semantics": {
+    "context": [
+      "MOSAIC_FULL",
+      "12017462609394",
+      "MTL-FAST"
+    ],
+    "timestamp_ns": 12667013292796,
+    "crosswalks": [],
+    "lamps": {
+      "7553": {
+        "value": 0.0,
+        "rise": false,
+        "timestamp_ns": 12667013292796
+      },
+      "7571": {
+        "value": 0.0,
+        "rise": false,
+        "timestamp_ns": 12667013292796
+      },
+      "7587": {
+        "value": 0.0,
+        "rise": false,
+        "timestamp_ns": 12667013292796
+      }
+    },
+    "mtl_available": false,
+    "metrics": {
+      "count": 1094,
+      "errors": 0,
+      "max_hz": 2,
+      "mean_ms": 11.734701657221215,
+      "p95_ms": 33.800626
+    }
+  },
+  "last_rule_metrics": {
+    "front": {
+      "enabled": true,
+      "count": 26240,
+      "events": 1327,
+      "mean_ms": 0.012198656738281242,
+      "p95_ms": 0.030625
+    },
+    "pedestrian": {
+      "enabled": true,
+      "count": 52480,
+      "events": 31,
+      "mean_ms": 0.004454665527343709,
+      "p95_ms": 0.007583
+    },
+    "two_wheeler": {
+      "enabled": true,
+      "count": 26240,
+      "events": 0,
+      "mean_ms": 0.004219968749999984,
+      "p95_ms": 0.006416
+    },
+    "cut_in": {
+      "enabled": true,
+      "count": 26240,
+      "events": 1606,
+      "mean_ms": 0.006210488281250015,
+      "p95_ms": 0.020417
+    },
+    "oncoming": {
+      "enabled": true,
+      "count": 26240,
+      "events": 0,
+      "mean_ms": 0.004167285156249946,
+      "p95_ms": 0.006125
+    },
+    "braking": {
+      "enabled": true,
+      "count": 26240,
+      "events": 114,
+      "mean_ms": 0.00500011181640631,
+      "p95_ms": 0.007583
+    },
+    "crosswalk": {
+      "enabled": true,
+      "count": 26240,
+      "events": 24,
+      "mean_ms": 0.004527441894531281,
+      "p95_ms": 0.006708
+    }
+  },
+  "baseline_method_rates": {
+    "ROAD_Q1": {
+      "completed_fps": 6.647523548116769,
+      "results": 1997,
+      "measured_seconds": 299.66046537200003
+    },
+    "MOSAIC_FULL": {
+      "completed_fps": 14.037366989031316,
+      "results": 4341,
+      "measured_seconds": 308.889836918
+    }
+  },
+  "source_counter_fps": 58.014302913873294,
+  "texture_counter_fps": 27.388698461153837,
+  "baseline_fps_passed": true,
+  "qt_receive_apply_ms": {
+    "count": 6330,
+    "mean": 1.2445353892575037,
+    "p50": 1.06777,
+    "p95": 2.19475,
+    "max": 13.5838
+  },
+  "log_sha256": {
+    "final_replay_v2_schedule.jsonl": "ad905d08b7edc74e52b935c2eefbd95d6ad14f5218e4e4bcaf8fb2cdab1c336c",
+    "final_replay_v2_scene.jsonl": "6993b470f0f2a4f67470c933bab26cc8c3cf3101d058f8758ab86944bff17108",
+    "final_replay_v2_risk_ui.jsonl": "ba700899e29f221a84ba269a2b34878c71c2ceda304c4ce45b1ec60c2e823e09",
+    "final_replay_v2_ai.log": "125cd3856df72505d8ff29b5959bf707d711246b2e5e0292e581d590a126f08b",
+    "final_replay_v2_events.jsonl": "b10e02e3ea1d9545b71634618759bde5bd2f576015bd1f67827e82df723b2e78",
+    "final_replay_v2_hmi.log": "5ed9733ba20ba53c7731b7ee9b433b972541f3113da6fde25f5c0465cc4c91f2",
+    "final_replay_v2_hmi.jsonl": "8fb66ccac5125e7bad32e4fbe17f3a3e74164c9ca012a444bd319871bc525657",
+    "final_replay_v2_qt_ai.jsonl": "a2e61aee2e38f38bdcd764df0f08271e2506c6da27bf393cc8b57a6cb395bb1f",
+    "final_replay_v2_ai.jsonl": "a04a5c8d075046890f7fb7f5048b67f80854debb92405e64d1ef68b51769d76b"
+  }
+}

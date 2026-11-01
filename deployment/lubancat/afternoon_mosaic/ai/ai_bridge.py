@@ -116,7 +116,7 @@ def map_detection_box(bbox, *, input_layout, display_view, road_quadrant):
 def build_dynamic_status(*, source, frame_id, timestamp_ns, now_ns, hud, navigation,
                          hazard_timestamp_ns, hazards, detections, signal_age_ms,
                          main_age_ms, specialist_age_ms, navigation_ttl_ms=3000,
-                         source_stopped=False, source_available=True,
+                         source_stopped=False, source_available=True, canonical_risks=False,
                          input_fps=None, submitted_fps=None, ai_fps=None):
     traffic_reason = str(hud.get("traffic_evidence") or "UNKNOWN")
     traffic = str(hud.get("traffic") or "OFF").upper()
@@ -170,10 +170,11 @@ def build_dynamic_status(*, source, frame_id, timestamp_ns, now_ns, hud, navigat
     hazard_kinds = []
     hazard_details = []
     if (not source_stopped and source_available and hazard_age_ms is not None
-            and hazard_age_ms < DYNAMIC_RESULT_TTL_MS):
+            and hazard_age_ms < (400.0 if canonical_risks else DYNAMIC_RESULT_TTL_MS)):
         for item in hazards:
             if not isinstance(item, dict) or not isinstance(item.get("kind"), str):
                 continue
+            if canonical_risks and (not item.get("valid") or item.get("lifecycle_state")!="ACTIVE" or item.get("expires_at_ns",0)<=now_ns):continue
             kind = item["kind"]
             hazard_kinds.append(kind)
             severity = item.get("severity", "warning")
@@ -206,7 +207,7 @@ def build_dynamic_status(*, source, frame_id, timestamp_ns, now_ns, hud, navigat
             if item.get("event_id"):
                 detail = dict(item)  # Preserve the canonical identity/lifecycle for every consumer.
             hazard_details.append(detail)
-    if (not source_stopped and source_available and traffic == "RED"
+    if (not canonical_risks and not source_stopped and source_available and traffic == "RED"
             and signal_age_ms is not None and signal_age_ms < 2500):
         hazard_kinds.append("RED_SIGNAL_CONFIRMED")
         hazard_details.append({
@@ -1474,7 +1475,9 @@ class AiReplayBridge:
         snapshot = self.pipeline.snapshot(lane, int(timestamp_ns))
         mode = self.modes.status()
         detections=(list(snapshot.main)+list(snapshot.specialist) if self.modes.adapter is None else self.modes.adapter.all_detections)
+        tracking_start=time.perf_counter_ns()
         self.primary_tracks.update(detections,(mode["mode"],mode["epoch"],self.active_model_id),timestamp_ns)
+        self._last_tracking_ms=(time.perf_counter_ns()-tracking_start)/1e6
         self.stage_timings.setdefault("risk_fast",deque(maxlen=3600))
         risk_start=time.perf_counter_ns()
         risk_context=(mode["mode"],mode["epoch"],self.active_model_id)
@@ -1522,6 +1525,7 @@ class AiReplayBridge:
             now_ns=time.monotonic_ns(),
             hud=hud.to_dict(),
             navigation=nav,
+            canonical_risks=True,
             hazard_timestamp_ns=snapshot.hazards.timestamp_ns,
             hazards=snapshot.hazards.events,
             detections=list(snapshot.main) + list(snapshot.specialist),
@@ -1700,6 +1704,12 @@ class AiReplayBridge:
                         "navigation_ocr_age_ms": (self.latest_dynamic_status.get("navigation") or {}).get("ocr_age_ms"),
                         "hazards": self.latest_dynamic_status.get("hazards"),
                         "hazard_details": self.latest_dynamic_status.get("hazard_details"),
+                        "event_updates": self.latest_dynamic_status.get("event_updates"),
+                        "tracking_ms":self._last_tracking_ms,
+                        "risk_fast_ms":self.stage_timings["risk_fast"][-1],
+                        "risk_rules":self.latest_dynamic_status.get("risk_rules"),
+                        "semantics":self.latest_dynamic_status.get("semantics"),
+                        "control":self.latest_dynamic_status.get("control"),
                     }, separators=(",", ":")) + "\n")
                 self.result_count += 1
                 self.latency_ms.append((time.perf_counter_ns() - started) / 1e6)

@@ -1,5 +1,5 @@
 """Shared measured identities. Per-camera association; predictions stay internal."""
-from tools.competition_console.byte_tracker_lite import ByteTracker, box_iou
+from tools.competition_console.byte_tracker_lite import ByteTracker
 
 class PrimaryTracks:
     def __init__(self):
@@ -34,18 +34,4 @@ class PrimaryTracks:
                 vx,vy,vw,vh=row.get("velocity",[0,0,0,0])
                 row["original"]["velocity"]=[vx-vw/2,vy-vh/2,vw,vh]
         self.current=output
-        return output
-
-    def associate_legacy(self,candidates):
-        output=[]
-        for e in candidates:
-            b=e.get("bbox")
-            matched=None;score=.35
-            for d in self.current:
-                if d["source_id"]!="Q1" or not d["track_id"] or not b: continue
-                iou=box_iou(b,d["bbox"])
-                if iou>score:matched=d;score=iou
-            output.append(dict(e,track_id=matched["track_id"] if matched else 0,
-                target_class=matched["class_name"] if matched else e.get("target_class",""),
-                confidence=matched["confidence"] if matched else 0))
         return output

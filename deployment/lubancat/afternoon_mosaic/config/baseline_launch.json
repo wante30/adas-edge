@@ -1,0 +1,35 @@
+{
+  "args": [
+    "/home/cat/hmi_recover_20261101/qt_gpu_probe_build_20261030_time/qt_gpu_probe",
+    "--fps",
+    "60",
+    "--duration",
+    "0",
+    "--start-mode",
+    "0",
+    "--pgv-file",
+    "/dev/shm/pango-video/latest.pgv",
+    "--source-label",
+    "pgv-live",
+    "--pgv-layout",
+    "quad",
+    "--road-quadrant",
+    "0",
+    "--ai-frame-file",
+    "/dev/shm/qt_gpu_probe_ai.mfr1",
+    "--ai-hz",
+    "10"
+  ],
+  "env": {
+    "QT_FRAME_METADATA_HZ": "15",
+    "QT_QPA_PLATFORMTHEME": "gtk2",
+    "DISPLAY": ":0.0",
+    "XAUTHORITY": "/home/cat/.Xauthority",
+    "QT_XCB_GL_INTEGRATION": "xcb_egl",
+    "QT_ACCESSIBILITY": "1",
+    "QT_IM_MODULE": "fcitx",
+    "QT_QPA_PLATFORM": "xcb"
+  },
+  "cwd": "/home/cat",
+  "exe": "/home/cat/hmi_recover_20261101/qt_gpu_probe_build_20261030_time/qt_gpu_probe"
+}

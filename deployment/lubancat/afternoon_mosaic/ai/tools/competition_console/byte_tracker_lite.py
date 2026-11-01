@@ -108,17 +108,21 @@ class ByteTracker:
     def _associate(self, tracks, dets, max_cost):
         if not tracks or not dets:
             return [], list(range(len(tracks))), list(range(len(dets)))
-        cost = np.full((len(tracks), len(dets)), 2.0, dtype=np.float32)
-        for i, track in enumerate(tracks):
-            for j, det in enumerate(dets):
-                cost[i, j] = self._cost(track, det)
+        # Vectorized camera-local IoU avoids Python N*M loops on the RK3566.
+        a=np.asarray([t.bbox for t in tracks],dtype=np.float32)
+        b=np.asarray([(d["x"],d["y"],d["x"]+d["width"],d["y"]+d["height"]) for d in dets],dtype=np.float32)
+        inter=np.maximum(0,np.minimum(a[:,None,2:],b[None,:,2:])-np.maximum(a[:,None,:2],b[None,:,:2])).prod(axis=2)
+        area_a=np.maximum(0,a[:,2:]-a[:,:2]).prod(axis=1)
+        area_b=np.maximum(0,b[:,2:]-b[:,:2]).prod(axis=1)
+        cost=1-inter/np.maximum(1e-9,area_a[:,None]+area_b[None,:]-inter)
+        tf=np.asarray([t.family for t in tracks]);df=np.asarray([family(d["className"]) for d in dets])
+        cost[tf[:,None]!=df[None,:]]=2.
         if linear_sum_assignment is not None:
             rows, cols = linear_sum_assignment(cost)
             pairs = list(zip(rows, cols))
         else:
-            pairs = sorted(((i, j) for i in range(cost.shape[0])
-                            for j in range(cost.shape[1])),
-                           key=lambda item: cost[item[0], item[1]])
+            order=np.argsort(cost,axis=None)
+            pairs=((int(k//len(dets)),int(k%len(dets))) for k in order if cost.flat[k]<=max_cost)
         matched, used_t, used_d = [], set(), set()
         for i, j in pairs:
             if i in used_t or j in used_d:
@@ -135,7 +139,7 @@ class ByteTracker:
             if self.last_timestamp_ns is not None and timestamp_ns<=self.last_timestamp_ns:return []
             dt=.1 if self.last_timestamp_ns is None else min(.6,(timestamp_ns-self.last_timestamp_ns)/1e9)
             self.last_timestamp_ns=timestamp_ns
-            self.tracks=[t for t in self.tracks if timestamp_ns-getattr(t,"last_seen_ns",timestamp_ns)<=self.retention_ns]
+            self.tracks=[t for t in self.tracks if timestamp_ns-(getattr(t,"last_seen_ns",None) or timestamp_ns)<=self.retention_ns]
         else:dt=1.
         for track in self.tracks:
             track.predict(dt)

@@ -60,8 +60,12 @@ class SemanticWorker:
             return result
 
     def metrics(self):
+        now=time.monotonic_ns()
+        if now-getattr(self,"metrics_ns",-1000000000)<1000000000:return self.metrics_cache
+        self.metrics_ns=now
         a=sorted(self.samples)
-        return dict(count=self.count,errors=self.errors,max_hz=2,mean_ms=sum(a)/len(a) if a else 0,p95_ms=a[int(.95*(len(a)-1))] if a else 0)
+        self.metrics_cache=dict(count=self.count,errors=self.errors,max_hz=2,mean_ms=sum(a)/len(a) if a else 0,p95_ms=a[int(.95*(len(a)-1))] if a else 0)
+        return self.metrics_cache
 
     def close(self):
         with self.cv:self.stopped=True;self.cv.notify()

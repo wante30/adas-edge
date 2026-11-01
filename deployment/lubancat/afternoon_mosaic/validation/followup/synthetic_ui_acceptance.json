@@ -1,0 +1,270 @@
+{
+  "kind": "SYNTHETIC_NATIVE_QT_UI_TEST",
+  "actual_video_detection": false,
+  "passed": true,
+  "screenshots": [
+    {
+      "stage": "warning",
+      "path": "/home/cat/adas_risk_dev_20261102/evidence/synthetic_ui_final_verified_warning.xwd",
+      "ui": {
+        "events": [
+          {
+            "bbox": [
+              520,
+              340,
+              760,
+              660
+            ],
+            "confidence": 0.99,
+            "confirmed_ns": 11996786843786,
+            "control_eligible": false,
+            "coordinate_space": "ROAD_VIEW_1280x720",
+            "event_id": "SYNTHETIC-85db9325492c44ffb2382441ba87a4ba:11995561565668:1",
+            "event_type": "FRONT_COLLISION_RISK",
+            "evidence": "SYNTHETIC_UI_CONTROL_FIXTURE",
+            "expires_at_ns": 11997177305587,
+            "frame_id": 3,
+            "inference_mode": "ROAD_Q1",
+            "kind": "FRONT_COLLISION_RISK",
+            "lifecycle_state": "ACTIVE",
+            "matched": true,
+            "mode_epoch": "11995561565668",
+            "path_valid": true,
+            "qt_track_id": 7,
+            "risk_state": "WARNING",
+            "severity": "warning",
+            "source_id": "Q1",
+            "synthetic": true,
+            "target_class": "car",
+            "timestamp_ns": 11996777305587,
+            "track_id": 7,
+            "valid": true
+          }
+        ],
+        "kind": "ui_applied",
+        "marked_boxes": [
+          {
+            "event_id": "SYNTHETIC-85db9325492c44ffb2382441ba87a4ba:11995561565668:1",
+            "severity": "warning",
+            "track_id": 7
+          }
+        ],
+        "ui_applied_ns": 11996820354210,
+        "unmatched_hazard": []
+      },
+      "control": {
+        "control_mode": "DRY_RUN"
+      }
+    },
+    {
+      "stage": "critical",
+      "path": "/home/cat/adas_risk_dev_20261102/evidence/synthetic_ui_final_verified_critical.xwd",
+      "ui": {
+        "events": [
+          {
+            "bbox": [
+              520,
+              340,
+              760,
+              660
+            ],
+            "confidence": 0.99,
+            "confirmed_ns": 11996786843786,
+            "control_eligible": true,
+            "coordinate_space": "ROAD_VIEW_1280x720",
+            "event_id": "SYNTHETIC-85db9325492c44ffb2382441ba87a4ba:11995561565668:1",
+            "event_type": "FRONT_COLLISION_RISK",
+            "evidence": "SYNTHETIC_UI_CONTROL_FIXTURE",
+            "expires_at_ns": 12002238467191,
+            "frame_id": 307,
+            "inference_mode": "ROAD_Q1",
+            "kind": "FRONT_COLLISION_RISK",
+            "lifecycle_state": "ACTIVE",
+            "matched": true,
+            "mode_epoch": "11995561565668",
+            "path_valid": true,
+            "qt_track_id": 7,
+            "risk_state": "CRITICAL",
+            "severity": "critical",
+            "source_id": "Q1",
+            "synthetic": true,
+            "target_class": "car",
+            "timestamp_ns": 12001838467191,
+            "track_id": 7,
+            "valid": true
+          }
+        ],
+        "kind": "ui_applied",
+        "marked_boxes": [
+          {
+            "event_id": "SYNTHETIC-85db9325492c44ffb2382441ba87a4ba:11995561565668:1",
+            "severity": "critical",
+            "track_id": 7
+          }
+        ],
+        "ui_applied_ns": 12002002044551,
+        "unmatched_hazard": []
+      },
+      "control": {
+        "ok": true,
+        "accepted": true,
+        "executed": false,
+        "simulated": true,
+        "control_mode": "DRY_RUN",
+        "request_id": "1eea3ec06dab4ca983421bc068f744e0",
+        "timestamp_ns": 12001923938241,
+        "last_error": 0,
+        "stage": "brake_accepted",
+        "event_ids": [
+          "SYNTHETIC-85db9325492c44ffb2382441ba87a4ba:11995561565668:1"
+        ]
+      }
+    },
+    {
+      "stage": "pedestrian",
+      "path": "/home/cat/adas_risk_dev_20261102/evidence/synthetic_ui_final_verified_pedestrian.xwd",
+      "ui": {
+        "events": [
+          {
+            "bbox": [
+              520,
+              340,
+              760,
+              660
+            ],
+            "confidence": 0.99,
+            "confirmed_ns": 12006900646986,
+            "control_eligible": true,
+            "coordinate_space": "ROAD_VIEW_1280x720",
+            "event_id": "SYNTHETIC-85db9325492c44ffb2382441ba87a4ba:11995561565668:2",
+            "event_type": "PEDESTRIAN_CROSSING_PATH",
+            "evidence": "SYNTHETIC_UI_CONTROL_FIXTURE",
+            "expires_at_ns": 12007268494537,
+            "frame_id": 481,
+            "inference_mode": "ROAD_Q1",
+            "kind": "PEDESTRIAN_CROSSING_PATH",
+            "lifecycle_state": "ACTIVE",
+            "matched": true,
+            "mode_epoch": "11995561565668",
+            "path_valid": true,
+            "qt_track_id": 7,
+            "risk_state": "CRITICAL",
+            "severity": "critical",
+            "source_id": "Q1",
+            "synthetic": true,
+            "target_class": "person",
+            "timestamp_ns": 12006868494537,
+            "track_id": 7,
+            "valid": true
+          }
+        ],
+        "kind": "ui_applied",
+        "marked_boxes": [
+          {
+            "event_id": "SYNTHETIC-85db9325492c44ffb2382441ba87a4ba:11995561565668:2",
+            "severity": "critical",
+            "track_id": 7
+          }
+        ],
+        "ui_applied_ns": 12007004306908,
+        "unmatched_hazard": []
+      },
+      "control": {
+        "ok": true,
+        "accepted": true,
+        "executed": false,
+        "simulated": true,
+        "control_mode": "DRY_RUN",
+        "request_id": "abb49e23cefc44b5a49eaf92050fecea",
+        "timestamp_ns": 12006905729475,
+        "last_error": 0,
+        "stage": "brake_accepted",
+        "event_ids": [
+          "SYNTHETIC-85db9325492c44ffb2382441ba87a4ba:11995561565668:2"
+        ]
+      }
+    },
+    {
+      "stage": "pulse",
+      "path": "/home/cat/adas_risk_dev_20261102/evidence/synthetic_ui_final_verified_pulse.xwd",
+      "ui": {
+        "events": [
+          {
+            "bbox": [
+              520,
+              340,
+              760,
+              660
+            ],
+            "confidence": 0.99,
+            "confirmed_ns": 12011876913031,
+            "control_eligible": true,
+            "coordinate_space": "ROAD_VIEW_1280x720",
+            "event_id": "SYNTHETIC-85db9325492c44ffb2382441ba87a4ba:11995561565668:3",
+            "event_type": "CROSSWALK_BRAKE_PULSE",
+            "evidence": "SYNTHETIC_UI_CONTROL_FIXTURE",
+            "expires_at_ns": 12012363081734,
+            "frame_id": 666,
+            "inference_mode": "ROAD_Q1",
+            "kind": "CROSSWALK_BRAKE_PULSE",
+            "lifecycle_state": "ACTIVE",
+            "matched": true,
+            "mode_epoch": "11995561565668",
+            "path_valid": true,
+            "qt_track_id": 7,
+            "risk_state": "CRITICAL",
+            "severity": "critical",
+            "source_id": "Q1",
+            "synthetic": true,
+            "target_class": "person",
+            "timestamp_ns": 12011963081734,
+            "track_id": 7,
+            "valid": true
+          }
+        ],
+        "kind": "ui_applied",
+        "marked_boxes": [
+          {
+            "event_id": "SYNTHETIC-85db9325492c44ffb2382441ba87a4ba:11995561565668:3",
+            "severity": "critical",
+            "track_id": 7
+          }
+        ],
+        "ui_applied_ns": 12012011682713,
+        "unmatched_hazard": []
+      },
+      "control": {
+        "ok": true,
+        "accepted": true,
+        "executed": false,
+        "simulated": true,
+        "control_mode": "DRY_RUN",
+        "request_id": "3c5f81aa63814047adde8716384308a5",
+        "timestamp_ns": 12011880097097,
+        "last_error": 0,
+        "stage": "brake_accepted",
+        "event_ids": [
+          "SYNTHETIC-85db9325492c44ffb2382441ba87a4ba:11995561565668:3"
+        ]
+      }
+    },
+    {
+      "stage": "cleared",
+      "path": "/home/cat/adas_risk_dev_20261102/evidence/synthetic_ui_final_verified_cleared.xwd",
+      "ui": {
+        "events": [],
+        "kind": "ui_applied",
+        "marked_boxes": [],
+        "ui_applied_ns": 12016005773199,
+        "unmatched_hazard": []
+      },
+      "control": {
+        "stage": "pulse_ended",
+        "event_id": "SYNTHETIC-85db9325492c44ffb2382441ba87a4ba:11995561565668:3",
+        "request_id": "3c5f81aa63814047adde8716384308a5",
+        "control_mode": "DRY_RUN",
+        "executed": false
+      }
+    }
+  ]
+}

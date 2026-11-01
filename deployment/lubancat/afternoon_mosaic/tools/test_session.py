@@ -83,8 +83,10 @@ def start(args):
             # Reuse saved arguments/environment, never saved PIDs from another boot.
             history = sorted(EVIDENCE.glob("integration_session_restored_*.json"),
                              key=lambda p: p.stat().st_mtime_ns)
-            assert args.raw_replay and history, "No running baseline HMI or saved baseline launch record"
-            hmi = json.loads(history[-1].read_text())["baseline_hmi"]
+            launch_profile = ROOT / "config/baseline_launch.json"
+            assert args.raw_replay and (history or launch_profile.is_file()), "No baseline HMI or launch profile"
+            hmi = (json.loads(history[-1].read_text())["baseline_hmi"] if history
+                   else json.loads(launch_profile.read_text(encoding="utf-8-sig")))
             for candidate in Path("/proc").glob("[0-9]*/cmdline"):
                 try:
                     argv = candidate.read_bytes().split(b"\0")
@@ -120,6 +122,9 @@ def start(args):
            "ADAS_TEST_ACTION_PORT": str(args.action_port),
            "ADAS_CONTROL_MODE": getattr(args, "control_mode", None) or ("DRY_RUN" if args.raw_replay else "HARDWARE"),
            "ADAS_EVENT_TIMELINE": str(EVIDENCE / (args.label + "_events.jsonl"))}
+    if getattr(args,"synthetic_ui",False):
+        if env["ADAS_CONTROL_MODE"]!="DRY_RUN":raise ValueError("Synthetic fixture requires DRY_RUN")
+        ai_args=["python3",str(ROOT/"tools/synthetic_ui.py")]
     state["test_ai_pid"] = launch(ai_args, ROOT / "ai", env, f"{args.label}_ai.log")
     hmi_args = state["baseline_hmi"]["args"][:]
     hmi_args[0] = str(ROOT / args.build / "qt_gpu_probe")
@@ -135,6 +140,9 @@ def start(args):
     hmi_env = dict(state["baseline_hmi"]["env"])
     hmi_env["ADAS_CONTROL_MODE"] = env["ADAS_CONTROL_MODE"]
     hmi_env["QT_RISK_TIMELINE_LOG"] = str(EVIDENCE / (args.label + "_risk_ui.jsonl"))
+    hmi_env["QT_AI_PACING_POLICY"] = os.environ.get("QT_AI_PACING_POLICY", "PRESSURE")
+    hmi_env["QT_AI_SCHEDULE_LOG"] = str(EVIDENCE / (args.label + "_schedule.jsonl"))
+    hmi_env["QT_SCENE_TIMELINE_LOG"] = str(EVIDENCE / (args.label + "_scene.jsonl"))
     hmi_env["QT_AI_TIMING_LOG"] = str(EVIDENCE / (args.label + "_qt_ai.jsonl"))
     if args.external_qml:
         hmi_env["QT_QML_FILE"] = str(ROOT / "hmi/main.qml")
@@ -165,6 +173,7 @@ if __name__ == "__main__":
     parser.add_argument("--label", default="stage1_after_reboot")
     parser.add_argument("--ai-hz", default="10")
     parser.add_argument("--external-qml", action="store_true")
+    parser.add_argument("--synthetic-ui", action="store_true")
     parser.add_argument("--raw-replay", default="")
     parser.add_argument("--action-port", default="38262")
     parser.add_argument("--control-mode", choices=["DRY_RUN", "HARDWARE"])

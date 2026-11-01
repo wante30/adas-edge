@@ -559,6 +559,13 @@ public:
         frames_++;
         if (elapsed_ - last_report_ > 1.0) {
             // Rendering thread only updates an atomic; no QObject signal here.
+            static QFile sceneLog(qEnvironmentVariable("QT_SCENE_TIMELINE_LOG"));
+            if(!sceneLog.fileName().isEmpty() && (sceneLog.isOpen() || sceneLog.open(QIODevice::Append))) {
+                QJsonObject row;row.insert("scene_fps",frames_/(elapsed_-last_report_));
+                row.insert("live_tracks",live_.size());row.insert("source_key",source_key_);
+                row.insert("timestamp_ns",double(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count()));
+                sceneLog.write(QJsonDocument(row).toJson(QJsonDocument::Compact)+'\n');sceneLog.flush();
+            }
             last_report_ = elapsed_;
             frames_ = 0;
         }

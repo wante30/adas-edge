@@ -196,6 +196,12 @@ Item {
         onTriggered: root.now = new Date()
     }
 
+    Text {
+        anchors.horizontalCenter: parent.horizontalCenter; y: 75; z: 999
+        visible: video.aiModelId === "SYNTHETIC-DRY-RUN"
+        text: "合成事件测试 · 不是实拍识别结果 · DRY RUN"
+        color: "#FFD34D"; font.pixelSize: 20; font.bold: true
+    }
     // Capture-only helper; the normal UI never auto-switches.
     Timer {
         interval: 5000
@@ -235,7 +241,10 @@ Item {
         var counts = video.aiDetectionCounts || ({})
         var hazards = video.aiHazards || []
         var traffic = video.aiTraffic === "RED" ? 1 : (video.aiTraffic === "GREEN" ? 2 : 0)
-        var pedestrian = (counts["person"] || 0) > 0
+        var pedestrian = false
+        var events = video.aiHazardDetails || []
+        for(var i=0;i<events.length;++i)
+            if(events[i].valid && events[i].severity === "critical" && events[i].target_class === "person") pedestrian = true
         var obstacle = video.aiOnline && hazards.length > 0 && root.hazardHasVehicleTarget()
         pcieHud.sendPerception(true, traffic, pedestrian, obstacle, false, 0, 0,
                                 false, true, true, 0x101,
@@ -463,7 +472,7 @@ Item {
                     var detail = details[d]
                     rows.push({ label: hazardDetailLabel(detail),
                                 live: detail.valid !== false,
-                                value: hazardSeverityText(detail.severity) })
+                                severity: detail.severity, value: hazardSeverityText(detail.severity) })
                 }
                 return rows
             }
@@ -519,7 +528,7 @@ Item {
     }
 
     function metricLabel(index) {
-        return ["PCIE", "视频", "AI", "NPU", "GPU"][index]
+        return [root.sourceIsPcie() ? "PCIE" : "回放", "视频", "AI", "NPU", "GPU"][index]
     }
     function metricValue(index) {
         if (index === 0) return video.sourceOnline ? "在线" : "断开"
@@ -1150,6 +1159,7 @@ Item {
         // Single mode: a real hazard warning or the neutral monitoring strip.
         Rectangle {
             id: warningStrip
+            property color severityTone: hazardCard.criticalHazard ? root.red : root.amber
             visible: root.viewMode === 0
             x: parent.width / 2 - 181; y: parent.height - 37
             width: 362; height: 27; radius: 3
@@ -1157,7 +1167,7 @@ Item {
                    ? "#B326111A" : "#B308171E"
             border.width: 0.8
             border.color: (video.aiOnline && (video.aiHazards || []).length > 0)
-                          ? "#B9FF5064" : "#4A2A5B66"
+                          ? warningStrip.severityTone : "#4A2A5B66"
             Image {
                 x: 10; y: 6; width: 15; height: 15
                 source: "assets/icon_warning.png"; fillMode: Image.PreserveAspectFit
@@ -1403,9 +1413,14 @@ Item {
         layer.enabled: true
         layer.smooth: true; y: 359; width: 260; height: 100
         property bool activeHazard: root.hazardRows().length > 0
+        property bool criticalHazard: {
+            var events=video.aiHazardDetails || []
+            for(var i=0;i<events.length;++i) if(events[i].severity==="critical")return true
+            return false
+        }
         HudPanel {
             anchors.fill: parent
-            cut: 11; accent: hazardCard.activeHazard ? root.red : "#3A6572"
+            cut: 11; accent: hazardCard.activeHazard ? (hazardCard.criticalHazard ? root.red : root.amber) : "#3A6572"
             fillTop: hazardCard.activeHazard ? "#1D0B11" : "#0A1A22"
             fillBottom: hazardCard.activeHazard ? "#080B0F" : "#040F16"
             fillOpacity: 0.95; borderOpacity: hazardCard.activeHazard ? 0.64 : 0.48
@@ -1461,7 +1476,7 @@ Item {
             delegate: Item {
                 x: 10; y: 30 + index * 20; width: parent.width - 20; height: 18
                 Rectangle {
-                    x: 0; y: 2; width: 2; height: 13; color: root.red
+                    x: 0; y: 2; width: 2; height: 13; color: modelData.severity === "critical" ? root.red : root.amber
                     opacity: modelData.live ? 0.75 : 0.25
                 }
                 Image {
@@ -1480,14 +1495,19 @@ Item {
                 Text {
                     anchors.right: parent.right; y: 1
                     text: modelData.value
-                    color: modelData.live ? "#FF9DA5" : "#69585A"
+                    color: modelData.live ? (modelData.severity === "critical" ? "#FF9DA5" : "#FFD34D") : "#69585A"
                     font.family: root.num; font.pixelSize: 6
                 }
             }
         }
         Text {
             x: 14; y: parent.height - 14
-            text: root.hazardFooter()
+            text: {
+                var c=video.aiControlState || {}
+                if(c.control_mode === "DRY_RUN")
+                    return "DRY RUN · " + (c.stage === "brake_accepted" ? "制动请求已模拟接收" : c.stage === "pulse_ended" ? "点刹模拟结束" : c.stage === "control_event_cleared" ? "危险已解除" : c.stage === "brake_timeout" ? "ACK 超时" : "进程内控制回放")
+                return root.hazardFooter()
+            }
             color: hazardCard.activeHazard ? "#B8848A" : "#6F8A93"
             font.family: root.cjk; font.pixelSize: 6
             elide: Text.ElideRight; width: parent.width - 28

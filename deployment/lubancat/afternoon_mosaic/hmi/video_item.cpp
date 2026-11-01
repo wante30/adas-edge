@@ -1002,6 +1002,11 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
     const auto interval = std::chrono::nanoseconds(
         static_cast<int64_t>(std::llround(1.0e9 / (adaptive ? capHz : std::max(0.1, aiHz)))));
     qInfo() << "AI scheduler" << (adaptive ? "adaptive" : "fixed") << "cap_hz" << (adaptive ? capHz : aiHz);
+    const bool legacyPacing=qEnvironmentVariable("QT_AI_PACING_POLICY")==QStringLiteral("LEGACY");
+    std::ofstream scheduleLog;
+    const QByteArray schedulePath=qgetenv("QT_AI_SCHEDULE_LOG");
+    if(!schedulePath.isEmpty())scheduleLog.open(schedulePath.constData(),std::ios::app);
+    qint64 lastRequestNs=0;
     qint64 lastModelSendNs = 0;
     quint32 sentModelRequestId = 0;
     uint64_t lastSubmittedId = 0;
@@ -1047,7 +1052,9 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
         // Rendering and the OCR worker keep independent clocks.
         const double guiMs = ai_gui_update_ms_.load();
         const double renderFps = render_metrics_->render_fps.load();
-        const bool guiBusy = adaptive && (guiMs > 12.0 || (renderFps > 1.0 && renderFps < 25.0));
+        const double guiBusyFraction=guiMs/200.0;
+        const bool guiBusy=adaptive && (legacyPacing ? (guiMs>12. || (renderFps>1. && renderFps<25.))
+            : (guiBusyFraction>.35 || (guiBusyFraction>.175 && renderFps>1. && renderFps<27.)));
         if (modeReady && !ai_model_switching_.load() && submitted.empty() && now >= nextRequest) {
             std::shared_ptr<Frame> frame;
             {
@@ -1055,6 +1062,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                 frame = std::move(latest_ai_frame_);
             }
             if (frame && frame->id != lastSubmittedId && !frame->pixels.empty()) {
+                const qint64 writeStartedNs=steadyNs();
                 QByteArray header(28, '\0');
                 std::memcpy(header.data(), "MFR1", 4);
                 qToLittleEndian<quint64>(frame->id, reinterpret_cast<uchar *>(header.data() + 4));
@@ -1092,12 +1100,22 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                                reinterpret_cast<const sockaddr *>(&requestAddress), sizeof(requestAddress)) == request.size()) {
                         ai_requests_sent_.fetch_add(1);
                         submitted[frame->id] = {modeEpoch, static_cast<quint64>(frame->producedNs), steadyNs()};
+                        if(scheduleLog.is_open()) {
+                            const qint64 sentNs=steadyNs();
+                            scheduleLog<<"{\"timestamp_ns\":"<<sentNs<<",\"frame_id\":"<<frame->id
+                                <<",\"request_spacing_ms\":"<<(lastRequestNs?(sentNs-lastRequestNs)/1e6:0)
+                                <<",\"frame_write_send_ms\":"<<(sentNs-writeStartedNs)/1e6
+                                <<",\"gui_update_ms\":"<<guiMs<<",\"gui_busy_fraction\":"<<guiBusyFraction
+                                <<",\"render_fps\":"<<renderFps<<",\"backoff_ms\":"<<(guiBusy?(legacyPacing?30:8):0)
+                                <<",\"policy\":\""<<(legacyPacing?"LEGACY":"PRESSURE")<<"\"}"<<std::endl;
+                            lastRequestNs=sentNs;
+                        }
                         lastSubmittedId = frame->id;
                         while (submitted.size() > 32) submitted.erase(submitted.begin());
                     }
                 }
             }
-            nextRequest = now + interval + (guiBusy ? std::chrono::milliseconds(30) : std::chrono::milliseconds(0));
+            nextRequest = now + interval + (guiBusy ? std::chrono::milliseconds(legacyPacing?30:8) : std::chrono::milliseconds(0));
         }
 
         QString modelProfileId;
@@ -1544,14 +1562,14 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                 navigationText += QStringLiteral(" · %1 m").arg(navigation.value(QStringLiteral("distance_m")).toDouble(), 0, 'f', 0);
             }
             QVariantList hazardItems;
-            for (const QJsonValue &hazard : hazards) {
-                if (hazard.isString()) hazardItems.append(hazard.toString());
-            }
+            for(const QVariant &hazard:hazardDetails)
+                hazardItems.append(hazard.toMap().value(QStringLiteral("event_type")));
             QVariantMap counts;
             const QJsonObject detections = status.value(QStringLiteral("detections")).toObject();
             for (auto it = detections.begin(); it != detections.end(); ++it) {
                 counts.insert(it.key(), it.value().toInt());
             }
+            const QVariantMap controlState=status.value(QStringLiteral("control")).toObject().toVariantMap();
             const QString summary = QStringLiteral("AI 帧 %1 · %2 · %3 框 · %4 危险")
                                         .arg(frameId).arg(traffic).arg(boxes.size()).arg(hazards.size());
             bool statusChanged = false;
@@ -1574,6 +1592,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     || !qFuzzyCompare(ai_navigation_distance_m_ + 1.0,
                                       navigationDistance + 1.0)
                     || ai_hazards_ != hazardItems
+                    || ai_control_state_ != controlState
                     || ai_hazard_details_ != hazardDetails
                     || modelChanged;
                 if (!modelId.isEmpty()) ai_model_id_ = modelId;
@@ -1583,6 +1602,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                 ai_boxes_ = boxes;
                 ai_hazards_ = hazardItems;
                 ai_hazard_details_ = hazardDetails;
+                ai_control_state_ = controlState;
                 ai_status_ = summary;
                 ai_traffic_ = traffic;
                 ai_display_view_ = displayView;
@@ -1924,12 +1944,15 @@ QVariantList VideoItem::aiBoxes() const {
 
 QVariantList VideoItem::aiHazards() const {
     QMutexLocker locker(&ai_metrics_mutex_);
-    return ai_hazards_;
+    return presented_hazards_;
 }
 
+QVariantMap VideoItem::aiControlState() const {
+    QMutexLocker locker(&ai_metrics_mutex_);return presented_control_state_;
+}
 QVariantList VideoItem::aiHazardDetails() const {
     QMutexLocker locker(&ai_metrics_mutex_);
-    return ai_hazard_details_;
+    return presented_hazard_details_;
 }
 
 void VideoItem::updateMetrics() {
@@ -2016,15 +2039,22 @@ void VideoItem::updateMetrics() {
     ai_online_.store(aiOnlineNow);
     if (ai_dirty_.exchange(false)) {
         const qint64 guiUpdateStartNs = steadyNs();
-        QVariantList boxesForModel;
+        QVariantList boxesForModel, eventsForModel;
         {
             QMutexLocker locker(&ai_metrics_mutex_);
             boxesForModel = ai_boxes_;
+            eventsForModel = ai_hazard_details_;
+            presented_hazards_ = ai_hazards_;
+            presented_hazard_details_ = eventsForModel;
+            presented_control_state_ = ai_control_state_;
         }
         bbox_model_->setBoxes(boxesForModel);
-        RiskLink::logApplied(aiHazardDetails(), boxesForModel, nowNs);
+        RiskLink::logApplied(eventsForModel, boxesForModel, nowNs);
         emit aiBoxesChanged();
-        if (ai_status_dirty_.exchange(false)) emit aiStatusChanged();
+        // A receiver completion can race with clearing its dirty flag. Notify the
+        // GUI snapshot unconditionally so boxes and panel always advance together.
+        ai_status_dirty_.store(false);
+        emit aiStatusChanged();
         ai_gui_update_ms_.store((steadyNs() - guiUpdateStartNs) / 1.0e6);
     }
 

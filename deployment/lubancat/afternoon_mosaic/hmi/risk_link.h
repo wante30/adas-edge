@@ -98,9 +98,13 @@ inline void logApplied(const QVariantList &events,const QVariantList &boxes,qint
         QJsonObject m;m.insert("track_id",b.value("trackId").toInt());m.insert("event_id",b.value("hazardEventId").toString());
         m.insert("severity",b.value("hazardSeverity").toString());marked.append(m);}}
     state.insert("marked_boxes",marked);
+    QJsonArray unmatched;
+    for(const auto &event:events) {const auto e=event.toMap();if(!e.value("matched").toBool())unmatched.append(e.value("event_id").toString());}
+    state.insert("unmatched_hazard",unmatched);
     const QByteArray signature=QJsonDocument(state).toJson(QJsonDocument::Compact);
     if(signature==previous) return;
     previous=signature; state.insert("ui_applied_ns",double(now));state.insert("kind","ui_applied");
     file.write(QJsonDocument(state).toJson(QJsonDocument::Compact)+'\n');
+    file.flush();
 }
 }
