@@ -133,6 +133,7 @@ def start(args):
         hmi_args += ["--raw-replay", args.raw_replay]
     hmi_args += ["--metrics-jsonl", str(EVIDENCE / f"{args.label}_hmi.jsonl")]
     hmi_env = dict(state["baseline_hmi"]["env"])
+    hmi_env["ADAS_CONTROL_MODE"] = env["ADAS_CONTROL_MODE"]
     hmi_env["QT_RISK_TIMELINE_LOG"] = str(EVIDENCE / (args.label + "_risk_ui.jsonl"))
     hmi_env["QT_AI_TIMING_LOG"] = str(EVIDENCE / (args.label + "_qt_ai.jsonl"))
     if args.external_qml:

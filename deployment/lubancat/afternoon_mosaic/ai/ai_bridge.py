@@ -930,7 +930,7 @@ class AiReplayBridge:
         self.primary_tracks = PrimaryTracks()
         self.light_risk = LightRiskEngine()
         self.semantics = SemanticWorker()
-        self.auto_brake = AutoBrakeController()
+        self.auto_brake = AutoBrakeController(journal=self.event_store.journal)
         self.navigation = None
         self.nav_request = None
         self.nav_result = None
@@ -1490,7 +1490,7 @@ class AiReplayBridge:
         self.stage_timings["risk_fast"].append((time.perf_counter_ns()-risk_start)/1e6)
         snapshot=replace(snapshot,hazards=RiskObservation(timestamp_ns=timestamp_ns,
             events=events,tracks=tuple(self.primary_tracks.current),frame_id=frame_id))
-        self.auto_brake.update(snapshot.hazards)
+        self.auto_brake.update(snapshot.hazards,context=mode)
         nav = self.navigation.current(int(timestamp_ns)).to_dict() if self.navigation else {}
         hud = build_hud_perception(road, snapshot)
         flags = 0
@@ -1738,6 +1738,7 @@ class AiReplayBridge:
             self.close()
 
     def close(self):
+        self.auto_brake.close()
         self.semantics.close()
         self.event_store.journal.close()
         self.running.clear()

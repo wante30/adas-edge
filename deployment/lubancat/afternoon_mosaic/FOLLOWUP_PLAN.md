@@ -34,3 +34,7 @@ Stage 3 checkpoint: 22 Python tests, native association/source/expiry test, nati
 Stage 4 checkpoint: shared per-camera measured IDs feed binary-box metadata and event association. Explicit IDs never fall back to a different target; seam detections cannot control. Epoch resets and stable IDs covered by tests. Native receiver change awaits the combined stage 8 build.
 
 Stage 5 checkpoint: numerical measured-track rules replace the legacy asynchronous HazardEvents/BackgroundMotion engine entirely in this bridge. Six scenario tests cover static-near versus expansion, pedestrian/two-wheel, lateral entry, independent direction requirements and camera isolation. Per-rule switches/count/mean/p95 are reported. Paired lamp evidence is supplied by stage 6 worker.
+
+Stage 6 checkpoint: existing MTL lane-category masks and paired target-lamp crops are processed by a latest-slot worker <=2 Hz; stale/context-invalid semantics disappear. Three semantic tests passed, including missing mosaic masks and no semantic-only critical event.
+
+Stage 7 checkpoint: one critical-only nonblocking controller checks source, identity, freshness, context, path, vehicle availability and authorization, with per-event decision/request/ACK/rejection/timeout logs. DRY_RUN vehicle state is explicitly virtual; HMI hardware HUD sends are suppressed. Synthetic pulse helper requires measured crossing evidence and produces one 300 ms simulated pulse per event.
