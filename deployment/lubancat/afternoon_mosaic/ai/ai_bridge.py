@@ -1105,6 +1105,8 @@ class AiReplayBridge:
         main_path = Path(main_model).absolute()
         specialist_path = Path(specialist_model).absolute() if specialist_model else None
         for profile_id, profile in self.model_profiles.items():
+            if profile.task == "mosaic":
+                continue
             if profile.main_model.absolute() != main_path:
                 continue
             expected_specialist = (
@@ -1133,10 +1135,6 @@ class AiReplayBridge:
         }
         if include_options:
             status["options"] = [profile.wire() for profile in self.model_profiles.values()]
-            from fast_mosaic_backend import available
-            status["options"].insert(4, {"id": "FAST-MOSAIC", "label": "FAST-MOSAIC · BDD 整图",
-                "available": available(), "legacy": False, "has_specialist": False,
-                "reason": "" if available() else "BDD model / independent generic library missing"})
         return status
 
     def _send_model_switch_reply(self, request_id, peer, state, requested_id, message):
@@ -1145,7 +1143,7 @@ class AiReplayBridge:
         payload = encode_model_switch_reply(
             request_id,
             state=state,
-            active_id=self.active_model_id,
+            active_id="FAST-MOSAIC" if self.modes.adapter is not None else self.active_model_id,
             requested_id=requested_id,
             message=message,
         )
@@ -1153,6 +1151,11 @@ class AiReplayBridge:
             return
         try:
             self.result_socket.sendto(payload, peer)
+            print("MODEL_SWITCH " + json.dumps({"request_id": request_id,
+                  "state": state, "requested_id": requested_id,
+                  "active_id": "FAST-MOSAIC" if self.modes.adapter is not None else self.active_model_id,
+                  "inference": self.modes.status(), "timestamp_ns": time.monotonic_ns()},
+                  separators=(",", ":")), flush=True)
         except OSError:
             pass
 
@@ -1171,11 +1174,10 @@ class AiReplayBridge:
             )
             return
         with self.model_switch_lock:
-            if self.modes.mode == "MOSAIC_FULL":
-                self._send_model_switch_reply(request_id, peer, "REJECTED", profile_id,
-                                              "先切换到 ROAD_Q1 再选择道路模型")
-                return
-            if profile_id == self.active_model_id and self.pending_model_switch is None:
+            expected_mode = "MOSAIC_FULL" if profile.task == "mosaic" else "ROAD_Q1"
+            actual_id = "FAST-MOSAIC" if self.modes.adapter is not None else self.active_model_id
+            if (self.modes.mode == expected_mode and profile_id == actual_id
+                    and self.pending_model_switch is None):
                 self.model_switch_state = "READY"
                 self.model_switch_message = "当前已是该方案"
                 immediate_state = "APPLIED"
@@ -1197,6 +1199,8 @@ class AiReplayBridge:
         # A newer full-frame choice supersedes a queued road model change.
         with self.model_switch_lock:
             pending, peer = self.pending_model_switch, self.model_switch_peer
+            if pending is not None and pending["profile_id"] == "FAST-MOSAIC":
+                return
             self.pending_model_switch = self.model_switch_peer = None
             self.model_switch_state = "READY"
             self.model_switch_message = "四路模式使用 FAST-MOSAIC"
@@ -1205,18 +1209,27 @@ class AiReplayBridge:
                                           pending["profile_id"], "已切换四路模式")
 
     def _apply_pending_model_switch(self):
-        if self.modes.mode == "MOSAIC_FULL":
-            return False
         with self.model_switch_lock:
             request = self.pending_model_switch
             if request is None:
                 return False
+            profile = self.model_profiles[request["profile_id"]]
+            expected_mode = "MOSAIC_FULL" if profile.task == "mosaic" else "ROAD_Q1"
+            if self.modes.mode != expected_mode:
+                return False  # HMI owns the epoch; its MVI1 handshake precedes MVM1.
             self.pending_model_switch = None
             peer = self.model_switch_peer
             self.model_switch_peer = None
         request_id = int(request["request_id"])
         profile_id = str(request["profile_id"])
         profile = self.model_profiles[profile_id]
+        if profile.task == "mosaic":
+            with self.model_switch_lock:
+                self.model_switch_state = "APPLIED"
+                self.model_switch_message = "FAST-MOSAIC 已生效"
+            self._send_model_switch_reply(request_id, peer, "APPLIED", profile_id,
+                                          "FAST-MOSAIC 已生效")
+            return True
         old_main = self.pipeline.main_detector
         old_specialist = self.pipeline.specialist_detector
         same_main = (

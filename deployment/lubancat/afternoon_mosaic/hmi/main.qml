@@ -2129,7 +2129,7 @@ Item {
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                             onClicked: {
                                 root.viewMode = option.id === "FAST-MOSAIC" ? 1 : 0
-                                if (option.id !== "FAST-MOSAIC") video.requestModelSwitch(option.id)
+                                video.requestModelSwitch(option.id)
                                 root.modelPickerOpen = false
                             }
                         }

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import os
 from pathlib import Path
 import re
 import struct
@@ -31,12 +32,17 @@ class ModelProfile:
 
     @property
     def available(self) -> bool:
+        if self.task == "mosaic":
+            from fast_mosaic_backend import available
+            return available()
         return self.main_model.is_file() and (
             self.specialist_model is None or self.specialist_model.is_file()
         )
 
     @property
     def unavailable_reason(self) -> str:
+        if self.task == "mosaic" and not self.available:
+            return "BDD model / independent generic library missing"
         missing = [path for path in (self.main_model, self.specialist_model)
                    if path is not None and not path.is_file()]
         return "模型文件未安装" if missing else ""
@@ -103,6 +109,9 @@ def build_model_profiles(model_root: str | Path,
         ModelProfile("B-capi", "B-CAPI · B05N P2 Raw-head INT8 (C API)", capi, None, (512, 288), "bdd10", backend="rknn_capi"),
         ModelProfile("MTL-FULL", "B-2a · Full Resolution MTL (C API)", mtl_full, None, (512, 288), "bdd10", backend="rknn_capi", task="mtl"),
         ModelProfile("MTL-FAST", "B-2a · Seg-256 MTL (C API)", mtl_fast, None, (512, 288), "bdd10", backend="rknn_capi", task="mtl"),
+        ModelProfile("FAST-MOSAIC", "FAST-MOSAIC · BDD 整图 C API",
+                     Path(os.environ.get("ADAS_MOSAIC_MODEL", str(bdd))), None,
+                     (512, 288), "bdd10", backend="fast_mosaic", task="mosaic"),
         ModelProfile("A", "A · BDD-YOLOv8n Raw-head INT8", bdd, None, (512, 288), "bdd10"),
         ModelProfile("C", "C · BDD + B05L Specialist", bdd, specialist, (512, 288), "bdd10"),
         ModelProfile("D", "D · B05N P2 + B05L Specialist", p2, specialist, (512, 288), "bdd10"),

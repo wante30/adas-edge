@@ -1169,6 +1169,16 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     if (inference_applied_epoch_.exchange(inference_epoch_.load()) != inference_epoch_.load())
                         QMetaObject::invokeMethod(this, "notifyAiModelChanged", Qt::QueuedConnection);
                 }
+                if (ack.value(QStringLiteral("state")).toString() == QStringLiteral("FAILED")
+                    && ack.value(QStringLiteral("request_epoch")).toString().toULongLong() == inference_epoch_.load()) {
+                    QMutexLocker locker(&ai_metrics_mutex_);
+                    ai_model_state_ = QStringLiteral("FAILED");
+                    ai_model_message_ = ack.value(QStringLiteral("message")).toString();
+                    ai_model_switching_.store(false);
+                    pending_model_switch_id_.clear();
+                    ai_dirty_.store(true);
+                    QMetaObject::invokeMethod(this, "notifyAiModelChanged", Qt::QueuedConnection);
+                }
                 continue;
             }
             if (received >= 10 && std::memcmp(packet.data(), "MMS1", 4) == 0) {
@@ -1179,7 +1189,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                 bool changed = false;
                 {
                     QMutexLocker locker(&ai_metrics_mutex_);
-                    if (requestId == pending_model_switch_request_id_) {
+                    if (requestId == pending_model_switch_request_id_ && !pending_model_switch_id_.isEmpty()) {
                         const QString state = reply.value(QStringLiteral("state")).toString();
                         const QString activeId = reply.value(QStringLiteral("active_id")).toString();
                         const QString message = reply.value(QStringLiteral("message")).toString();
@@ -1770,6 +1780,8 @@ void VideoItem::requestModelSwitch(const QString &profileId) {
         emit aiStatusChanged();
         return;
     }
+    requestInferenceMode(profileId == QStringLiteral("FAST-MOSAIC")
+                         ? QStringLiteral("MOSAIC_FULL") : QStringLiteral("ROAD_Q1"));
     {
         QMutexLocker locker(&ai_metrics_mutex_);
         if (profileId == ai_model_id_ && ai_model_state_ != QStringLiteral("SWITCHING")) {
@@ -1785,6 +1797,14 @@ void VideoItem::requestModelSwitch(const QString &profileId) {
             ai_fps_.store(0.0);
             ai_model_state_ = QStringLiteral("SENDING");
             ai_model_message_ = QStringLiteral("正在请求板端切换");
+            tracks_.clear();
+            ai_boxes_.clear();
+            ai_hazards_.clear();
+            ai_hazard_details_.clear();
+            ai_hazard_latch_details_.clear();
+            ai_hazard_latch_ns_ = 0;
+            ai_epoch_.fetch_add(1);
+            ai_dirty_.store(true);
         }
     }
     emit aiStatusChanged();
