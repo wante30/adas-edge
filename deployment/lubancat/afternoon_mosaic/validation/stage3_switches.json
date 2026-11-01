@@ -1,0 +1,100 @@
+[
+  {
+    "mode": "ROAD_Q1",
+    "epoch": "2513694186910",
+    "results": 250,
+    "fps": 7.772591224802187,
+    "boxes": 15,
+    "navigation": "UNREADABLE",
+    "main_timing": {
+      "preprocess_ms": 3.906803,
+      "rknn_call_ms": 83.38713073730469,
+      "decode_nms_ms": 8.507177352905273,
+      "seg_ms": 14.065654909790041,
+      "total_ms": 109.866766,
+      "output_count": 15,
+      "detection_count": 15,
+      "preprocess_backend": "opencv",
+      "overlay_ms": 0.0,
+      "overlay_encode_ms": 13.76903799973661
+    }
+  },
+  {
+    "mode": "MOSAIC_FULL",
+    "epoch": "2513694186911",
+    "results": 58,
+    "fps": 10.038070820616273,
+    "boxes": 15,
+    "navigation": "VALID",
+    "main_timing": {
+      "preprocess_ms": 7.322157,
+      "rknn_call_ms": 17.861629486083984,
+      "decode_nms_ms": 0.6769459843635559,
+      "total_ms": 28.342769,
+      "output_count": 9,
+      "detection_count": 15,
+      "preprocess_backend": "opencv",
+      "scale_count": 3,
+      "backend": "FAST-MOSAIC"
+    }
+  },
+  {
+    "mode": "ROAD_Q1",
+    "epoch": "2513694186912",
+    "results": 45,
+    "fps": 7.659521661535302,
+    "boxes": 15,
+    "navigation": "STALE",
+    "main_timing": {
+      "preprocess_ms": 10.645054,
+      "rknn_call_ms": 80.24098205566406,
+      "decode_nms_ms": 6.882331848144531,
+      "seg_ms": 11.415328096191402,
+      "total_ms": 109.183696,
+      "output_count": 15,
+      "detection_count": 15,
+      "preprocess_backend": "opencv",
+      "overlay_ms": 0.0,
+      "overlay_encode_ms": 23.36906899972746
+    }
+  },
+  {
+    "mode": "MOSAIC_FULL",
+    "epoch": "2513694186913",
+    "results": 59,
+    "fps": 10.104171684364209,
+    "boxes": 17,
+    "navigation": "UNREADABLE",
+    "main_timing": {
+      "preprocess_ms": 9.655447,
+      "rknn_call_ms": 17.340139389038086,
+      "decode_nms_ms": 0.774944007396698,
+      "total_ms": 31.597125,
+      "output_count": 9,
+      "detection_count": 17,
+      "preprocess_backend": "opencv",
+      "scale_count": 3,
+      "backend": "FAST-MOSAIC"
+    }
+  },
+  {
+    "mode": "ROAD_Q1",
+    "epoch": "2513694186914",
+    "results": 44,
+    "fps": 7.576169542656798,
+    "boxes": 15,
+    "navigation": "UNREADABLE",
+    "main_timing": {
+      "preprocess_ms": 5.018032,
+      "rknn_call_ms": 83.91678619384766,
+      "decode_nms_ms": 7.023495197296143,
+      "seg_ms": 12.5618526088562,
+      "total_ms": 108.520166,
+      "output_count": 15,
+      "detection_count": 15,
+      "preprocess_backend": "opencv",
+      "overlay_ms": 0.0,
+      "overlay_encode_ms": 13.829410999733227
+    }
+  }
+]

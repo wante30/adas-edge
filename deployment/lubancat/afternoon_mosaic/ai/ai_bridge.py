@@ -1117,16 +1117,21 @@ class AiReplayBridge:
             message = self.model_switch_message
             pending = self.pending_model_switch
             requested_id = pending["profile_id"] if pending else ""
+        mosaic_active = self.modes.mode == "MOSAIC_FULL"
         active = self.model_profiles.get(active_id)
         status = {
-            "active_id": active_id,
-            "active_label": active.label if active else "自定义模型",
+            "active_id": "FAST-MOSAIC" if mosaic_active else active_id,
+            "active_label": "FAST-MOSAIC" if mosaic_active else (active.label if active else "自定义模型"),
             "requested_id": requested_id,
             "state": state,
             "message": message,
         }
         if include_options:
             status["options"] = [profile.wire() for profile in self.model_profiles.values()]
+            from fast_mosaic_backend import available
+            status["options"].append({"id": "FAST-MOSAIC", "label": "FAST-MOSAIC · BDD 整图",
+                "available": available(), "legacy": False, "has_specialist": False,
+                "reason": "" if available() else "BDD model / independent generic library missing"})
         return status
 
     def _send_model_switch_reply(self, request_id, peer, state, requested_id, message):

@@ -2127,7 +2127,10 @@ Item {
                                      && video.aiModelState !== "SWITCHING"
                                      && video.aiModelState !== "SENDING"
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onClicked: video.requestModelSwitch(option.id)
+                            onClicked: {
+                                root.viewMode = option.id === "FAST-MOSAIC" ? 1 : 0
+                                if (option.id !== "FAST-MOSAIC") video.requestModelSwitch(option.id)
+                            }
                         }
                     }
                 }

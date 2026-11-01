@@ -88,7 +88,10 @@ def start(args):
     hmi_args[hmi_args.index("--ai-hz") + 1] = str(args.ai_hz)
     hmi_args[hmi_args.index("--ai-frame-file") + 1] = str(ROOT / "evidence/test_frame.mfr1")
     hmi_args += ["--metrics-jsonl", str(EVIDENCE / f"{args.label}_hmi.jsonl")]
-    state["test_hmi_pid"] = launch(hmi_args, ROOT / args.build, state["baseline_hmi"]["env"], f"{args.label}_hmi.log")
+    hmi_env = dict(state["baseline_hmi"]["env"])
+    if args.external_qml:
+        hmi_env["QT_QML_FILE"] = str(ROOT / "hmi/main.qml")
+    state["test_hmi_pid"] = launch(hmi_args, ROOT / args.build, hmi_env, f"{args.label}_hmi.log")
     state["label"] = args.label
     save(state)
     print(json.dumps(state, indent=2), flush=True)
@@ -112,6 +115,7 @@ if __name__ == "__main__":
     parser.add_argument("--build", default="build-baseline")
     parser.add_argument("--label", default="stage1_after_reboot")
     parser.add_argument("--ai-hz", default="10")
+    parser.add_argument("--external-qml", action="store_true")
     parser.add_argument("--action-port", default="38362")
     args = parser.parse_args()
     EVIDENCE.mkdir(exist_ok=True)

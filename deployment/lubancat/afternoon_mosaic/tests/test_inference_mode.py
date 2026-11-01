@@ -27,7 +27,7 @@ class ModeTests(unittest.TestCase):
         def reset(): self.resets += 1
         self.bridge = types.SimpleNamespace(result_socket=Socket(),
             pipeline=types.SimpleNamespace(main_detector=self.detector, specialist_detector=None, reset=reset))
-        self.control = m.ModeControl(self.bridge)
+        self.control = m.ModeControl(self.bridge, mosaic_factory=lambda road: road)
     def command(self, epoch, mode):
         self.control.receive(m.COMMAND.pack(b"MVI1", epoch, mode), ("127.0.0.1",1234))
     def test_idempotence_and_older_epoch(self):
@@ -51,6 +51,11 @@ class ModeTests(unittest.TestCase):
         self.assertFalse(self.control.frame_request(request(9)))
         self.command(11,1)
         self.assertFalse(self.control.frame_request(request(10)))
+    def test_control_packets_pass_through_after_handshake(self):
+        self.command(10,0); self.control.apply()
+        for packet in (b"MVM1model", b"MVS1\x00\x01"):
+            self.assertEqual(self.control.frame_request(packet), packet)
+        self.assertEqual(self.control.frame_request(b"MVR2oldframe"), b"")
     def test_full_frame_once_and_only_q1_enters_road_logic(self):
         adapter=m.MosaicRoadAdapter(self.detector)
         full=object(); adapter.full_frame=full

@@ -14,7 +14,8 @@ REQUEST = struct.Struct("<4sQQQff")
 
 class MosaicRoadAdapter:
     """One full-frame inference, with only unambiguous Q1 objects sent to safety."""
-    def __init__(self, detector):
+    def __init__(self, detector, owns_detector=False):
+        self.owns_detector = owns_detector
         self.full_detector = detector
         self.detector = self
         self.all_detections = []
@@ -35,12 +36,15 @@ class MosaicRoadAdapter:
         return q1, elapsed
 
     def close(self):
-        pass  # The road model is owned by the original pipeline.
+        if self.owns_detector:
+            self.full_detector.close()
+            self.owns_detector = False
 
 
 class ModeControl:
-    def __init__(self, bridge):
+    def __init__(self, bridge, mosaic_factory=None):
         self.bridge = bridge
+        self.mosaic_factory = mosaic_factory
         self.lock = threading.Lock()
         self.mode = ROAD
         self.epoch = 0
@@ -97,8 +101,10 @@ class ModeControl:
         return True
 
     def frame_request(self, packet):
+        if packet[:4] not in (b"MVR1", b"MVR2", b"MVR3"):
+            return packet  # Model/selection control must survive epoch synchronization.
         if packet[:4] != b"MVR3":
-            # Compatibility packets are accepted before the first handshake only.
+            # Legacy frame packets are accepted before the first handshake only.
             with self.lock:
                 return packet if self.epoch == 0 and self.pending is None else b""
         if len(packet) != REQUEST.size:
@@ -121,7 +127,12 @@ class ModeControl:
                 if mode == MOSAIC:
                     self.road_main = self.bridge.pipeline.main_detector
                     self.road_specialist = self.bridge.pipeline.specialist_detector
-                    self.adapter = MosaicRoadAdapter(self.road_main)
+                    if self.mosaic_factory is None:
+                        from fast_mosaic_backend import FastMosaicDetector
+                        full_detector = FastMosaicDetector()
+                    else:
+                        full_detector = self.mosaic_factory(self.road_main)
+                    self.adapter = MosaicRoadAdapter(full_detector, self.mosaic_factory is None)
                     self.bridge.pipeline.main_detector = self.adapter
                     self.bridge.pipeline.specialist_detector = None
                 else:
