@@ -21,6 +21,19 @@ MODEL_FILES = {
     "p2": "b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn",
     "specialist": "b05l_v8n_p2_raw_heads_int8_500_20261026.rknn",
 }
+REPLAY_ROAD_QUADRANT = 3
+
+
+def _replay_quadrant_args() -> list[str]:
+    return ["--road-quadrant", str(REPLAY_ROAD_QUADRANT)]
+
+
+def _replay_source_description(data_root: Path) -> str:
+    return (
+        "Local image replay from data_root/images through the board's actual "
+        "AI bridge request, scheduler, detector adapter, result mapping and "
+        "UDP publication path; PCIe capture and Qt display excluded."
+    )
 
 
 def _nchw(value: np.ndarray, channels: int, label: str) -> np.ndarray:
@@ -180,7 +193,9 @@ def _make_replay_frames(data_root: Path, replay_dir: Path, count: int) -> list[P
             raise ValueError(f"cannot read {image_paths[int(image_index)]}")
         road = cv2.resize(image, (640, 360), interpolation=cv2.INTER_AREA)
         frame = np.zeros((720, 1280, 3), dtype=np.uint8)
-        frame[:360, 640:1280] = road
+        row, column = divmod(REPLAY_ROAD_QUADRANT, 2)
+        frame[row * 360:(row + 1) * 360,
+              column * 640:(column + 1) * 640] = road
         packed = cv2.cvtColor(frame, cv2.COLOR_BGR2BGR565)
         output = replay_dir / f"frame_{output_index:03d}.rgb565"
         output.write_bytes(packed.tobytes())
@@ -331,7 +346,7 @@ def run_benchmark(args) -> dict:
     timing_log = args.output_dir / "bridge_timing.jsonl"
     argv = [
         "--source", "SYNTHETIC", "--layout", "quad", "--display-view", "front",
-        "--road-quadrant", "1", "--navigation-quadrant", "1",
+        *_replay_quadrant_args(), "--navigation-quadrant", "1",
         "--main-model", str(main_model),
         "--main-hz", str(args.request_hz), "--hazard-hz", "5", "--specialist-hz", "1",
         "--request-port", str(request_port), "--result-port", str(result_port),
@@ -379,14 +394,19 @@ def run_benchmark(args) -> dict:
     report = {
         "schema": "b05p-competition-bridge-runtime-v1",
         "scheme": args.scheme,
-        "source": "Cityscapes replay through the board's actual AiReplayBridge request, scheduler, detector adapter, result mapping and UDP publication path; PCIe capture and Qt display excluded.",
+        "source": _replay_source_description(args.data_root),
         "models": {
             "main": {"path": str(main_model), "sha256": _sha256(main_model)},
             "specialist": ({"path": str(specialist_model), "sha256": _sha256(specialist_model)}
                             if args.scheme in {"C", "D"} else None),
         },
         "input": {
-            "frame_format": "1280x720 BGR565 packed replay, road image in quadrant 1",
+            "data_root": str(args.data_root.resolve()),
+            "frame_format": (
+                "1280x720 BGR565 packed replay, road image in quadrant "
+                f"{REPLAY_ROAD_QUADRANT}"
+            ),
+            "road_quadrant": REPLAY_ROAD_QUADRANT,
             "road_crop": "640x360",
             "requests_hz": args.request_hz,
             "warmup_requests": args.warmup,

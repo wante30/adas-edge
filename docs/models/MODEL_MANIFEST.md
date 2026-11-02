@@ -7,19 +7,19 @@
 
 ---
 
-## 1. 当前默认模型（板端运行 A）
+## 1. 比赛选型模型 B（生产 service 尚未切换）
 
 | 项目 | 值 |
 |---|---|
-| 方案 | A · BDD-YOLOv8n Raw-head INT8 单模型 |
-| 文件 | `bdd_yolov8n_512x288_raw_heads_int8.rknn` |
-| 板端路径 | `/home/cat/cityscapes_arch_compare_20261027/models/bdd_yolov8n_512x288_raw_heads_int8.rknn` |
-| 大小 | 4,236,613 B |
-| SHA256 | `a86ab05338b49be54f95aa4d0cb937f1471924d917840d0f907480e29e041afb` |
+| 方案 | B · B05N P2 十类 Raw-head INT8 单模型 |
+| 文件 | `b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn` |
+| 板端路径 | `/home/cat/cityscapes_arch_compare_20261027/models/b05n_p2_multiclass_raw_heads_int8_500_20261026.rknn` |
+| 大小 | 4,393,465 B |
+| SHA256 | `65089ef0697bd7378071290baa218905cdcaed768452678da440b8eb116b2a5f` |
 | 输入 | `[1,288,512,3]` uint8 NHWC |
 | 类别 | 10（person/rider/car/truck/bus/train/motor/bike/traffic light/traffic sign） |
-| 状态 | **已加载并运行**；2026-10-28 实板 10 Hz |
-| 来源 | `bdd100k-yolov8n-best.pt` → raw-head ONNX → RKNN INT8 |
+| 状态 | 板端已有该正式 RKNN 文件；本分支正在做独立真实 PCIe 验证；生产 service 仍为 A |
+| 来源 | B05N P2 checkpoint → raw-head ONNX → RKNN INT8 |
 
 ---
 

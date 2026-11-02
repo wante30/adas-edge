@@ -35,11 +35,13 @@ class HazardObservation:
 
     @property
     def pedestrian_hazard(self):
-        return any(e['kind'] == 'PEDESTRIAN_CROSSING_PATH' for e in self.events)
+        return any(e['kind'] in ('PEDESTRIAN_IN_PATH', 'PEDESTRIAN_CROSSING_PATH')
+                   for e in self.events)
 
     @property
     def obstacle_hazard(self):
-        return any(e['kind'] == 'LEAD_RAPID_CLOSING' for e in self.events)
+        return any(e['kind'] in ('FRONT_COLLISION_RISK', 'LEAD_RAPID_CLOSING')
+                   for e in self.events)
 
 
 def trend(history, index, *, corrected=False):
@@ -141,12 +143,22 @@ class HazardEvents:
             if history:
                 x, foot, size = history[-1][1:4]
                 info['in_assumed_path'] = self.inside(x, foot)
-            if (trusted and track.name == 'person' and info['in_assumed_path']
-                    and track.box[3] / height > .60):
-                # Image-space path presence is a real detection-backed
-                # reminder, not a collision/TTC estimate.
+            previous_in_path = (len(history) >= 2
+                                and self.inside(history[-2][1], history[-2][2]))
+            entered_path = (trusted and len(history) >= 2 and track.name == 'person'
+                            and info['in_assumed_path'] and not previous_in_path
+                            and track.box[3] / height > .60
+                            and abs(motion.dx) < .04 and abs(motion.dy) < .04
+                            and abs(motion.rotation_dps) < 3.)
+            if entered_path:
+                # A transition from outside to inside is actionable image-space
+                # evidence. A person first seen standing in the assumed path is
+                # intentionally not treated as an event until motion/entry is
+                # observed; this avoids a permanent roadside false alarm.
                 events.append({'kind': 'PEDESTRIAN_IN_PATH', 'track_id': track.track_id,
-                               'bbox': track.box, 'source': 'IMAGE_SPACE_PATH_PRESENCE'})
+                               'bbox': track.box, 'target_class': track.name,
+                               'severity': 'warning',
+                               'source': 'IMAGE_SPACE_PATH_ENTRY'})
             if trusted and len(history) >= 6:
                 lateral, lateral_fit = trend(history, 1, corrected=True)
                 expansion, expansion_fit = trend(history, 3)
@@ -163,7 +175,7 @@ class HazardEvents:
                 if (track is lead and foot > .57 and size > .035 and tau is not None
                         and tau < 2.5 and expansion_fit > .85 and growth > 1.25
                         and residual_expansion > .2 and abs(lateral) < .04):
-                    kind = 'LEAD_RAPID_CLOSING'
+                    kind = 'FRONT_COLLISION_RISK'
                 if (track.name == 'person' and info['in_assumed_path'] and foot > .6
                         and abs(lateral) > .025 and lateral_fit > .7):
                     kind = 'PEDESTRIAN_CROSSING_PATH'
@@ -172,9 +184,30 @@ class HazardEvents:
                     count = self.confirmations.get(key, 0)+1
                     active_confirmations[key] = count
                     if count >= 2:
+                        severity = 'critical' if kind == 'FRONT_COLLISION_RISK' else 'warning'
                         events.append({'kind': kind, 'track_id': track.track_id, 'bbox': track.box,
+                                       'target_class': track.name, 'severity': severity,
                                        'source': 'IMAGE_TRAJECTORY_EXPERIMENTAL',
-                                       'visual_tau_s': tau if kind == 'LEAD_RAPID_CLOSING' else None})
+                                       'visual_tau_s': tau if kind == 'FRONT_COLLISION_RISK' else None})
+                if (track.name in VEHICLES and foot > .57
+                        and abs(lateral) > .03 and lateral_fit > .65):
+                    previous_x = history[0][1]
+                    current_x = history[-1][1]
+                    toward_path = abs(current_x - .5) < abs(previous_x - .5)
+                    entered_path = info['in_assumed_path'] and not previous_in_path
+                    if abs(current_x - previous_x) > .04 and (toward_path or entered_path):
+                        key = (track.track_id, 'VEHICLE_CUT_IN_CANDIDATE')
+                        count = self.confirmations.get(key, 0) + 1
+                        active_confirmations[key] = count
+                        if count >= 2:
+                            events.append({
+                                'kind': 'VEHICLE_CUT_IN_CANDIDATE',
+                                'track_id': track.track_id, 'bbox': track.box,
+                                'target_class': track.name, 'severity': 'warning',
+                                'lane_crossing': 'UNVERIFIED',
+                                'source': 'IMAGE_LATERAL_TRAJECTORY_ONLY',
+                                'lateral_frame_widths_per_s': lateral,
+                            })
             # Continue a neutral lamp observation briefly when the previously
             # selected vehicle moves out of the assumed path. This grants no
             # collision/brake permission to an off-path vehicle.
@@ -192,9 +225,12 @@ class HazardEvents:
                     if count >= 2:
                         events.append({'kind': 'LEAD_BRAKE_LAMP_RISE', 'track_id': track.track_id,
                                        'bbox': track.box, 'source': 'UNCONFIRMED_PAIRED_RED_LAMP_APPEARANCE_CHANGE'})
-                    if any(e['kind'] == 'LEAD_RAPID_CLOSING' and e['track_id'] == track.track_id for e in events):
+                    if any(e['kind'] in ('FRONT_COLLISION_RISK', 'LEAD_RAPID_CLOSING')
+                           and e['track_id'] == track.track_id for e in events):
                         events.append({'kind': 'SUSPECTED_BRAKING_WITH_CLOSING', 'track_id': track.track_id,
-                                       'bbox': track.box, 'source': 'PAIRED_RED_LAMP_RISE_PLUS_IMAGE_EXPANSION'})
+                                       'bbox': track.box, 'target_class': track.name,
+                                       'severity': 'critical',
+                                       'source': 'PAIRED_RED_LAMP_RISE_PLUS_IMAGE_EXPANSION'})
             evidence.append(info)
         self.confirmations = active_confirmations
         self.observation = HazardObservation(timestamp_ns, tuple(events), tuple(evidence), self.path, motion,

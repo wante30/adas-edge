@@ -19,7 +19,7 @@ Qt 5.12.8 + Qt Quick 的 1280×720 ADAS HMI 验证程序。它直接消费 PCIe 
   - Q2 右上：导航/地图 HDMI；
   - Q3 左下：车内摄像头；
   - Q4 右下：路口/后视道路。
-- **默认主视改为 Q2（右上）**；底部四张卡任意点击即可切换主视，四路模式显示完整 2×2。
+- **默认主视改为 Q1（左上，前视道路）**；Q2 是导航/地图，不能作为道路 AI 输入。底部四张卡任意点击即可切换主视，四路模式显示完整 2×2。
 - 导航识别源可独立选择：导航卡底部 `Q1/Q2/Q3/Q4` 四个芯片，不要求与主视相同。
 - 主视和导航的选择通过 `MVS1` 控制包实时发给 AI sidecar，不需要重启 RKNN；Qt 立刻切换显示裁剪和检测框。
 - 联调中曾观察到 Q1 前视源冻结（原始像素差 0.0，而 Q2/Q3/Q4 正常）；板卡重启/恢复采集后 Q1 已恢复为实时。若再次出现，先检查前视相机/HDMI/FPGA 通道，不要先怀疑 Qt。
@@ -81,7 +81,7 @@ DISPLAY=:0 XAUTHORITY=/home/cat/.Xauthority \
 QT_QPA_PLATFORM=xcb QT_XCB_GL_INTEGRATION=xcb_egl QSG_INFO=1 \
   ./qt_gpu_probe --fps 60 --duration 30 --start-mode 0 \
   --pgv-file /dev/shm/pango-video/latest.pgv --source-label pgv-live \
-  --pgv-layout quad --road-quadrant 1 \
+  --pgv-layout quad --road-quadrant 0 \
   --ai-frame-file /dev/shm/qt_gpu_probe_ai.mfr1 --ai-hz 5 \
   --output-json results/qt_real_pcie.json
 ```
@@ -97,7 +97,7 @@ RUN=/home/cat/qt_gpu_probe_ai_20261019
 ADAS_EDGE_ROOT=/home/cat/competition_cockpit_port_20261018 \
 /usr/bin/python3 "$RUN/ai_bridge.py" \
   --live-frame-file /dev/shm/qt_gpu_probe_ai.mfr1 --source PGV_LIVE \
-  --layout quad --display-view front --road-quadrant 1 \
+  --layout quad --display-view front --road-quadrant 0 \
   --navigation-quadrant 1 \
   --main-model /home/cat/adas-edge-rect/rect_models/yolo11n_rk3566_int8_split_512x288.rknn \
   --specialist-model /home/cat/adas-edge-rect/tl_check/tl_specialist_512x192_hybrid2.rknn \
@@ -109,11 +109,42 @@ ADAS_EDGE_ROOT=/home/cat/competition_cockpit_port_20261018 \
 
 等日志出现 `READY` 后再启动 Qt。AI 结果通过 `MVA2` 返回；无结果超过 1.5 秒时 UI 自动清空检测框、交通灯、危险和导航状态并显示未连接。
 
+### PCIe / 本地回放切换
+
+运行中的 Qt 可以直接切换 PCIe 和本地回放：
+
+- 点击顶部“输入源”卡片右侧的 **切换** 按钮；
+- 或按键盘 **O**；
+- 目标模式显示在卡片第二行：`PCIe LIVE` / `LOCAL REPLAY`；
+- 切换失败时卡片底部显示“本地回放未准备”或“PCIe 未准备”。
+
+本地回放需要先启动 PGVF publisher（官方本地片段）：
+
+```sh
+cd /home/cat/qt_gpu_probe_ai_20261019
+nohup ./tools/run_local_replay.sh \
+  /home/cat/qt_gpu_probe_ai_20261019/local_quad.rgb \
+  /dev/shm/pgv_local/latest.pgv \
+  > /tmp/pgv_local.log 2>&1 &
+```
+
+或直接：
+
+```sh
+python3 tools/pgv_local_publisher.py \
+  --raw /home/cat/qt_gpu_probe_ai_20261019/local_quad.rgb \
+  --output /dev/shm/pgv_local/latest.pgv \
+  --fps 30 --source-fps 30
+```
+
+> 没有 `/dev/shm/pgv_local/latest.pgv` 时，切换按钮会保持 PCIe 模式并显示未准备，不会把黑屏冒充成本地视频。
+> 切换逻辑在 `source_controller.cpp`；之前运行时按钮未接线，本次已补回。
+
 ### 自由选择主视 / 导航源
 
 - **主视**：点击底部四张卡任意一张；被选卡显示 `MAIN`，主画面立即切到该象限，并给 sidecar 发 `MVS1` 更新检测裁剪。
 - **导航源**：点击右侧导航卡底部的 `Q1/Q2/Q3/Q4`；选中芯片变琥珀色，并给 sidecar 发 `MVS1` 更新 OCR 裁剪。
-- 默认 `主视=Q2`、`导航源=Q2`；主视和导航源可以不同。
+- 默认 `主视=Q1`、`导航源=Q2`；主视和导航源可以不同。
 - 四路页签仍显示完整 2×2；空间页签显示 Tesla-BevCam-Clone 视觉层。
 - **右下角 ADAS 卡改为实时 BEV 投影**：用当前主视的 `aiBoxes` 画目标，主视切换后立即跟随，不再是一张静态 clone 卡。
 - `MVS1` 包格式：`"MVS1" + uint8 road + uint8 navigation`，发到 UDP `38260`。
@@ -151,7 +182,7 @@ cat results/hud_bridge.log
 | `--pgv-file PATH` | 开启真实 PGVF 输入（空则使用 replay / 生成源） |
 | `--source-label pgv-live\|pgv-fixture\|replay` | UI 来源标签；夹具必须标 `pgv-fixture` |
 | `--pgv-layout front\|quad` | 原始帧布局；本次真实源为 `quad` |
-| `--road-quadrant 0..3` | Q1=0、Q2=1、Q3=2、Q4=3；默认 Q2=1，可在 UI 自由切换 |
+| `--road-quadrant 0..3` | Q1=0、Q2=1、Q3=2、Q4=3；默认 Q1=0（前视道路），可在 UI 自由切换 |
 | `--start-mode 0\|1\|2` | 单路/四路/空间视图 |
 | `--capture-cycle` | 仅测试用，每 5 秒自动切换模式，便于一次抓三张图 |
 | `--ai-frame-file PATH` | `MFR1` 快照路径；必须与 sidecar 一致 |
@@ -194,7 +225,7 @@ cat results/hud_bridge.log
 
 ![Tesla-BevCam-Clone 空间视图](results/qt_ui_tesla_spatial.png)
 
-- 默认截图主视是 Q2（右上），底部 Q2 卡标 `MAIN`，导航源芯片也选中 Q2；点击 Q1 后主视立刻换成前视，AI 检测框重新对齐 Q1（截图中有 6 个真实框，含 person）。
+- 历史截图默认主视是 Q2（右上），当时 Q2 被配置为道路；当前布局 Q1=前视、Q2=导航，默认已改为 Q1。点击底部卡片可切换主视，AI 检测框跟随道路象限。
 - 右下角“ADAS 空间识别”卡使用当前主视的 AI boxes 做实时 BEV 投影，选中 Q1 时能看到对应目标；不再使用一张静态图片。
 - 底部卡状态：`MAIN` 是主识别源，`NAV` 是导航 OCR 源，`SNAP` 是其它快照。
 - 交通灯仍可能 `UNKNOWN`；导航 OCR 仍可能 `UNREADABLE`；没有数据时显示“未识别/设计预览”，不编造。

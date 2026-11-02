@@ -11,6 +11,7 @@ import multiprocessing
 import os
 import queue
 import signal
+import traceback
 from pathlib import Path
 import socket
 import struct
@@ -166,16 +167,34 @@ def build_dynamic_status(*, source, frame_id, timestamp_ns, now_ns, hud, navigat
                 continue
             kind = item["kind"]
             hazard_kinds.append(kind)
-            hazard_details.append({
+            severity = item.get("severity", "warning")
+            if severity not in ("info", "warning", "critical"):
+                severity = "warning"
+            detail = {
                 "event_type": kind,
                 "source_id": source,
                 "source_frame_id": int(frame_id),
                 "timestamp": int(hazard_timestamp_ns),
-                "severity": "warning",
+                "severity": severity,
                 "valid": True,
                 "ttl_ms": DYNAMIC_RESULT_TTL_MS,
                 "evidence": item.get("source") or "IMAGE_PERCEPTION",
-            })
+            }
+            track_id = item.get("track_id")
+            if isinstance(track_id, int) and not isinstance(track_id, bool) and track_id > 0:
+                detail["track_id"] = track_id
+            bbox = item.get("bbox")
+            if isinstance(bbox, (list, tuple)) and len(bbox) == 4:
+                try:
+                    values = [float(value) for value in bbox]
+                except (TypeError, ValueError):
+                    values = None
+                if values is not None and all(math.isfinite(value) for value in values):
+                    detail["bbox"] = values
+            target_class = item.get("target_class") or item.get("class_name")
+            if isinstance(target_class, str) and target_class:
+                detail["target_class"] = target_class
+            hazard_details.append(detail)
     if (not source_stopped and source_available and traffic == "RED"
             and signal_age_ms is not None and signal_age_ms < 2500):
         hazard_kinds.append("RED_SIGNAL_CONFIRMED")
@@ -246,6 +265,18 @@ def initial_dynamic_status(source, now_ns):
     )
     status["runtime_status"] = "WAITING_FOR_SOURCE"
     return status
+
+
+def timing_detection_counts(status):
+    counts = status.get("detections") if isinstance(status, dict) else None
+    if not isinstance(counts, dict):
+        return {}
+    return {
+        str(name): int(count)
+        for name, count in counts.items()
+        if isinstance(name, str) and name and isinstance(count, int)
+        and not isinstance(count, bool) and count >= 0
+    }
 
 
 def should_refresh_stopped_status(now_ns, last_activity_ns, last_refresh_ns,
@@ -374,6 +405,9 @@ def render_dynamic_hmi_rgba(status, font_path=None):
     hazards = status.get("hazards") or []
     hazard_names = {
         "PEDESTRIAN_CROSSING_PATH": "行人进入预测路径",
+        "PEDESTRIAN_IN_PATH": "行人进入前方路径",
+        "FRONT_COLLISION_RISK": "前方碰撞风险",
+        "VEHICLE_CUT_IN_CANDIDATE": "车辆切入候选",
         "LEAD_RAPID_CLOSING": "前车快速接近",
         "LEAD_BRAKE_LAMP_RISE": "前车制动灯变化",
         "SUSPECTED_BRAKING_WITH_CLOSING": "制动灯变化且快速接近",
@@ -861,7 +895,7 @@ class AiReplayBridge:
             raise
         self.pipeline = FrontPipeline(
             main, specialist, main_hz=args.main_hz,
-            specialist_hz=args.specialist_hz, hazards=True,
+            specialist_hz=args.specialist_hz, hazards=args.hazards,
             hazards_async=True,
             hazard_hz=(args.hazard_hz if args.hazard_hz > 0 else args.main_hz),
             # Qt already rate-limits live requests to --ai-hz. Running the
@@ -919,16 +953,45 @@ class AiReplayBridge:
         self.last_error = None
         self.process_start_ns = time.monotonic_ns()
         self.analysis_start_ns = None
+        self.debug_enabled = os.environ.get("ADAS_AI_DEBUG", "0") == "1"
+        self.debug_log_path = os.environ.get("ADAS_AI_DEBUG_LOG", "")
+        self.debug_stream = (
+            open(self.debug_log_path, "a", buffering=1)
+            if self.debug_log_path else None
+        )
+
+    def _debug(self, message):
+        if not self.debug_enabled:
+            return
+        line = f"DEBUG {time.monotonic_ns()} {message}"
+        print(line, flush=True)
+        if self.debug_stream is not None:
+            self.debug_stream.write(line + "\n")
 
     def start(self):
         status = initial_dynamic_status(self.args.source, time.monotonic_ns())
         status["model_selection"] = self._model_selection_status()
+        status["layout"] = self.args.layout
+        status["display_view"] = self.args.display_view
+        status["road_quadrant"] = int(self.args.road_quadrant)
         self._write_dynamic_hmi(status)
         self.listener.start()
         self.worker.start()
+        self._debug(
+            f"START listener_alive={self.listener.is_alive()} "
+            f"worker_alive={self.worker.is_alive()} hazards={self.args.hazards}"
+        )
         _deprioritize_sidecar_process()
 
     def _listen(self):
+        try:
+            self._listen_loop()
+        except BaseException as exc:
+            # A listener failure otherwise leaves the sidecar looking READY
+            # while silently dropping every MVR2 request.
+            print(f"REQUEST_LISTENER_ERROR {type(exc).__name__}: {exc}", flush=True)
+
+    def _listen_loop(self):
         while self.running.is_set():
             try:
                 packet, peer = self.request_socket.recvfrom(128)
@@ -1000,8 +1063,15 @@ class AiReplayBridge:
             if self.first_request_ns is None:
                 self.first_request_ns = now
             self.last_request_ns = now
-            if self.latest.publish(request):
+            replaced = self.latest.publish(request)
+            if replaced:
                 self.replaced_count += 1
+            if self.debug_enabled and (self.request_count <= 3 or self.request_count % 25 == 0):
+                self._debug(
+                    f"REQUEST count={self.request_count} frame={requested_id} "
+                    f"source_reads={self.source_frame_reads} replaced={replaced} "
+                    f"worker_alive={self.worker.is_alive()}"
+                )
 
     def _profile_id_for_paths(self, main_model, specialist_model):
         main_path = Path(main_model).resolve()
@@ -1350,6 +1420,9 @@ class AiReplayBridge:
             ai_fps=ai_fps,
         )
         status["model_selection"] = self._model_selection_status()
+        status["layout"] = self.args.layout
+        status["display_view"] = self.args.display_view
+        status["road_quadrant"] = int(self.args.road_quadrant)
         self.stage_timings["status_build"].append(
             (time.perf_counter_ns() - status_started) / 1e6
         )
@@ -1381,6 +1454,10 @@ class AiReplayBridge:
             if request is None:
                 self._apply_pending_model_switch()
                 continue
+            if self.debug_enabled and (self.result_count < 3 or self.result_count % 25 == 0):
+                self._debug(
+                    f"WORKER_TAKE frame={request[0]} result_count={self.result_count}"
+                )
             self._apply_pending_model_switch()
             if len(request) == 6:
                 frame_id, timestamp_ns, full_frame, input_fps, submitted_fps, ai_recv_ns = request
@@ -1402,6 +1479,11 @@ class AiReplayBridge:
                     frame_id, timestamp_ns, full_frame, input_fps, submitted_fps,
                     ai_fps, schedule_timestamp_ns=ai_recv_ns,
                 )
+                if self.debug_enabled and (self.result_count < 3 or self.result_count % 25 == 0):
+                    self._debug(
+                        f"ANALYZE_DONE frame={frame_id} bytes={len(packet)} "
+                        f"main_samples={len(self.pipeline.main_timings)}"
+                    )
                 if not priority_reapplied:
                     # RKNN may reset the Python leader to -19 during the first
                     # detect call. Lower only that leader; native NPU workers
@@ -1447,6 +1529,7 @@ class AiReplayBridge:
                         "boxes": int(struct.unpack_from("<I", packet, 20)[0]),
                         "traffic": self.latest_dynamic_status.get("traffic"),
                         "traffic_reason": self.latest_dynamic_status.get("traffic_reason"),
+                        "detection_counts": timing_detection_counts(self.latest_dynamic_status),
                         "specialist_age_ms": self.latest_dynamic_status.get("specialist_age_ms"),
                         "navigation_state": (self.latest_dynamic_status.get("navigation") or {}).get("state"),
                         "navigation_ocr_age_ms": (self.latest_dynamic_status.get("navigation") or {}).get("ocr_age_ms"),
@@ -1458,6 +1541,10 @@ class AiReplayBridge:
             except BaseException as exc:
                 self.error_count += 1
                 self.last_error = f"{type(exc).__name__}: {exc}"
+                self._debug(
+                    f"INFER_ERROR frame={request[0]} {self.last_error}\n"
+                    f"{traceback.format_exc()}"
+                )
             finally:
                 self.worker_cpu_ns += time.thread_time_ns() - cpu_started
 
@@ -1510,6 +1597,9 @@ class AiReplayBridge:
         if self.timing_stream is not None:
             self.timing_stream.close()
             self.timing_stream = None
+        if self.debug_stream is not None:
+            self.debug_stream.close()
+            self.debug_stream = None
         self.telemetry.stop()
         self.pipeline.main_detector.close()
         if self.pipeline.specialist_detector is not None:
@@ -1664,7 +1754,7 @@ def parser():
     result.add_argument("--legacy-model-root", default="")
     result.add_argument("--request-port", type=int, default=38260)
     result.add_argument("--result-port", type=int, default=38261)
-    result.add_argument("--road-quadrant", type=int, choices=range(4), default=3)
+    result.add_argument("--road-quadrant", type=int, choices=range(4), default=0)
     result.add_argument("--navigation-quadrant", type=int, choices=range(4), default=1)
     result.add_argument("--main-hz", type=float, default=10.0)
     result.add_argument(
@@ -1672,6 +1762,14 @@ def parser():
         help="hazard analysis cadence; 0 follows the YOLO cadence",
     )
     result.add_argument("--specialist-hz", type=float, default=3.0)
+    result.add_argument(
+        "--hazards", dest="hazards", action="store_true", default=True,
+        help="enable hazard event analysis (default)",
+    )
+    result.add_argument(
+        "--no-hazards", dest="hazards", action="store_false",
+        help="disable hazard event analysis while keeping YOLO inference",
+    )
     result.add_argument("--ocr-hz", type=float, default=3.0)
     result.add_argument(
         "--navigation-ocr", dest="navigation_ocr", action="store_true", default=False,

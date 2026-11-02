@@ -186,3 +186,26 @@ RKNN Raw-head 输出
 - `docs/architecture/PCIE_DATA_FLOW.md`
 - `docs/roadmap/ADAS_EVENT_ENGINE_PLAN.md`
 - `deployment/lubancat/qt_gpu_probe/README.md`
+---
+
+## 10. LVT1 真实数据升级（2026-10-29）
+
+本次在独立分支 `feature/lvt1-ego-bev-20261028` 完成：
+
+- 车道感知卡接入 LVT1 左右最近线型/数量/来源/有效性；
+- 新增本车控制卡（油门/刹车/左右变道请求 + FPGA 允许/拒绝/警告/原因）；
+- Tesla 3D 道路左右边缘按 LVT1 实线/虚线实时变化；
+- 3D 目标复用 Qt 跟踪输出，ID 稳定、900ms 过期、无检测不生成模拟车；
+- 默认道路象限改为 Q1（前视），Q2 仅导航；
+- 修复 chase camera X 镜像，保证左右不互换。
+
+实板离线截图：
+
+| 模式 | 文件 |
+|---|---|
+| 单路 | `docs/hmi/assets/lvt1/single_live_targets_20261029.png` |
+| 四路 | `docs/hmi/assets/lvt1/quad_live_targets_20261029.png` |
+| 空间 | `docs/hmi/assets/lvt1/spatial_live_targets_20261029.png` |
+| 左变道拒绝 | `docs/hmi/assets/lvt1/single_left_change_denied_20261029.png` |
+
+详细：[LVT1_REAL_DATA_HMI.md](LVT1_REAL_DATA_HMI.md)。

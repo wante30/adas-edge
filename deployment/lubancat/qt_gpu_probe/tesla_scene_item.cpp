@@ -38,12 +38,14 @@ struct SourceBox {
     double confidence = 0;
     int missed = 0;
     bool predicted = false;
+    bool hazard = false;
 };
 
 struct LiveCar {
     float x = 0, z = 0;
     QString cls = QStringLiteral("car");
     double seen = 0;
+    bool hazard = false;
 };
 
 struct DemoCar {
@@ -152,23 +154,30 @@ void quad3(std::vector<float> &v, const QVector3D &a, const QVector3D &b,
     tri3(v, a, c, d, r, g, bl);
 }
 
-void carMesh(std::vector<float> &v, float x, float z, const QString &cls, bool ego) {
+void carMesh(std::vector<float> &v, float x, float z, const QString &cls, bool ego, bool hazard = false) {
     const bool truck = cls == QStringLiteral("truck");
     const bool bus = cls == QStringLiteral("bus");
     const bool person = cls == QStringLiteral("person");
-    const float w = person ? .55f : (truck ? 2.25f : (bus ? 2.45f : 1.9f));
-    const float h = person ? 1.65f : (truck ? 2.7f : (bus ? 2.8f : 1.45f));
-    const float d = person ? .5f : (truck ? 7.2f : (bus ? 9.5f : 4.4f));
-    const float r = ego ? .20f : (truck ? .24f : (bus ? .20f : .36f));
-    const float g = ego ? .28f : (truck ? .28f : (bus ? .30f : .41f));
-    const float b = ego ? .38f : (truck ? .31f : (bus ? .35f : .46f));
+    const bool twoWheel = cls == QStringLiteral("bicycle") || cls == QStringLiteral("motorcycle");
+    const float w = person ? .55f : (twoWheel ? .8f : (truck ? 2.25f : (bus ? 2.45f : 1.9f)));
+    const float h = person ? 1.65f : (twoWheel ? 1.35f : (truck ? 2.7f : (bus ? 2.8f : 1.45f)));
+    const float d = person ? .5f : (twoWheel ? 1.7f : (truck ? 7.2f : (bus ? 9.5f : 4.4f)));
+    const float r = ego ? .20f : (hazard ? .82f : (truck ? .24f : (bus ? .20f : .36f)));
+    const float g = ego ? .28f : (hazard ? .16f : (truck ? .28f : (bus ? .30f : .41f)));
+    const float b = ego ? .38f : (hazard ? .18f : (truck ? .31f : (bus ? .35f : .46f)));
 
     // soft ground shadow
     quad(v, x - w * .62f, z - d * .55f, x + w * .62f, z + d * .55f, .012f, .025f, .03f, .035f);
 
     if (person) {
-        box3(v, x, .02f, z, .5f, .9f, .4f, .30f, .38f, .42f);
-        box3(v, x, .92f, z, .34f, .55f, .30f, .38f, .46f, .50f);
+        box3(v, x, .02f, z, .5f, .9f, .4f, hazard ? .85f : .30f, hazard ? .12f : .38f, hazard ? .12f : .42f);
+        box3(v, x, .92f, z, .34f, .55f, .30f, hazard ? .95f : .38f, hazard ? .20f : .46f, hazard ? .18f : .50f);
+        return;
+    }
+    if (twoWheel) {
+        box3(v, x, .02f, z, .34f, .62f, 1.35f, .22f, .28f, .32f);
+        box3(v, x, .58f, z, .46f, .58f, .42f, .38f, .46f, .50f);
+        box3(v, x, 1.10f, z, .32f, .26f, .32f, .52f, .56f, .58f);
         return;
     }
     if (truck) {
@@ -348,6 +357,38 @@ void TeslaSceneItem::setBoxes(const QVariantList &boxes) {
     emit boxesChanged();
     update();
 }
+QVariantMap TeslaSceneItem::laneState() const {
+    QMutexLocker locker(&mutex_);
+    return lane_state_;
+}
+void TeslaSceneItem::setLaneState(const QVariantMap &state) {
+    {
+        QMutexLocker locker(&mutex_);
+        if (lane_state_ == state) return;
+        lane_state_ = state;
+    }
+    emit laneStateChanged();
+    update();
+}
+QString TeslaSceneItem::displayView() const {
+    QMutexLocker locker(&mutex_);
+    return display_view_;
+}
+void TeslaSceneItem::setDisplayView(const QString &view) {
+    {
+        QMutexLocker locker(&mutex_);
+        if (display_view_ == view) return;
+        display_view_ = view;
+    }
+    emit displayViewChanged();
+    update();
+}
+void TeslaSceneItem::setRoadQuadrant(int quadrant) {
+    quadrant = std::clamp(quadrant, 0, 3);
+    if (road_quadrant_.exchange(quadrant) == quadrant) return;
+    emit roadQuadrantChanged();
+    update();
+}
 void TeslaSceneItem::setOnline(bool online) {
     if (online_.exchange(online) == online) return;
     emit onlineChanged();
@@ -409,6 +450,7 @@ public:
             b.confidence = map.value(QStringLiteral("confidence")).toDouble();
             b.missed = map.value(QStringLiteral("missed")).toInt();
             b.predicted = map.value(QStringLiteral("predicted")).toBool();
+            b.hazard = map.value(QStringLiteral("hazard")).toBool();
             // Stale/predicted tracks are retained by the tracker for continuity,
             // but must not be drawn as if they were current detections.
             if (b.id > 0 && b.w > 2 && b.h > 2 && !b.predicted && b.missed == 0 &&
@@ -416,6 +458,9 @@ public:
                 next.push_back(b);
         }
         boxes_ = next;
+        lane_state_ = scene->laneState();
+        display_view_ = scene->displayView();
+        road_quadrant_ = scene->roadQuadrant();
         online_ = scene->online();
         demo_ = scene->demoMode();
         viewport_ = scene->size().toSize();
@@ -473,7 +518,9 @@ public:
         const float aspect = viewport_.height() > 0 ? float(viewport_.width()) / float(viewport_.height()) : 1.7f;
         const bool compact = viewport_.height() < 160;
         projection.perspective(compact ? 44.0f : 52.0f, aspect, 0.08f, 180.0f);
-        projection.scale(1.0f, -1.0f, 1.0f);
+        // Chase camera looks from -Z toward +Z; flip X so screen-right is
+        // vehicle-right and left/right LVT1 lane styles are not mirrored.
+        projection.scale(-1.0f, -1.0f, 1.0f);
         QMatrix4x4 view;
         if (compact)
             view.lookAt(QVector3D(-1.75f, 5.2f, -8.0f), QVector3D(-1.75f, 0.1f, 12.0f), QVector3D(0, 1, 0));
@@ -560,23 +607,39 @@ private:
             return;
         }
         const double now = elapsed_;
+        // Box coordinates are in the AI display view. In quad mode the AI
+        // statuses with display_view=quad; subtract the selected quadrant
+        // offset so navigation/cabin quadrants cannot leak into the road BEV.
+        double sourceW = 1280.0, sourceH = 720.0, offX = 0.0, offY = 0.0;
+        if (display_view_ == QStringLiteral("quad")) {
+            sourceW = 640.0; sourceH = 360.0;
+            offX = (road_quadrant_ % 2) * 640.0;
+            offY = (road_quadrant_ / 2) * 360.0;
+        }
         for (const SourceBox &b : boxes_) {
             if (!(b.cls == "car" || b.cls == "truck" || b.cls == "bus" ||
-                  b.cls == "person" || b.cls == "motorcycle")) continue;
-            const double cx = (b.x + b.w * .5) / 1280.0;
-            const double bottom = (b.y + b.h) / 720.0;
+                  b.cls == "person" || b.cls == "motorcycle" || b.cls == "bicycle")) continue;
+            const double boxCx = b.x + b.w * .5;
+            const double boxBottom = b.y + b.h;
+            if (boxCx < offX || boxCx > offX + sourceW ||
+                boxBottom < offY || boxBottom > offY + sourceH)
+                continue;
+            const double cx = (boxCx - offX) / sourceW;
+            const double bottom = (boxBottom - offY) / sourceH;
             const float tx = std::clamp(float(-1.75 + (cx - .5) * 14.0), -6.8f, 6.8f);
             // Non-calibrated relative depth: bbox width is a scale cue, not a
             // metric distance. It separates near/far detections much better
             // than a constant bottom-to-depth line and never yields metres.
-            const float widthDepth = 2600.0f / std::max(24.0f, float(b.w));
+            const bool narrow = b.cls == "person" || b.cls == "bicycle" || b.cls == "motorcycle";
+            const float widthDepth = (narrow ? 1200.0f : 2600.0f) / std::max(24.0f, float(b.w));
             const float bottomDepth = 3.8f + float(1.0 - bottom) * 42.0f;
             const float tz = std::clamp(0.72f * widthDepth + 0.28f * bottomDepth, 4.0f, 62.0f);
             auto it = live_.find(b.id);
             if (it == live_.end()) {
-                live_.insert(b.id, LiveCar{tx, tz, b.cls, now});
+                live_.insert(b.id, LiveCar{tx, tz, b.cls, now, b.hazard});
             } else {
                 it->cls = b.cls;
+                it->hazard = b.hazard;
                 const float k = std::min(1.0f, float(dt_ * 5.0));
                 it->x += (tx - it->x) * k;
                 it->z += (tz - it->z) * k;
@@ -584,9 +647,10 @@ private:
             }
         }
         for (auto it = live_.begin(); it != live_.end();) {
-            if (now - it->seen > 1.2) it = live_.erase(it); else ++it;
+            // Matches the Qt tracker's 900 ms remove window; no ghost target.
+            if (now - it->seen > 0.9) it = live_.erase(it); else ++it;
         }
-        for (const LiveCar &car : live_) carMesh(v, car.x, car.z, car.cls, false);
+        for (const LiveCar &car : live_) carMesh(v, car.x, car.z, car.cls, false, car.hazard);
     }
 
     void drawBillboards(const QMatrix4x4 &mvp) {
@@ -634,6 +698,28 @@ private:
         billboards_.clear();
     }
 
+    void laneEdge(std::vector<float> &v, float x, const QString &type) {
+        // The LVT1 packet carries only nearest boundary type and counts.
+        // It never carries lane pixel coordinates. We therefore restyle the
+        // existing schematic road edge and never invent extra lane geometry.
+        if (type == QStringLiteral("solid")) {
+            quad(v, x - .045f, 0, x + .045f, 90, .031f, .65f, .73f, .76f);
+            return;
+        }
+        if (type == QStringLiteral("dashed")) {
+            for (int i = 0; i < 22; ++i) {
+                const float z0 = i * 4.0f + .7f;
+                quad(v, x - .045f, z0, x + .045f, z0 + 2.35f, .031f, .48f, .55f, .58f);
+            }
+            return;
+        }
+        // Unknown: faint dotted guide, deliberately not a solid/dashed claim.
+        for (int i = 0; i < 30; ++i) {
+            const float z0 = i * 3.0f + .5f;
+            quad(v, x - .025f, z0, x + .025f, z0 + .8f, .026f, .18f, .24f, .26f);
+        }
+    }
+
     void buildScene(std::vector<float> &v) {
         billboards_.clear();
         // Four same-direction lanes, 3.5 m each. The FSD blue path is only
@@ -649,9 +735,17 @@ private:
         quad(v, -7.25f, 0, 7.25f, 92, .026f, .105f, .115f, .120f);
         // Ego-lane FSD path.
         quad(v, egoX - 1.55f, 0, egoX + 1.55f, 90, .028f, .060f, .25f, .40f);
-        // Solid road edges.
-        quad(v, -7.15f, 0, -7.06f, 90, .031f, .65f, .73f, .76f);
-        quad(v, 7.06f, 0, 7.15f, 90, .031f, .65f, .73f, .76f);
+        // Road edges follow the LVT1 nearest boundary type. Counts are
+        // displayed in the lane card, not converted into extra lanes.
+        const bool laneValid = lane_state_.value(QStringLiteral("valid")).toBool();
+        const QString leftType = laneValid
+            ? lane_state_.value(QStringLiteral("left_type")).toString()
+            : QStringLiteral("unknown");
+        const QString rightType = laneValid
+            ? lane_state_.value(QStringLiteral("right_type")).toString()
+            : QStringLiteral("unknown");
+        laneEdge(v, -7.105f, leftType);
+        laneEdge(v, 7.105f, rightType);
         // Dashed lane boundaries at -3.5, 0, +3.5.
         for (float laneX : {-3.5f, 0.0f, 3.5f}) {
             for (int i = 0; i < 22; ++i) {
@@ -705,6 +799,9 @@ private:
     double last_report_ = 0.0;
     int frames_ = 0;
     QVector<SourceBox> boxes_;
+    QVariantMap lane_state_;
+    QString display_view_ = QStringLiteral("front");
+    int road_quadrant_ = 1;
     QHash<int, LiveCar> live_;
     QString source_key_;
     bool online_ = false;

@@ -49,6 +49,7 @@ class VideoItem : public QQuickFramebufferObject {
     Q_PROPERTY(QString aiModelMessage READ aiModelMessage NOTIFY aiStatusChanged)
     Q_PROPERTY(QVariantList aiModelOptions READ aiModelOptions NOTIFY aiStatusChanged)
     Q_PROPERTY(QString aiTraffic READ aiTraffic NOTIFY aiStatusChanged)
+    Q_PROPERTY(QString aiDisplayView READ aiDisplayView NOTIFY aiStatusChanged)
     Q_PROPERTY(QString aiNavigation READ aiNavigation NOTIFY aiStatusChanged)
     Q_PROPERTY(QString aiNavigationRoad READ aiNavigationRoad NOTIFY aiStatusChanged)
     Q_PROPERTY(QString aiNavigationState READ aiNavigationState NOTIFY aiStatusChanged)
@@ -59,6 +60,7 @@ class VideoItem : public QQuickFramebufferObject {
     Q_PROPERTY(int aiDetectionCount READ aiDetectionCount NOTIFY aiBoxesChanged)
     Q_PROPERTY(QVariantMap aiDetectionCounts READ aiDetectionCounts NOTIFY aiBoxesChanged)
     Q_PROPERTY(QVariantList aiBoxes READ aiBoxes NOTIFY aiBoxesChanged)
+    Q_PROPERTY(QVariantList aiHazardDetails READ aiHazardDetails NOTIFY aiStatusChanged)
     // Expose the model through QObject so Qt 5 QML can consume it without
     // requiring a metatype registration for the abstract model pointer.
     Q_PROPERTY(QObject *bboxModel READ bboxModelObject CONSTANT)
@@ -210,6 +212,7 @@ public:
     bool aiOnline() const { return ai_online_.load(); }
     double aiFps() const { return ai_fps_.load(); }
     QString aiTraffic() const;
+    QString aiDisplayView() const { return ai_display_view_; }
     QString aiNavigation() const;
     QString aiNavigationRoad() const;
     QString aiNavigationState() const;
@@ -225,6 +228,7 @@ public:
     QObject *bboxModelObject() const { return bbox_model_.get(); }
     int bboxCount() const { return bbox_model_ ? bbox_model_->count() : 0; }
     QVariantList aiHazards() const;
+    QVariantList aiHazardDetails() const;
     qulonglong aiRequestsSent() const { return ai_requests_sent_.load(); }
     qulonglong aiResultsReceived() const { return ai_results_received_.load(); }
     QString sourceMode() const { return source_mode_; }
@@ -379,6 +383,7 @@ private:
     quint32 pending_model_switch_request_id_ = 0;
     quint32 next_model_switch_request_id_ = 0;
     QString ai_traffic_ = QStringLiteral("UNKNOWN");
+    QString ai_display_view_ = QStringLiteral("front");
     QString ai_navigation_ = QStringLiteral("等待导航识别");
     QString ai_navigation_road_;
     QString ai_navigation_state_ = QStringLiteral("UNKNOWN");
@@ -387,6 +392,7 @@ private:
     QVariantMap ai_detection_counts_;
     QVariantList ai_boxes_;
     QVariantList ai_hazards_;
+    QVariantList ai_hazard_details_;
     std::atomic<uint64_t> latest_ai_frame_id_{0};
     std::atomic<int> ai_frame_lag_{0};
     std::atomic<int> max_track_prediction_ms_{250};

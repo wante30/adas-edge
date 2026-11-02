@@ -15,7 +15,7 @@ ExecStart=/usr/bin/python3 /home/cat/qt_gpu_probe_ai_20261019/ai_bridge.py \
   --source PGV_LIVE \
   --layout quad \
   --display-view front \
-  --road-quadrant 1 \
+  --road-quadrant 0 \
   --navigation-quadrant 1 \
   --main-model /home/cat/adas-edge-rect/rect_models/yolo11n_rk3566_int8_split_512x288.rknn \
   --specialist-model /home/cat/adas-edge-rect/tl_check/tl_specialist_512x192_hybrid2.rknn \
