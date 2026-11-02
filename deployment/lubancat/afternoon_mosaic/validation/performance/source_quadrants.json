@@ -1,0 +1,28 @@
+{
+  "kind": "REAL_PCIE_SOURCE_QUADRANT_CHECK",
+  "monotonic_ns": 3458776060316,
+  "frame_id": 207407,
+  "crc_verified": true,
+  "quadrants": {
+    "Q1": {
+      "mean_packed": 0.0,
+      "nonzero_pixels": 0,
+      "pixels": 230400
+    },
+    "Q2": {
+      "mean_packed": 29642.804427083334,
+      "nonzero_pixels": 204800,
+      "pixels": 230400
+    },
+    "Q3": {
+      "mean_packed": 20110.134479166667,
+      "nonzero_pixels": 204799,
+      "pixels": 230400
+    },
+    "Q4": {
+      "mean_packed": 17928.133619791668,
+      "nonzero_pixels": 204716,
+      "pixels": 230400
+    }
+  }
+}

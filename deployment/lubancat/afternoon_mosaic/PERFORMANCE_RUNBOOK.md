@@ -24,6 +24,8 @@ sh tools/start_pcie.sh --label release --adopt-session /home/cat/adas_perf_20261
 
 接管工具检查 boot_id 和进程命令行。不要跨重启复用旧 PID。已有正式自动启动的环境也可直接运行启动脚本，由会话工具保存原来的启动参数。
 
+本版采用独立目录启动，保留原系统自启动配置供回退；板端重启后需再次运行本版 `start_pcie.sh` 才会进入性能版。
+
 启动脚本保持真实 PCIe 与 HARDWARE 遥测模式，默认 `ADAS_CONTROL_AUTHORIZED=0`。危险状态机、控制决策日志、LVT1 和 HUD 继续工作，但不发送自动制动请求。本轮交付没有进行机械制动性能测试。
 
 ## 模型与功能
@@ -50,6 +52,8 @@ python3 tools/validate_performance.py --label release --seconds 610 --window 100
 python3 tools/summarize_acceptance.py evidence/release_system.jsonl evidence/release_performance_acceptance.json --output evidence/release_summary.json
 sudo sysctl -w kernel.sched_schedstats=0
 ```
+
+本次最终正式窗口 `final600` 运行于解压目录 `/home/cat/adas_perf_20261102/cold-runtime`，NPU 实际 600MHz。原 governor 名称恢复并不保证此前手动设定的频率已恢复，复现实验需核对 profiler 的实际频率字段。
 
 完整窗口包含切换；稳态窗口剔除每段开始 10 秒及结束 2 秒。AI FPS 由同 bridge/epoch 内真实结果完成时间计算。界面顶部的视频 FPS 是接收源帧率，不能当作 Qt Scene Graph FPS。
 

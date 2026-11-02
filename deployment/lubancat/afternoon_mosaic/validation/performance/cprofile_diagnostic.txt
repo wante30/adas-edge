@@ -1,0 +1,33 @@
+Mon Nov  2 16:11:19 2026    validation/performance/full_optimized_cpu.prof
+
+         276381 function calls (273123 primitive calls) in 7.036 seconds
+
+   Ordered by: internal time
+   List reduced from 537 to 25 due to restriction <25>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      100    1.955    0.020    2.539    0.025 capi_detector.py:183(detect)
+      199    0.434    0.002    0.434    0.002 {resize}
+      901    0.236    0.000    0.241    0.000 byte_tracker_lite.py:125(<genexpr>)
+      406    0.205    0.001    0.205    0.001 {cvtColor}
+      800    0.199    0.000    0.579    0.001 byte_tracker_lite.py:108(_associate)
+      243    0.190    0.001    0.190    0.001 encoder.py:204(iterencode)
+      100    0.180    0.002    6.809    0.068 ai_bridge.py:1446(_analyze)
+      100    0.168    0.002    0.446    0.004 light_risk.py:36(update)
+      100    0.109    0.001    0.307    0.003 ai_bridge.py:1338(_detections_to_boxes)
+     1081    0.098    0.000    0.212    0.000 byte_tracker_lite.py:66(predict)
+      400    0.095    0.000    1.247    0.003 byte_tracker_lite.py:137(update)
+      178    0.086    0.000    0.197    0.001 byte_tracker_lite.py:51(_init_filter)
+ 2640/200    0.085    0.000    0.308    0.002 dataclasses.py:1076(_asdict_inner)
+     4328    0.084    0.000    0.115    0.000 light_risk.py:23(_run)
+       62    0.078    0.001    0.078    0.001 {built-in method posix.read}
+     1081    0.078    0.000    0.078    0.000 {method 'predict' of 'cv2.KalmanFilter' objects}
+    31922    0.078    0.000    0.078    0.000 {method 'get' of 'dict' objects}
+      100    0.067    0.001    1.345    0.013 primary_tracks.py:11(update)
+      100    0.061    0.001    0.290    0.003 ai_bridge.py:522(encode_ai_result_packet)
+      502    0.059    0.000    0.059    0.000 {method 'correct' of 'cv2.KalmanFilter' objects}
+     3428    0.056    0.000    0.179    0.000 {built-in method builtins.all}
+      100    0.053    0.001    0.405    0.004 profile_rknn_single_stream.py:83(letterbox_bgr)
+2640/2340    0.050    0.000    0.108    0.000 copy.py:128(deepcopy)
+      912    0.048    0.000    0.048    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+       40    0.045    0.001    0.103    0.003 traffic_light.py:24(classify_traffic_light)

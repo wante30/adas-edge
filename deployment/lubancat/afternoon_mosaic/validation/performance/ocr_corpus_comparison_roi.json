@@ -1,0 +1,1195 @@
+{
+  "320": [
+    {
+      "file": "0.png",
+      "wall_ms": 628.243084,
+      "cpu_ms": 628.259039,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9015625,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 1,
+        "timestamp_ns": 3045415866481,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 628.0062549999457,
+        "preprocess_ms": 31.17888299993865,
+        "engine_ms": 593.4327260001737,
+        "card_locate_ms": 22.092467999755172,
+        "arrow_ms": 9.086415000183479,
+        "distance_ocr_ms": 593.4327260001737,
+        "ocr_timestamp_ns": 3046043978901
+      }
+    },
+    {
+      "file": "1.png",
+      "wall_ms": 626.190371,
+      "cpu_ms": 626.14504,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9062962962962964,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 2,
+        "timestamp_ns": 3046064569605,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 625.9850419996837,
+        "preprocess_ms": 27.585032999922987,
+        "engine_ms": 597.7694370003519,
+        "card_locate_ms": 19.896549999884883,
+        "arrow_ms": 7.688483000038104,
+        "distance_ocr_ms": 597.7694370003519,
+        "ocr_timestamp_ns": 3046690640687
+      }
+    },
+    {
+      "file": "2.png",
+      "wall_ms": 621.179339,
+      "cpu_ms": 621.148207,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8997422680412371,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 3,
+        "timestamp_ns": 3046710747816,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 621.0148420000223,
+        "preprocess_ms": 28.541682000650326,
+        "engine_ms": 591.9341700000587,
+        "card_locate_ms": 19.932424000216997,
+        "arrow_ms": 8.609258000433329,
+        "distance_ocr_ms": 591.9341700000587,
+        "ocr_timestamp_ns": 3047331840532
+      }
+    },
+    {
+      "file": "3.png",
+      "wall_ms": 620.410812,
+      "cpu_ms": 620.426331,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9073913043478261,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 4,
+        "timestamp_ns": 3047351822830,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 620.2381480002259,
+        "preprocess_ms": 29.427457000110735,
+        "engine_ms": 590.2711170001567,
+        "card_locate_ms": 20.394124000176816,
+        "arrow_ms": 9.033332999933918,
+        "distance_ocr_ms": 590.2711170001567,
+        "ocr_timestamp_ns": 3047972146727
+      }
+    },
+    {
+      "file": "4.png",
+      "wall_ms": 630.776162,
+      "cpu_ms": 630.748414,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.87188,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 5,
+        "timestamp_ns": 3047992378104,
+        "raw_text": [
+          "218*"
+        ],
+        "inference_ms": 630.4871259999345,
+        "preprocess_ms": 28.863676000582927,
+        "engine_ms": 594.687743999657,
+        "card_locate_ms": 20.685785000296164,
+        "arrow_ms": 8.177891000286763,
+        "distance_ocr_ms": 594.687743999657,
+        "ocr_timestamp_ns": 3048622968769
+      }
+    },
+    {
+      "file": "5.png",
+      "wall_ms": 625.563591,
+      "cpu_ms": 625.57979,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8981932367149759,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 6,
+        "timestamp_ns": 3048643835968,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 625.3617620000114,
+        "preprocess_ms": 27.98956799961161,
+        "engine_ms": 596.7191649997403,
+        "card_locate_ms": 20.038880999891262,
+        "arrow_ms": 7.950686999720347,
+        "distance_ocr_ms": 596.7191649997403,
+        "ocr_timestamp_ns": 3049269281728
+      }
+    },
+    {
+      "file": "6.png",
+      "wall_ms": 621.317003,
+      "cpu_ms": 621.277706,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8972746113989638,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 7,
+        "timestamp_ns": 3049289247110,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 621.1352979998992,
+        "preprocess_ms": 28.95758999966347,
+        "engine_ms": 591.5903009999965,
+        "card_locate_ms": 20.13629499970193,
+        "arrow_ms": 8.821294999961538,
+        "distance_ocr_ms": 591.5903009999965,
+        "ocr_timestamp_ns": 3049910467865
+      }
+    },
+    {
+      "file": "7.png",
+      "wall_ms": 623.751208,
+      "cpu_ms": 623.736164,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.90312,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 8,
+        "timestamp_ns": 3049930912155,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 623.5782530002325,
+        "preprocess_ms": 29.056756000500172,
+        "engine_ms": 593.9790069996889,
+        "card_locate_ms": 20.713493000130256,
+        "arrow_ms": 8.343263000369916,
+        "distance_ocr_ms": 593.9790069996889,
+        "ocr_timestamp_ns": 3050554575281
+      }
+    },
+    {
+      "file": "8.png",
+      "wall_ms": 621.433959,
+      "cpu_ms": 621.415081,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8998471760797342,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 9,
+        "timestamp_ns": 3050574530747,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 621.2566290000723,
+        "preprocess_ms": 28.784636000182218,
+        "engine_ms": 591.9198789997608,
+        "card_locate_ms": 20.345708000149898,
+        "arrow_ms": 8.43892800003232,
+        "distance_ocr_ms": 591.9198789997608,
+        "ocr_timestamp_ns": 3051195871958
+      }
+    },
+    {
+      "file": "9.png",
+      "wall_ms": 619.532328,
+      "cpu_ms": 619.510205,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8989795918367347,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 10,
+        "timestamp_ns": 3051216087877,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 619.3684140002915,
+        "preprocess_ms": 28.676428999915515,
+        "engine_ms": 590.1579530000163,
+        "card_locate_ms": 20.28562600025907,
+        "arrow_ms": 8.390802999656444,
+        "distance_ocr_ms": 590.1579530000163,
+        "ocr_timestamp_ns": 3051835534165
+      }
+    },
+    {
+      "file": "10.png",
+      "wall_ms": 622.041781,
+      "cpu_ms": 622.037206,
+      "result": {
+        "direction": "right",
+        "distance_m": 216.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.908786231884058,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 11,
+        "timestamp_ns": 3051855504505,
+        "raw_text": [
+          "216\u7c73"
+        ],
+        "inference_ms": 621.7647029998261,
+        "preprocess_ms": 28.098648999730358,
+        "engine_ms": 592.875943999843,
+        "card_locate_ms": 19.50397399969006,
+        "arrow_ms": 8.594675000040297,
+        "distance_ocr_ms": 592.875943999843,
+        "ocr_timestamp_ns": 3052477368373
+      }
+    },
+    {
+      "file": "11.png",
+      "wall_ms": 622.305151,
+      "cpu_ms": 622.318081,
+      "result": {
+        "direction": "right",
+        "distance_m": 199.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8925027322404372,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 12,
+        "timestamp_ns": 3052497825496,
+        "raw_text": [
+          "199\u7c73"
+        ],
+        "inference_ms": 622.0904890001293,
+        "preprocess_ms": 28.772678000223095,
+        "engine_ms": 592.6006160002544,
+        "card_locate_ms": 20.269293000183097,
+        "arrow_ms": 8.503385000039998,
+        "distance_ocr_ms": 592.6006160002544,
+        "ocr_timestamp_ns": 3053120006691
+      }
+    },
+    {
+      "file": "12.png",
+      "wall_ms": 625.306055,
+      "cpu_ms": 625.316415,
+      "result": {
+        "direction": "right",
+        "distance_m": 386.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9111676982309079,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 13,
+        "timestamp_ns": 3053140724851,
+        "raw_text": [
+          "386\u7c73"
+        ],
+        "inference_ms": 625.1228910000464,
+        "preprocess_ms": 33.46229899989339,
+        "engine_ms": 591.1070189999919,
+        "card_locate_ms": 18.986565999966842,
+        "arrow_ms": 14.47573299992655,
+        "distance_ocr_ms": 591.1070189999919,
+        "ocr_timestamp_ns": 3053765945740
+      }
+    },
+    {
+      "file": "13.png",
+      "wall_ms": 619.242708,
+      "cpu_ms": 619.260247,
+      "result": {
+        "direction": "right",
+        "distance_m": 341.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.87775,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 14,
+        "timestamp_ns": 3053785972080,
+        "raw_text": [
+          "341\u7c73"
+        ],
+        "inference_ms": 619.0712109996639,
+        "preprocess_ms": 27.89594399928319,
+        "engine_ms": 590.6456110001272,
+        "card_locate_ms": 19.051606999710202,
+        "arrow_ms": 8.844336999572988,
+        "distance_ocr_ms": 590.6456110001272,
+        "ocr_timestamp_ns": 3054405126414
+      }
+    },
+    {
+      "file": "14.png",
+      "wall_ms": 624.183159,
+      "cpu_ms": 624.201081,
+      "result": {
+        "direction": "right",
+        "distance_m": 273.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9145447219983884,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 15,
+        "timestamp_ns": 3054425422540,
+        "raw_text": [
+          "273*"
+        ],
+        "inference_ms": 624.0061200001037,
+        "preprocess_ms": 31.586333000177547,
+        "engine_ms": 591.8387960000473,
+        "card_locate_ms": 18.83227700000134,
+        "arrow_ms": 12.754056000176206,
+        "distance_ocr_ms": 591.8387960000473,
+        "ocr_timestamp_ns": 3055049515575
+      }
+    },
+    {
+      "file": "15.png",
+      "wall_ms": 621.701121,
+      "cpu_ms": 621.716664,
+      "result": {
+        "direction": "right",
+        "distance_m": 221.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8996044031647747,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 16,
+        "timestamp_ns": 3055069420875,
+        "raw_text": [
+          "221\u7c73"
+        ],
+        "inference_ms": 621.4855840003111,
+        "preprocess_ms": 28.018733000408247,
+        "engine_ms": 592.8237370003444,
+        "card_locate_ms": 18.621115000314603,
+        "arrow_ms": 9.397618000093644,
+        "distance_ocr_ms": 592.8237370003444,
+        "ocr_timestamp_ns": 3055690993374
+      }
+    },
+    {
+      "file": "16.png",
+      "wall_ms": 623.245759,
+      "cpu_ms": 623.256373,
+      "result": {
+        "direction": "right",
+        "distance_m": 180.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9091111111111112,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 17,
+        "timestamp_ns": 3055711621702,
+        "raw_text": [
+          "180\u7c73"
+        ],
+        "inference_ms": 623.0401380003059,
+        "preprocess_ms": 27.29949599961401,
+        "engine_ms": 595.1640270000098,
+        "card_locate_ms": 18.73661199988419,
+        "arrow_ms": 8.56288399972982,
+        "distance_ocr_ms": 595.1640270000098,
+        "ocr_timestamp_ns": 3056334767129
+      }
+    },
+    {
+      "file": "17.png",
+      "wall_ms": 624.397822,
+      "cpu_ms": 624.414872,
+      "result": {
+        "direction": "right",
+        "distance_m": 118.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8971861471861472,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 18,
+        "timestamp_ns": 3056355089213,
+        "raw_text": [
+          "118\u7c73"
+        ],
+        "inference_ms": 624.2175749998751,
+        "preprocess_ms": 28.853759999947215,
+        "engine_ms": 594.793034000304,
+        "card_locate_ms": 18.520491999879596,
+        "arrow_ms": 10.33326800006762,
+        "distance_ocr_ms": 594.793034000304,
+        "ocr_timestamp_ns": 3056979389620
+      }
+    },
+    {
+      "file": "18.png",
+      "wall_ms": 619.587452,
+      "cpu_ms": 619.614914,
+      "result": {
+        "direction": "right",
+        "distance_m": 69.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9034,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 19,
+        "timestamp_ns": 3057000077738,
+        "raw_text": [
+          "69\u7c73"
+        ],
+        "inference_ms": 619.4165380002232,
+        "preprocess_ms": 27.093583000350918,
+        "engine_ms": 591.7970889995559,
+        "card_locate_ms": 19.207354000172927,
+        "arrow_ms": 7.886229000177991,
+        "distance_ocr_ms": 591.7970889995559,
+        "ocr_timestamp_ns": 3057619576233
+      }
+    },
+    {
+      "file": "19.png",
+      "wall_ms": 627.229561,
+      "cpu_ms": 627.246956,
+      "result": {
+        "direction": "right",
+        "distance_m": 19.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.914654952890247,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 20,
+        "timestamp_ns": 3057640153229,
+        "raw_text": [
+          "19\u7c73"
+        ],
+        "inference_ms": 627.0303559999775,
+        "preprocess_ms": 31.48191999980554,
+        "engine_ms": 594.907948999662,
+        "card_locate_ms": 18.30203800000163,
+        "arrow_ms": 13.17988199980391,
+        "distance_ocr_ms": 594.907948999662,
+        "ocr_timestamp_ns": 3058267270209
+      }
+    },
+    {
+      "file": "20.png",
+      "wall_ms": 620.643558,
+      "cpu_ms": 620.661414,
+      "result": {
+        "direction": "right",
+        "distance_m": 53.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9142424242424243,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 21,
+        "timestamp_ns": 3058287310547,
+        "raw_text": [
+          "53\u7c73"
+        ],
+        "inference_ms": 620.437936000144,
+        "preprocess_ms": 28.254396000193083,
+        "engine_ms": 591.5389689998847,
+        "card_locate_ms": 18.431827000313206,
+        "arrow_ms": 9.822568999879877,
+        "distance_ocr_ms": 591.5389689998847,
+        "ocr_timestamp_ns": 3058907833940
+      }
+    },
+    {
+      "file": "21.png",
+      "wall_ms": 30.757433,
+      "cpu_ms": 30.762666,
+      "result": {
+        "direction": "none",
+        "distance_m": null,
+        "road_name": "",
+        "valid": false,
+        "confidence": 0.0,
+        "reason": "Q2_ARROW_NOT_FOUND",
+        "source_frame_id": 22,
+        "timestamp_ns": 3058927652908,
+        "raw_text": [],
+        "inference_ms": 30.562020000161283,
+        "preprocess_ms": 30.05948800000624,
+        "engine_ms": 0.0,
+        "card_locate_ms": 20.397916000092664,
+        "arrow_ms": 9.661571999913576,
+        "distance_ocr_ms": 0.0,
+        "ocr_timestamp_ns": 3058958299218
+      }
+    },
+    {
+      "file": "22.png",
+      "wall_ms": 29.348709,
+      "cpu_ms": 29.353042,
+      "result": {
+        "direction": "none",
+        "distance_m": null,
+        "road_name": "",
+        "valid": false,
+        "confidence": 0.0,
+        "reason": "Q2_ARROW_NOT_FOUND",
+        "source_frame_id": 23,
+        "timestamp_ns": 3058978334599,
+        "raw_text": [],
+        "inference_ms": 29.136962999928073,
+        "preprocess_ms": 28.645220999806043,
+        "engine_ms": 0.0,
+        "card_locate_ms": 19.4389329999467,
+        "arrow_ms": 9.206287999859342,
+        "distance_ocr_ms": 0.0,
+        "ocr_timestamp_ns": 3059007566060
+      }
+    },
+    {
+      "file": "23.png",
+      "wall_ms": 24.011015,
+      "cpu_ms": 24.016125,
+      "result": {
+        "direction": "none",
+        "distance_m": null,
+        "road_name": "",
+        "valid": false,
+        "confidence": 0.0,
+        "reason": "Q2_ARROW_NOT_FOUND",
+        "source_frame_id": 24,
+        "timestamp_ns": 3059027289655,
+        "raw_text": [],
+        "inference_ms": 23.825518999728956,
+        "preprocess_ms": 23.32969500002946,
+        "engine_ms": 0.0,
+        "card_locate_ms": 19.658845999856567,
+        "arrow_ms": 3.6708490001728933,
+        "distance_ocr_ms": 0.0,
+        "ocr_timestamp_ns": 3059051197422
+      }
+    }
+  ],
+  "128": [
+    {
+      "file": "0.png",
+      "wall_ms": 307.107088,
+      "cpu_ms": 307.115957,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9015625,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 1,
+        "timestamp_ns": 3060881448428,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 306.9186739999168,
+        "preprocess_ms": 29.213669000000664,
+        "engine_ms": 277.12459900021713,
+        "card_locate_ms": 20.54287100008878,
+        "arrow_ms": 8.670797999911883,
+        "distance_ocr_ms": 277.12459900021713,
+        "ocr_timestamp_ns": 3061188447893
+      }
+    },
+    {
+      "file": "1.png",
+      "wall_ms": 303.92448,
+      "cpu_ms": 303.879916,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9062962962962964,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 2,
+        "timestamp_ns": 3061208588855,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 303.6894009997013,
+        "preprocess_ms": 28.754303000368964,
+        "engine_ms": 274.12602899994454,
+        "card_locate_ms": 21.006029000091075,
+        "arrow_ms": 7.748274000277888,
+        "distance_ocr_ms": 274.12602899994454,
+        "ocr_timestamp_ns": 3061512390254
+      }
+    },
+    {
+      "file": "2.png",
+      "wall_ms": 303.49603,
+      "cpu_ms": 303.509499,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8997422680412371,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 3,
+        "timestamp_ns": 3061531985517,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 303.3213240000805,
+        "preprocess_ms": 29.216293999979825,
+        "engine_ms": 273.5704149999947,
+        "card_locate_ms": 20.594786999936332,
+        "arrow_ms": 8.621507000043493,
+        "distance_ocr_ms": 273.5704149999947,
+        "ocr_timestamp_ns": 3061835392299
+      }
+    },
+    {
+      "file": "3.png",
+      "wall_ms": 303.62961,
+      "cpu_ms": 303.647457,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9073913043478261,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 4,
+        "timestamp_ns": 3061855837755,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 303.4050310002385,
+        "preprocess_ms": 29.02846500001033,
+        "engine_ms": 273.7212030001501,
+        "card_locate_ms": 20.035964000271633,
+        "arrow_ms": 8.992500999738695,
+        "distance_ocr_ms": 273.7212030001501,
+        "ocr_timestamp_ns": 3062159336409
+      }
+    },
+    {
+      "file": "4.png",
+      "wall_ms": 305.110958,
+      "cpu_ms": 305.075749,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9004599104599105,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 5,
+        "timestamp_ns": 3062180155776,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 304.9164200001542,
+        "preprocess_ms": 27.784819999851607,
+        "engine_ms": 276.52406899960624,
+        "card_locate_ms": 20.138628000040626,
+        "arrow_ms": 7.646191999810981,
+        "distance_ocr_ms": 276.52406899960624,
+        "ocr_timestamp_ns": 3062485152402
+      }
+    },
+    {
+      "file": "5.png",
+      "wall_ms": 303.367115,
+      "cpu_ms": 303.37679,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8981932367149759,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 6,
+        "timestamp_ns": 3062505252532,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 303.1906609999169,
+        "preprocess_ms": 28.5247659999186,
+        "engine_ms": 274.0907390002576,
+        "card_locate_ms": 20.126378999975714,
+        "arrow_ms": 8.398386999942886,
+        "distance_ocr_ms": 274.0907390002576,
+        "ocr_timestamp_ns": 3062808528649
+      }
+    },
+    {
+      "file": "6.png",
+      "wall_ms": 304.361388,
+      "cpu_ms": 304.410749,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8972746113989638,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 7,
+        "timestamp_ns": 3062828643653,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 304.1872669996337,
+        "preprocess_ms": 28.449517999888485,
+        "engine_ms": 275.2048840002317,
+        "card_locate_ms": 19.91550799994002,
+        "arrow_ms": 8.534009999948466,
+        "distance_ocr_ms": 275.2048840002317,
+        "ocr_timestamp_ns": 3063132909960
+      }
+    },
+    {
+      "file": "7.png",
+      "wall_ms": 303.976688,
+      "cpu_ms": 303.931831,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9073342796920033,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 8,
+        "timestamp_ns": 3063153325083,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 303.800524000053,
+        "preprocess_ms": 29.42425000037474,
+        "engine_ms": 273.83670099970914,
+        "card_locate_ms": 20.683161000306427,
+        "arrow_ms": 8.741089000068314,
+        "distance_ocr_ms": 273.83670099970914,
+        "ocr_timestamp_ns": 3063457205814
+      }
+    },
+    {
+      "file": "8.png",
+      "wall_ms": 308.156193,
+      "cpu_ms": 308.168291,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8998471760797342,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 9,
+        "timestamp_ns": 3063477552106,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 307.99519699985467,
+        "preprocess_ms": 29.084171999784303,
+        "engine_ms": 278.38603400005013,
+        "card_locate_ms": 20.711159999791562,
+        "arrow_ms": 8.373011999992741,
+        "distance_ocr_ms": 278.38603400005013,
+        "ocr_timestamp_ns": 3063785621093
+      }
+    },
+    {
+      "file": "9.png",
+      "wall_ms": 305.644406,
+      "cpu_ms": 305.654415,
+      "result": {
+        "direction": "right",
+        "distance_m": 218.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8989795918367347,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 10,
+        "timestamp_ns": 3063805767013,
+        "raw_text": [
+          "218\u7c73"
+        ],
+        "inference_ms": 305.4732010000407,
+        "preprocess_ms": 28.88875899998311,
+        "engine_ms": 276.05682700004763,
+        "card_locate_ms": 20.340458000191575,
+        "arrow_ms": 8.548300999791536,
+        "distance_ocr_ms": 276.05682700004763,
+        "ocr_timestamp_ns": 3064111322171
+      }
+    },
+    {
+      "file": "10.png",
+      "wall_ms": 304.417096,
+      "cpu_ms": 304.351831,
+      "result": {
+        "direction": "right",
+        "distance_m": 216.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.908786231884058,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 11,
+        "timestamp_ns": 3064132228744,
+        "raw_text": [
+          "216\u7c73"
+        ],
+        "inference_ms": 304.19630899996264,
+        "preprocess_ms": 28.11177299963674,
+        "engine_ms": 275.5178369998248,
+        "card_locate_ms": 20.22991900003035,
+        "arrow_ms": 7.881853999606392,
+        "distance_ocr_ms": 275.5178369998248,
+        "ocr_timestamp_ns": 3064436550466
+      }
+    },
+    {
+      "file": "11.png",
+      "wall_ms": 307.472539,
+      "cpu_ms": 307.478207,
+      "result": {
+        "direction": "right",
+        "distance_m": 199.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8925027322404372,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 12,
+        "timestamp_ns": 3064457077005,
+        "raw_text": [
+          "199\u7c73"
+        ],
+        "inference_ms": 307.2581680003168,
+        "preprocess_ms": 28.753136999966955,
+        "engine_ms": 277.901584999654,
+        "card_locate_ms": 20.869240000138234,
+        "arrow_ms": 7.883896999828721,
+        "distance_ocr_ms": 277.901584999654,
+        "ocr_timestamp_ns": 3064764439588
+      }
+    },
+    {
+      "file": "12.png",
+      "wall_ms": 308.980136,
+      "cpu_ms": 308.987874,
+      "result": {
+        "direction": "right",
+        "distance_m": 386.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9111676982309079,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 13,
+        "timestamp_ns": 3064784777130,
+        "raw_text": [
+          "386\u7c73"
+        ],
+        "inference_ms": 308.8013480000882,
+        "preprocess_ms": 33.76708600035272,
+        "engine_ms": 274.46931400027097,
+        "card_locate_ms": 18.430952000016987,
+        "arrow_ms": 15.336134000335733,
+        "distance_ocr_ms": 274.46931400027097,
+        "ocr_timestamp_ns": 3065093662476
+      }
+    },
+    {
+      "file": "13.png",
+      "wall_ms": 305.143624,
+      "cpu_ms": 305.097332,
+      "result": {
+        "direction": "right",
+        "distance_m": 341.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8826,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 14,
+        "timestamp_ns": 3065113939353,
+        "raw_text": [
+          "341\u7c73"
+        ],
+        "inference_ms": 304.95754399998987,
+        "preprocess_ms": 28.19081300003745,
+        "engine_ms": 276.24582399994324,
+        "card_locate_ms": 18.93844200003514,
+        "arrow_ms": 9.252371000002313,
+        "distance_ocr_ms": 276.24582399994324,
+        "ocr_timestamp_ns": 3065418996353
+      }
+    },
+    {
+      "file": "14.png",
+      "wall_ms": 307.067131,
+      "cpu_ms": 307.075123,
+      "result": {
+        "direction": "right",
+        "distance_m": 273.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9145447219983884,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 15,
+        "timestamp_ns": 3065439140815,
+        "raw_text": [
+          "273\u7c73"
+        ],
+        "inference_ms": 306.88513299992337,
+        "preprocess_ms": 31.685206000020116,
+        "engine_ms": 274.5509790001961,
+        "card_locate_ms": 19.06035599995448,
+        "arrow_ms": 12.624850000065635,
+        "distance_ocr_ms": 274.5509790001961,
+        "ocr_timestamp_ns": 3065746109947
+      }
+    },
+    {
+      "file": "15.png",
+      "wall_ms": 304.178809,
+      "cpu_ms": 304.187332,
+      "result": {
+        "direction": "right",
+        "distance_m": 221.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8996044031647747,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 16,
+        "timestamp_ns": 3065765815167,
+        "raw_text": [
+          "221\u7c73"
+        ],
+        "inference_ms": 303.98689499998,
+        "preprocess_ms": 26.774797999678412,
+        "engine_ms": 276.6071920000286,
+        "card_locate_ms": 18.784736999805318,
+        "arrow_ms": 7.990060999873094,
+        "distance_ocr_ms": 276.6071920000286,
+        "ocr_timestamp_ns": 3066069888395
+      }
+    },
+    {
+      "file": "16.png",
+      "wall_ms": 305.449577,
+      "cpu_ms": 305.458707,
+      "result": {
+        "direction": "right",
+        "distance_m": 180.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9091111111111112,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 17,
+        "timestamp_ns": 3066090504473,
+        "raw_text": [
+          "180\u7c73"
+        ],
+        "inference_ms": 305.2512479998768,
+        "preprocess_ms": 28.073857999515894,
+        "engine_ms": 276.58210900017366,
+        "card_locate_ms": 18.21395599972675,
+        "arrow_ms": 9.859901999789145,
+        "distance_ocr_ms": 276.58210900017366,
+        "ocr_timestamp_ns": 3066395839718
+      }
+    },
+    {
+      "file": "17.png",
+      "wall_ms": 304.294598,
+      "cpu_ms": 304.308665,
+      "result": {
+        "direction": "right",
+        "distance_m": 118.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.8971861471861472,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 18,
+        "timestamp_ns": 3066416524920,
+        "raw_text": [
+          "118\u7c73"
+        ],
+        "inference_ms": 304.10268500008897,
+        "preprocess_ms": 27.379703000406153,
+        "engine_ms": 276.1157420000018,
+        "card_locate_ms": 18.255955000313406,
+        "arrow_ms": 9.123748000092746,
+        "distance_ocr_ms": 276.1157420000018,
+        "ocr_timestamp_ns": 3066720709854
+      }
+    },
+    {
+      "file": "18.png",
+      "wall_ms": 302.772418,
+      "cpu_ms": 302.775666,
+      "result": {
+        "direction": "right",
+        "distance_m": 69.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9160818713450293,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 19,
+        "timestamp_ns": 3066741350723,
+        "raw_text": [
+          "69\u7c73"
+        ],
+        "inference_ms": 302.57000500023423,
+        "preprocess_ms": 27.55411699990873,
+        "engine_ms": 274.4798140001876,
+        "card_locate_ms": 18.792320000102336,
+        "arrow_ms": 8.761796999806393,
+        "distance_ocr_ms": 274.4798140001876,
+        "ocr_timestamp_ns": 3067044025435
+      }
+    },
+    {
+      "file": "19.png",
+      "wall_ms": 306.728511,
+      "cpu_ms": 306.731541,
+      "result": {
+        "direction": "right",
+        "distance_m": 19.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.914654952890247,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 20,
+        "timestamp_ns": 3067064241062,
+        "raw_text": [
+          "19\u7c73"
+        ],
+        "inference_ms": 306.53834800023105,
+        "preprocess_ms": 31.652832999952807,
+        "engine_ms": 274.3535250001514,
+        "card_locate_ms": 18.896734999998444,
+        "arrow_ms": 12.756097999954363,
+        "distance_ocr_ms": 274.3535250001514,
+        "ocr_timestamp_ns": 3067370880325
+      }
+    },
+    {
+      "file": "20.png",
+      "wall_ms": 302.190262,
+      "cpu_ms": 302.206624,
+      "result": {
+        "direction": "right",
+        "distance_m": 53.0,
+        "road_name": "",
+        "valid": true,
+        "confidence": 0.9142424242424243,
+        "reason": "Q2_LIGHTWEIGHT_CARD_ARROW_OCR",
+        "source_frame_id": 21,
+        "timestamp_ns": 3067390948372,
+        "raw_text": [
+          "53\u7c73"
+        ],
+        "inference_ms": 301.85164300019096,
+        "preprocess_ms": 27.794153999820992,
+        "engine_ms": 273.39804300027026,
+        "card_locate_ms": 19.036148999930447,
+        "arrow_ms": 8.758004999890545,
+        "distance_ocr_ms": 273.39804300027026,
+        "ocr_timestamp_ns": 3067692888680
+      }
+    },
+    {
+      "file": "21.png",
+      "wall_ms": 29.232919,
+      "cpu_ms": 29.240458,
+      "result": {
+        "direction": "none",
+        "distance_m": null,
+        "road_name": "",
+        "valid": false,
+        "confidence": 0.0,
+        "reason": "Q2_ARROW_NOT_FOUND",
+        "source_frame_id": 22,
+        "timestamp_ns": 3067713647964,
+        "raw_text": [],
+        "inference_ms": 29.042172000117716,
+        "preprocess_ms": 28.544597999825783,
+        "engine_ms": 0.0,
+        "card_locate_ms": 20.578744999966148,
+        "arrow_ms": 7.965852999859635,
+        "distance_ocr_ms": 0.0,
+        "ocr_timestamp_ns": 3067742770927
+      }
+    },
+    {
+      "file": "22.png",
+      "wall_ms": 28.419184,
+      "cpu_ms": 28.382083,
+      "result": {
+        "direction": "none",
+        "distance_m": null,
+        "road_name": "",
+        "valid": false,
+        "confidence": 0.0,
+        "reason": "Q2_ARROW_NOT_FOUND",
+        "source_frame_id": 23,
+        "timestamp_ns": 3067763003179,
+        "raw_text": [],
+        "inference_ms": 28.181187999962276,
+        "preprocess_ms": 27.792112000042835,
+        "engine_ms": 0.0,
+        "card_locate_ms": 19.186062999779097,
+        "arrow_ms": 8.606049000263738,
+        "distance_ocr_ms": 0.0,
+        "ocr_timestamp_ns": 3067791331073
+      }
+    },
+    {
+      "file": "23.png",
+      "wall_ms": 23.725771,
+      "cpu_ms": 23.729416,
+      "result": {
+        "direction": "none",
+        "distance_m": null,
+        "road_name": "",
+        "valid": false,
+        "confidence": 0.0,
+        "reason": "Q2_ARROW_NOT_FOUND",
+        "source_frame_id": 24,
+        "timestamp_ns": 3067811366454,
+        "raw_text": [],
+        "inference_ms": 23.538231999737036,
+        "preprocess_ms": 23.0502819999856,
+        "engine_ms": 0.0,
+        "card_locate_ms": 19.423765999817988,
+        "arrow_ms": 3.626516000167612,
+        "distance_ocr_ms": 0.0,
+        "ocr_timestamp_ns": 3067834986060
+      }
+    }
+  ],
+  "differences": []
+}
