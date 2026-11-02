@@ -198,7 +198,7 @@
   "tools/validate_integration.py": "0afca233599d298d9ad46041a8c123cd781fc0eee659a157ef2a0baac76cab15",
   "tools/validate_model_menu.py": "fea8e29311fbd1ab25c431fec558cc44fdd3eae9a2513b0c3a10bb152f355df3",
   "tools/validate_ocr_corpus.py": "91a5f6df88576d31412edac86c7cd9f9374c7e68eeaba39b3ef5ba8e03793f7b",
-  "tools/validate_performance.py": "810b1922c4ca0dfdd2e8a4806b81813e49bb35e123998ddb22561a6febe62d79",
+  "tools/validate_performance.py": "77bb6d9c7a28c448a78ec04d440fffa25593050269c9fe11c189e0ebfce89e87",
   "tools/validate_real_control.py": "98a85bba6d80bcd778a065a2a237b60ab5bf436e38565713e08709eeba364453",
   "tools/validate_restart.py": "19baece77ab98f36eb5bb815b33df66d9d32a6b51d5e47221cddd650e4166e47",
   "tools/validate_scenarios.py": "7404603cc31edb7d68c59c2afa521d284ae1548d99a8bfb67edda313ee488fc2",

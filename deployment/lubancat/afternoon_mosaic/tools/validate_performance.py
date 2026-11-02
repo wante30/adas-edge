@@ -53,17 +53,20 @@ def main():
                 report["switches"].append(dict(timestamp_ns=time.monotonic_ns(),model=model,hmi=applied))
             capture(label,model+"_"+str(index))
             if model=="FAST-Q4" and index==1:
-                click(1200,40);time.sleep(.5);capture(label,"FAST-Q4_menu");click(800,40)
+                click(1200,40);time.sleep(.5);capture(label,"FAST-Q4_menu");click(1229,78)
             end=min(start+int(args.seconds*1e9),start+int((index+1)*args.window*1e9))
             while time.monotonic_ns()<end:time.sleep(.5)
             report["windows"].append(dict(model=model,start_ns=window_start,end_ns=time.monotonic_ns()))
             (EV/(label+"_performance_acceptance.json")).write_text(json.dumps(report,indent=2),encoding="utf-8")
             index+=1
-    except BaseException:
+    except BaseException as exc:
         sampler.terminate()
         sampler.wait(timeout=10)
+        report["failure"]=str(exc)
+        report["passed_functional_checks"]=False
+        (EV/(label+"_performance_acceptance.json")).write_text(json.dumps(report,indent=2),encoding="utf-8")
         raise
-    finally:
+    else:
         sampler.wait(timeout=20)
         assert sampler.returncode==0
         report["ended_ns"]=time.monotonic_ns();report["elapsed_s"]=(report["ended_ns"]-start)/1e9
