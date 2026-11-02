@@ -1,5 +1,6 @@
 #include "video_item.h"
 #include "tesla_scene_item.h"
+#include "bev_display_state.h"
 
 #include <QCoreApplication>
 #include <QDateTime>
@@ -35,6 +36,8 @@
 namespace {
 struct SourceBox {
     int id = 0;
+    int serverId = 0;
+    QString epoch;
     QString cls;
     double x = 0, y = 0, w = 0, h = 0;
     double confidence = 0;
@@ -46,14 +49,14 @@ struct SourceBox {
     QString source;
 };
 
-struct LiveCar {
-    float x = 0, z = 0;
+struct LiveCar : BevDisplay::State {
     QString cls = QStringLiteral("car");
     double seen = 0;
     int hazard = 0;
-    float tx=0,tz=0,vx=0,vz=0;
     double born=0;
-    qint64 measuredNs=0,expiresNs=0;
+    SourceBox lastBox;
+    float rawX=0,rawZ=0;
+    qint64 expiresNs=0;
 };
 
 struct DemoCar {
@@ -317,6 +320,13 @@ void TeslaSceneItem::setBoxes(const QVariantList &boxes) {
         QMutexLocker locker(&mutex_);
         boxes_ = boxes;
     }
+    static QFile measurements(qEnvironmentVariable("QT_BEV_MEASUREMENTS"));
+    if (!measurements.fileName().isEmpty() && (measurements.isOpen() || measurements.open(QIODevice::WriteOnly))) {
+        const qint64 nowNs=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        QJsonObject row;row["arrival_ns"]=nowNs;row["source_key"]=sourceKey();
+        row["boxes"]=QJsonArray::fromVariantList(boxes);
+        measurements.write(QJsonDocument(row).toJson(QJsonDocument::Compact)+'\n');measurements.flush();
+    }
     // Auditable bridge from real tracker output to scene objects. This file
     // contains no demo objects and no metric distance claim.
     QJsonArray objects;
@@ -325,11 +335,16 @@ void TeslaSceneItem::setBoxes(const QVariantList &boxes) {
         const QVariantMap b = entry.toMap();
         const QString cls = b.value(QStringLiteral("className")).toString();
         const bool predicted = b.value(QStringLiteral("predicted")).toBool();
+        const bool tracked = b.value(QStringLiteral("isTracked")).toBool() && b.value(QStringLiteral("serverTrackId")).toInt()>0;
         const bool mappable = cls == QStringLiteral("car") || cls == QStringLiteral("truck") ||
                               cls == QStringLiteral("bus") || cls == QStringLiteral("person") ||
                               cls == QStringLiteral("motorcycle") || cls == QStringLiteral("bicycle");
         QJsonObject o;
         o.insert(QStringLiteral("track_id"), static_cast<qint64>(b.value(QStringLiteral("trackId")).toULongLong()));
+        o.insert(QStringLiteral("is_tracked"), tracked);
+        o.insert(QStringLiteral("server_track_id"), b.value(QStringLiteral("serverTrackId")).toInt());
+        o.insert(QStringLiteral("source_id"), b.value(QStringLiteral("sourceId")).toString());
+        o.insert(QStringLiteral("epoch"), b.value(QStringLiteral("trackerEpoch")).toString());
         o.insert(QStringLiteral("class"), cls);
         o.insert(QStringLiteral("confidence"), b.value(QStringLiteral("confidence")).toDouble());
         o.insert(QStringLiteral("bbox"), QJsonArray{b.value(QStringLiteral("x")).toDouble(),
@@ -339,9 +354,9 @@ void TeslaSceneItem::setBoxes(const QVariantList &boxes) {
         o.insert(QStringLiteral("predicted"), predicted);
         o.insert(QStringLiteral("missed"), b.value(QStringLiteral("missed")).toInt());
         o.insert(QStringLiteral("track_state"), predicted ? QStringLiteral("PREDICTED")
-                                                          : QStringLiteral("CONFIRMED"));
+                                                          : (tracked ? QStringLiteral("CONFIRMED") : QStringLiteral("UNTRACKED")));
         o.insert(QStringLiteral("spatial_validity"),
-                 (!predicted && mappable) ? QStringLiteral("RELATIVE_ONLY") : QStringLiteral("UNKNOWN"));
+                 (!predicted && tracked && mappable) ? QStringLiteral("RELATIVE_ONLY") : QStringLiteral("UNKNOWN"));
         const qint64 detect_ns = static_cast<qint64>(b.value(QStringLiteral("detectTimestampNs")).toULongLong());
         newest_detect_ns = std::max(newest_detect_ns, detect_ns);
         o.insert(QStringLiteral("detect_timestamp_ns"), detect_ns);
@@ -449,7 +464,14 @@ public:
         for (const QVariant &entry : list) {
             const QVariantMap map = entry.toMap();
             SourceBox b;
-            b.id = map.value(QStringLiteral("trackId")).toInt();
+            // Detection-order placeholders remain available to the 2D overlay,
+            // but cannot own a persistent BEV object. Require server provenance.
+            b.id = map.value(QStringLiteral("serverTrackId")).toInt();
+            const auto *video = qobject_cast<VideoItem *>(scene->videoSource());
+            if (!map.value(QStringLiteral("isTracked")).toBool() || b.id <= 0 ||
+                !video || map.value(QStringLiteral("trackerEpoch")).toString() != video->aiTrackingEpoch()) continue;
+            b.serverId = map.value("serverTrackId").toInt();
+            b.epoch = map.value("trackerEpoch").toString();
             b.cls = map.value(QStringLiteral("className")).toString();
             b.x = map.value(QStringLiteral("x")).toDouble();
             b.y = map.value(QStringLiteral("y")).toDouble();
@@ -465,7 +487,7 @@ public:
             b.measuredNs=map.value("detectTimestampNs").toLongLong();
             b.expiresNs=map.value("hazardExpiresNs").toLongLong();
             b.source=map.value("sourceId").toString();
-            if (!b.source.isEmpty() && b.source!=QString("Q%1").arg(scene->roadQuadrant()+1)) continue;
+            if (b.source!=QString("Q%1").arg(scene->roadQuadrant()+1)) continue;
             // Stale/predicted tracks are retained by the tracker for continuity,
             // but must not be drawn as if they were current detections.
             if (b.id > 0 && b.w > 2 && b.h > 2 && !b.predicted && b.missed == 0 &&
@@ -483,6 +505,7 @@ public:
         if (key != source_key_) {
             source_key_ = key;
             live_.clear();
+            births_.clear();
         }
         const double now = clock_.nsecsElapsed() / 1e9;
         dt_ = std::clamp(now - last_time_, 0.001, 0.12);
@@ -650,6 +673,10 @@ private:
         }
         const qint64 absoluteNs=std::chrono::duration_cast<std::chrono::nanoseconds>(
             std::chrono::steady_clock::now().time_since_epoch()).count();
+        // Rendering can occur more often than GUI synchronization. Integrate
+        // against this render's monotonic interval, never a reused sync delta.
+        const double renderDt = last_render_ns_ ? std::clamp(double(absoluteNs-last_render_ns_)/1e9,0.0,0.12) : .016;
+        last_render_ns_ = absoluteNs;
         for (const SourceBox &b : boxes_) {
             if (b.measuredNs<=0 || absoluteNs-b.measuredNs>600000000LL) continue;
             if (!(b.cls == "car" || b.cls == "truck" || b.cls == "bus" ||
@@ -671,29 +698,32 @@ private:
             const float tz = std::clamp(0.72f * widthDepth + 0.28f * bottomDepth, 4.0f, 62.0f);
             auto it = live_.find(b.id);
             if (it == live_.end()) {
-                LiveCar car;car.x=tx;car.z=tz;car.tx=tx;car.tz=tz;car.cls=b.cls;
-                car.seen=now;car.born=now;car.measuredNs=b.measuredNs;car.expiresNs=b.expiresNs;
+                LiveCar car; car.observe(tx,tz,b.measuredNs); car.cls=b.cls;
+                car.seen=now;car.born=now;car.expiresNs=b.expiresNs;
                 car.hazard=b.hazard;live_.insert(b.id,car);
+                if (!trace_.fileName().isEmpty()) ++births_[source_key_+QString::number(b.id)];
             } else {
                 it->cls=b.cls;it->hazard=b.hazard;it->expiresNs=b.expiresNs;
-                if (b.measuredNs>it->measuredNs) {
-                    const double dt=(b.measuredNs-it->measuredNs)/1e9;
-                    if(dt>.02 && dt<.6) {
-                        it->vx=std::clamp(float((tx-it->tx)/dt),-12.f,12.f);
-                        it->vz=std::clamp(float((tz-it->tz)/dt),-30.f,30.f);
-                    }
-                    it->tx=tx;it->tz=tz;it->measuredNs=b.measuredNs;it->seen=now;
-                }
+                if (it->observe(tx,tz,b.measuredNs)) it->seen=now;
             }
+            auto stored=live_.find(b.id);
+            if(stored!=live_.end()) {stored->lastBox=b;stored->rawX=tx;stored->rawZ=tz;}
         }
         for (auto it=live_.begin();it!=live_.end();) {
-            const double age=std::max(0.,double(absoluteNs-it->measuredNs)/1e9);
-            if(age>.6) {it=live_.erase(it);continue;}
-            const double predict=std::min(age,.25);
-            const float k=std::min(1.f,float(dt_*12));
-            it->x+=(it->tx+it->vx*predict-it->x)*k;
-            it->z+=(it->tz+it->vz*predict-it->z)*k;
-            const float fade=std::min(std::min(1.f,float((now-it->born)/.18)),std::clamp(float((.6-age)/.35),0.f,1.f));
+            if(it->expired(absoluteNs)) {it=live_.erase(it);continue;}
+            it->advance(renderDt);
+            const float fade=std::min(std::min(1.f,float((now-it->born)/.18)),it->fade(absoluteNs));
+            if (!trace_.fileName().isEmpty() && (trace_.isOpen() || trace_.open(QIODevice::WriteOnly))) {
+                const auto &b=it->lastBox;
+                QJsonObject row;row["render_ns"]=absoluteNs;row["visual_dt"]=renderDt;row["capture_timestamp_ns"]=b.measuredNs;
+                row["track_id"]=it.key();row["server_track_id"]=b.serverId;row["source_id"]=b.source;row["epoch"]=b.epoch;
+                row["source_key"]=source_key_;row["bbox"]=QJsonArray{b.x,b.y,b.w,b.h};row["bbox_width"]=b.w;
+                row["raw_x"]=it->rawX;row["raw_z"]=it->rawZ;row["filtered_x"]=it->x;row["filtered_z"]=it->z;
+                row["measurement_age_s"]=double(absoluteNs-b.measuredNs)/1e9;row["fade"]=fade;
+                row["birth_count"]=births_.value(source_key_+QString::number(it.key()));
+                row["display_only_hold"]=absoluteNs-b.measuredNs>200000000LL;
+                trace_.write(QJsonDocument(row).toJson(QJsonDocument::Compact)+'\n');
+            }
             const size_t start=v.size();
             carMesh(v,it->x,it->z,it->cls,false,absoluteNs<it->expiresNs?it->hazard:0);
             // Fade mesh height and tint toward the road; no texture readback or Python rendering.
@@ -856,7 +886,10 @@ private:
     QVariantMap lane_state_;
     QString display_view_ = QStringLiteral("front");
     int road_quadrant_ = 1;
+    qint64 last_render_ns_ = 0;
     QHash<int, LiveCar> live_;
+    QFile trace_{qEnvironmentVariable("QT_BEV_TRACE")};
+    QHash<QString,int> births_;
     QString source_key_;
     bool online_ = false;
     bool demo_ = false;

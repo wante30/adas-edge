@@ -1,0 +1,15 @@
+{
+  "host_finished_at": "2026-11-03T00:18:58.407439+08:00",
+  "baseline": "46400aa1a3610fe6537e0c2962ff991238e70c0d",
+  "fix_commits": [
+    "51319450",
+    "04057102"
+  ],
+  "runtime_archive": "adas-issue10-rk3566-runtime-20261103.tar.gz",
+  "runtime_bytes": 16422094,
+  "runtime_sha256": "f65e0fa1bb75508334fb0989ecccabd844e88415786c94dc224cf4102c01ea29",
+  "verified_runtime_files": 429,
+  "raw_evidence_sha256": "9ffcaace1367ecbe66157d8f304cf261ab5ceed20806fda22219fa7df56afc6a",
+  "scope": "LOCAL_REPLAY on real RK3566, no real PCIe/FPGA acceptance",
+  "runtime_repository_path": "deployment/lubancat/afternoon_mosaic/validation/issue10/runtime.tar.gz"
+}

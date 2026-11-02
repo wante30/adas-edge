@@ -1,0 +1,83 @@
+test_all_registered_critical_types_reach_decision (test_auto_brake.ControlEligibilityTest) ... CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"e82920424f3d4267a676f140ce7c52c4","timestamp_ns":1000000000,"events":[{"event_id":"event:0","kind":"SUSPECTED_BRAKING_WITH_CLOSING","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"e82920424f3d4267a676f140ce7c52c4","timestamp_ns":14770774103902,"last_error":0}}
+CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"07fe82afc8c94badb8a68d57b3636601","timestamp_ns":1000000000,"events":[{"event_id":"event:1","kind":"VEHICLE_CUT_IN","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"07fe82afc8c94badb8a68d57b3636601","timestamp_ns":14770775113925,"last_error":0}}
+CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"25bd7f9fff234196ab703b0b7c029b79","timestamp_ns":1000000000,"events":[{"event_id":"event:2","kind":"TWO_WHEELER_PATH_CONFLICT","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"25bd7f9fff234196ab703b0b7c029b79","timestamp_ns":14770776151656,"last_error":0}}
+CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"1d93394110294a06b22dd2f67c21305e","timestamp_ns":1000000000,"events":[{"event_id":"event:3","kind":"FRONT_COLLISION_RISK","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"1d93394110294a06b22dd2f67c21305e","timestamp_ns":14770776916975,"last_error":0}}
+CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"83b287c86d394048862eeb9bd8d0b624","timestamp_ns":1000000000,"events":[{"event_id":"event:4","kind":"ONCOMING_PATH_CONFLICT","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"83b287c86d394048862eeb9bd8d0b624","timestamp_ns":14770777529755,"last_error":0}}
+CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"8a9522b695974346aae73a04d9fd83d3","timestamp_ns":1000000000,"events":[{"event_id":"event:5","kind":"PEDESTRIAN_IN_PATH","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"8a9522b695974346aae73a04d9fd83d3","timestamp_ns":14770778858272,"last_error":0}}
+CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"80a18db6991a4a07b2809d72ee3ebe73","timestamp_ns":1000000000,"events":[{"event_id":"event:6","kind":"PEDESTRIAN_CROSSING_PATH","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"80a18db6991a4a07b2809d72ee3ebe73","timestamp_ns":14770779565259,"last_error":0}}
+ok
+test_context_vehicle_and_authorization_rejections (test_auto_brake.ControlEligibilityTest) ... ok
+test_nonblocking_timeout (test_auto_brake.ControlEligibilityTest) ... ok
+test_only_active_eligible_critical_requests (test_auto_brake.ControlEligibilityTest) ... CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"50e20fcef7294bbf9518c48c781706b4","timestamp_ns":1000000000,"events":[{"event_id":"test:1","kind":"FRONT_COLLISION_RISK","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"50e20fcef7294bbf9518c48c781706b4","timestamp_ns":14770793802705,"last_error":0}}
+ok
+test_pulse_request_ack_end_and_no_repeat (test_auto_brake.ControlEligibilityTest) ... CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"ff040973b64a436db1a7ca06b1208e12","timestamp_ns":1000000000,"events":[{"event_id":"test:1:pulse","kind":"CROSSWALK_BRAKE_PULSE","severity":"critical","track_id":1}],"duration_ms":300},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"ff040973b64a436db1a7ca06b1208e12","timestamp_ns":14770799175689,"last_error":0}}
+ok
+test_replay_has_no_socket_or_udp_io (test_control_transport.DryRunTests) ... CONTROL_DRY_RUN {"request":{"action":"brake","request_id":"test-1"},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"test-1","timestamp_ns":14770804010559,"last_error":0}}
+ok
+test_packed_crop_preserves_stride_colors_and_does_not_decode_full_frame (test_fast_q4.FastQ4Test) ... ok
+test_previous_mtl_semantics_are_unavailable_after_fast_q4_switch (test_fast_q4.FastQ4Test) ... ok
+test_profile_is_single_detection_and_uses_independent_generic_backend (test_fast_q4.FastQ4Test) ... ok
+test_shared_detector_rescales_capi_results_from_single_input (test_fast_q4.FastQ4Test) ... ok
+test_mosaic_adapter_forwards_only_q4_in_local_coordinates (test_forward_q4.Q4ForwardTest) ... ok
+test_non_forward_quadrants_do_not_generate_q4_braking_candidates (test_forward_q4.Q4ForwardTest) ... ok
+test_q4_risk_mapping_and_control_in_both_modes (test_forward_q4.Q4ForwardTest) ... ok
+test_road_track_identity_is_q4 (test_forward_q4.Q4ForwardTest) ... ok
+test_incompatible_mmio_publishes_offline_instead_of_fresh_online (test_hardware_bridge.HardwareBridgeTest) ... ok
+test_real_ack_keeps_word_and_correlates_request_without_claiming_execution (test_hardware_bridge.HardwareBridgeTest) ... ok
+test_real_snapshot_validates_identity_and_retains_sensor_state (test_hardware_bridge.HardwareBridgeTest) ... ok
+test_rejected_or_wrong_sequence_cannot_claim_active (test_hardware_bridge.HardwareBridgeTest) ... ok
+test_control_packets_pass_through_after_handshake (test_inference_mode.ModeTests) ... INFERENCE_MODE {"mode":"ROAD_Q1","epoch":"10","box_space":"ROAD_VIEW_1280x720","bridge_id":"45da97c675764c86a330eb2f96c7d855"}
+ok
+test_full_frame_once_and_only_q1_enters_road_logic (test_inference_mode.ModeTests) ... ok
+test_idempotence_and_older_epoch (test_inference_mode.ModeTests) ... INFERENCE_MODE {"mode":"MOSAIC_FULL","epoch":"10","box_space":"MOSAIC_1280x720","bridge_id":"ee7fcb5c6a7a4ea2808f7d921ae7920d"}
+INFERENCE_MODE {"mode":"ROAD_Q1","epoch":"11","box_space":"ROAD_VIEW_1280x720","bridge_id":"ee7fcb5c6a7a4ea2808f7d921ae7920d"}
+ok
+test_mosaic_load_failure_retains_road_detector (test_inference_mode.ModeTests) ... INFERENCE_MODE_FAILED RuntimeError bad library
+ok
+test_old_quadrant_packet_cannot_change_mode (test_inference_mode.ModeTests) ... INFERENCE_MODE {"mode":"MOSAIC_FULL","epoch":"10","box_space":"MOSAIC_1280x720","bridge_id":"5281836a13a24f46bb9d6386d5e484ff"}
+ok
+test_owned_full_frame_context_released_once (test_inference_mode.ModeTests) ... ok
+test_request_epoch_is_required (test_inference_mode.ModeTests) ... INFERENCE_MODE {"mode":"ROAD_Q1","epoch":"10","box_space":"ROAD_VIEW_1280x720","bridge_id":"5bf90cd02c954f4891c83b67a3f7114a"}
+ok
+test_growth_does_not_prove_oncoming (test_light_risk.FastRulesTest) ... ok
+test_lateral_crossing_and_cut_in (test_light_risk.FastRulesTest) ... ok
+test_person_and_two_wheeler (test_light_risk.FastRulesTest) ... ok
+test_q2_ignored (test_light_risk.FastRulesTest) ... ok
+test_static_large_is_only_warning (test_light_risk.FastRulesTest) ... ok
+test_sustained_growth_confirms_forward_risk (test_light_risk.FastRulesTest) ... ok
+test_crosswalk_person_association_requires_measured_person (test_light_semantics.SemanticsTest) ... ok
+test_mtl_mask_and_missing_mosaic_semantics (test_light_semantics.SemanticsTest) ... ok
+test_semantics_alone_cannot_create_critical (test_light_semantics.SemanticsTest) ... ok
+test_mosaic_is_registered_once_with_mosaic_task (test_model_switching.ModelSwitchTests) ... ok
+test_mvm_ack_reports_actual_mosaic_and_retains_last_road_model (test_model_switching.ModelSwitchTests) ... MODEL_SWITCH {"request_id":12,"state":"APPLIED","requested_id":"FAST-MOSAIC","active_id":"FAST-MOSAIC","inference":{"mode":"MOSAIC_FULL","epoch":"10"},"timestamp_ns":14770937807842}
+ok
+test_pending_mosaic_survives_mode_handshake_and_ack_uses_actual_backend (test_model_switching.ModelSwitchTests) ... MODEL_SWITCH {"request_id":13,"state":"SWITCHING","requested_id":"FAST-MOSAIC","active_id":"MTL-FAST","inference":{"mode":"ROAD_Q1","epoch":"10"},"timestamp_ns":14770941684604}
+MODEL_SWITCH {"request_id":13,"state":"APPLIED","requested_id":"FAST-MOSAIC","active_id":"FAST-MOSAIC","inference":{"mode":"MOSAIC_FULL","epoch":"10"},"timestamp_ns":14770942411132}
+ok
+test_priority_does_not_repeat_syscall_for_unchanged_value (test_model_switching.ModelSwitchTests) ... ok
+test_priority_targets_current_python_thread_with_absolute_nice (test_model_switching.ModelSwitchTests) ... ok
+test_road_request_waits_for_road_epoch_instead_of_loading_into_mosaic (test_model_switching.ModelSwitchTests) ... MODEL_SWITCH {"request_id":14,"state":"SWITCHING","requested_id":"MTL-FAST","active_id":"FAST-MOSAIC","inference":{"mode":"MOSAIC_FULL","epoch":"10"},"timestamp_ns":14770958258840}
+ok
+test_invalid_old_and_future_ocr_are_never_reused (test_navigation_gate.NavigationGateTest) ... ok
+test_map_motion_does_not_force_card_recognition_but_changed_digit_does (test_navigation_gate.NavigationGateTest) ... ok
+test_unchanged_card_uses_actual_freshness_without_refreshing_timestamp (test_navigation_gate.NavigationGateTest) ... ok
+test_greedy_assignment_does_not_match_wrong_class_or_reuse_a_track (test_performance_equivalence.PerformanceEquivalence) ... ok
+test_overlay_palette_is_byte_identical_for_all_semantic_classes (test_performance_equivalence.PerformanceEquivalence) ... ok
+test_seam_cannot_control (test_primary_tracks.IdentityTest) ... ok
+test_source_epoch_and_stability (test_primary_tracks.IdentityTest) ... ok
+test_time_expiry_and_missing_measurements (test_primary_tracks.IdentityTest) ... ok
+test_velocity_is_time_based_and_raw_measurement_preserved (test_primary_tracks.IdentityTest) ... ok
+test_clear_after_two_misses_without_ui_latch (test_risk_events.RiskEventTests) ... ok
+test_epoch_change_clears_old_identity (test_risk_events.RiskEventTests) ... ok
+test_identity_survives_upgrade_and_downgrade (test_risk_events.RiskEventTests) ... ok
+test_other_quadrant_cannot_enter_control (test_risk_events.RiskEventTests) ... ok
+test_stale_measurement_is_not_refreshed_by_new_detection_frame (test_risk_events.RiskEventTests) ... ok
+test_warning_never_control_eligible_and_road_box_is_scaled_once (test_risk_events.RiskEventTests) ... ok
+test_local_replay_preserves_shared_identity_and_normal_commands (test_session_contract.SessionContract) ... ok
+test_restore_never_signals_process_group_zero (test_session_contract.SessionContract) ... ok
+test_stop_tolerates_exit_before_signal (test_session_contract.SessionContract) ... ok
+
+----------------------------------------------------------------------
+Ran 58 tests in 0.324s
+
+OK

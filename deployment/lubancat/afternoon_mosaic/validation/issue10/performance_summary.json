@@ -1,0 +1,72 @@
+{
+  "perf_baseline": {
+    "FAST-Q4": {
+      "qt_time_weighted_fps": 42.37214970576458,
+      "ai_completion_fps": 16.78518153179018,
+      "hmi_cpu_all_four_cores_percent": 25.86928671019836,
+      "window_seconds": 35.44499999999999
+    },
+    "FAST-MOSAIC": {
+      "qt_time_weighted_fps": 44.44369426225961,
+      "ai_completion_fps": 14.579586236911998,
+      "hmi_cpu_all_four_cores_percent": 25.242865054484177,
+      "window_seconds": 4.806000000000001
+    },
+    "MTL-FAST": {
+      "qt_time_weighted_fps": 41.57714785827531,
+      "ai_completion_fps": 6.731447809496112,
+      "hmi_cpu_all_four_cores_percent": 25.952878402409404,
+      "window_seconds": 13.809000000000003
+    },
+    "whole_system_cpu_all_four_cores_percent": 70.90907190329511
+  },
+  "perf_final": {
+    "FAST-Q4": {
+      "qt_time_weighted_fps": 47.24389208389183,
+      "ai_completion_fps": 16.739542329594755,
+      "hmi_cpu_all_four_cores_percent": 26.5238757453963,
+      "window_seconds": 35.423
+    },
+    "FAST-MOSAIC": {
+      "qt_time_weighted_fps": 48.32209144921213,
+      "ai_completion_fps": 14.311479930458214,
+      "hmi_cpu_all_four_cores_percent": 24.568834025408158,
+      "window_seconds": 4.8100000000000005
+    },
+    "MTL-FAST": {
+      "qt_time_weighted_fps": 44.5379933592005,
+      "ai_completion_fps": 6.410486900134762,
+      "hmi_cpu_all_four_cores_percent": 26.37586505181262,
+      "window_seconds": 13.796999999999995
+    },
+    "whole_system_cpu_all_four_cores_percent": 66.63977338593796
+  },
+  "mtl_baseline": {
+    "MTL-FAST": {
+      "qt_time_weighted_fps": 46.09067386444654,
+      "ai_completion_fps": 6.746364535995097,
+      "hmi_cpu_all_four_cores_percent": 24.117713639933868,
+      "window_seconds": 39.79600000000001
+    },
+    "whole_system_cpu_all_four_cores_percent": 59.927389095164884
+  },
+  "mtl_final": {
+    "MTL-FAST": {
+      "qt_time_weighted_fps": 48.19597415242706,
+      "ai_completion_fps": 6.655073921340317,
+      "hmi_cpu_all_four_cores_percent": 25.10914306729703,
+      "window_seconds": 39.80100000000002
+    },
+    "whole_system_cpu_all_four_cores_percent": 61.974314415143965
+  },
+  "timestamp_alignment": {
+    "exact_baseline": {
+      "replay_timestamp_offset_ns": 273335041907,
+      "unique_box_matches": 25884
+    },
+    "exact_final": {
+      "replay_timestamp_offset_ns": 1114882759875,
+      "unique_box_matches": 21710
+    }
+  }
+}

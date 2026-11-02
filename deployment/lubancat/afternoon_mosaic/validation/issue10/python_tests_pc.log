@@ -1,0 +1,83 @@
+CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"76c8671e846d48a18aeb06ec8c778289","timestamp_ns":1000000000,"events":[{"event_id":"event:0","kind":"ONCOMING_PATH_CONFLICT","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"76c8671e846d48a18aeb06ec8c778289","timestamp_ns":287663387131600,"last_error":0}}
+CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"70d3ab3393ad4d639b2762710243fd1e","timestamp_ns":1000000000,"events":[{"event_id":"event:1","kind":"PEDESTRIAN_CROSSING_PATH","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"70d3ab3393ad4d639b2762710243fd1e","timestamp_ns":287663387275600,"last_error":0}}
+CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"f00f97996bc7448a94938f9cf5586a6e","timestamp_ns":1000000000,"events":[{"event_id":"event:2","kind":"TWO_WHEELER_PATH_CONFLICT","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"f00f97996bc7448a94938f9cf5586a6e","timestamp_ns":287663387368900,"last_error":0}}
+CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"f4a374ef94cd4aacb3ca8c81aa6ecefc","timestamp_ns":1000000000,"events":[{"event_id":"event:3","kind":"PEDESTRIAN_IN_PATH","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"f4a374ef94cd4aacb3ca8c81aa6ecefc","timestamp_ns":287663387445600,"last_error":0}}
+CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"fe36a1c1ee8c417883c6898e42ec10d5","timestamp_ns":1000000000,"events":[{"event_id":"event:4","kind":"FRONT_COLLISION_RISK","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"fe36a1c1ee8c417883c6898e42ec10d5","timestamp_ns":287663387518900,"last_error":0}}
+CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"b746150a971545a3b3e83b3f56c545e5","timestamp_ns":1000000000,"events":[{"event_id":"event:5","kind":"SUSPECTED_BRAKING_WITH_CLOSING","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"b746150a971545a3b3e83b3f56c545e5","timestamp_ns":287663387592900,"last_error":0}}
+CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"b5a89de313904cd196a17f3f704e5bb8","timestamp_ns":1000000000,"events":[{"event_id":"event:6","kind":"VEHICLE_CUT_IN","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"b5a89de313904cd196a17f3f704e5bb8","timestamp_ns":287663387658700,"last_error":0}}
+test_all_registered_critical_types_reach_decision (test_auto_brake.ControlEligibilityTest.test_all_registered_critical_types_reach_decision) ... ok
+test_context_vehicle_and_authorization_rejections (test_auto_brake.ControlEligibilityTest.test_context_vehicle_and_authorization_rejections) ... ok
+test_nonblocking_timeout (test_auto_brake.ControlEligibilityTest.test_nonblocking_timeout) ... ok
+CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"230e7045b44a47e3b23c813e31a39a16","timestamp_ns":1000000000,"events":[{"event_id":"test:1","kind":"FRONT_COLLISION_RISK","severity":"critical","track_id":1}]},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"230e7045b44a47e3b23c813e31a39a16","timestamp_ns":287663394583800,"last_error":0}}
+test_only_active_eligible_critical_requests (test_auto_brake.ControlEligibilityTest.test_only_active_eligible_critical_requests) ... ok
+CONTROL_DRY_RUN {"request":{"type":"action","action":"brake","source":"hazard","request_id":"589c248c5cef4168b90edf36a1f72dee","timestamp_ns":1000000000,"events":[{"event_id":"test:1:pulse","kind":"CROSSWALK_BRAKE_PULSE","severity":"critical","track_id":1}],"duration_ms":300},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"589c248c5cef4168b90edf36a1f72dee","timestamp_ns":287663396615400,"last_error":0}}
+test_pulse_request_ack_end_and_no_repeat (test_auto_brake.ControlEligibilityTest.test_pulse_request_ack_end_and_no_repeat) ... ok
+CONTROL_DRY_RUN {"request":{"action":"brake","request_id":"test-1"},"ack":{"ok":true,"accepted":true,"executed":false,"simulated":true,"control_mode":"DRY_RUN","request_id":"test-1","timestamp_ns":287663398633300,"last_error":0}}
+test_replay_has_no_socket_or_udp_io (test_control_transport.DryRunTests.test_replay_has_no_socket_or_udp_io) ... ok
+test_packed_crop_preserves_stride_colors_and_does_not_decode_full_frame (test_fast_q4.FastQ4Test.test_packed_crop_preserves_stride_colors_and_does_not_decode_full_frame) ... ok
+test_previous_mtl_semantics_are_unavailable_after_fast_q4_switch (test_fast_q4.FastQ4Test.test_previous_mtl_semantics_are_unavailable_after_fast_q4_switch) ... ok
+test_profile_is_single_detection_and_uses_independent_generic_backend (test_fast_q4.FastQ4Test.test_profile_is_single_detection_and_uses_independent_generic_backend) ... ok
+test_shared_detector_rescales_capi_results_from_single_input (test_fast_q4.FastQ4Test.test_shared_detector_rescales_capi_results_from_single_input) ... ok
+test_mosaic_adapter_forwards_only_q4_in_local_coordinates (test_forward_q4.Q4ForwardTest.test_mosaic_adapter_forwards_only_q4_in_local_coordinates) ... ok
+test_non_forward_quadrants_do_not_generate_q4_braking_candidates (test_forward_q4.Q4ForwardTest.test_non_forward_quadrants_do_not_generate_q4_braking_candidates) ... ok
+test_q4_risk_mapping_and_control_in_both_modes (test_forward_q4.Q4ForwardTest.test_q4_risk_mapping_and_control_in_both_modes) ... ok
+test_road_track_identity_is_q4 (test_forward_q4.Q4ForwardTest.test_road_track_identity_is_q4) ... ok
+test_incompatible_mmio_publishes_offline_instead_of_fresh_online (test_hardware_bridge.HardwareBridgeTest.test_incompatible_mmio_publishes_offline_instead_of_fresh_online) ... ok
+test_real_ack_keeps_word_and_correlates_request_without_claiming_execution (test_hardware_bridge.HardwareBridgeTest.test_real_ack_keeps_word_and_correlates_request_without_claiming_execution) ... ok
+test_real_snapshot_validates_identity_and_retains_sensor_state (test_hardware_bridge.HardwareBridgeTest.test_real_snapshot_validates_identity_and_retains_sensor_state) ... ok
+test_rejected_or_wrong_sequence_cannot_claim_active (test_hardware_bridge.HardwareBridgeTest.test_rejected_or_wrong_sequence_cannot_claim_active) ... ok
+INFERENCE_MODE {"mode":"ROAD_Q1","epoch":"10","box_space":"ROAD_VIEW_1280x720","bridge_id":"533392b6779e46b2beb86c724de781a4"}
+test_control_packets_pass_through_after_handshake (test_inference_mode.ModeTests.test_control_packets_pass_through_after_handshake) ... ok
+test_full_frame_once_and_only_q1_enters_road_logic (test_inference_mode.ModeTests.test_full_frame_once_and_only_q1_enters_road_logic) ... ok
+INFERENCE_MODE {"mode":"MOSAIC_FULL","epoch":"10","box_space":"MOSAIC_1280x720","bridge_id":"5be448d64fe0444c9d66a262b5dd35bf"}
+INFERENCE_MODE {"mode":"ROAD_Q1","epoch":"11","box_space":"ROAD_VIEW_1280x720","bridge_id":"5be448d64fe0444c9d66a262b5dd35bf"}
+test_idempotence_and_older_epoch (test_inference_mode.ModeTests.test_idempotence_and_older_epoch) ... ok
+INFERENCE_MODE_FAILED RuntimeError bad library
+test_mosaic_load_failure_retains_road_detector (test_inference_mode.ModeTests.test_mosaic_load_failure_retains_road_detector) ... ok
+INFERENCE_MODE {"mode":"MOSAIC_FULL","epoch":"10","box_space":"MOSAIC_1280x720","bridge_id":"1869735afcba40b8a22602c0772ba70e"}
+test_old_quadrant_packet_cannot_change_mode (test_inference_mode.ModeTests.test_old_quadrant_packet_cannot_change_mode) ... ok
+test_owned_full_frame_context_released_once (test_inference_mode.ModeTests.test_owned_full_frame_context_released_once) ... ok
+INFERENCE_MODE {"mode":"ROAD_Q1","epoch":"10","box_space":"ROAD_VIEW_1280x720","bridge_id":"e3c14abc74a54b7ebc2b71a758b06083"}
+test_request_epoch_is_required (test_inference_mode.ModeTests.test_request_epoch_is_required) ... ok
+test_growth_does_not_prove_oncoming (test_light_risk.FastRulesTest.test_growth_does_not_prove_oncoming) ... ok
+test_lateral_crossing_and_cut_in (test_light_risk.FastRulesTest.test_lateral_crossing_and_cut_in) ... ok
+test_person_and_two_wheeler (test_light_risk.FastRulesTest.test_person_and_two_wheeler) ... ok
+test_q2_ignored (test_light_risk.FastRulesTest.test_q2_ignored) ... ok
+test_static_large_is_only_warning (test_light_risk.FastRulesTest.test_static_large_is_only_warning) ... ok
+test_sustained_growth_confirms_forward_risk (test_light_risk.FastRulesTest.test_sustained_growth_confirms_forward_risk) ... ok
+test_crosswalk_person_association_requires_measured_person (test_light_semantics.SemanticsTest.test_crosswalk_person_association_requires_measured_person) ... ok
+test_mtl_mask_and_missing_mosaic_semantics (test_light_semantics.SemanticsTest.test_mtl_mask_and_missing_mosaic_semantics) ... ok
+test_semantics_alone_cannot_create_critical (test_light_semantics.SemanticsTest.test_semantics_alone_cannot_create_critical) ... ok
+test_mosaic_is_registered_once_with_mosaic_task (test_model_switching.ModelSwitchTests.test_mosaic_is_registered_once_with_mosaic_task) ... ok
+MODEL_SWITCH {"request_id":12,"state":"APPLIED","requested_id":"FAST-MOSAIC","active_id":"FAST-MOSAIC","inference":{"mode":"MOSAIC_FULL","epoch":"10"},"timestamp_ns":287663461794200}
+test_mvm_ack_reports_actual_mosaic_and_retains_last_road_model (test_model_switching.ModelSwitchTests.test_mvm_ack_reports_actual_mosaic_and_retains_last_road_model) ... ok
+MODEL_SWITCH {"request_id":13,"state":"SWITCHING","requested_id":"FAST-MOSAIC","active_id":"MTL-FAST","inference":{"mode":"ROAD_Q1","epoch":"10"},"timestamp_ns":287663462019300}
+MODEL_SWITCH {"request_id":13,"state":"APPLIED","requested_id":"FAST-MOSAIC","active_id":"FAST-MOSAIC","inference":{"mode":"MOSAIC_FULL","epoch":"10"},"timestamp_ns":287663462075000}
+test_pending_mosaic_survives_mode_handshake_and_ack_uses_actual_backend (test_model_switching.ModelSwitchTests.test_pending_mosaic_survives_mode_handshake_and_ack_uses_actual_backend) ... ok
+test_priority_does_not_repeat_syscall_for_unchanged_value (test_model_switching.ModelSwitchTests.test_priority_does_not_repeat_syscall_for_unchanged_value) ... ok
+test_priority_targets_current_python_thread_with_absolute_nice (test_model_switching.ModelSwitchTests.test_priority_targets_current_python_thread_with_absolute_nice) ... ok
+MODEL_SWITCH {"request_id":14,"state":"SWITCHING","requested_id":"MTL-FAST","active_id":"FAST-MOSAIC","inference":{"mode":"MOSAIC_FULL","epoch":"10"},"timestamp_ns":287663463460600}
+test_road_request_waits_for_road_epoch_instead_of_loading_into_mosaic (test_model_switching.ModelSwitchTests.test_road_request_waits_for_road_epoch_instead_of_loading_into_mosaic) ... ok
+test_invalid_old_and_future_ocr_are_never_reused (test_navigation_gate.NavigationGateTest.test_invalid_old_and_future_ocr_are_never_reused) ... ok
+test_map_motion_does_not_force_card_recognition_but_changed_digit_does (test_navigation_gate.NavigationGateTest.test_map_motion_does_not_force_card_recognition_but_changed_digit_does) ... ok
+test_unchanged_card_uses_actual_freshness_without_refreshing_timestamp (test_navigation_gate.NavigationGateTest.test_unchanged_card_uses_actual_freshness_without_refreshing_timestamp) ... ok
+test_greedy_assignment_does_not_match_wrong_class_or_reuse_a_track (test_performance_equivalence.PerformanceEquivalence.test_greedy_assignment_does_not_match_wrong_class_or_reuse_a_track) ... ok
+test_overlay_palette_is_byte_identical_for_all_semantic_classes (test_performance_equivalence.PerformanceEquivalence.test_overlay_palette_is_byte_identical_for_all_semantic_classes) ... ok
+test_seam_cannot_control (test_primary_tracks.IdentityTest.test_seam_cannot_control) ... ok
+test_source_epoch_and_stability (test_primary_tracks.IdentityTest.test_source_epoch_and_stability) ... ok
+test_time_expiry_and_missing_measurements (test_primary_tracks.IdentityTest.test_time_expiry_and_missing_measurements) ... ok
+test_velocity_is_time_based_and_raw_measurement_preserved (test_primary_tracks.IdentityTest.test_velocity_is_time_based_and_raw_measurement_preserved) ... ok
+test_clear_after_two_misses_without_ui_latch (test_risk_events.RiskEventTests.test_clear_after_two_misses_without_ui_latch) ... ok
+test_epoch_change_clears_old_identity (test_risk_events.RiskEventTests.test_epoch_change_clears_old_identity) ... ok
+test_identity_survives_upgrade_and_downgrade (test_risk_events.RiskEventTests.test_identity_survives_upgrade_and_downgrade) ... ok
+test_other_quadrant_cannot_enter_control (test_risk_events.RiskEventTests.test_other_quadrant_cannot_enter_control) ... ok
+test_stale_measurement_is_not_refreshed_by_new_detection_frame (test_risk_events.RiskEventTests.test_stale_measurement_is_not_refreshed_by_new_detection_frame) ... ok
+test_warning_never_control_eligible_and_road_box_is_scaled_once (test_risk_events.RiskEventTests.test_warning_never_control_eligible_and_road_box_is_scaled_once) ... ok
+test_local_replay_preserves_shared_identity_and_normal_commands (test_session_contract.SessionContract.test_local_replay_preserves_shared_identity_and_normal_commands) ... ok
+test_restore_never_signals_process_group_zero (test_session_contract.SessionContract.test_restore_never_signals_process_group_zero) ... ok
+test_stop_tolerates_exit_before_signal (test_session_contract.SessionContract.test_stop_tolerates_exit_before_signal) ... ok
+
+----------------------------------------------------------------------
+Ran 58 tests in 0.152s
+
+OK
