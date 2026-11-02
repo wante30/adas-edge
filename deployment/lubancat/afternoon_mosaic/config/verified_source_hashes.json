@@ -183,5 +183,6 @@
   "tools/validate_restart.py": "19baece77ab98f36eb5bb815b33df66d9d32a6b51d5e47221cddd650e4166e47",
   "tools/validate_scenarios.py": "7404603cc31edb7d68c59c2afa521d284ae1548d99a8bfb67edda313ee488fc2",
   "tools/validate_synthetic_ui.py": "06c3de6ffcf66314a01cc24ac72635fd0c72ce531864f6d54c7033f6ef7f948e",
-  "tools/xwd_to_png.py": "640cee43440f47229195143abb7a7970fa1d76bb13d8fe4dbe203334697f2a18"
+  "tools/xwd_to_png.py": "640cee43440f47229195143abb7a7970fa1d76bb13d8fe4dbe203334697f2a18",
+  "tools/analyze_real_pcie.py": "4f9a0f05117a53aafaaa378e5ef093d226226c674907803ecf7068ebc2d904b0"
 }
