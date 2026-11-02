@@ -505,6 +505,7 @@ public:
         if (key != source_key_) {
             source_key_ = key;
             live_.clear();
+            births_.clear();
         }
         const double now = clock_.nsecsElapsed() / 1e9;
         dt_ = std::clamp(now - last_time_, 0.001, 0.12);
@@ -672,6 +673,10 @@ private:
         }
         const qint64 absoluteNs=std::chrono::duration_cast<std::chrono::nanoseconds>(
             std::chrono::steady_clock::now().time_since_epoch()).count();
+        // Rendering can occur more often than GUI synchronization. Integrate
+        // against this render's monotonic interval, never a reused sync delta.
+        const double renderDt = last_render_ns_ ? std::clamp(double(absoluteNs-last_render_ns_)/1e9,0.0,0.12) : .016;
+        last_render_ns_ = absoluteNs;
         for (const SourceBox &b : boxes_) {
             if (b.measuredNs<=0 || absoluteNs-b.measuredNs>600000000LL) continue;
             if (!(b.cls == "car" || b.cls == "truck" || b.cls == "bus" ||
@@ -696,7 +701,7 @@ private:
                 LiveCar car; car.observe(tx,tz,b.measuredNs); car.cls=b.cls;
                 car.seen=now;car.born=now;car.expiresNs=b.expiresNs;
                 car.hazard=b.hazard;live_.insert(b.id,car);
-                ++births_[source_key_+QString::number(b.id)];
+                if (!trace_.fileName().isEmpty()) ++births_[source_key_+QString::number(b.id)];
             } else {
                 it->cls=b.cls;it->hazard=b.hazard;it->expiresNs=b.expiresNs;
                 if (it->observe(tx,tz,b.measuredNs)) it->seen=now;
@@ -706,11 +711,11 @@ private:
         }
         for (auto it=live_.begin();it!=live_.end();) {
             if(it->expired(absoluteNs)) {it=live_.erase(it);continue;}
-            it->advance(dt_);
+            it->advance(renderDt);
             const float fade=std::min(std::min(1.f,float((now-it->born)/.18)),it->fade(absoluteNs));
             if (!trace_.fileName().isEmpty() && (trace_.isOpen() || trace_.open(QIODevice::WriteOnly))) {
                 const auto &b=it->lastBox;
-                QJsonObject row;row["render_ns"]=absoluteNs;row["visual_dt"]=dt_;row["capture_timestamp_ns"]=b.measuredNs;
+                QJsonObject row;row["render_ns"]=absoluteNs;row["visual_dt"]=renderDt;row["capture_timestamp_ns"]=b.measuredNs;
                 row["track_id"]=it.key();row["server_track_id"]=b.serverId;row["source_id"]=b.source;row["epoch"]=b.epoch;
                 row["source_key"]=source_key_;row["bbox"]=QJsonArray{b.x,b.y,b.w,b.h};row["bbox_width"]=b.w;
                 row["raw_x"]=it->rawX;row["raw_z"]=it->rawZ;row["filtered_x"]=it->x;row["filtered_z"]=it->z;
@@ -881,6 +886,7 @@ private:
     QVariantMap lane_state_;
     QString display_view_ = QStringLiteral("front");
     int road_quadrant_ = 1;
+    qint64 last_render_ns_ = 0;
     QHash<int, LiveCar> live_;
     QFile trace_{qEnvironmentVariable("QT_BEV_TRACE")};
     QHash<QString,int> births_;
