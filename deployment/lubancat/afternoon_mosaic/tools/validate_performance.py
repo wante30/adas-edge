@@ -36,11 +36,15 @@ def main():
     assert b"ADAS_CONTROL_AUTHORIZED=0" in Path(f"/proc/{state['test_ai_pid']}/environ").read_bytes().split(b"\0")
     assert b"--raw-replay" not in Path(f"/proc/{state['test_hmi_pid']}/cmdline").read_bytes()
     deadline=time.monotonic()+90
+    r={}
     while time.monotonic()<deadline:
-        r=last(EV/(label+"_hmi.jsonl"))
+        try:r=last(EV/(label+"_hmi.jsonl"))
+        except (FileNotFoundError,RuntimeError):
+            time.sleep(.2)
+            continue
         if r["ai_online"] and r["ai_results"]>20:break
         time.sleep(.2)
-    assert r["ai_online"]
+    assert r.get("ai_online"), "AI did not become ready"
     select(label,"MTL-FAST")
     start=time.monotonic_ns();report=dict(kind="REAL_PCIE_FULL_SYSTEM",started_ns=start,seconds=args.seconds,control_authorized=False,windows=[],switches=[])
     sampler=subprocess.Popen(["python3",str(ROOT/"tools/profile_system.py"),"--label",label,"--seconds",str(args.seconds)])
@@ -72,7 +76,7 @@ def main():
         report["ended_ns"]=time.monotonic_ns();report["elapsed_s"]=(report["ended_ns"]-start)/1e9
         ai=[r for r in rows(EV/(label+"_ai.jsonl")) if start<=r.get("result_publish_timestamp_ns",0)<=report["ended_ns"]]
         events=[r for r in rows(EV/(label+"_events.jsonl")) if start<=r.get("logged_ns",0)<=report["ended_ns"]]
-        requests=[r for r in events if r.get("stage")=="control_request"]
+        requests=[r for r in events if r.get("stage") in ("control_request","brake_requested")]
         assert not requests,"Actuation is forbidden during performance acceptance"
         report["real_control_requests"]=len(requests)
         report["fast_q4_stale_mtl_rows"]=sum(bool((r.get("semantics") or {}).get("mtl_available")) for r in ai if r["model_id"]=="FAST-Q4")
