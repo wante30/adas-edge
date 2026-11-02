@@ -1,0 +1,12 @@
+{
+  "url": "http://127.0.0.1:8766/",
+  "loaded_core_thumbnails": 21,
+  "full_image": {
+    "src": "raw_candidates/live_pcie/mtl_front_0068.png",
+    "width": 1280,
+    "height": 720
+  },
+  "curated_count": 54,
+  "candidate_count": 361,
+  "page_errors": []
+}
