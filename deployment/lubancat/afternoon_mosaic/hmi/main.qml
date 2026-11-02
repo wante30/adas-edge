@@ -57,7 +57,7 @@ Item {
     property bool videoQsg: typeof videoQsgMode !== "undefined" ? videoQsgMode : false
     property var fpgaControl: fpgaIsp
     property bool autoHudSend: true
-    property bool sceneEnabled: (typeof sceneEnabled !== "undefined" ? sceneEnabled : true)
+    property bool sceneRenderingEnabled: (typeof sceneEnabled !== "undefined" ? sceneEnabled : true)
     property int trackingMode: 2  // 0=RAW, 1=FIX4, 2=TIME
     property int testTraffic: 1
     property int testLaneLeft: 0
@@ -163,7 +163,6 @@ Item {
             teslaLive.parent = target
             teslaLive.anchors.fill = target
         }
-        teslaLive.visible = (viewMode === 0 || viewMode === 2)
     }
 
     onViewModeChanged: {
@@ -1843,8 +1842,8 @@ Item {
                 roadQuadrant: root.forwardQuadrant
                 demoMode: false
                 online: video.aiOnline
-                visible: root.sceneEnabled
-                sourceKey: video.sourceMode + ":" + video.inferenceMode + ":" + video.aiModelId
+                visible: root.sceneRenderingEnabled && (root.viewMode === 0 || root.viewMode === 2)
+                sourceKey: video.sourceMode + ":" + video.inferenceMode + ":" + video.aiModelId + ":Q" + (root.forwardQuadrant + 1) + ":" + video.aiTrackingEpoch
                 sourceFrameId: video.displayFrameId
                 sourceTimestampNs: video.displayTimestampNs
             }

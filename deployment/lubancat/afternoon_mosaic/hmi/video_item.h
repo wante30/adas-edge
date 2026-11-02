@@ -43,6 +43,7 @@ class VideoItem : public QQuickFramebufferObject {
     Q_PROPERTY(bool hardwareAccelerated READ hardwareAccelerated NOTIFY metricsChanged)
     Q_PROPERTY(QString aiStatus READ aiStatus NOTIFY metricsChanged)
     Q_PROPERTY(bool aiOnline READ aiOnline NOTIFY metricsChanged)
+    Q_PROPERTY(QString aiTrackingEpoch READ aiTrackingEpoch NOTIFY metricsChanged)
     Q_PROPERTY(double aiFps READ aiFps NOTIFY metricsChanged)
     Q_PROPERTY(QString inferenceMode READ inferenceMode NOTIFY modelStatusChanged)
     Q_PROPERTY(bool inferenceReady READ inferenceReady NOTIFY modelStatusChanged)
@@ -214,6 +215,7 @@ public:
     QString aiModelState() const;
     QString aiModelMessage() const;
     QVariantList aiModelOptions() const;
+    QString aiTrackingEpoch() const { return QString::number(inference_epoch_.load()) + ":" + QString::number(ai_epoch_.load()); }
     bool aiOnline() const { return ai_online_.load(); }
     double aiFps() const { return ai_fps_.load(); }
     QString aiTraffic() const;
