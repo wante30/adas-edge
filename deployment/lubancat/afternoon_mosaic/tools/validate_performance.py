@@ -20,12 +20,12 @@ def capture(label,name):
 
 def select(label,model,timeout=60):
     path=EV/(label+"_hmi.jsonl");before=last(path)["ai_results"]
-    y={"MTL-FAST":304,"FAST-Q4":348,"FAST-MOSAIC":392}[model]
+    y={"MTL-FAST":304,"FAST-Q4":348,"FAST-MOSAIC":392,"FAST-MOSAIC-LITE":436}[model]
     click(1200,40);time.sleep(.4);click(1000,y)
     deadline=time.monotonic()+timeout
     while time.monotonic()<deadline:
         r=last(path)
-        if r["model_id"]==model and r["inference_ready"] and r["ai_online"] and r["ai_results"]>=before+15:return r
+        if r["model_id"]==model and r["inference_ready"] and r["ai_online"] and r["ai_results"]>=before+15 and r.get("ai_frame_id",0)>0 and r.get("ai_fps",0)>0:return r
         time.sleep(.2)
     raise RuntimeError("Model APPLIED/fresh result timeout: "+json.dumps(last(path)))
 

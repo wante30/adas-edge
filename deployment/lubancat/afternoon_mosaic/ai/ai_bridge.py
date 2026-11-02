@@ -950,6 +950,8 @@ class AiReplayBridge:
         self.event_store = EventStore()
         self.primary_tracks = PrimaryTracks()
         self.light_risk = LightRiskEngine()
+        self.lite = False
+        self.mosaic_profile_id = "FAST-MOSAIC"
         self.semantics = SemanticWorker()
         self.auto_brake = AutoBrakeController(journal=self.event_store.journal,
             forward_source_id="Q%d" % (self.args.forward_quadrant + 1))
@@ -1151,6 +1153,79 @@ class AiReplayBridge:
                 return profile_id
         return None
 
+    def _stop_navigation_worker(self):
+        if self.nav_process is not None:
+            try:
+                self.nav_request.put_nowait(None)
+            except queue.Full:
+                pass
+            self.nav_process.join(timeout=2.)
+            if self.nav_process.is_alive():
+                self.nav_process.terminate()
+                self.nav_process.join(timeout=1.)
+            if self.nav_process.is_alive():
+                raise RuntimeError("OCR worker did not stop")
+            self.nav_process.close()
+        for ipc in (self.nav_request, self.nav_result):
+            if ipc is not None:
+                ipc.cancel_join_thread()
+                ipc.close()
+        self.nav_process = self.nav_request = self.nav_result = self.navigation = None
+
+    def _set_lite(self, enabled):
+        if enabled == getattr(self,"lite",False):
+            return
+        if enabled:
+            self._stop_navigation_worker()
+            if self.semantics is not None:
+                self.semantics.close()
+                if self.semantics.thread.is_alive():
+                    raise RuntimeError("Semantic worker did not stop")
+            self.semantics = None
+            self._full_control_enabled = self.auto_brake.enabled
+            self.auto_brake.enabled = False
+            self.auto_brake.pending = None
+        else:
+            self.semantics = SemanticWorker()
+            if self.args.navigation_ocr:
+                ctx = multiprocessing.get_context("spawn")
+                self.navigation = Q2NavigationReader(ttl_ms=2000)
+                self.nav_request = ctx.Queue(maxsize=1)
+                self.nav_result = ctx.Queue(maxsize=2)
+                self.nav_process = ctx.Process(target=_navigation_ocr_process,
+                    args=(self.nav_request,self.nav_result,2000),name="q2-navigation-ocr",daemon=True)
+                self.nav_process.start()
+            self.auto_brake.enabled = self._full_control_enabled
+        self.auto_brake.last_result = None
+        self.primary_tracks = PrimaryTracks()
+        self.light_risk = LightRiskEngine()
+        self.navigation_last_update_ns = None
+        self.navigation_gate = NavigationGate()
+        self.lite = enabled
+        self.latest_dynamic_status = {}
+        self._model_options_dirty = True
+        print("WORKLOAD " + json.dumps(dict(lite=enabled,ocr_pid=self.nav_process.pid if self.nav_process else None,
+            semantics_active=self.semantics is not None,control_enabled=self.auto_brake.enabled,
+            control_authorized=self.auto_brake.authorized,timestamp_ns=time.monotonic_ns())),flush=True)
+
+    def _lite_result(self, snapshot, frame_id, timestamp_ns, input_fps, submitted_fps, ai_fps):
+        boxes = self._detections_to_boxes(snapshot)
+        status = build_dynamic_status(source=self.args.source,frame_id=frame_id,timestamp_ns=timestamp_ns,
+            now_ns=time.monotonic_ns(),hud={},navigation={},hazard_timestamp_ns=None,hazards=(),
+            detections=list(self.modes.adapter.all_detections),signal_age_ms=None,
+            main_age_ms=snapshot.main_age_ms,specialist_age_ms=None,
+            input_fps=input_fps,submitted_fps=submitted_fps,ai_fps=ai_fps)
+        status.update(model_selection=self._model_selection_status(include_options=True),
+            layout=self.args.layout,display_view="quad",road_quadrant=self.args.forward_quadrant,
+            inference=self.modes.status(frame_id),box_identities=self.box_identities,event_updates=[],
+            semantics={},risk_rules={},control=dict(control_mode=self.auto_brake.mode,enabled=False,
+                authorized=self.auto_brake.authorized,inactive_reason="PURE_DETECTION_LITE"),
+            workload=dict(lite=True,ocr_pid=None,semantics_active=False,tesla_active=False,hud_active=False))
+        self.latest_dynamic_status = status
+        self._last_analysis_cpu_ms = 0.
+        return encode_ai_result_packet(frame_id=frame_id,timestamp_ns=timestamp_ns,flags=0,
+            nav_direction=0,nav_distance_m=-1.,boxes=boxes,status=status)
+
     def _model_selection_status(self, include_options=False):
         with self.model_switch_lock:
             active_id = self.active_model_id
@@ -1161,7 +1236,7 @@ class AiReplayBridge:
         mosaic_active = self.modes.mode == "MOSAIC_FULL"
         active = self.model_profiles.get(active_id)
         status = {
-            "active_id": "FAST-MOSAIC" if mosaic_active else active_id,
+            "active_id": getattr(self,"mosaic_profile_id","FAST-MOSAIC") if mosaic_active else active_id,
             "active_label": "FAST-MOSAIC" if mosaic_active else (active.label if active else "自定义模型"),
             "requested_id": requested_id,
             "state": state,
@@ -1177,7 +1252,7 @@ class AiReplayBridge:
         payload = encode_model_switch_reply(
             request_id,
             state=state,
-            active_id="FAST-MOSAIC" if self.modes.adapter is not None else self.active_model_id,
+            active_id=getattr(self,"mosaic_profile_id","FAST-MOSAIC") if self.modes.adapter is not None else self.active_model_id,
             requested_id=requested_id,
             message=message,
         )
@@ -1187,7 +1262,7 @@ class AiReplayBridge:
             self.result_socket.sendto(payload, peer)
             print("MODEL_SWITCH " + json.dumps({"request_id": request_id,
                   "state": state, "requested_id": requested_id,
-                  "active_id": "FAST-MOSAIC" if self.modes.adapter is not None else self.active_model_id,
+                  "active_id": getattr(self,"mosaic_profile_id","FAST-MOSAIC") if self.modes.adapter is not None else self.active_model_id,
                   "inference": self.modes.status(), "timestamp_ns": time.monotonic_ns()},
                   separators=(",", ":")), flush=True)
         except OSError:
@@ -1209,7 +1284,7 @@ class AiReplayBridge:
             return
         with self.model_switch_lock:
             expected_mode = "MOSAIC_FULL" if profile.task == "mosaic" else "ROAD_Q1"
-            actual_id = "FAST-MOSAIC" if self.modes.adapter is not None else self.active_model_id
+            actual_id = getattr(self,"mosaic_profile_id","FAST-MOSAIC") if self.modes.adapter is not None else self.active_model_id
             if (self.modes.mode == expected_mode and profile_id == actual_id
                     and self.pending_model_switch is None):
                 self.model_switch_state = "READY"
@@ -1233,7 +1308,7 @@ class AiReplayBridge:
         # A newer full-frame choice supersedes a queued road model change.
         with self.model_switch_lock:
             pending, peer = self.pending_model_switch, self.model_switch_peer
-            if pending is not None and pending["profile_id"] == "FAST-MOSAIC":
+            if pending is not None and pending["profile_id"] in ("FAST-MOSAIC", "FAST-MOSAIC-LITE"):
                 return
             self.pending_model_switch = self.model_switch_peer = None
             self.model_switch_state = "READY"
@@ -1257,12 +1332,14 @@ class AiReplayBridge:
         request_id = int(request["request_id"])
         profile_id = str(request["profile_id"])
         profile = self.model_profiles[profile_id]
+        self._set_lite(profile_id == "FAST-MOSAIC-LITE")
         if profile.task == "mosaic":
+            self.mosaic_profile_id = profile_id
             with self.model_switch_lock:
                 self.model_switch_state = "APPLIED"
-                self.model_switch_message = "FAST-MOSAIC 已生效"
+                self.model_switch_message = profile_id + " APPLIED"
             self._send_model_switch_reply(request_id, peer, "APPLIED", profile_id,
-                                          "FAST-MOSAIC 已生效")
+                                          self.model_switch_message)
             return True
         old_main = self.pipeline.main_detector
         old_specialist = self.pipeline.specialist_detector
@@ -1508,6 +1585,8 @@ class AiReplayBridge:
         self.primary_tracks.update(detections,(mode["mode"],mode["epoch"],self.active_model_id,self.args.forward_quadrant),timestamp_ns)
         self._last_tracking_ms=(time.perf_counter_ns()-tracking_start)/1e6
         self._last_tracking_cpu_ms=(time.thread_time_ns()-tracking_cpu_start)/1e6
+        if self.lite:
+            return self._lite_result(snapshot,frame_id,timestamp_ns,input_fps,submitted_fps,ai_fps)
         self.stage_timings.setdefault("risk_fast",deque(maxlen=3600))
         risk_start=time.perf_counter_ns()
         risk_context=(mode["mode"],mode["epoch"],self.active_model_id,self.args.forward_quadrant)
@@ -1578,6 +1657,8 @@ class AiReplayBridge:
         status["road_quadrant"] = self.args.forward_quadrant
         status["forward_source_id"] = "Q%d" % (self.args.forward_quadrant + 1)
         status["inference"] = self.modes.status(frame_id)
+        status["workload"] = dict(lite=False,ocr_pid=self.nav_process.pid if self.nav_process else None,
+            semantics_active=True,tesla_active=True,hud_active=True)
         status["semantics"] = dict(semantic_result,metrics=self.semantics.metrics())
         status["risk_rules"] = self.light_risk.metrics()
         status["box_identities"] = self.box_identities
@@ -1706,7 +1787,7 @@ class AiReplayBridge:
                     self.timing_stream.write(json.dumps({
                         "frame_id": int(frame_id),
                         "inference": self.modes.status(frame_id),
-                        "model_id": "FAST-MOSAIC" if self.modes.adapter else self.active_model_id,
+                        "model_id": getattr(self,"mosaic_profile_id","FAST-MOSAIC") if self.modes.adapter else self.active_model_id,
                         "ai_fps": ai_fps,
                         "capture_timestamp_ns": int(timestamp_ns),
                         "ai_receive_timestamp_ns": int(ai_recv_ns),
@@ -1750,6 +1831,7 @@ class AiReplayBridge:
                         "risk_rules":self.latest_dynamic_status.get("risk_rules"),
                         "semantics":self.latest_dynamic_status.get("semantics"),
                         "control":self.latest_dynamic_status.get("control"),
+                        "workload":self.latest_dynamic_status.get("workload"),
                         "forward_source_id":self.latest_dynamic_status.get("forward_source_id"),
                     }, separators=(",", ":")) + "\n")
                 self.result_count += 1
@@ -1794,7 +1876,7 @@ class AiReplayBridge:
 
     def close(self):
         self.auto_brake.close()
-        self.semantics.close()
+        if self.semantics is not None:self.semantics.close()
         self.event_store.journal.close()
         self.running.clear()
         self.latest.close()
@@ -1806,16 +1888,7 @@ class AiReplayBridge:
         self.worker.join(timeout=10.0)
         self._publish_stopped_status()
         self.result_socket.close()
-        if self.nav_process is not None:
-            try:
-                self.nav_request.put_nowait(None)
-            except queue.Full:
-                pass
-            self.nav_process.join(timeout=2.0)
-            if self.nav_process.is_alive():
-                self.nav_process.terminate()
-                self.nav_process.join(timeout=1.0)
-            self.nav_process = None
+        self._stop_navigation_worker()
         if self.timing_stream is not None:
             self.timing_stream.close()
             self.timing_stream = None

@@ -56,6 +56,7 @@ Item {
     property bool modelPickerOpen: false
     property bool videoQsg: typeof videoQsgMode !== "undefined" ? videoQsgMode : false
     property var fpgaControl: fpgaIsp
+    property bool detectionLite: video.aiModelId === "FAST-MOSAIC-LITE"
     property bool autoHudSend: true
     property bool sceneEnabled: (typeof sceneEnabled !== "undefined" ? sceneEnabled : true)
     property int trackingMode: 2  // 0=RAW, 1=FIX4, 2=TIME
@@ -203,6 +204,12 @@ Item {
         text: "合成事件测试 · 不是实拍识别结果 · DRY RUN"
         color: "#FFD34D"; font.pixelSize: 20; font.bold: true
     }
+    Text {
+        anchors.horizontalCenter: parent.horizontalCenter; y: 75; z: 999
+        visible: root.detectionLite
+        text: "FAST-MOSAIC Lite · 纯检测，控制不活动"
+        color: "#FFD34D"; font.pixelSize: 20; font.bold: true
+    }
     // Capture-only helper; the normal UI never auto-switches.
     Timer {
         interval: 5000
@@ -215,7 +222,7 @@ Item {
     // root BAR1 bridge every 500 ms. Other V2 fields are manual-test only.
     Timer {
         interval: 500
-        running: root.autoHudSend
+        running: root.autoHudSend && !root.detectionLite
         repeat: true
         onTriggered: root.sendAiHud()
     }
@@ -1838,6 +1845,7 @@ Item {
             TeslaSceneItem {
                 id: teslaLive
                 anchors.fill: parent
+                active: !root.detectionLite && root.sceneEnabled
                 videoSource: video
                 laneState: vehicleTelemetry.laneState
                 displayView: video.aiDisplayView
@@ -2171,7 +2179,7 @@ Item {
                                      && video.aiModelState !== "SENDING"
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                             onClicked: {
-                                root.viewMode = option.id === "FAST-MOSAIC" ? 1 : 0
+                                root.viewMode = option.id.indexOf("FAST-MOSAIC") === 0 ? 1 : 0
                                 video.requestModelSwitch(option.id)
                                 root.modelPickerOpen = false
                             }

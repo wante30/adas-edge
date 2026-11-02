@@ -138,6 +138,8 @@ class ModeControl:
                     self.bridge.pipeline.main_detector = self.adapter
                     self.bridge.pipeline.specialist_detector = None
                 else:
+                    if getattr(self.bridge,"lite",False):self.bridge._set_lite(False)
+                    self.bridge.mosaic_profile_id = "FAST-MOSAIC"
                     self.bridge.pipeline.main_detector = self.road_main
                     self.bridge.pipeline.specialist_detector = self.road_specialist
                     self.adapter.close()

@@ -302,10 +302,17 @@ static QVector<ModelFace> loadModelFaces() {
 
 TeslaSceneItem::TeslaSceneItem(QQuickItem *parent) : QQuickFramebufferObject(parent) {
     setFlag(ItemHasContents, true);
-    auto *timer = new QTimer(this);
+    auto *timer = animation_timer_ = new QTimer(this);
     timer->setInterval(16);
     connect(timer, &QTimer::timeout, this, [this]() { update(); });
     timer->start();
+}
+
+void TeslaSceneItem::setActive(bool active) {
+    if (active_.exchange(active) == active) return;
+    if (active) animation_timer_->start(); else animation_timer_->stop();
+    emit activeChanged();
+    update();
 }
 
 QVariantList TeslaSceneItem::boxes() const {
@@ -432,6 +439,7 @@ void TeslaSceneItem::setSourceTimestampNs(qint64 ns) {
 
 class SceneRenderer : public QQuickFramebufferObject::Renderer {
 public:
+    bool active_ = true;
     SceneRenderer() { clock_.start(); }
 
     QOpenGLFramebufferObject *createFramebufferObject(const QSize &size) override {
@@ -443,6 +451,8 @@ public:
 
     void synchronize(QQuickFramebufferObject *item) override {
         auto *scene = static_cast<TeslaSceneItem *>(item);
+        active_ = scene->active();
+        if (!active_) { boxes_.clear(); live_.clear(); return; }
         const QVariantList list = scene->boxes();
         QVector<SourceBox> next;
         next.reserve(list.size());
@@ -491,6 +501,7 @@ public:
     }
 
     void render() override {
+        if (!active_) return;
         auto *ctx = QOpenGLContext::currentContext();
         if (!ctx) return;
         auto *f = ctx->functions();
@@ -874,7 +885,7 @@ void TeslaSceneItem::setVideoSource(QObject *value) {
     if(video_source_)disconnect(video_source_,nullptr,this,nullptr);
     video_source_=value;
     if(auto video=qobject_cast<VideoItem *>(value)) {
-        connect(video,&VideoItem::aiBoxesChanged,this,[this,video]{setBoxes(video->aiBoxes());});
+        connect(video,&VideoItem::aiBoxesChanged,this,[this,video]{if(active())setBoxes(video->aiBoxes());});
         setBoxes(video->aiBoxes());
     }
 }

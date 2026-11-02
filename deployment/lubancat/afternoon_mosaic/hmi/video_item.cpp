@@ -1737,7 +1737,7 @@ void VideoItem::requestModelSwitch(const QString &profileId) {
         emit aiStatusChanged();
         return;
     }
-    const int targetMode=profileId==QStringLiteral("FAST-MOSAIC")?1:0;
+    const int targetMode=profileId.startsWith(QStringLiteral("FAST-MOSAIC"))?1:0;
     if(inference_mode_.load()==targetMode && profileId!=aiModelId()) {
         // A different single-camera model needs a new epoch as well: no old
         // MTL/Q4 result may satisfy the new model's freshness handshake.

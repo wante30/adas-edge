@@ -78,3 +78,31 @@ class ModelSwitchTests(unittest.TestCase):
         bridge._queue_model_switch({"request_id": 14, "profile_id": "MTL-FAST"}, ("local", 1))
         self.assertEqual(bridge.pending_model_switch["profile_id"], "MTL-FAST")
         self.assertFalse(bridge._apply_pending_model_switch())
+
+    def test_lite_is_separate_profile_using_identical_model(self):
+        profiles={p.id:p for p in build_model_profiles("missing","legacy")}
+        full,lite=profiles["FAST-MOSAIC"],profiles["FAST-MOSAIC-LITE"]
+        self.assertEqual((full.main_model,full.input_size,full.backend,full.task),
+                         (lite.main_model,lite.input_size,lite.backend,lite.task))
+
+    def test_lite_stops_workers_and_restores_authorized_full_control(self):
+        bridge=self.make_bridge("MOSAIC_FULL")
+        bridge.lite=False;bridge.args=types.SimpleNamespace(navigation_ocr=True)
+        bridge.auto_brake=types.SimpleNamespace(enabled=True,authorized=True,pending=object(),last_result={})
+        bridge.nav_process=Mock();bridge.nav_process.is_alive.return_value=False
+        bridge.nav_request=Mock();bridge.nav_result=Mock();bridge.navigation=object()
+        process=bridge.nav_process;request=bridge.nav_request
+        bridge.semantics=Mock();bridge.semantics.thread.is_alive.return_value=False
+        semantic=bridge.semantics
+        bridge._set_lite(True)
+        process.join.assert_called_once();process.close.assert_called_once()
+        request.close.assert_called_once();semantic.close.assert_called_once()
+        self.assertIsNone(bridge.nav_process);self.assertIsNone(bridge.semantics)
+        self.assertFalse(bridge.auto_brake.enabled);self.assertTrue(bridge.auto_brake.authorized)
+        with patch.object(bridge_module.multiprocessing,"get_context") as context, \
+             patch.object(bridge_module,"SemanticWorker"):
+            context.return_value.Process.return_value.pid=99
+            bridge._set_lite(False)
+            context.return_value.Process.return_value.start.assert_called_once()
+        self.assertTrue(bridge.auto_brake.enabled);self.assertTrue(bridge.auto_brake.authorized)
+        self.assertFalse(bridge.lite)
