@@ -1959,6 +1959,17 @@ void VideoItem::setAiNavigationQuadrant(int quadrant) {
     emit aiSelectionChanged();
 }
 
+double VideoItem::aiTrafficConfidence() const {
+    QMutexLocker locker(&ai_metrics_mutex_);
+    double best=0.;
+    for(const QVariant &value:presented_boxes_) {
+        const QVariantMap box=value.toMap();
+        if(box.value(QStringLiteral("className")).toString()==QStringLiteral("traffic light"))
+            best=std::max(best,box.value(QStringLiteral("confidence")).toDouble());
+    }
+    return best;
+}
+
 QVariantList VideoItem::aiBoxes() const {
     QMutexLocker locker(&ai_metrics_mutex_);
     return presented_boxes_;

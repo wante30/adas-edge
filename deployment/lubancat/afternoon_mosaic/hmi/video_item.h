@@ -62,6 +62,7 @@ class VideoItem : public QQuickFramebufferObject {
     Q_PROPERTY(int aiDetectionCount READ aiDetectionCount NOTIFY aiBoxesChanged)
     Q_PROPERTY(QVariantMap aiDetectionCounts READ aiDetectionCounts NOTIFY aiBoxesChanged)
     Q_PROPERTY(QVariantList aiBoxes READ aiBoxes NOTIFY aiBoxesChanged)
+    Q_PROPERTY(double aiTrafficConfidence READ aiTrafficConfidence NOTIFY aiBoxesChanged)
     Q_PROPERTY(QVariantList aiHazardDetails READ aiHazardDetails NOTIFY aiStatusChanged)
     Q_PROPERTY(QVariantMap aiControlState READ aiControlState NOTIFY aiStatusChanged)
     // Expose the model through QObject so Qt 5 QML can consume it without
@@ -232,6 +233,7 @@ public:
     int aiDetectionCount() const;
     QVariantMap aiDetectionCounts() const;
     QVariantList aiBoxes() const;
+    double aiTrafficConfidence() const;
     AiBoxModel *bboxModel() const { return bbox_model_.get(); }
     QObject *bboxModelObject() const { return bbox_model_.get(); }
     bool nativeTargetOverlay() const { return !qEnvironmentVariableIsSet("QT_LEGACY_BOX_DELEGATES"); }

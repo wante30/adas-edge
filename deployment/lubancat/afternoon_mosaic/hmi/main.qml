@@ -337,11 +337,7 @@ Item {
     }
     function trafficConfidence() {
         if (!video.aiOnline) return "--"
-        var boxes = video.aiBoxes || [], best = 0
-        for (var i = 0; i < boxes.length; ++i) {
-            if (boxes[i].className === "traffic light")
-                best = Math.max(best, boxes[i].confidence || 0)
-        }
+        var best = video.aiTrafficConfidence
         return best > 0 ? Math.round(best * 100) + "%" : "--"
     }
     function trafficText() {
