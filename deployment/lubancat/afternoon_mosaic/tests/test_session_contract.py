@@ -27,6 +27,7 @@ class SessionContract(unittest.TestCase):
         with tempfile.TemporaryDirectory() as name:
             root=Path(name);evidence=root/'evidence';evidence.mkdir()
             build=root/'build-stage4';build.mkdir();(build/'qt_gpu_probe').touch()
+            library=root/'fast_mosaic/capi';library.mkdir(parents=True);(library/'libp2capi_generic.so').touch()
             boot=root/'boot';boot.write_text('test-boot',encoding='utf-8')
             state=evidence/'session.json'
             state.write_text(json.dumps({'boot_id':'test-boot','baseline_hmi':{
@@ -47,6 +48,8 @@ class SessionContract(unittest.TestCase):
             self.assertEqual(hmi[hmi.index('--ai-hz')+1],'0')
             self.assertEqual(ai[ai.index('--ocr-hz')+1],'2')
             self.assertEqual(env['ADAS_CONTROL_MODE'],'DRY_RUN')
+            self.assertEqual(env['ADAS_CONTROL_AUTHORIZED'],'0')
+            self.assertFalse(json.loads(state.read_text())['control_authorized'])
             self.assertIn('QT_QML_FILE',hmi_env)
 
 if __name__=='__main__':unittest.main()

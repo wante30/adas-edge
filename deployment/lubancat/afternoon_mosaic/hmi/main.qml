@@ -337,11 +337,7 @@ Item {
     }
     function trafficConfidence() {
         if (!video.aiOnline) return "--"
-        var boxes = video.aiBoxes || [], best = 0
-        for (var i = 0; i < boxes.length; ++i) {
-            if (boxes[i].className === "traffic light")
-                best = Math.max(best, boxes[i].confidence || 0)
-        }
+        var best = video.aiTrafficConfidence
         return best > 0 ? Math.round(best * 100) + "%" : "--"
     }
     function trafficText() {
@@ -908,7 +904,7 @@ Item {
                      && video.aiOnline && video.inferenceReady && video.bboxCount > 0
                      && (root.viewMode === 1 || root.roadQuadrant === root.forwardQuadrant)
             Repeater {
-                model: video.bboxModel
+                model: video.nativeTargetOverlay ? 0 : video.bboxModel
                 delegate: Item {
                     property bool nearHazard: Boolean(model.hazard)
                                                  && (model.hazardSeverity === "warning" || model.hazardSeverity === "critical")
@@ -973,6 +969,27 @@ Item {
                     }
                 }
             }
+        }
+
+        TargetOverlayItem {
+            x: video.x; y: video.y; width: video.width; height: video.height
+            visible: video.nativeTargetOverlay && (root.viewMode === 0 || root.viewMode === 1)
+                     && video.aiOnline && video.inferenceReady
+                     && (root.viewMode === 1 || root.roadQuadrant === root.forwardQuadrant)
+            videoSource: video
+            displayTimestampNs: video.displayTimestampNs
+            displayFrameId: video.displayFrameId
+            sourceFps: video.sourceFps
+            predictionMs: video.maxTrackPredictionMs
+            trackingMode: root.trackingMode
+            fontFamily: root.cjk
+        }
+
+        Text {
+            x: 12; y: 7
+            visible: video.aiModelId === "FAST-Q4" && video.aiOnline
+            text: "FAST-Q4 高速检测 · 车道/斑马线分割不可用"
+            color: "#A4C4CC"; font.family: root.cjk; font.pixelSize: 10
         }
 
         // Frame border and status chip.
@@ -1820,7 +1837,7 @@ Item {
             TeslaSceneItem {
                 id: teslaLive
                 anchors.fill: parent
-                boxes: video.aiBoxes
+                videoSource: video
                 laneState: vehicleTelemetry.laneState
                 displayView: video.aiDisplayView
                 roadQuadrant: root.forwardQuadrant

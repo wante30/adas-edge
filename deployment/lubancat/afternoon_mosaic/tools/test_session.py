@@ -97,6 +97,22 @@ def hardware_bridge(state, enable):
 
 def start(args):
     assert (ROOT / args.build / "qt_gpu_probe").is_file()
+    if not getattr(args,"no_ai",False):
+        generic=ROOT/"fast_mosaic/capi/libp2capi_generic.so"
+        if not generic.is_file():
+            raise RuntimeError("Missing bundled FAST-Q4/FAST-MOSAIC library: "+str(generic))
+    adopt=getattr(args,"adopt_session",None)
+    if adopt:
+        source=Path(adopt).resolve()
+        adopted=json.loads(source.read_text(encoding="utf-8"))
+        if adopted["boot_id"]!=BOOT.read_text().strip():
+            raise RuntimeError("Cannot adopt PIDs from a previous boot")
+        for key,marker in (("test_hmi_pid",b"qt_gpu_probe"),("test_ai_pid",b"isolated_ai.py")):
+            pid=adopted.get(key)
+            path=Path(f"/proc/{pid}/cmdline")
+            if pid and path.exists() and marker not in path.read_bytes():
+                raise RuntimeError("Session PID no longer belongs to ADAS: "+str(pid))
+        save(adopted)
     if STATE.exists():
         old = json.loads(STATE.read_text())
         if old["boot_id"] != BOOT.read_text().strip():
@@ -156,17 +172,24 @@ def start(args):
                "--summary", str(EVIDENCE / f"{args.label}_ai_summary.json")]
     env = {"ADAS_EDGE_ROOT": str(ROOT / "ai"), "ADAS_DISABLE_ROAD_SCENE": "1",
            "ADAS_LEGACY_HAZARD": "1", "ADAS_AUTO_BRAKE": "1", "ADAS_AI_DEBUG": "1",
+           "ADAS_CONTROL_AUTHORIZED": "1" if getattr(args, "authorize_control", False) else "0",
            "ADAS_TEST_ACTION_PORT": str(args.action_port),
            "ADAS_CONTROL_MODE": getattr(args, "control_mode", None) or ("DRY_RUN" if args.raw_replay else "HARDWARE"),
            "ADAS_EVENT_TIMELINE": str(EVIDENCE / (args.label + "_events.jsonl"))}
     if getattr(args,"synthetic_ui",False):
         if env["ADAS_CONTROL_MODE"]!="DRY_RUN":raise ValueError("Synthetic fixture requires DRY_RUN")
         ai_args=["python3",str(ROOT/"tools/synthetic_ui.py")]
+    if getattr(args, "no_navigation_ocr", False):
+        ai_args += ["--no-navigation-ocr"]
     hardware_bridge(state, env["ADAS_CONTROL_MODE"] == "HARDWARE")
     state["control_mode"] = env["ADAS_CONTROL_MODE"]
     state["forward_quadrant"] = forward_quadrant
     state["input_kind"] = "LOCAL_REPLAY" if args.raw_replay else "REAL_PCIE"
-    state["test_ai_pid"] = launch(ai_args, ROOT / "ai", env, f"{args.label}_ai.log")
+    state["control_authorized"] = env["ADAS_CONTROL_AUTHORIZED"] == "1"
+    state["diagnostic_no_ai"] = getattr(args, "no_ai", False)
+    state["diagnostic_no_ocr"] = getattr(args, "no_navigation_ocr", False)
+    state["test_ai_pid"] = (0 if state["diagnostic_no_ai"] else
+                            launch(ai_args, ROOT / "ai", env, f"{args.label}_ai.log"))
     hmi_args = state["baseline_hmi"]["args"][:]
     hmi_args[0] = str(ROOT / args.build / "qt_gpu_probe")
     if "--road-quadrant" in hmi_args:
@@ -193,6 +216,13 @@ def start(args):
     hmi_env["QT_AI_TIMING_LOG"] = str(EVIDENCE / (args.label + "_qt_ai.jsonl"))
     if args.external_qml:
         hmi_env["QT_QML_FILE"] = str(ROOT / "hmi/main.qml")
+    if getattr(args, "diagnostic_static_tesla", False):
+        hmi_env["QT_DIAGNOSTIC_STATIC_TESLA"]="1"
+        diagnostic_qml = ROOT / "hmi" / (args.label + "_static_tesla.qml")
+        diagnostic_qml.write_text((ROOT / "hmi/main.qml").read_text(encoding="utf-8").replace(
+            "boxes: video.aiBoxes", "boxes: []"), encoding="utf-8")
+        hmi_env["QT_QML_FILE"] = str(diagnostic_qml)
+    state["diagnostic_static_tesla"] = getattr(args, "diagnostic_static_tesla", False)
     state["test_hmi_pid"] = launch(hmi_args, ROOT / args.build, hmi_env, f"{args.label}_hmi.log")
     state["label"] = args.label
     save(state)
@@ -226,6 +256,12 @@ if __name__ == "__main__":
     parser.add_argument("--raw-replay", default="")
     parser.add_argument("--action-port", default="38262")
     parser.add_argument("--control-mode", choices=["DRY_RUN", "HARDWARE"])
+    parser.add_argument("--adopt-session", help="Take over an existing ADAS session on this boot")
+    parser.add_argument("--authorize-control", action="store_true",
+                        help="Explicitly authorize actuator sends; OFF for performance tests")
+    parser.add_argument("--no-ai", action="store_true", help="Diagnostic only")
+    parser.add_argument("--no-navigation-ocr", action="store_true", help="Diagnostic only")
+    parser.add_argument("--diagnostic-static-tesla", action="store_true", help="Diagnostic only")
     args = parser.parse_args()
     EVIDENCE.mkdir(exist_ok=True)
     start(args) if args.action == "start" else restore()

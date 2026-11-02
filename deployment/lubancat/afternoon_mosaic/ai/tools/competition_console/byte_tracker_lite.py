@@ -122,7 +122,10 @@ class ByteTracker:
             pairs = list(zip(rows, cols))
         else:
             order=np.argsort(cost,axis=None)
-            pairs=((int(k//len(dets)),int(k%len(dets))) for k in order if cost.flat[k]<=max_cost)
+            # Filter the entire cost array in NumPy, rather than crossing the
+            # Python/NumPy boundary for every rejected pair (most pairs).
+            order=order[cost.ravel()[order]<=max_cost].tolist()
+            pairs=((k//len(dets),k%len(dets)) for k in order)
         matched, used_t, used_d = [], set(), set()
         for i, j in pairs:
             if i in used_t or j in used_d:

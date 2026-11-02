@@ -1,0 +1,4 @@
+# Raw profiler rows are delivered in the evidence archive, not duplicated in Git.
+*.jsonl
+baseline/*.jsonl
+*.prof

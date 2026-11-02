@@ -10,6 +10,7 @@
 #include "video_item.h"
 #include "vehicle_telemetry_status.h"
 #include "tesla_scene_item.h"
+#include "target_overlay_item.h"
 
 #include <QFile>
 #include <QFileInfo>
@@ -148,6 +149,7 @@ int main(int argc, char **argv) {
     }
 
     qmlRegisterType<VideoItem>("QtGpuProbe", 1, 0, "VideoItem");
+    qmlRegisterType<TargetOverlayItem>("QtGpuProbe", 1, 0, "TargetOverlayItem");
     qmlRegisterType<TeslaSceneItem>("QtGpuProbe", 1, 0, "TeslaSceneItem");
     qmlRegisterType<HudControl>("QtGpuProbe", 1, 0, "HudControl");
     qmlRegisterType<PcieIspControl>("QtGpuProbe", 1, 0, "PcieIspControl");
@@ -247,6 +249,14 @@ int main(int argc, char **argv) {
                 sample["ai_frame_id"] = static_cast<qint64>(video->latestAiFrameId());
                 sample["ai_result_age_ms"] = video->aiResultAgeMs();
                 sample["ai_gui_update_ms"] = video->aiGuiUpdateMs();
+                sample["gui_long_update_count"] = static_cast<qint64>(video->guiLongUpdateCount());
+                sample["gui_long_update_total_ms"] = video->guiLongUpdateTotalMs();
+                sample["pgv_read_ms"] = video->pgvReadMs();
+                sample["pgv_crc_ms"] = video->pgvCrcMs();
+                sample["texture_upload_ms"] = video->uploadMs();
+                sample["source_to_upload_ms"] = video->sourceToUploadMs();
+                sample["sync_to_upload_ms"] = video->syncToUploadMs();
+                sample["ring_pool_no_free"] = static_cast<qint64>(video->ringPoolNoFree());
                 sample["source_crc_errors"] = static_cast<qint64>(video->sourceCrcErrors());
                 sample["source_dropped_frames"] = static_cast<qint64>(video->sourceDroppedFrames());
                 sample["cpu_percent_of_all_cores"] = video->cpuPercent();

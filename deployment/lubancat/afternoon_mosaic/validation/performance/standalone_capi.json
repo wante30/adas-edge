@@ -1,0 +1,1718 @@
+{
+  "FAST-Q4": {
+    "fps": 40.93899942360509,
+    "rows": [
+      {
+        "wall_ms": 24.266802,
+        "cpu_ms": 11.473584,
+        "crop_ms": 0.832693,
+        "timing": {
+          "preprocess_ms": 6.43434,
+          "rknn_call_ms": 13.47154426574707,
+          "decode_nms_ms": 0.7924429774284363,
+          "total_ms": 22.936244,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 25.260201,
+        "cpu_ms": 12.073251,
+        "crop_ms": 0.667613,
+        "timing": {
+          "preprocess_ms": 6.488881,
+          "rknn_call_ms": 13.827662467956543,
+          "decode_nms_ms": 0.7533609867095947,
+          "total_ms": 24.114556,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 23.752603,
+        "cpu_ms": 11.334749,
+        "crop_ms": 0.695612,
+        "timing": {
+          "preprocess_ms": 6.3238,
+          "rknn_call_ms": 13.113675117492676,
+          "decode_nms_ms": 0.7408199906349182,
+          "total_ms": 22.555334,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 25.791024,
+        "cpu_ms": 12.974208,
+        "crop_ms": 0.755986,
+        "timing": {
+          "preprocess_ms": 6.613128,
+          "rknn_call_ms": 13.603082656860352,
+          "decode_nms_ms": 0.8394020199775696,
+          "total_ms": 24.491673,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 23.766895,
+        "cpu_ms": 11.294501,
+        "crop_ms": 0.688321,
+        "timing": {
+          "preprocess_ms": 6.296092,
+          "rknn_call_ms": 13.251629829406738,
+          "decode_nms_ms": 0.7405279874801636,
+          "total_ms": 22.582167,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.707211,
+        "cpu_ms": 11.274667,
+        "crop_ms": 0.741986,
+        "timing": {
+          "preprocess_ms": 6.26751,
+          "rknn_call_ms": 13.601040840148926,
+          "decode_nms_ms": 0.8927749991416931,
+          "total_ms": 23.350695,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 23.989725,
+        "cpu_ms": 11.342044,
+        "crop_ms": 0.832693,
+        "timing": {
+          "preprocess_ms": 6.365215,
+          "rknn_call_ms": 13.310546875,
+          "decode_nms_ms": 0.7469450235366821,
+          "total_ms": 22.599083,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.65792,
+        "cpu_ms": 12.137999,
+        "crop_ms": 0.671987,
+        "timing": {
+          "preprocess_ms": 6.667669,
+          "rknn_call_ms": 13.150715827941895,
+          "decode_nms_ms": 0.7848610281944275,
+          "total_ms": 23.479025,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.31551,
+        "cpu_ms": 11.531624,
+        "crop_ms": 0.759486,
+        "timing": {
+          "preprocess_ms": 6.520963,
+          "rknn_call_ms": 13.467752456665039,
+          "decode_nms_ms": 0.7842770218849182,
+          "total_ms": 23.043283,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.626713,
+        "cpu_ms": 12.214416,
+        "crop_ms": 0.696779,
+        "timing": {
+          "preprocess_ms": 6.52738,
+          "rknn_call_ms": 13.180173873901367,
+          "decode_nms_ms": 0.82744300365448,
+          "total_ms": 23.355361,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.443841,
+        "cpu_ms": 11.661127,
+        "crop_ms": 0.858651,
+        "timing": {
+          "preprocess_ms": 6.463798,
+          "rknn_call_ms": 13.53395938873291,
+          "decode_nms_ms": 0.7431529760360718,
+          "total_ms": 23.060784,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.344968,
+        "cpu_ms": 12.05779,
+        "crop_ms": 0.759486,
+        "timing": {
+          "preprocess_ms": 6.591837,
+          "rknn_call_ms": 13.076634407043457,
+          "decode_nms_ms": 0.8216099739074707,
+          "total_ms": 23.041825,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 25.13362,
+        "cpu_ms": 12.116414,
+        "crop_ms": 0.736445,
+        "timing": {
+          "preprocess_ms": 6.649294,
+          "rknn_call_ms": 13.800537109375,
+          "decode_nms_ms": 0.7559859752655029,
+          "total_ms": 23.888518,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.003141,
+        "cpu_ms": 11.554957,
+        "crop_ms": 0.671405,
+        "timing": {
+          "preprocess_ms": 6.546338,
+          "rknn_call_ms": 13.25046443939209,
+          "decode_nms_ms": 0.7393620014190674,
+          "total_ms": 22.787205,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 25.146453,
+        "cpu_ms": 12.149375,
+        "crop_ms": 0.73382,
+        "timing": {
+          "preprocess_ms": 6.735918,
+          "rknn_call_ms": 13.840203285217285,
+          "decode_nms_ms": 0.7510280013084412,
+          "total_ms": 23.917393,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 23.994974,
+        "cpu_ms": 11.432458,
+        "crop_ms": 0.669945,
+        "timing": {
+          "preprocess_ms": 6.334591,
+          "rknn_call_ms": 13.417293548583984,
+          "decode_nms_ms": 0.730027973651886,
+          "total_ms": 22.79683,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.121555,
+        "cpu_ms": 11.598711,
+        "crop_ms": 0.656529,
+        "timing": {
+          "preprocess_ms": 6.443382,
+          "rknn_call_ms": 13.278755187988281,
+          "decode_nms_ms": 0.7641519904136658,
+          "total_ms": 22.966869,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.149846,
+        "cpu_ms": 11.373542,
+        "crop_ms": 0.731778,
+        "timing": {
+          "preprocess_ms": 6.453298,
+          "rknn_call_ms": 13.47970962524414,
+          "decode_nms_ms": 0.7711529731750488,
+          "total_ms": 22.915244,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 25.158412,
+        "cpu_ms": 12.249709,
+        "crop_ms": 0.675488,
+        "timing": {
+          "preprocess_ms": 6.511047,
+          "rknn_call_ms": 13.581790924072266,
+          "decode_nms_ms": 0.7513189911842346,
+          "total_ms": 23.988849,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 23.737729,
+        "cpu_ms": 11.348748,
+        "crop_ms": 0.661779,
+        "timing": {
+          "preprocess_ms": 6.231344,
+          "rknn_call_ms": 13.0524263381958,
+          "decode_nms_ms": 0.7311949729919434,
+          "total_ms": 22.437795,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.961831,
+        "cpu_ms": 12.057207,
+        "crop_ms": 0.746653,
+        "timing": {
+          "preprocess_ms": 6.672919,
+          "rknn_call_ms": 13.745996475219727,
+          "decode_nms_ms": 0.8878170251846313,
+          "total_ms": 23.630981,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 23.909517,
+        "cpu_ms": 11.263874,
+        "crop_ms": 0.774361,
+        "timing": {
+          "preprocess_ms": 6.285301,
+          "rknn_call_ms": 13.338544845581055,
+          "decode_nms_ms": 0.7379029989242554,
+          "total_ms": 22.61425,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.18018,
+        "cpu_ms": 11.597544,
+        "crop_ms": 0.674905,
+        "timing": {
+          "preprocess_ms": 6.527963,
+          "rknn_call_ms": 13.368003845214844,
+          "decode_nms_ms": 0.7379029989242554,
+          "total_ms": 22.970368,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.316385,
+        "cpu_ms": 11.526084,
+        "crop_ms": 0.746944,
+        "timing": {
+          "preprocess_ms": 6.530296,
+          "rknn_call_ms": 13.520543098449707,
+          "decode_nms_ms": 0.7731940150260925,
+          "total_ms": 23.056408,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.135846,
+        "cpu_ms": 11.216041,
+        "crop_ms": 0.682779,
+        "timing": {
+          "preprocess_ms": 6.264302,
+          "rknn_call_ms": 13.623498916625977,
+          "decode_nms_ms": 0.7545279860496521,
+          "total_ms": 22.911161,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.098514,
+        "cpu_ms": 11.305583,
+        "crop_ms": 0.80411,
+        "timing": {
+          "preprocess_ms": 6.3518,
+          "rknn_call_ms": 13.415543556213379,
+          "decode_nms_ms": 0.7043619751930237,
+          "total_ms": 22.792163,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.435674,
+        "cpu_ms": 11.235292,
+        "crop_ms": 0.674029,
+        "timing": {
+          "preprocess_ms": 6.280926,
+          "rknn_call_ms": 13.932368278503418,
+          "decode_nms_ms": 0.7481110095977783,
+          "total_ms": 23.24453,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 23.943642,
+        "cpu_ms": 11.212541,
+        "crop_ms": 0.729153,
+        "timing": {
+          "preprocess_ms": 6.481881,
+          "rknn_call_ms": 13.46804428100586,
+          "decode_nms_ms": 0.722445011138916,
+          "total_ms": 22.711957,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.185137,
+        "cpu_ms": 11.488459,
+        "crop_ms": 0.673446,
+        "timing": {
+          "preprocess_ms": 6.376008,
+          "rknn_call_ms": 13.401543617248535,
+          "decode_nms_ms": 0.7661939859390259,
+          "total_ms": 23.007701,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.895041,
+        "cpu_ms": 12.242126,
+        "crop_ms": 0.676071,
+        "timing": {
+          "preprocess_ms": 6.552754,
+          "rknn_call_ms": 13.543583869934082,
+          "decode_nms_ms": 0.7434449791908264,
+          "total_ms": 23.719646,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.372092,
+        "cpu_ms": 11.523461,
+        "crop_ms": 0.74607,
+        "timing": {
+          "preprocess_ms": 6.32205,
+          "rknn_call_ms": 13.51412582397461,
+          "decode_nms_ms": 0.8455259799957275,
+          "total_ms": 23.113282,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.344093,
+        "cpu_ms": 11.526958,
+        "crop_ms": 0.674029,
+        "timing": {
+          "preprocess_ms": 6.361133,
+          "rknn_call_ms": 13.529874801635742,
+          "decode_nms_ms": 0.7329440116882324,
+          "total_ms": 23.189989,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.994789,
+        "cpu_ms": 11.762627,
+        "crop_ms": 0.645738,
+        "timing": {
+          "preprocess_ms": 6.330508,
+          "rknn_call_ms": 14.12778091430664,
+          "decode_nms_ms": 0.7933189868927002,
+          "total_ms": 23.714104,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.885124,
+        "cpu_ms": 12.26225,
+        "crop_ms": 0.764736,
+        "timing": {
+          "preprocess_ms": 6.479839,
+          "rknn_call_ms": 13.400087356567383,
+          "decode_nms_ms": 0.748403012752533,
+          "total_ms": 23.633315,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.476507,
+        "cpu_ms": 11.488752,
+        "crop_ms": 0.649238,
+        "timing": {
+          "preprocess_ms": 6.280051,
+          "rknn_call_ms": 13.705163955688477,
+          "decode_nms_ms": 0.7731940150260925,
+          "total_ms": 23.290321,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.886292,
+        "cpu_ms": 12.321459,
+        "crop_ms": 0.803236,
+        "timing": {
+          "preprocess_ms": 6.50288,
+          "rknn_call_ms": 13.29450511932373,
+          "decode_nms_ms": 0.8262760043144226,
+          "total_ms": 23.573232,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.062931,
+        "cpu_ms": 11.239083,
+        "crop_ms": 0.643696,
+        "timing": {
+          "preprocess_ms": 6.231343,
+          "rknn_call_ms": 13.455209732055664,
+          "decode_nms_ms": 0.7834020256996155,
+          "total_ms": 22.884036,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.912832,
+        "cpu_ms": 12.345377,
+        "crop_ms": 0.704945,
+        "timing": {
+          "preprocess_ms": 6.518921,
+          "rknn_call_ms": 13.346712112426758,
+          "decode_nms_ms": 0.8073179721832275,
+          "total_ms": 23.579648,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.329802,
+        "cpu_ms": 11.463079,
+        "crop_ms": 0.658571,
+        "timing": {
+          "preprocess_ms": 6.341009,
+          "rknn_call_ms": 13.507417678833008,
+          "decode_nms_ms": 0.8493170142173767,
+          "total_ms": 23.124949,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.028807,
+        "cpu_ms": 11.447042,
+        "crop_ms": 0.725945,
+        "timing": {
+          "preprocess_ms": 6.363466,
+          "rknn_call_ms": 13.316671371459961,
+          "decode_nms_ms": 0.7807769775390625,
+          "total_ms": 22.70554,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.930916,
+        "cpu_ms": 11.833791,
+        "crop_ms": 0.773486,
+        "timing": {
+          "preprocess_ms": 6.413632,
+          "rknn_call_ms": 13.734330177307129,
+          "decode_nms_ms": 0.769694983959198,
+          "total_ms": 23.537941,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.078098,
+        "cpu_ms": 11.340003,
+        "crop_ms": 0.703779,
+        "timing": {
+          "preprocess_ms": 6.323508,
+          "rknn_call_ms": 13.41408634185791,
+          "decode_nms_ms": 0.7624030113220215,
+          "total_ms": 22.864786,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.167346,
+        "cpu_ms": 11.412624,
+        "crop_ms": 0.670821,
+        "timing": {
+          "preprocess_ms": 6.438715,
+          "rknn_call_ms": 13.35458755493164,
+          "decode_nms_ms": 0.7810689806938171,
+          "total_ms": 22.951993,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.361009,
+        "cpu_ms": 11.726165,
+        "crop_ms": 0.777569,
+        "timing": {
+          "preprocess_ms": 6.40109,
+          "rknn_call_ms": 13.44908618927002,
+          "decode_nms_ms": 0.7396529912948608,
+          "total_ms": 23.0392,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.151305,
+        "cpu_ms": 11.377044,
+        "crop_ms": 0.865067,
+        "timing": {
+          "preprocess_ms": 6.282967,
+          "rknn_call_ms": 13.480875968933105,
+          "decode_nms_ms": 0.7519029974937439,
+          "total_ms": 22.78108,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.277594,
+        "cpu_ms": 11.384041,
+        "crop_ms": 0.634363,
+        "timing": {
+          "preprocess_ms": 6.451547,
+          "rknn_call_ms": 13.659956932067871,
+          "decode_nms_ms": 0.7317780256271362,
+          "total_ms": 23.113865,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.294218,
+        "cpu_ms": 11.596374,
+        "crop_ms": 0.664987,
+        "timing": {
+          "preprocess_ms": 6.43259,
+          "rknn_call_ms": 13.532793045043945,
+          "decode_nms_ms": 0.7303199768066406,
+          "total_ms": 23.14624,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.519381,
+        "cpu_ms": 11.567501,
+        "crop_ms": 0.64253,
+        "timing": {
+          "preprocess_ms": 6.408965,
+          "rknn_call_ms": 13.666373252868652,
+          "decode_nms_ms": 0.722445011138916,
+          "total_ms": 23.270779,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.161804,
+        "cpu_ms": 11.591998,
+        "crop_ms": 0.658279,
+        "timing": {
+          "preprocess_ms": 6.280926,
+          "rknn_call_ms": 13.148383140563965,
+          "decode_nms_ms": 0.8618590235710144,
+          "total_ms": 22.997784,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      },
+      {
+        "wall_ms": 24.663462,
+        "cpu_ms": 11.757378,
+        "crop_ms": 0.666446,
+        "timing": {
+          "preprocess_ms": 6.51863,
+          "rknn_call_ms": 13.75970458984375,
+          "decode_nms_ms": 0.7425690293312073,
+          "total_ms": 23.462984,
+          "output_count": 9,
+          "detection_count": 14,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 14
+      }
+    ]
+  },
+  "FAST-MOSAIC": {
+    "fps": 31.782607938065347,
+    "rows": [
+      {
+        "wall_ms": 31.628625,
+        "cpu_ms": 19.1345,
+        "crop_ms": 1.956756,
+        "timing": {
+          "preprocess_ms": 12.334064,
+          "rknn_call_ms": 13.199714660644531,
+          "decode_nms_ms": 0.6448630094528198,
+          "total_ms": 29.122088,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.597709,
+        "cpu_ms": 18.928584,
+        "crop_ms": 1.773884,
+        "timing": {
+          "preprocess_ms": 12.615809,
+          "rknn_call_ms": 13.346713066101074,
+          "decode_nms_ms": 0.6597380042076111,
+          "total_ms": 29.19267,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 30.959263,
+        "cpu_ms": 18.318125,
+        "crop_ms": 1.861383,
+        "timing": {
+          "preprocess_ms": 11.987571,
+          "rknn_call_ms": 13.548833847045898,
+          "decode_nms_ms": 0.5917810201644897,
+          "total_ms": 28.622764,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 30.946429,
+        "cpu_ms": 18.153042,
+        "crop_ms": 1.7628,
+        "timing": {
+          "preprocess_ms": 12.442854,
+          "rknn_call_ms": 13.481168746948242,
+          "decode_nms_ms": 0.578656017780304,
+          "total_ms": 28.693638,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.087302,
+        "cpu_ms": 18.558753,
+        "crop_ms": 1.698636,
+        "timing": {
+          "preprocess_ms": 12.733349,
+          "rknn_call_ms": 13.157423973083496,
+          "decode_nms_ms": 0.6016970276832581,
+          "total_ms": 28.920259,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 32.111908,
+        "cpu_ms": 19.033873,
+        "crop_ms": 1.692802,
+        "timing": {
+          "preprocess_ms": 12.229358,
+          "rknn_call_ms": 13.7821626663208,
+          "decode_nms_ms": 0.6279460191726685,
+          "total_ms": 29.75441,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.229049,
+        "cpu_ms": 18.449082,
+        "crop_ms": 1.8188,
+        "timing": {
+          "preprocess_ms": 12.552519,
+          "rknn_call_ms": 13.44150161743164,
+          "decode_nms_ms": 0.6002389788627625,
+          "total_ms": 28.921425,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 30.940887,
+        "cpu_ms": 18.521415,
+        "crop_ms": 1.767759,
+        "timing": {
+          "preprocess_ms": 12.6126,
+          "rknn_call_ms": 13.057967185974121,
+          "decode_nms_ms": 0.620947003364563,
+          "total_ms": 28.742928,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.227299,
+        "cpu_ms": 18.603959,
+        "crop_ms": 1.798091,
+        "timing": {
+          "preprocess_ms": 12.271065,
+          "rknn_call_ms": 13.31346321105957,
+          "decode_nms_ms": 0.6638209819793701,
+          "total_ms": 28.795427,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.803914,
+        "cpu_ms": 19.276832,
+        "crop_ms": 1.933423,
+        "timing": {
+          "preprocess_ms": 12.889096,
+          "rknn_call_ms": 13.219547271728516,
+          "decode_nms_ms": 0.6416550278663635,
+          "total_ms": 29.271419,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 30.749558,
+        "cpu_ms": 17.510793,
+        "crop_ms": 1.89609,
+        "timing": {
+          "preprocess_ms": 11.608702,
+          "rknn_call_ms": 13.976117134094238,
+          "decode_nms_ms": 0.6066550016403198,
+          "total_ms": 28.378935,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 30.718642,
+        "cpu_ms": 18.261253,
+        "crop_ms": 1.776509,
+        "timing": {
+          "preprocess_ms": 12.504686,
+          "rknn_call_ms": 13.164133071899414,
+          "decode_nms_ms": 0.6431130170822144,
+          "total_ms": 28.470225,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 32.066701,
+        "cpu_ms": 19.260791,
+        "crop_ms": 1.701552,
+        "timing": {
+          "preprocess_ms": 12.558935,
+          "rknn_call_ms": 13.560791015625,
+          "decode_nms_ms": 0.5976139903068542,
+          "total_ms": 29.25596,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.363797,
+        "cpu_ms": 18.64275,
+        "crop_ms": 1.772717,
+        "timing": {
+          "preprocess_ms": 12.592185,
+          "rknn_call_ms": 13.424586296081543,
+          "decode_nms_ms": 0.678987979888916,
+          "total_ms": 29.11013,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 30.912889,
+        "cpu_ms": 18.387833,
+        "crop_ms": 1.766593,
+        "timing": {
+          "preprocess_ms": 12.539685,
+          "rknn_call_ms": 13.039010047912598,
+          "decode_nms_ms": 0.6609039902687073,
+          "total_ms": 28.570848,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 32.867602,
+        "cpu_ms": 19.755752,
+        "crop_ms": 1.940131,
+        "timing": {
+          "preprocess_ms": 13.256297,
+          "rknn_call_ms": 13.78128719329834,
+          "decode_nms_ms": 0.6314460039138794,
+          "total_ms": 30.457897,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 30.669351,
+        "cpu_ms": 18.005457,
+        "crop_ms": 1.698635,
+        "timing": {
+          "preprocess_ms": 12.322107,
+          "rknn_call_ms": 13.162964820861816,
+          "decode_nms_ms": 0.6559460163116455,
+          "total_ms": 28.40431,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 33.191055,
+        "cpu_ms": 19.916166,
+        "crop_ms": 2.118628,
+        "timing": {
+          "preprocess_ms": 13.327463,
+          "rknn_call_ms": 13.73812198638916,
+          "decode_nms_ms": 0.6014059782028198,
+          "total_ms": 30.595561,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.207466,
+        "cpu_ms": 17.680542,
+        "crop_ms": 1.749676,
+        "timing": {
+          "preprocess_ms": 11.677535,
+          "rknn_call_ms": 14.195155143737793,
+          "decode_nms_ms": 0.6119059920310974,
+          "total_ms": 28.978591,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.335798,
+        "cpu_ms": 18.603374,
+        "crop_ms": 1.751426,
+        "timing": {
+          "preprocess_ms": 12.690475,
+          "rknn_call_ms": 13.333586692810059,
+          "decode_nms_ms": 0.7755270004272461,
+          "total_ms": 29.021174,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.23809,
+        "cpu_ms": 18.437416,
+        "crop_ms": 1.85409,
+        "timing": {
+          "preprocess_ms": 12.40873,
+          "rknn_call_ms": 13.447627067565918,
+          "decode_nms_ms": 0.5993639826774597,
+          "total_ms": 28.891384,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.138634,
+        "cpu_ms": 18.405042,
+        "crop_ms": 1.763676,
+        "timing": {
+          "preprocess_ms": 12.51227,
+          "rknn_call_ms": 13.260671615600586,
+          "decode_nms_ms": 0.6235719919204712,
+          "total_ms": 28.761303,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 30.912013,
+        "cpu_ms": 18.355459,
+        "crop_ms": 1.838924,
+        "timing": {
+          "preprocess_ms": 12.582268,
+          "rknn_call_ms": 13.15188217163086,
+          "decode_nms_ms": 0.6212390065193176,
+          "total_ms": 28.608181,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.13455,
+        "cpu_ms": 18.462792,
+        "crop_ms": 1.704176,
+        "timing": {
+          "preprocess_ms": 12.589851,
+          "rknn_call_ms": 13.385502815246582,
+          "decode_nms_ms": 0.635237991809845,
+          "total_ms": 28.906258,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.719915,
+        "cpu_ms": 18.848376,
+        "crop_ms": 2.010421,
+        "timing": {
+          "preprocess_ms": 12.536769,
+          "rknn_call_ms": 13.393378257751465,
+          "decode_nms_ms": 0.7026119828224182,
+          "total_ms": 29.211336,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.030719,
+        "cpu_ms": 18.628167,
+        "crop_ms": 1.774759,
+        "timing": {
+          "preprocess_ms": 12.930804,
+          "rknn_call_ms": 13.008676528930664,
+          "decode_nms_ms": 0.5961560010910034,
+          "total_ms": 28.761012,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.464128,
+        "cpu_ms": 18.471831,
+        "crop_ms": 1.8433,
+        "timing": {
+          "preprocess_ms": 12.411938,
+          "rknn_call_ms": 13.673665046691895,
+          "decode_nms_ms": 0.6016970276832581,
+          "total_ms": 29.053256,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.09576,
+        "cpu_ms": 18.762335,
+        "crop_ms": 1.812966,
+        "timing": {
+          "preprocess_ms": 12.923511,
+          "rknn_call_ms": 12.913596153259277,
+          "decode_nms_ms": 0.605197012424469,
+          "total_ms": 28.795135,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.807122,
+        "cpu_ms": 19.084919,
+        "crop_ms": 1.69951,
+        "timing": {
+          "preprocess_ms": 13.074009,
+          "rknn_call_ms": 13.400961875915527,
+          "decode_nms_ms": 0.5981969833374023,
+          "total_ms": 29.584371,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 30.989012,
+        "cpu_ms": 18.021212,
+        "crop_ms": 1.894632,
+        "timing": {
+          "preprocess_ms": 11.851948,
+          "rknn_call_ms": 13.583250045776367,
+          "decode_nms_ms": 0.6766539812088013,
+          "total_ms": 28.587181,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.316547,
+        "cpu_ms": 18.365375,
+        "crop_ms": 1.744426,
+        "timing": {
+          "preprocess_ms": 12.514603,
+          "rknn_call_ms": 13.489625930786133,
+          "decode_nms_ms": 0.6358219981193542,
+          "total_ms": 29.116547,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.576126,
+        "cpu_ms": 18.276417,
+        "crop_ms": 1.758134,
+        "timing": {
+          "preprocess_ms": 12.418646,
+          "rknn_call_ms": 13.936450958251953,
+          "decode_nms_ms": 0.6259049773216248,
+          "total_ms": 29.237878,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 30.982888,
+        "cpu_ms": 17.871874,
+        "crop_ms": 1.820842,
+        "timing": {
+          "preprocess_ms": 12.382772,
+          "rknn_call_ms": 13.556124687194824,
+          "decode_nms_ms": 0.594989001750946,
+          "total_ms": 28.680804,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.380714,
+        "cpu_ms": 18.828543,
+        "crop_ms": 1.691928,
+        "timing": {
+          "preprocess_ms": 12.984761,
+          "rknn_call_ms": 13.109007835388184,
+          "decode_nms_ms": 0.6547799706459045,
+          "total_ms": 29.128796,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.19755,
+        "cpu_ms": 18.537456,
+        "crop_ms": 1.931673,
+        "timing": {
+          "preprocess_ms": 12.471145,
+          "rknn_call_ms": 13.172006607055664,
+          "decode_nms_ms": 0.7387779951095581,
+          "total_ms": 28.745845,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 30.908222,
+        "cpu_ms": 18.208167,
+        "crop_ms": 1.726052,
+        "timing": {
+          "preprocess_ms": 12.558643,
+          "rknn_call_ms": 13.315213203430176,
+          "decode_nms_ms": 0.6014050245285034,
+          "total_ms": 28.705304,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.529752,
+        "cpu_ms": 18.852167,
+        "crop_ms": 1.877423,
+        "timing": {
+          "preprocess_ms": 12.541144,
+          "rknn_call_ms": 13.344379425048828,
+          "decode_nms_ms": 0.5923640131950378,
+          "total_ms": 29.151255,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.179175,
+        "cpu_ms": 18.232083,
+        "crop_ms": 1.81005,
+        "timing": {
+          "preprocess_ms": 12.062236,
+          "rknn_call_ms": 13.51704216003418,
+          "decode_nms_ms": 0.7807779908180237,
+          "total_ms": 28.805928,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 34.086454,
+        "cpu_ms": 21.006998,
+        "crop_ms": 1.871007,
+        "timing": {
+          "preprocess_ms": 14.945016,
+          "rknn_call_ms": 13.743080139160156,
+          "decode_nms_ms": 0.6075299978256226,
+          "total_ms": 31.734498,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.907745,
+        "cpu_ms": 18.47825,
+        "crop_ms": 1.747051,
+        "timing": {
+          "preprocess_ms": 12.489228,
+          "rknn_call_ms": 13.986326217651367,
+          "decode_nms_ms": 0.6104469895362854,
+          "total_ms": 29.586413,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 30.478313,
+        "cpu_ms": 17.667125,
+        "crop_ms": 1.703302,
+        "timing": {
+          "preprocess_ms": 12.193192,
+          "rknn_call_ms": 13.43246078491211,
+          "decode_nms_ms": 0.6019880175590515,
+          "total_ms": 28.317978,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 32.676564,
+        "cpu_ms": 19.533793,
+        "crop_ms": 1.685802,
+        "timing": {
+          "preprocess_ms": 13.249006,
+          "rknn_call_ms": 13.657914161682129,
+          "decode_nms_ms": 0.6072390079498291,
+          "total_ms": 30.418231,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.312173,
+        "cpu_ms": 18.26271,
+        "crop_ms": 1.705052,
+        "timing": {
+          "preprocess_ms": 12.486311,
+          "rknn_call_ms": 13.55495834350586,
+          "decode_nms_ms": 0.6436960101127625,
+          "total_ms": 29.093213,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.36438,
+        "cpu_ms": 18.325416,
+        "crop_ms": 1.8258,
+        "timing": {
+          "preprocess_ms": 12.462104,
+          "rknn_call_ms": 13.83291244506836,
+          "decode_nms_ms": 0.5830309987068176,
+          "total_ms": 29.076297,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.009137,
+        "cpu_ms": 18.136707,
+        "crop_ms": 1.821425,
+        "timing": {
+          "preprocess_ms": 12.454812,
+          "rknn_call_ms": 13.383752822875977,
+          "decode_nms_ms": 0.7206950187683105,
+          "total_ms": 28.743803,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 32.032285,
+        "cpu_ms": 19.196916,
+        "crop_ms": 1.821133,
+        "timing": {
+          "preprocess_ms": 12.725474,
+          "rknn_call_ms": 13.433627128601074,
+          "decode_nms_ms": 0.6101549863815308,
+          "total_ms": 29.717077,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 32.647981,
+        "cpu_ms": 19.65396,
+        "crop_ms": 1.825216,
+        "timing": {
+          "preprocess_ms": 13.28488,
+          "rknn_call_ms": 13.501875877380371,
+          "decode_nms_ms": 0.7005699872970581,
+          "total_ms": 30.21961,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.567377,
+        "cpu_ms": 18.1965,
+        "crop_ms": 1.844466,
+        "timing": {
+          "preprocess_ms": 11.727117,
+          "rknn_call_ms": 14.011407852172852,
+          "decode_nms_ms": 0.643405020236969,
+          "total_ms": 29.098755,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 30.949054,
+        "cpu_ms": 18.501875,
+        "crop_ms": 1.759884,
+        "timing": {
+          "preprocess_ms": 12.702141,
+          "rknn_call_ms": 13.027342796325684,
+          "decode_nms_ms": 0.6124879717826843,
+          "total_ms": 28.704429,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      },
+      {
+        "wall_ms": 31.939828,
+        "cpu_ms": 18.76175,
+        "crop_ms": 1.691052,
+        "timing": {
+          "preprocess_ms": 12.944511,
+          "rknn_call_ms": 13.75124740600586,
+          "decode_nms_ms": 0.6025720238685608,
+          "total_ms": 29.73341,
+          "output_count": 9,
+          "detection_count": 12,
+          "preprocess_backend": "opencv",
+          "scale_count": 3,
+          "backend": "FAST-MOSAIC"
+        },
+        "boxes": 12
+      }
+    ]
+  },
+  "source": {
+    "kind": "REAL_PCIE_FIXED_SNAPSHOT_NO_QT_NO_OCR",
+    "frame_id": 26484,
+    "timestamp_ns": 443279431868,
+    "crc32": 3502547884
+  }
+}

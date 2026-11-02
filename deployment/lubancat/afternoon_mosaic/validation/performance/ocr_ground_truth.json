@@ -1,0 +1,39 @@
+{
+  "source": "24 CRC-validated Q2 frames captured from real PCIe; manual reading of original crop montage",
+  "distance_m": [
+    218,
+    218,
+    218,
+    218,
+    218,
+    218,
+    218,
+    218,
+    218,
+    218,
+    216,
+    199,
+    386,
+    341,
+    273,
+    221,
+    180,
+    118,
+    69,
+    19,
+    53,
+    41,
+    40,
+    29
+  ],
+  "legacy_correct": 10,
+  "legacy_valid": 21,
+  "roi128_correct": 21,
+  "roi128_valid": 21,
+  "unreadable_indices": [
+    21,
+    22,
+    23
+  ],
+  "limitation": "Small sample, not a general navigation accuracy benchmark"
+}

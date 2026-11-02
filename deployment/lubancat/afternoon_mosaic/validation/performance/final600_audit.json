@@ -1,0 +1,36 @@
+{
+  "elapsed_seconds": 611.081921991,
+  "ai_rows": 6813,
+  "ui_rows": 1998,
+  "samples": 279,
+  "models": {
+    "MTL-FAST": 1243,
+    "FAST-Q4": 2872,
+    "FAST-MOSAIC": 2698
+  },
+  "event_stages": {
+    "event_transition": 803,
+    "control_event_cleared": 378,
+    "control_decision": 129,
+    "brake_rejected": 129
+  },
+  "decision_reasons": {
+    "control_not_authorized": 129
+  },
+  "real_control_requests": 0,
+  "event_kinds": {
+    "VEHICLE_CUT_IN": 227,
+    "PEDESTRIAN_IN_PATH": 260,
+    "FRONT_COLLISION_RISK": 266,
+    "PEDESTRIAN_NEAR_CROSSWALK": 42,
+    "PEDESTRIAN_CROSSING_PATH": 8
+  },
+  "capture_offline_samples": 0,
+  "lvt1_offline_samples": 0,
+  "wrong_forward_rows": 0,
+  "stale_mtl_fast_q4": 0,
+  "marked_boxes": 1969,
+  "unmatched_hazard_samples": 19,
+  "box_event_mismatches": 0,
+  "passed": true
+}

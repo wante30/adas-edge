@@ -20,7 +20,7 @@ def wait(predicate, timeout=90):
         try:
             row = metric()
             if predicate(row): return row
-        except (FileNotFoundError, IndexError): pass
+        except (FileNotFoundError, IndexError, ValueError): pass
         time.sleep(.2)
     raise RuntimeError("Menu acceptance timeout: " + json.dumps(metric()))
 
@@ -33,9 +33,10 @@ def main():
     for index, (model, mode, y) in enumerate([
         ("B", "ROAD_Q1", 172),
         ("MTL-FULL", "ROAD_Q1", 260),
-        ("FAST-MOSAIC", "MOSAIC_FULL", 348),
+        ("FAST-Q4", "ROAD_Q1", 348),
+        ("FAST-MOSAIC", "MOSAIC_FULL", 392),
         ("MTL-FAST", "ROAD_Q1", 304),
-        ("FAST-MOSAIC", "MOSAIC_FULL", 348),
+        ("FAST-MOSAIC", "MOSAIC_FULL", 392),
         ("B-capi", "ROAD_Q1", 216),
         ("MTL-FAST", "ROAD_Q1", 304),
     ]):

@@ -1,0 +1,19 @@
+{
+  "artifact": "adas-performance-rk3566.zip",
+  "bytes": 58400391,
+  "sha256": "62ef8a319e06378c84a072db05df8cc8b01dc78df8b5332669264d7d4d642a41",
+  "source_commit": "80cd966aaaa17eeca88f9bddbe8bf3a12889be94",
+  "files_verified": 314,
+  "source_hashes_verified": 207,
+  "cold_run_directory": "/home/cat/adas_perf_20261102/release",
+  "actual_menu_passed": true,
+  "actual_ai_restart_passed": true,
+  "baseline_restore_exercised": true,
+  "immutable_capture_driver_generic_verified": true,
+  "default_model": "MTL-FAST",
+  "physical_forward": "Q4",
+  "control_authorized": false,
+  "actual_npu_hz": 600000000,
+  "scheduler_stats_restored": 0,
+  "note": "Final repository receipt commit adds only evidence/metadata after this exact packaged source commit."
+}
