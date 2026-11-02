@@ -58,7 +58,8 @@ Item {
     property var fpgaControl: fpgaIsp
     property bool detectionLite: video.aiModelId === "FAST-MOSAIC-LITE"
     property bool autoHudSend: true
-    property bool sceneEnabled: (typeof sceneEnabled !== "undefined" ? sceneEnabled : true)
+    // Keep a distinct name from the C++ context property to avoid self-binding.
+    property bool sceneRenderingEnabled: (typeof sceneEnabled !== "undefined" ? sceneEnabled : true)
     property int trackingMode: 2  // 0=RAW, 1=FIX4, 2=TIME
     property int testTraffic: 1
     property int testLaneLeft: 0
@@ -164,7 +165,6 @@ Item {
             teslaLive.parent = target
             teslaLive.anchors.fill = target
         }
-        teslaLive.visible = (viewMode === 0 || viewMode === 2)
     }
 
     onViewModeChanged: {
@@ -176,6 +176,7 @@ Item {
     }
 
     Component.onCompleted: {
+        console.log("SCENE_WORKLOAD", "enabled", root.sceneRenderingEnabled, "active", teslaLive.active)
         video.requestInferenceMode(viewMode === 1 ? "MOSAIC_FULL" : "ROAD_Q1")
         video.aiRoadQuadrant = roadQuadrant
         video.aiNavigationQuadrant = navQuadrant
@@ -1845,14 +1846,15 @@ Item {
             TeslaSceneItem {
                 id: teslaLive
                 anchors.fill: parent
-                active: !root.detectionLite && root.sceneEnabled
+                active: !root.detectionLite && root.sceneRenderingEnabled
                 videoSource: video
                 laneState: vehicleTelemetry.laneState
                 displayView: video.aiDisplayView
                 roadQuadrant: root.forwardQuadrant
                 demoMode: false
                 online: video.aiOnline
-                visible: root.sceneEnabled
+                visible: root.sceneRenderingEnabled && !root.detectionLite
+                         && (root.viewMode === 0 || root.viewMode === 2)
                 sourceKey: video.sourceMode + ":" + video.inferenceMode + ":" + video.aiModelId
                 sourceFrameId: video.displayFrameId
                 sourceTimestampNs: video.displayTimestampNs
