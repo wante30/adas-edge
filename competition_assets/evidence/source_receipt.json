@@ -1,0 +1,7 @@
+{
+  "local_head": "423de7986d7f62ab179f264b8ae8ed0eb2f8e073",
+  "local_branch": "fix/issue9-fpga-lite-tesla-20261102",
+  "recorded_at": "2026-11-02T22:35:18.785206+08:00",
+  "git_baseline": "46400aa1a3610fe6537e0c2962ff991238e70c0d",
+  "runtime_identity": "evidence/live_runtime_provenance.json includes actual board file hashes; local worktree has prior uncommitted development changes"
+}

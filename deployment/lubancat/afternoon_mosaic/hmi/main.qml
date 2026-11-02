@@ -804,15 +804,15 @@ Item {
     }
 
     Text {
-        x: 1176; y: 6; width: 84; height: 28
+        x: 400; y: 701; width: 55; height: 15
         text: root.clockText()
         color: root.ink
-        font.family: root.num; font.pixelSize: 19; font.weight: Font.DemiBold
+        font.family: root.num; font.pixelSize: 8; font.weight: Font.DemiBold
         horizontalAlignment: Text.AlignRight
         verticalAlignment: Text.AlignVCenter
     }
     Text {
-        x: 1176; y: 35; width: 84; height: 15
+        x: 460; y: 701; width: 82; height: 15
         text: root.dateText()
         color: "#6E929F"; font.family: root.num; font.pixelSize: 7
         horizontalAlignment: Text.AlignRight
@@ -2056,7 +2056,7 @@ Item {
         color: "#7195A0"; font.family: root.num; font.pixelSize: 6
     }
     Text {
-        x: 500; y: 701; width: 550; height: 15
+        x: 550; y: 701; width: 450; height: 15
         text: "1 / 2 / 3 切换视图   ·   Q 退出"
         color: "#6F909B"; font.family: root.cjk; font.pixelSize: 7
         horizontalAlignment: Text.AlignHCenter

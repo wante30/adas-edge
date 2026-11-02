@@ -1,0 +1,14 @@
+/raw_candidates/
+/curated/
+/core/
+/contact_sheets/
+/thumbnails/
+/historical_reference/
+/evidence/xwd_sources/
+/evidence/*.mp4
+/evidence/*.png
+/evidence/*.jsonl
+/evidence/*.diff
+/evidence/*.log
+__pycache__/
+*.pyc

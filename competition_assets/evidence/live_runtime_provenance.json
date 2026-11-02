@@ -1,0 +1,197 @@
+{
+  "boot_id": "4c264c2a-f9f5-4df0-998d-4d8fd7c0e4c8",
+  "state": {
+    "boot_id": "4c264c2a-f9f5-4df0-998d-4d8fd7c0e4c8",
+    "baseline_hmi": {
+      "pid": 3205,
+      "exe": "/home/cat/hmi_recover_20261101/qt_gpu_probe_build_20261030_time/qt_gpu_probe",
+      "cwd": "/home/cat",
+      "env": {
+        "QT_FRAME_METADATA_HZ": "15",
+        "QT_QPA_PLATFORMTHEME": "gtk2",
+        "DISPLAY": ":0.0",
+        "XAUTHORITY": "/home/cat/.Xauthority",
+        "QT_XCB_GL_INTEGRATION": "xcb_egl",
+        "QT_ACCESSIBILITY": "1",
+        "QT_IM_MODULE": "fcitx",
+        "QT_QPA_PLATFORM": "xcb"
+      },
+      "args": [
+        "/home/cat/hmi_recover_20261101/qt_gpu_probe_build_20261030_time/qt_gpu_probe",
+        "--fps",
+        "60",
+        "--duration",
+        "0",
+        "--start-mode",
+        "0",
+        "--pgv-file",
+        "/dev/shm/pango-video/latest.pgv",
+        "--source-label",
+        "pgv-live",
+        "--pgv-layout",
+        "quad",
+        "--road-quadrant",
+        "0",
+        "--ai-frame-file",
+        "/dev/shm/qt_gpu_probe_ai.mfr1",
+        "--ai-hz",
+        "10"
+      ]
+    },
+    "autostart_parent": 3190,
+    "ai_service_was_active": true,
+    "hud_service_was_active": true,
+    "control_mode": "HARDWARE",
+    "forward_quadrant": 3,
+    "input_kind": "REAL_PCIE",
+    "control_authorized": true,
+    "diagnostic_no_ai": false,
+    "diagnostic_no_ocr": false,
+    "test_ai_pid": 4532,
+    "diagnostic_static_tesla": false,
+    "test_hmi_pid": 228436,
+    "label": "competition_reboot_4c264c2a"
+  },
+  "files": [
+    {
+      "path": "/home/cat/adas_issue9_20261102/src/hmi/main.qml",
+      "sha256": "4d147bee9fc39a1d042cc03066bec59c19f6a4dd0d550acea70f14ba7938b484"
+    },
+    {
+      "path": "/home/cat/adas_issue9_20261102/src/build-stage4/qt_gpu_probe",
+      "sha256": "30bb58160b8593f9ca8be5be87b5c92f227943d1654c1add48bd50d00bda853f"
+    },
+    {
+      "path": "/home/cat/adas_issue9_20261102/src/ai/ai_bridge.py",
+      "sha256": "c719b7d7bae33c13405b000d05fb914ddbb27a508c3a6ee03910cb4a77672985"
+    },
+    {
+      "path": "/home/cat/adas_issue9_20261102/src/ai/auto_brake.py",
+      "sha256": "948aa418583f7d24b186df1f7a1b6978dad03621d45cd225410b6b64f180356c"
+    },
+    {
+      "path": "/home/cat/adas_issue9_20261102/src/ai/light_risk.py",
+      "sha256": "7ff380f5a33ae0359a56b7e89d34bd9417d9307f452d9328a27d219b92966696"
+    },
+    {
+      "path": "/home/cat/adas_issue9_20261102/src/hardware/hardware_bridge.py",
+      "sha256": "c6f63a6608296339691ae4c557195c99e95b98de58b22f30243b70d4a24b20cd"
+    }
+  ],
+  "quadrant_samples": [
+    {
+      "frame_id": 309312,
+      "generation": 4,
+      "crc_valid": true,
+      "quadrants": [
+        {
+          "source_id": "Q1",
+          "nonzero_fraction": 0.8887673611111111,
+          "changed_pixels": null
+        },
+        {
+          "source_id": "Q2",
+          "nonzero_fraction": 0.8888888888888888,
+          "changed_pixels": null
+        },
+        {
+          "source_id": "Q3",
+          "nonzero_fraction": 0.8888888888888888,
+          "changed_pixels": null
+        },
+        {
+          "source_id": "Q4",
+          "nonzero_fraction": 0.8885807291666666,
+          "changed_pixels": null
+        }
+      ]
+    },
+    {
+      "frame_id": 309329,
+      "generation": 4,
+      "crc_valid": true,
+      "quadrants": [
+        {
+          "source_id": "Q1",
+          "nonzero_fraction": 0.8887673611111111,
+          "changed_pixels": 0
+        },
+        {
+          "source_id": "Q2",
+          "nonzero_fraction": 0.8888888888888888,
+          "changed_pixels": 35403
+        },
+        {
+          "source_id": "Q3",
+          "nonzero_fraction": 0.8888888888888888,
+          "changed_pixels": 193496
+        },
+        {
+          "source_id": "Q4",
+          "nonzero_fraction": 0.8884982638888889,
+          "changed_pixels": 157520
+        }
+      ]
+    },
+    {
+      "frame_id": 309346,
+      "generation": 4,
+      "crc_valid": true,
+      "quadrants": [
+        {
+          "source_id": "Q1",
+          "nonzero_fraction": 0.8887673611111111,
+          "changed_pixels": 0
+        },
+        {
+          "source_id": "Q2",
+          "nonzero_fraction": 0.8888888888888888,
+          "changed_pixels": 35444
+        },
+        {
+          "source_id": "Q3",
+          "nonzero_fraction": 0.8888888888888888,
+          "changed_pixels": 193654
+        },
+        {
+          "source_id": "Q4",
+          "nonzero_fraction": 0.8883506944444445,
+          "changed_pixels": 161239
+        }
+      ]
+    },
+    {
+      "frame_id": 309363,
+      "generation": 4,
+      "crc_valid": true,
+      "quadrants": [
+        {
+          "source_id": "Q1",
+          "nonzero_fraction": 0.8887673611111111,
+          "changed_pixels": 0
+        },
+        {
+          "source_id": "Q2",
+          "nonzero_fraction": 0.8888888888888888,
+          "changed_pixels": 35522
+        },
+        {
+          "source_id": "Q3",
+          "nonzero_fraction": 0.8888888888888888,
+          "changed_pixels": 193573
+        },
+        {
+          "source_id": "Q4",
+          "nonzero_fraction": 0.8882421875,
+          "changed_pixels": 180038
+        }
+      ]
+    }
+  ],
+  "capture_tool": "xfce4-screenshooter --fullscreen --save",
+  "screenshot_size": [
+    1280,
+    720
+  ],
+  "board_clock_untrusted": true
+}

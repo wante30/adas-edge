@@ -1,0 +1,24 @@
+{
+  "counts": {
+    "raw_candidates": 361,
+    "curated": 54,
+    "core": 21
+  },
+  "sources": {
+    "REAL_PCIE_LIVE": 317,
+    "HISTORICAL_REAL_PCIE": 10,
+    "HISTORICAL_REPLAY": 24,
+    "HISTORICAL_DESKTOP": 10
+  },
+  "failures": [],
+  "gallery": {
+    "core_filter": true,
+    "curated_filter": true,
+    "all_candidates_filter": true,
+    "topic_filter": true,
+    "search": true,
+    "image_dialog": true,
+    "page_errors": []
+  },
+  "all_checks_passed": true
+}

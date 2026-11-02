@@ -1,0 +1,14 @@
+ M deployment/lubancat/afternoon_mosaic/ai/ai_bridge.py
+ M deployment/lubancat/afternoon_mosaic/ai/auto_brake.py
+ M deployment/lubancat/afternoon_mosaic/ai/risk_events.py
+ M deployment/lubancat/afternoon_mosaic/hmi/main.qml
+ M deployment/lubancat/afternoon_mosaic/hmi/tesla_scene_item.cpp
+ M deployment/lubancat/afternoon_mosaic/tests/test_auto_brake.py
+ M deployment/lubancat/afternoon_mosaic/tools/package_followup.py
+ M deployment/lubancat/afternoon_mosaic/tools/start_pcie.sh
+ M deployment/lubancat/afternoon_mosaic/tools/validate_issue9.py
+?? competition_assets/
+?? deployment/lubancat/afternoon_mosaic/hmi/display_filter.h
+?? deployment/lubancat/afternoon_mosaic/tests/display_filter_test.cpp
+?? deployment/lubancat/afternoon_mosaic/tools/analyze_tesla_trace.py
+?? deployment/lubancat/afternoon_mosaic/tools/restore_pr8.py

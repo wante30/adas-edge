@@ -1,0 +1,38 @@
+{
+  "live_0107": {
+    "visible_critical": false,
+    "note_zh": "人工复核：主画面目标框和事件级别为黄色预警；截图前短暂critical不可当作截图红框。"
+  },
+  "live_0122": {
+    "visible_critical": false,
+    "note_zh": "人工复核：主画面为黄色预警框。",
+    "duplicate_of": "live_0107"
+  },
+  "live_0252": {
+    "visible_critical": true,
+    "note_zh": "人工复核：全屏BEV车辆红色，危险事件列表显示车辆切入高风险。"
+  },
+  "live_0250": {
+    "visible_critical": true,
+    "note_zh": "人工复核总览：BEV中存在红色车辆，仅据图说明红色目标。"
+  },
+  "live_0299": {
+    "visible_critical": true,
+    "note_zh": "人工查看完整原图：车辆切入风险为红框，危险事件栏显示高风险，Tesla BEV对应目标为红色。"
+  },
+  "live_0307": {
+    "visible_critical": true,
+    "note_zh": "人工查看完整原图：车辆切入风险为红框，危险事件栏显示高风险，Tesla BEV对应目标为红色。",
+    "duplicate_of": "live_0299"
+  },
+  "live_0315": {
+    "visible_critical": true,
+    "note_zh": "人工查看完整原图：车辆切入风险为红框，危险事件栏显示高风险，Tesla BEV对应目标为红色。",
+    "duplicate_of": "live_0299"
+  },
+  "live_0229": {
+    "visible_critical": false,
+    "duplicate_of": "live_0228",
+    "note_zh": "人工复核：Lite画面与228接近，不重复推荐。"
+  }
+}

@@ -1,0 +1,342 @@
+[
+  {
+    "file": "raw_candidates/historical_real_pcie/FAST-MOSAIC-600MHz.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\performance\\screenshots\\FAST-MOSAIC-600MHz.png",
+    "source_type": "HISTORICAL_REAL_PCIE",
+    "note_zh": "历史真实 PCIe 性能验收截图；显示历史版本与历史瞬时数值，不代表本次性能验收。",
+    "topic_hint": "06_control_models_performance",
+    "sha256": "78ddf63906e625a5779f03515a4f3cdd184fe4d02b79ab3e4e0165ed30a20d74"
+  },
+  {
+    "file": "raw_candidates/historical_real_pcie/FAST-MOSAIC.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\performance\\screenshots\\FAST-MOSAIC.png",
+    "source_type": "HISTORICAL_REAL_PCIE",
+    "note_zh": "历史真实 PCIe 性能验收截图；显示历史版本与历史瞬时数值，不代表本次性能验收。",
+    "topic_hint": "06_control_models_performance",
+    "sha256": "0a22d072871f658667798968805b0e8ed1c5e4ed92ddf2add90ee124de00b5a0"
+  },
+  {
+    "file": "raw_candidates/historical_real_pcie/FAST-Q4-menu.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\performance\\screenshots\\FAST-Q4-menu.png",
+    "source_type": "HISTORICAL_REAL_PCIE",
+    "note_zh": "历史真实 PCIe 性能验收截图；显示历史版本与历史瞬时数值，不代表本次性能验收。",
+    "topic_hint": "06_control_models_performance",
+    "sha256": "17f929f51dbeec4ca41eaeac9f72fa299d1a2db52a66235856443b9806377ca3"
+  },
+  {
+    "file": "raw_candidates/historical_real_pcie/FAST-Q4.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\performance\\screenshots\\FAST-Q4.png",
+    "source_type": "HISTORICAL_REAL_PCIE",
+    "note_zh": "历史真实 PCIe 性能验收截图；显示历史版本与历史瞬时数值，不代表本次性能验收。",
+    "topic_hint": "06_control_models_performance",
+    "sha256": "6e2577c0059ae67a3942224e4c96f8d40a2d1a5e1e77811a8c630c411cfbfe52"
+  },
+  {
+    "file": "raw_candidates/historical_real_pcie/MTL-FAST-steady.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\performance\\screenshots\\MTL-FAST-steady.png",
+    "source_type": "HISTORICAL_REAL_PCIE",
+    "note_zh": "历史真实 PCIe 性能验收截图；显示历史版本与历史瞬时数值，不代表本次性能验收。",
+    "topic_hint": "06_control_models_performance",
+    "sha256": "36e2467a8015f2e332b32b036128cfcba7427f59bd9b481b4899b7a83ee159d6"
+  },
+  {
+    "file": "raw_candidates/historical_real_pcie/MTL-FAST.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\performance\\screenshots\\MTL-FAST.png",
+    "source_type": "HISTORICAL_REAL_PCIE",
+    "note_zh": "历史真实 PCIe 性能验收截图；显示历史版本与历史瞬时数值，不代表本次性能验收。",
+    "topic_hint": "06_control_models_performance",
+    "sha256": "8082da9d1d4fab67f64ba93afcff506e91d57caf60d413944d7e41e583b23df3"
+  },
+  {
+    "file": "raw_candidates/historical_real_pcie/initial_mosaic.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\pcie\\initial_mosaic.png",
+    "source_type": "HISTORICAL_REAL_PCIE",
+    "note_zh": "历史真实 PCIe 实测截图；Q1 当时可能黑屏，按原图保留，不声称四路全有效。",
+    "topic_hint": "03_multicamera_detection",
+    "sha256": "fd74e85be43e253f6e452880d803aaffa674db0bfdb10a1a43120607a85b45e0"
+  },
+  {
+    "file": "raw_candidates/historical_real_pcie/q4_mosaic_final.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\pcie\\q4_mosaic_final.png",
+    "source_type": "HISTORICAL_REAL_PCIE",
+    "note_zh": "历史真实 PCIe 实测截图；Q1 当时可能黑屏，按原图保留，不声称四路全有效。",
+    "topic_hint": "03_multicamera_detection",
+    "sha256": "9905ff3a4731ff0267f362ca6bfa5ba648c61f7f1691ecea558000c7b598b4d4"
+  },
+  {
+    "file": "raw_candidates/historical_real_pcie/q4_road.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\pcie\\q4_road.png",
+    "source_type": "HISTORICAL_REAL_PCIE",
+    "note_zh": "历史真实 PCIe 实测截图；Q1 当时可能黑屏，按原图保留，不声称四路全有效。",
+    "topic_hint": "03_multicamera_detection",
+    "sha256": "974c002ce6b6e4320e4f54000d8205ecfae15b22282f2fd0a794f6e96ef3fef6"
+  },
+  {
+    "file": "raw_candidates/historical_real_pcie/q4_road_final.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\pcie\\q4_road_final.png",
+    "source_type": "HISTORICAL_REAL_PCIE",
+    "note_zh": "历史真实 PCIe 实测截图；Q1 当时可能黑屏，按原图保留，不声称四路全有效。",
+    "topic_hint": "03_multicamera_detection",
+    "sha256": "3704537edd1382511fd40c61575f56089e56d34714f21c486719e457576f5e90"
+  },
+  {
+    "file": "raw_candidates/historical_replay/actual_mosaic.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\followup\\actual_mosaic.png",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制输入回放的原生 Qt 界面；不代表本次实时 PCIe 或真实 FPGA 执行。",
+    "topic_hint": "03_multicamera_detection",
+    "sha256": "39c3b7ffcbbfba7f9a1e7de6501de9f16365b512c53cddc98eb70a83a5b41002"
+  },
+  {
+    "file": "raw_candidates/historical_replay/actual_road.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\followup\\actual_road.png",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制输入回放的原生 Qt 界面；不代表本次实时 PCIe 或真实 FPGA 执行。",
+    "topic_hint": "01_system_overview",
+    "sha256": "cb7816cdf869f86a3eb5d72146a7219b471a305d3eaa1e621d309e2573fd05e9"
+  },
+  {
+    "file": "raw_candidates/historical_replay/model_menu_mosaic.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\followup\\model_menu_mosaic.png",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制输入回放的原生 Qt 界面；不代表本次实时 PCIe 或真实 FPGA 执行。",
+    "topic_hint": "03_multicamera_detection",
+    "sha256": "d7d47a38e4b1c43db4df357da3d17451c3945296829c9f53ad788274bd4ae0a9"
+  },
+  {
+    "file": "raw_candidates/historical_replay/stage2_menu_0.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\followup\\stage2_menu_0.png",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制输入回放的原生 Qt 界面；不代表本次实时 PCIe 或真实 FPGA 执行。",
+    "topic_hint": "03_multicamera_detection",
+    "sha256": "ec9b23d7f7644919b47b1fe8785540fc337949b9396f91b1ace8fb69f2320356"
+  },
+  {
+    "file": "raw_candidates/historical_replay/stage2_menu_1.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\followup\\stage2_menu_1.png",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制输入回放的原生 Qt 界面；不代表本次实时 PCIe 或真实 FPGA 执行。",
+    "topic_hint": "03_multicamera_detection",
+    "sha256": "70f1f1054a625652fba21bff630984cfd277b8a322b41afe267abebea1642dc0"
+  },
+  {
+    "file": "raw_candidates/historical_replay/final_mosaic.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\final_mosaic.png",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "早期录制回放验证截图，保留原始状态；离线与过渡截图仅留档，不进入核心推荐。",
+    "topic_hint": "01_system_overview",
+    "sha256": "6ff77bbb758a85a5a94299aae275e73023db77da58cb29b7ad78e70ed6e79c48"
+  },
+  {
+    "file": "raw_candidates/historical_replay/stage1.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\stage1.png",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "早期录制回放验证截图，保留原始状态；离线与过渡截图仅留档，不进入核心推荐。",
+    "topic_hint": "01_system_overview",
+    "sha256": "9383808051c7e8742a2288750df0a63912d927f72a498816b1aab4c9e2f33da2"
+  },
+  {
+    "file": "raw_candidates/historical_replay/stage2_mosaic.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\stage2_mosaic.png",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "早期录制回放验证截图，保留原始状态；离线与过渡截图仅留档，不进入核心推荐。",
+    "topic_hint": "01_system_overview",
+    "sha256": "572cd035193199f0fc547186bcc6530616da468113e0045e01c16ac384ea56dd"
+  },
+  {
+    "file": "raw_candidates/historical_replay/stage3_mosaic.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\stage3_mosaic.png",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "早期录制回放验证截图，保留原始状态；离线与过渡截图仅留档，不进入核心推荐。",
+    "topic_hint": "01_system_overview",
+    "sha256": "0d26c8315d66cc605ab0ffe679d7c026648eebca63c01eb86eb5618718fcf468"
+  },
+  {
+    "file": "raw_candidates/historical_replay/stage5_bev.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\stage5_bev.png",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "早期录制回放验证截图，保留原始状态；离线与过渡截图仅留档，不进入核心推荐。",
+    "topic_hint": "04_tesla_bev",
+    "sha256": "56600e88366065aa67543dfbf0ead6eb26166e1d5247173b3911ce91986e2efa"
+  },
+  {
+    "file": "raw_candidates/historical_replay/stage5_model_MTL-FAST.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\stage5_model_MTL-FAST.png",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "早期录制回放验证截图，保留原始状态；离线与过渡截图仅留档，不进入核心推荐。",
+    "topic_hint": "01_system_overview",
+    "sha256": "b15e041043cb42fa0465c449b5fd7bedb6f3e395fc6da583420e649d78afece6"
+  },
+  {
+    "file": "raw_candidates/historical_replay/stage5_offline.png",
+    "source_path": "C:\\Users\\JingyuWang\\adas-edge-risk-control-20261102\\deployment\\lubancat\\afternoon_mosaic\\validation\\stage5_offline.png",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "早期录制回放验证截图，保留原始状态；离线与过渡截图仅留档，不进入核心推荐。",
+    "topic_hint": "01_system_overview",
+    "sha256": "879e9f04c0f9cb6aa19bbb5a023495cf4694d0d0fca5335524ae980cb0beaa4c"
+  },
+  {
+    "file": "raw_candidates/historical_desktop/lubancat_20261102_205208_728149.png",
+    "source_path": "C:\\Users\\JingyuWang\\Pictures\\Screenshots\\LubanCat\\lubancat_20261102_205208_728149.png",
+    "source_type": "HISTORICAL_DESKTOP",
+    "note_zh": "此前通过 SSH 获取的鲁班猫原始桌面截图，缺少逐帧同步元数据，仅作历史视觉参考。",
+    "topic_hint": "01_system_overview",
+    "sha256": "4a2541c7969bfebfcd32b6131c961539f8182143c1f1c7285e9d2a468244f06f"
+  },
+  {
+    "file": "raw_candidates/historical_desktop/lubancat_20261102_205342_277546.png",
+    "source_path": "C:\\Users\\JingyuWang\\Pictures\\Screenshots\\LubanCat\\lubancat_20261102_205342_277546.png",
+    "source_type": "HISTORICAL_DESKTOP",
+    "note_zh": "此前通过 SSH 获取的鲁班猫原始桌面截图，缺少逐帧同步元数据，仅作历史视觉参考。",
+    "topic_hint": "01_system_overview",
+    "sha256": "feb2354e20def371f24e7e78b08d6146c4c6ed878fd5cf9006554f1ba535bbb3"
+  },
+  {
+    "file": "raw_candidates/historical_desktop/lubancat_20261102_205457_873000.png",
+    "source_path": "C:\\Users\\JingyuWang\\Pictures\\Screenshots\\LubanCat\\lubancat_20261102_205457_873000.png",
+    "source_type": "HISTORICAL_DESKTOP",
+    "note_zh": "此前通过 SSH 获取的鲁班猫原始桌面截图，缺少逐帧同步元数据，仅作历史视觉参考。",
+    "topic_hint": "01_system_overview",
+    "sha256": "cc3b4ed3e22a9639902b53be04b9bd3959138c2c162ba620fdb728a91e868e8d"
+  },
+  {
+    "file": "raw_candidates/historical_desktop/lubancat_20261102_210334_001002.png",
+    "source_path": "C:\\Users\\JingyuWang\\Pictures\\Screenshots\\LubanCat\\lubancat_20261102_210334_001002.png",
+    "source_type": "HISTORICAL_DESKTOP",
+    "note_zh": "此前通过 SSH 获取的鲁班猫原始桌面截图，缺少逐帧同步元数据，仅作历史视觉参考。",
+    "topic_hint": "01_system_overview",
+    "sha256": "38150a1ccb27a4bf5708ddf02c4f61fd6db26260b293a4e06e1bf1dbe65bc52a"
+  },
+  {
+    "file": "raw_candidates/historical_desktop/lubancat_20261102_210348_063268.png",
+    "source_path": "C:\\Users\\JingyuWang\\Pictures\\Screenshots\\LubanCat\\lubancat_20261102_210348_063268.png",
+    "source_type": "HISTORICAL_DESKTOP",
+    "note_zh": "此前通过 SSH 获取的鲁班猫原始桌面截图，缺少逐帧同步元数据，仅作历史视觉参考。",
+    "topic_hint": "01_system_overview",
+    "sha256": "f90d1b50074dfba432f2d7e3acf0f8e896aa3e9446cfb80ad6d2e71494f061f6"
+  },
+  {
+    "file": "raw_candidates/historical_desktop/lubancat_20261102_210357_710708.png",
+    "source_path": "C:\\Users\\JingyuWang\\Pictures\\Screenshots\\LubanCat\\lubancat_20261102_210357_710708.png",
+    "source_type": "HISTORICAL_DESKTOP",
+    "note_zh": "此前通过 SSH 获取的鲁班猫原始桌面截图，缺少逐帧同步元数据，仅作历史视觉参考。",
+    "topic_hint": "01_system_overview",
+    "sha256": "18bce200eae9bf0bfc0c05c56476e8c9b41c061392482e78b49c7ff0c461d290"
+  },
+  {
+    "file": "raw_candidates/historical_desktop/lubancat_20261102_210403_668685.png",
+    "source_path": "C:\\Users\\JingyuWang\\Pictures\\Screenshots\\LubanCat\\lubancat_20261102_210403_668685.png",
+    "source_type": "HISTORICAL_DESKTOP",
+    "note_zh": "此前通过 SSH 获取的鲁班猫原始桌面截图，缺少逐帧同步元数据，仅作历史视觉参考。",
+    "topic_hint": "01_system_overview",
+    "sha256": "ec236834d51f48e00d782afd767479e4b53a27194b8e95c75ec2d5ce88609015"
+  },
+  {
+    "file": "raw_candidates/historical_desktop/lubancat_20261102_210409_056652.png",
+    "source_path": "C:\\Users\\JingyuWang\\Pictures\\Screenshots\\LubanCat\\lubancat_20261102_210409_056652.png",
+    "source_type": "HISTORICAL_DESKTOP",
+    "note_zh": "此前通过 SSH 获取的鲁班猫原始桌面截图，缺少逐帧同步元数据，仅作历史视觉参考。",
+    "topic_hint": "01_system_overview",
+    "sha256": "e06285545e832d5a88c3e056b372fa2f6d38cc43ebbf2e8742c7069a303ce830"
+  },
+  {
+    "file": "raw_candidates/historical_desktop/lubancat_20261102_211004_129071.png",
+    "source_path": "C:\\Users\\JingyuWang\\Pictures\\Screenshots\\LubanCat\\lubancat_20261102_211004_129071.png",
+    "source_type": "HISTORICAL_DESKTOP",
+    "note_zh": "此前通过 SSH 获取的鲁班猫原始桌面截图，缺少逐帧同步元数据，仅作历史视觉参考。",
+    "topic_hint": "01_system_overview",
+    "sha256": "1c2dd89524ad3da8901b3a0c1e3b6f816d0689f645625d7ce5862eebea4936db"
+  },
+  {
+    "file": "raw_candidates/historical_desktop/lubancat_20261102_211328_737985.png",
+    "source_path": "C:\\Users\\JingyuWang\\Pictures\\Screenshots\\LubanCat\\lubancat_20261102_211328_737985.png",
+    "source_type": "HISTORICAL_DESKTOP",
+    "note_zh": "此前通过 SSH 获取的鲁班猫原始桌面截图，缺少逐帧同步元数据，仅作历史视觉参考。",
+    "topic_hint": "01_system_overview",
+    "sha256": "af43db7b12c450ced263f453c01d97341db8bc96ff7ce3c97a045a59f9ec0df7"
+  },
+  {
+    "file": "raw_candidates/historical_replay/archive_recording_frame_0003.png",
+    "source_path": "/home/cat/adas_risk_dev_20261102/evidence/actual_native_road.mp4",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制回放原生车机录像的第 3 帧（约 0.20 秒），非本次实时 PCIe；不作为 FPGA 实板控制证据。",
+    "sha256": "fafe2fb846420cddffeac3837fa5cd687efd62d819d69b7078e8801553a2e291"
+  },
+  {
+    "file": "raw_candidates/historical_replay/archive_recording_frame_0011.png",
+    "source_path": "/home/cat/adas_risk_dev_20261102/evidence/actual_native_road.mp4",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制回放原生车机录像的第 11 帧（约 0.73 秒），非本次实时 PCIe；不作为 FPGA 实板控制证据。",
+    "sha256": "9a5e7fc76b62d52f6b3c467f7ce189befe3dcd660deb624cbe1a400e4b6075da"
+  },
+  {
+    "file": "raw_candidates/historical_replay/archive_recording_frame_0018.png",
+    "source_path": "/home/cat/adas_risk_dev_20261102/evidence/actual_native_road.mp4",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制回放原生车机录像的第 18 帧（约 1.20 秒），非本次实时 PCIe；不作为 FPGA 实板控制证据。",
+    "sha256": "eee36b03abbe662c161942117902a186f1f41b0beddbfabea1a5d64ebcb3fc9d"
+  },
+  {
+    "file": "raw_candidates/historical_replay/archive_recording_frame_0026.png",
+    "source_path": "/home/cat/adas_risk_dev_20261102/evidence/actual_native_road.mp4",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制回放原生车机录像的第 26 帧（约 1.73 秒），非本次实时 PCIe；不作为 FPGA 实板控制证据。",
+    "sha256": "5704e64aa3870ed7626da70fe50e853128872fcd3cabae95d13ca3abd53f3f95"
+  },
+  {
+    "file": "raw_candidates/historical_replay/archive_recording_frame_0033.png",
+    "source_path": "/home/cat/adas_risk_dev_20261102/evidence/actual_native_road.mp4",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制回放原生车机录像的第 33 帧（约 2.20 秒），非本次实时 PCIe；不作为 FPGA 实板控制证据。",
+    "sha256": "03f377b53a2ac3345d95164e5ec423b20738153df2621431b0d8b312fe2917fb"
+  },
+  {
+    "file": "raw_candidates/historical_replay/archive_recording_frame_0041.png",
+    "source_path": "/home/cat/adas_risk_dev_20261102/evidence/actual_native_road.mp4",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制回放原生车机录像的第 41 帧（约 2.73 秒），非本次实时 PCIe；不作为 FPGA 实板控制证据。",
+    "sha256": "2d9d441d3964366e44e08c1b55c0076afd4ade53a866d4bb2fa8d4603fefabbc"
+  },
+  {
+    "file": "raw_candidates/historical_replay/archive_recording_frame_0048.png",
+    "source_path": "/home/cat/adas_risk_dev_20261102/evidence/actual_native_road.mp4",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制回放原生车机录像的第 48 帧（约 3.20 秒），非本次实时 PCIe；不作为 FPGA 实板控制证据。",
+    "sha256": "90606b2bed6f5f721f2db108418148f978fca8d869c2243ad92b4384fdce75a4"
+  },
+  {
+    "file": "raw_candidates/historical_replay/archive_recording_frame_0056.png",
+    "source_path": "/home/cat/adas_risk_dev_20261102/evidence/actual_native_road.mp4",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制回放原生车机录像的第 56 帧（约 3.73 秒），非本次实时 PCIe；不作为 FPGA 实板控制证据。",
+    "sha256": "0c64f7797fb36582d7b1bae0a68666a82f629c1b94c1de7d8e2ef02d709e9e98"
+  },
+  {
+    "file": "raw_candidates/historical_replay/archive_recording_frame_0063.png",
+    "source_path": "/home/cat/adas_risk_dev_20261102/evidence/actual_native_road.mp4",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制回放原生车机录像的第 63 帧（约 4.20 秒），非本次实时 PCIe；不作为 FPGA 实板控制证据。",
+    "sha256": "17fe62c647cc3eb80024c6cbc0e5e589858f6eba0edf1d9e187431ea8df9318e"
+  },
+  {
+    "file": "raw_candidates/historical_replay/archive_recording_frame_0071.png",
+    "source_path": "/home/cat/adas_risk_dev_20261102/evidence/actual_native_road.mp4",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制回放原生车机录像的第 71 帧（约 4.73 秒），非本次实时 PCIe；不作为 FPGA 实板控制证据。",
+    "sha256": "573c8ab531d2bc0d8991fe5fb876362aead4458c7780285c4597136e527dba65"
+  },
+  {
+    "file": "raw_candidates/historical_replay/archive_recording_frame_0078.png",
+    "source_path": "/home/cat/adas_risk_dev_20261102/evidence/actual_native_road.mp4",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制回放原生车机录像的第 78 帧（约 5.20 秒），非本次实时 PCIe；不作为 FPGA 实板控制证据。",
+    "sha256": "fd8bbf9701751f8e6923c24229f3b4d923a62d5dc35e008ce0b8cdbf660738bc"
+  },
+  {
+    "file": "raw_candidates/historical_replay/archive_recording_frame_0086.png",
+    "source_path": "/home/cat/adas_risk_dev_20261102/evidence/actual_native_road.mp4",
+    "source_type": "HISTORICAL_REPLAY",
+    "note_zh": "历史录制回放原生车机录像的第 86 帧（约 5.73 秒），非本次实时 PCIe；不作为 FPGA 实板控制证据。",
+    "sha256": "3e8fb06f4b08ba0e41e5771d458926f8e7274fe6518c4fdd39ac06827dfd7b70"
+  }
+]
