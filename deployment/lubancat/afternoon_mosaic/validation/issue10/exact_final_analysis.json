@@ -1,0 +1,146 @@
+{
+  "exact_baseline_trace": {
+    "trace_rows": 25884,
+    "render_seconds": 68.829990867,
+    "true_identity_count": 152,
+    "untracked_rendered_identities": 22,
+    "recreate_count": 235,
+    "true_identity_recreate_count": 27,
+    "held_after_600ms_rows": 0,
+    "step_at_60hz": {
+      "p50": 0.016696320297285832,
+      "p95": 0.7031488497176328,
+      "p99": 1.738463205357643,
+      "max": 5.221616287942
+    },
+    "speed_relative_units_per_s": {
+      "p50": 1.0017792178371498,
+      "p95": 42.188930983057965,
+      "p99": 104.30779232145859,
+      "max": 313.29697727652
+    },
+    "visual_frame_interval_s": {
+      "p50": 0.016739608,
+      "p95": 0.053693094,
+      "p99": 0.097118834,
+      "max": 0.10938115
+    },
+    "display_to_raw_distance": {
+      "p50": 0.14233920722992177,
+      "p95": 6.260172765793105,
+      "p99": 7.94847317623949,
+      "max": 43.64267170448607
+    },
+    "steps_over_05_at_60hz": 1351,
+    "steps_over_1_at_60hz": 555,
+    "valid_step_count": 18090
+  },
+  "exact_minimal_trace": {
+    "trace_rows": 23879,
+    "render_seconds": 69.230564606,
+    "true_identity_count": 152,
+    "untracked_rendered_identities": 0,
+    "recreate_count": 2,
+    "true_identity_recreate_count": 2,
+    "held_after_600ms_rows": 3538,
+    "step_at_60hz": {
+      "p50": 0.016999864055256202,
+      "p95": 0.2717359355780695,
+      "p99": 0.5894472399666395,
+      "max": 2.3767477380996462
+    },
+    "speed_relative_units_per_s": {
+      "p50": 1.019991843315372,
+      "p95": 16.304156134684174,
+      "p99": 35.366834397998375,
+      "max": 142.60486428597878
+    },
+    "visual_frame_interval_s": {
+      "p50": 0.016724442,
+      "p95": 0.024028107199999975,
+      "p99": 0.059032828,
+      "max": 0.070757029
+    },
+    "display_to_raw_distance": {
+      "p50": 0.1906653069722048,
+      "p95": 3.1043198127665406,
+      "p99": 6.73425031517195,
+      "max": 27.26752471923828
+    },
+    "steps_over_05_at_60hz": 335,
+    "steps_over_1_at_60hz": 64,
+    "valid_step_count": 23725
+  },
+  "exact_robust_trace": {
+    "trace_rows": 23773,
+    "render_seconds": 69.147142478,
+    "true_identity_count": 152,
+    "untracked_rendered_identities": 0,
+    "recreate_count": 2,
+    "true_identity_recreate_count": 2,
+    "held_after_600ms_rows": 3477,
+    "step_at_60hz": {
+      "p50": 0.005992915948048433,
+      "p95": 0.15491316699031685,
+      "p99": 0.24751617025811945,
+      "max": 0.5701416856098386
+    },
+    "speed_relative_units_per_s": {
+      "p50": 0.35957495688290597,
+      "p95": 9.294790019419011,
+      "p99": 14.850970215487168,
+      "max": 34.208501136590314
+    },
+    "visual_frame_interval_s": {
+      "p50": 0.016745442,
+      "p95": 0.025816428199999762,
+      "p99": 0.058883789,
+      "max": 0.07395072
+    },
+    "display_to_raw_distance": {
+      "p50": 0.5194757231153242,
+      "p95": 10.724354874464684,
+      "p99": 19.95983409352449,
+      "max": 38.42272758483887
+    },
+    "steps_over_05_at_60hz": 3,
+    "steps_over_1_at_60hz": 0,
+    "valid_step_count": 23619
+  },
+  "exact_final_trace": {
+    "trace_rows": 21710,
+    "render_seconds": 69.21547026,
+    "true_identity_count": 152,
+    "untracked_rendered_identities": 0,
+    "recreate_count": 2,
+    "true_identity_recreate_count": 2,
+    "held_after_600ms_rows": 3267,
+    "step_at_60hz": {
+      "p50": 0.004918600239742529,
+      "p95": 0.14241239494077781,
+      "p99": 0.22825336683278785,
+      "max": 0.34588957541802584
+    },
+    "speed_relative_units_per_s": {
+      "p50": 0.2951160143845517,
+      "p95": 8.54474369644667,
+      "p99": 13.695202009967272,
+      "max": 20.75337452508155
+    },
+    "visual_frame_interval_s": {
+      "p50": 0.016759441,
+      "p95": 0.051023006999999995,
+      "p99": 0.095994481,
+      "max": 0.109051573
+    },
+    "display_to_raw_distance": {
+      "p50": 0.4412141413466856,
+      "p95": 10.546677017211904,
+      "p99": 19.427998881263175,
+      "max": 38.42979621887207
+    },
+    "steps_over_05_at_60hz": 0,
+    "steps_over_1_at_60hz": 0,
+    "valid_step_count": 21556
+  }
+}

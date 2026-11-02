@@ -1,0 +1,33 @@
+{
+  "controlled_metadata_fixture": true,
+  "real_ab_data": false,
+  "cases": {
+    "CONTROLLED_FIXTURE:valid": [
+      1
+    ],
+    "CONTROLLED_FIXTURE:untracked": [
+      0,
+      0
+    ],
+    "CONTROLLED_FIXTURE:wrong_source": [
+      0
+    ],
+    "CONTROLLED_FIXTURE:wrong_epoch": [
+      0
+    ],
+    "CONTROLLED_FIXTURE:predicted": [
+      0,
+      0
+    ],
+    "CONTROLLED_FIXTURE:new_context": [
+      1,
+      0,
+      0
+    ],
+    "CONTROLLED_FIXTURE:empty_switch": [
+      0,
+      0
+    ]
+  },
+  "untracked_source_epoch_prediction_offline_isolation_passed": true
+}
