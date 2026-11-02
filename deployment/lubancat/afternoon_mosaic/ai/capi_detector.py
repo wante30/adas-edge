@@ -38,6 +38,20 @@ COLOR_DIRECT = (0, 200, 40, 70)
 COLOR_ALTERNATIVE = (255, 96, 0, 70)
 
 
+def overlay_colors(lane,style,drivable):
+    """Byte-identical palette selection with a single LUT gather per pixel."""
+    return OVERLAY_LUT[lane,style,drivable]
+
+OVERLAY_LUT=np.zeros((9,3,3,4),dtype=np.uint8)
+for _lane in range(9):
+    for _style in range(3):
+        for _drive in range(3):
+            _color=(COLOR_DIRECT if _drive==DRIVE_DIRECT else COLOR_ALTERNATIVE if _drive==DRIVE_ALTERNATIVE else (0,0,0,0))
+            if _lane!=LANE_BACKGROUND:_color=COLOR_DASHED if _style==STYLE_DASHED else COLOR_SOLID
+            if _lane==LANE_CROSSWALK:_color=COLOR_CROSSWALK
+            OVERLAY_LUT[_lane,_style,_drive]=_color
+
+
 class P2Result(ctypes.Structure):
     _fields_ = [
         ("count", ctypes.c_int),
@@ -263,14 +277,7 @@ class CapiMtlDetector(CapiDetector):
 
     def _write_overlay(self, lane, style, drivable, frame_id, timestamp_ns):
         height, width = lane.shape
-        canvas = np.zeros((height, width, 4), dtype=np.uint8)
-        canvas[drivable == DRIVE_DIRECT] = COLOR_DIRECT
-        canvas[drivable == DRIVE_ALTERNATIVE] = COLOR_ALTERNATIVE
-        foreground = lane != LANE_BACKGROUND
-        canvas[foreground & (style == STYLE_DASHED)] = COLOR_DASHED
-        canvas[foreground & (style != STYLE_DASHED)
-               & (lane != LANE_CROSSWALK)] = COLOR_SOLID
-        canvas[lane == LANE_CROSSWALK] = COLOR_CROSSWALK
+        canvas = overlay_colors(lane,style,drivable)
         ok, encoded = cv2.imencode(".png", canvas, [cv2.IMWRITE_PNG_COMPRESSION, 1])
         if not ok:
             return

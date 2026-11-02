@@ -30,6 +30,7 @@ class PrimaryTracks:
                 groups[q].append(row)
             output.append(det)
         for q,rows in groups.items():
+            if not rows and not self.trackers[q].tracks: continue
             for row in self.trackers[q].update(rows,timestamp_ns):
                 row["original"]["track_id"]=row["trackId"]
                 vx,vy,vw,vh=row.get("velocity",[0,0,0,0])
