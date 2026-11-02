@@ -51,15 +51,17 @@ def main():
                 stream.seek(0, 2); stream.seek(max(0, stream.tell() - 300000))
                 data = stream.read().splitlines()
             completions = []
+            parsed = []
             for raw in data:
                 try: item = json.loads(raw)
                 except ValueError: continue
+                parsed.append(item)
                 if (item.get("model_id") == model and item["inference"]["mode"] == mode
                         and int(item["inference"]["epoch"]) == int(row.get("inference_epoch", -1))):
                     completions.append(item)
             # Epoch is recorded in AI; metrics from older builds omit it.
             if "inference_epoch" not in row:
-                completions = [json.loads(raw) for raw in data if raw.startswith(b"{")]
+                completions = parsed
                 completions = [item for item in completions if item.get("model_id") == model and item["inference"]["mode"] == mode]
                 latest_epoch = completions[-1]["inference"]["epoch"] if completions else None
                 completions = [item for item in completions if item["inference"]["epoch"] == latest_epoch]
@@ -70,11 +72,12 @@ def main():
         row["actual_last_result"] = {k:completions[-1].get(k) for k in ("model_id", "inference", "main_timing", "pipeline_ms")}
         row["selection"] = model; events.append(row)
         subprocess.run(["xwd", "-display", ":0", "-name","Qt Quick GPU Probe - RK3566", "-silent", "-out",
-                        str(EVIDENCE / ("menu_" + str(index) + ".xwd"))],
+                        str(EVIDENCE / (LABEL + "_menu_" + str(index) + ".xwd"))],
                        env=dict(os.environ, XAUTHORITY="/home/cat/.Xauthority"), check=True)
         print(json.dumps(row), flush=True)
-    report = {"passed": True, "input": "1350-frame local RGB565 replay, requested 60 FPS",
-              "control_mode": "DRY_RUN", "events": events}
+    state = json.loads((EVIDENCE / "integration_session.json").read_text())
+    report = {"passed": True, "input": state.get("input_kind", "LOCAL_REPLAY"),
+              "control_mode": state.get("control_mode", "DRY_RUN"), "events": events}
     (EVIDENCE / (LABEL + "_model_menu_acceptance.json")).write_text(json.dumps(report, indent=2))
     print("MODEL_MENU_ACCEPTANCE_COMPLETE", flush=True)
 

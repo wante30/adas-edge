@@ -11,7 +11,8 @@ def main():
     label=state["label"];old_pid=state["test_ai_pid"];hmi=state["test_hmi_pid"]
     process=session.record(old_pid)
     assert process["cwd"]==str(ROOT/"ai")
-    assert process["env"].get("ADAS_CONTROL_MODE")=="DRY_RUN"
+    control_mode=process["env"]["ADAS_CONTROL_MODE"]
+    assert control_mode in ("DRY_RUN","HARDWARE")
     metric_path=session.EVIDENCE/(label+"_hmi.jsonl")
     def metric():
         with metric_path.open("rb") as stream:
@@ -40,7 +41,7 @@ def main():
     assert new_bridge!=old_bridge
     assert Path("/proc/"+str(hmi)).exists()
     assert restored["produced_frames"]>offline["produced_frames"]
-    report=dict(passed=True,kind="ACTUAL_AI_RESTART",control_mode="DRY_RUN",hmi_pid=hmi,
+    report=dict(passed=True,kind="ACTUAL_AI_RESTART",control_mode=control_mode,hmi_pid=hmi,
                 old_ai_pid=old_pid,new_ai_pid=new_pid,old_bridge_id=old_bridge,new_bridge_id=new_bridge,
                 before=before,offline=offline,restored=restored)
     (session.EVIDENCE/(label+"_restart_acceptance.json")).write_text(json.dumps(report,indent=2),encoding="utf-8")

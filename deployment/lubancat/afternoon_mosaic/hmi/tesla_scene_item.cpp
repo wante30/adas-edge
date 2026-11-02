@@ -464,7 +464,7 @@ public:
             b.measuredNs=map.value("detectTimestampNs").toLongLong();
             b.expiresNs=map.value("hazardExpiresNs").toLongLong();
             b.source=map.value("sourceId").toString();
-            if (!b.source.isEmpty() && b.source!="Q1") continue;
+            if (!b.source.isEmpty() && b.source!=QString("Q%1").arg(scene->roadQuadrant()+1)) continue;
             // Stale/predicted tracks are retained by the tracker for continuity,
             // but must not be drawn as if they were current detections.
             if (b.id > 0 && b.w > 2 && b.h > 2 && !b.predicted && b.missed == 0 &&
@@ -645,7 +645,7 @@ private:
         double sourceW = 1280.0, sourceH = 720.0, offX = 0.0, offY = 0.0;
         if (display_view_ == QStringLiteral("quad")) {
             sourceW = 640.0; sourceH = 360.0;
-            offX = 0.0; offY = 0.0; // BEV is always the forward Q1 camera.
+            offX = (road_quadrant_ % 2) * 640.0; offY = (road_quadrant_ / 2) * 360.0;
         }
         const qint64 absoluteNs=std::chrono::duration_cast<std::chrono::nanoseconds>(
             std::chrono::steady_clock::now().time_since_epoch()).count();

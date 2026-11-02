@@ -15,7 +15,7 @@ def main():
     parser.add_argument("--output",type=Path,default=ROOT/"runtime/adas-risk-control-rk3566.zip")
     args=parser.parse_args();out=args.output.resolve();out.parent.mkdir(parents=True,exist_ok=True)
     paths=[]
-    for name in ("ai","hmi","fast_mosaic","tools","tests","validation","config"):
+    for name in ("ai","hmi","fast_mosaic","tools","tests","validation","config","hardware"):
         paths.extend(p for p in (ROOT/name).rglob("*") if p.is_file() and not any(
             part in ("__pycache__",".git") or part.startswith("build-") for part in p.relative_to(ROOT).parts)
             and p.suffix not in (".pyc",".o",".xwd") and not p.name.endswith((".bak",".pre-audit")))

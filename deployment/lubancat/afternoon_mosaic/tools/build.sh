@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+python3 "$ROOT/tools/normalize_build_times.py"
 cd "$ROOT/fast_mosaic/capi"
 make libp2capi_generic.so
 mkdir -p "$ROOT/build-stage4"

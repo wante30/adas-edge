@@ -64,10 +64,11 @@ class EventStore:
         self.journal.write("event_transition", **event)
 
     def update(self, candidates, *, mode, epoch, bridge_id, model_id, frame_id,
-               timestamp_ns, measurement_ns=None, now_ns=None):
+               timestamp_ns, measurement_ns=None, now_ns=None, road_quadrant=0):
         now_ns = time.monotonic_ns() if now_ns is None else now_ns
         measurement_ns = timestamp_ns if measurement_ns is None else measurement_ns
-        context = (bridge_id, mode, str(epoch), model_id)
+        forward_source = "Q%d" % (road_quadrant + 1)
+        context = (bridge_id, mode, str(epoch), model_id, road_quadrant)
         frame_key = (context, frame_id, timestamp_ns)
         if self.last_frame == frame_key:
             return tuple(self.active.values())
@@ -87,7 +88,7 @@ class EventStore:
             confidence=float(candidate.get("confidence",0.0))
             if not math.isfinite(confidence): continue
             source = candidate.get("source_id", "Q1")
-            if source not in ("Q1","Q2","Q3","Q4") or (mode=="ROAD_Q1" and source!="Q1"): continue
+            if source not in ("Q1","Q2","Q3","Q4") or (mode=="ROAD_Q1" and source!=forward_source): continue
             track_id = int(candidate.get("track_id") or 0)
             bbox = candidate.get("bbox")
             if bbox is not None:
@@ -112,7 +113,7 @@ class EventStore:
                          confidence=round(float(candidate.get("confidence", 0.0)),3),
                          evidence=candidate.get("evidence") or candidate.get("source", "MEASURED_DETECTIONS"),
                          path_valid=bool(candidate.get("path_valid", True)),
-                         control_eligible=bool(severity=="critical" and source=="Q1" and track_id>0
+                         control_eligible=bool(severity=="critical" and source==forward_source and track_id>0
                              and bbox and candidate.get("path_valid",True) and kind in BRAKE_TYPES and candidate.get("control_eligible", True)),
                          valid=True, expires_at_ns=int(measurement_ns+self.ttl_ns),
                          confirmed_ns=previous["confirmed_ns"] if previous else now_ns,

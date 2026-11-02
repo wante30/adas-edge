@@ -1,5 +1,6 @@
 """Shared measured identities. Per-camera association; predictions stay internal."""
 from tools.competition_console.byte_tracker_lite import ByteTracker
+from forward_view import source_id
 
 class PrimaryTracks:
     def __init__(self):
@@ -17,7 +18,7 @@ class PrimaryTracks:
             b=original.get("bbox")
             if not b or len(b)!=4: continue
             x1,y1,x2,y2=map(float,b)
-            if context[0]=="ROAD_Q1": q="Q1"
+            if context[0]=="ROAD_Q1": q=source_id(context)
             else:
                 q="Q%d"%(1+(int((x1+x2)/2>=640))+(2*int((y1+y2)/2>=360)))
                 # A seam-straddling box has no safe camera identity.

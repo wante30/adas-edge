@@ -34,11 +34,16 @@ def main():
     def click(x,y):subprocess.run(["python3",str(ROOT/"tools/ui_control.py"),str(x),str(y)],check=True,stdout=subprocess.DEVNULL)
     def capture(name):subprocess.run(["xwd","-display",":0","-name","Qt Quick GPU Probe - RK3566","-silent","-out",str(EVIDENCE/(label+"_"+name+".xwd"))],env=dict(os.environ,XAUTHORITY="/home/cat/.Xauthority"),check=True)
     state=json.loads((EVIDENCE/"integration_session.json").read_text());pids=[state[k] for k in ("test_ai_pid","test_hmi_pid")]
+    process_args = Path('/proc/'+str(state['test_hmi_pid'])+'/cmdline').read_bytes().split(b'\0')
+    real_pcie = b'--pgv-file' in process_args and b'--raw-replay' not in process_args
+    control_mode = state.get('control_mode', 'DRY_RUN')
+    if real_pcie:
+        assert control_mode == 'HARDWARE'
     wait(lambda m:m["ai_online"] and m["ai_results"]>20)
     click(390,32);wait(lambda m:m["inference_mode"]=="ROAD_Q1" and m["inference_ready"] and m["ai_online"])
     start=time.monotonic();start_ns=time.monotonic_ns();windows=[];snapshots=[]
     mode="ROAD_Q1";window_start=start_ns;next_switch=start+args.switch_every;next_sample=start
-    report=dict(label=label,kind="ACTUAL_1350_FRAME_REPLAY",requested_source_fps=60,control_mode="DRY_RUN",started_ns=start_ns,windows=windows,metrics=snapshots)
+    report=dict(label=label,kind="ACTUAL_REAL_PCIE" if real_pcie else "ACTUAL_1350_FRAME_REPLAY",requested_source_fps=60,control_mode=control_mode,forward_source_id="Q%d" % (state.get("forward_quadrant",0)+1),started_ns=start_ns,windows=windows,metrics=snapshots)
     try:
         while time.monotonic()-start<args.seconds:
             now=time.monotonic()
@@ -51,7 +56,12 @@ def main():
                 window_start=time.monotonic_ns();next_switch+=args.switch_every
                 capture(mode+"_"+str(len(windows)))
             if now>=next_sample:
-                row=metric();row["sample_ns"]=time.monotonic_ns();snapshots.append(row)
+                row=metric();row["sample_ns"]=time.monotonic_ns()
+                if real_pcie:
+                    row['pcie_capture'] = json.loads(Path('/dev/shm/pango-video/status.json').read_text())
+                    row['vehicle_status'] = json.loads(Path('/dev/shm/adas_vehicle_status.json').read_text())
+                    row['vehicle_file_age_ms'] = (time.time()-Path('/dev/shm/adas_vehicle_status.json').stat().st_mtime)*1000
+                snapshots.append(row)
                 if len(snapshots)%5==1:print(json.dumps({k:row.get(k) for k in ("inference_mode","model_id","ai_fps","scene_graph_fps","source_fps","ai_results")}),flush=True)
                 next_sample+=2
             time.sleep(.15)
@@ -118,7 +128,7 @@ def main():
         report["control_consistency"]=dict(
             identity_color_mismatches=identity_color_mismatches,
             warning_requests=sum(r.get("severity")!="critical" for r in requests),
-            non_q1_requests=sum(r.get("source_id")!="Q1" for r in requests),
+            non_forward_requests=sum(r.get("source_id")!=report.get("forward_source_id","Q1") for r in requests),
             cleared_requests=sum(r.get("lifecycle_state")!="ACTIVE" for r in requests),
             missing_critical_decisions=len({e["event_id"] for r in active_ai for e in r.get("hazard_details",[]) if e.get("severity")=="critical"}-{r["event_id"] for r in timeline if r.get("stage")=="control_decision"}))
         report["fps_passed"]=perf["ROAD_Q1"]["completed_fps"]>=6.5 and perf["MOSAIC_FULL"]["completed_fps"]>=13.8 and (report["qt_scene_graph_fps_mean"] or 0)>=28

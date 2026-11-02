@@ -6,7 +6,7 @@ import sys
 import threading
 import types
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 AI = Path(__file__).parents[1] / "ai"
 sys.path.insert(0, str(AI))
@@ -19,6 +19,21 @@ from model_profiles import build_model_profiles, decode_model_switch_reply
 
 
 class ModelSwitchTests(unittest.TestCase):
+    def test_priority_targets_current_python_thread_with_absolute_nice(self):
+        with patch.object(bridge_module.os,"PRIO_PROCESS",0,create=True), \
+             patch.object(bridge_module.os,"getpriority",return_value=-19,create=True), \
+             patch.object(bridge_module.os,"setpriority",create=True) as set_priority, \
+             patch.object(bridge_module.threading,"get_native_id",return_value=12345):
+            bridge_module._set_current_python_thread_nice(10)
+            set_priority.assert_called_once_with(0,12345,10)
+
+    def test_priority_does_not_repeat_syscall_for_unchanged_value(self):
+        with patch.object(bridge_module.os,"PRIO_PROCESS",0,create=True), \
+             patch.object(bridge_module.os,"getpriority",return_value=0,create=True), \
+             patch.object(bridge_module.os,"setpriority",create=True) as set_priority:
+            bridge_module._set_current_python_thread_nice(0)
+            set_priority.assert_not_called()
+
     def make_bridge(self, mode):
         bridge = bridge_module.AiReplayBridge.__new__(bridge_module.AiReplayBridge)
         bridge.model_switch_lock = threading.Lock()

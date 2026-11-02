@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import socket
 import subprocess
 import time
 
@@ -62,11 +63,46 @@ def resume_telemetry(state):
             subprocess.run(["sudo", "-n", "kill", "-CONT", str(paused)], check=True)
 
 
+def hardware_bridge(state, enable):
+    unit = "adas-risk-hardware.service"
+    original = "adas-hud-bridge.service"
+    if not enable:
+        if "hud_service_was_active" in state:
+            subprocess.run(["sudo", "-n", "systemctl", "stop", unit], check=True)
+            if state.pop("hud_service_was_active"):
+                subprocess.run(["sudo", "-n", "systemctl", "start", original], check=True)
+            save(state)
+        return
+    if "hud_service_was_active" not in state:
+        state["hud_service_was_active"] = subprocess.run(
+            ["systemctl", "is-active", "--quiet", original]).returncode == 0
+        save(state)
+    subprocess.run(["sudo", "-n", "systemctl", "stop", original], check=True)
+    if subprocess.run(["systemctl", "is-active", "--quiet", unit]).returncode != 0:
+        subprocess.run(["sudo", "-n", "systemd-run", "--unit=" + unit, "--collect",
+            "--property=Restart=on-failure", "--property=RestartSec=2", "/usr/bin/python3", "-u",
+            str(ROOT / "hardware/hardware_bridge.py")], check=True)
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+        probe.settimeout(.3)
+        for _ in range(20):
+            probe.sendto(b'{"type":"status"}', ("127.0.0.1", 38262))
+            try:
+                reply = json.loads(probe.recv(4096))
+                if reply.get("control_bridge") == "ADAS_REAL_PCIE_V1":
+                    return
+            except (socket.timeout, ValueError):
+                pass
+        raise RuntimeError("Real PCIe bridge did not become ready; inspect journalctl -u " + unit)
+
+
 def start(args):
     assert (ROOT / args.build / "qt_gpu_probe").is_file()
     if STATE.exists():
+        old = json.loads(STATE.read_text())
+        if old["boot_id"] != BOOT.read_text().strip():
+            STATE.rename(EVIDENCE / ("integration_session_previous_boot_" + old["boot_id"] + "_" + str(time.monotonic_ns()) + ".json"))
+    if STATE.exists():
         state = json.loads(STATE.read_text())
-        assert state["boot_id"] == BOOT.read_text().strip(), "Old boot: preserve and move the old session record first"
         for name in ("test_hmi_pid", "test_ai_pid"):
             stop(state.get(name))
     else:
@@ -108,11 +144,12 @@ def start(args):
         stop(hmis[0] if hmis else None)
     if not args.raw_replay:
         resume_telemetry(state)
+    forward_quadrant = getattr(args,"forward_quadrant",None) if getattr(args,"forward_quadrant",None) is not None else (0 if args.raw_replay else 3)
     shared_frame = Path("/dev/shm") / (ROOT.name + ".mfr1")
     ai_args = ["/usr/bin/python3", "-u", str(ROOT / "tools/isolated_ai.py"),
                "--live-frame-file", str(shared_frame),
                "--source", "LOCAL_REPLAY" if args.raw_replay else "PGV_LIVE", "--layout", "quad", "--display-view", "front",
-               "--road-quadrant", "0", "--navigation-quadrant", "1",
+               "--road-quadrant", str(forward_quadrant), "--forward-quadrant", str(forward_quadrant), "--navigation-quadrant", "1",
                "--main-model", "/home/cat/models/b05n_p2_mtl_b2a_seg256/b05n_p2_mtl_b2a_seg256_int8.rknn",
                "--main-hz", "10", "--hazard-hz", "5", "--ocr-hz", "2", "--navigation-ocr",
                "--idle-timeout", "0", "--timing-log", str(EVIDENCE / f"{args.label}_ai.jsonl"),
@@ -125,9 +162,18 @@ def start(args):
     if getattr(args,"synthetic_ui",False):
         if env["ADAS_CONTROL_MODE"]!="DRY_RUN":raise ValueError("Synthetic fixture requires DRY_RUN")
         ai_args=["python3",str(ROOT/"tools/synthetic_ui.py")]
+    hardware_bridge(state, env["ADAS_CONTROL_MODE"] == "HARDWARE")
+    state["control_mode"] = env["ADAS_CONTROL_MODE"]
+    state["forward_quadrant"] = forward_quadrant
+    state["input_kind"] = "LOCAL_REPLAY" if args.raw_replay else "REAL_PCIE"
     state["test_ai_pid"] = launch(ai_args, ROOT / "ai", env, f"{args.label}_ai.log")
     hmi_args = state["baseline_hmi"]["args"][:]
     hmi_args[0] = str(ROOT / args.build / "qt_gpu_probe")
+    if "--road-quadrant" in hmi_args:
+        hmi_args[hmi_args.index("--road-quadrant") + 1] = str(forward_quadrant)
+    else:
+        hmi_args += ["--road-quadrant", str(forward_quadrant)]
+    hmi_args += ["--forward-quadrant", str(forward_quadrant)]
     hmi_args[hmi_args.index("--ai-hz") + 1] = str(args.ai_hz)
     hmi_args[hmi_args.index("--ai-frame-file") + 1] = str(shared_frame)
     if args.raw_replay:
@@ -142,6 +188,7 @@ def start(args):
     hmi_env["QT_RISK_TIMELINE_LOG"] = str(EVIDENCE / (args.label + "_risk_ui.jsonl"))
     hmi_env["QT_AI_PACING_POLICY"] = os.environ.get("QT_AI_PACING_POLICY", "PRESSURE")
     hmi_env["QT_AI_SCHEDULE_LOG"] = str(EVIDENCE / (args.label + "_schedule.jsonl"))
+    if os.environ.get("QT_GUI_PROFILE"): hmi_env["QT_GUI_PROFILE"] = "1"
     hmi_env["QT_SCENE_TIMELINE_LOG"] = str(EVIDENCE / (args.label + "_scene.jsonl"))
     hmi_env["QT_AI_TIMING_LOG"] = str(EVIDENCE / (args.label + "_qt_ai.jsonl"))
     if args.external_qml:
@@ -158,6 +205,7 @@ def restore():
     for name in ("test_hmi_pid", "test_ai_pid", "mock_pid"):
         stop(state.get(name))
     resume_telemetry(state)
+    hardware_bridge(state, False)
     if state["ai_service_was_active"]:
         subprocess.run(["sudo", "-n", "systemctl", "start", SERVICE], check=True)
     if state.get("autostart_parent"):
@@ -171,6 +219,7 @@ if __name__ == "__main__":
     parser.add_argument("action", choices=["start", "restore"])
     parser.add_argument("--build", default="build-baseline")
     parser.add_argument("--label", default="stage1_after_reboot")
+    parser.add_argument("--forward-quadrant", type=int, choices=range(4))
     parser.add_argument("--ai-hz", default="10")
     parser.add_argument("--external-qml", action="store_true")
     parser.add_argument("--synthetic-ui", action="store_true")

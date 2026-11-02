@@ -2,7 +2,7 @@
 
 本目录在 PR #6 的 `d397af411d592447197fa2f194144dca52c765dd` 上继续开发。独立分支为 `feature/adas-risk-control-20261102`，独立板端目录为 `/home/cat/adas_risk_dev_20261102`。PR #6、下午版归档及正式自启动环境保留。
 
-当前板端没有 PCIe 设备。本地录制回放使用进程内 **DRY_RUN**：制动请求、模拟 ACK 和点刹时序写入日志；不会向控制端口发送命令。LVT1 界面仍反映真实设备可用状态，DRY_RUN 的虚拟车辆状态仅在控制日志中明确标注。
+2026-11-02 已恢复真实 PCIe 测试。按用户指定，比赛前向通道固定为 **Q4**，默认单路显示与推理、四路中的前向危险、Tesla 及自动制动均使用 Q4；Q1/Q2/Q3 不触发前向制动。本地录制回放仍使用进程内 **DRY_RUN**：制动请求、模拟 ACK 和点刹时序写入日志；不会向控制端口发送命令。LVT1 界面仍反映真实设备可用状态，DRY_RUN 的虚拟车辆状态仅在控制日志中明确标注。
 
 ## 运行
 
@@ -12,13 +12,14 @@
 
 ```sh
 sh tools/build.sh
+sh tools/start_pcie.sh
 sh tools/start_local_replay.sh /home/cat/qt_gpu_probe_ai_20261019/local_quad_full.rgb
 sh tools/restore_afternoon.sh
 ```
 
 回放使用完整 1350 帧、1280×720 RGB565 录制，循环请求 60 FPS。源帧率、Qt 场景图帧率、实际 AI 完成率分别计数。模型菜单保留 B、B-capi、MTL-FULL、MTL-FAST，并新增可直接选择的 FAST-MOSAIC。四路使用一次完整帧 BDD 推理；切回道路模式恢复上一个道路模型。切换通过模式/epoch/模型握手，旧结果不能覆盖新模式。
 
-硬件恢复后，可使用原有适配器和 `sh tools/start_pcie.sh`。本次没有验证真实 PCIe 恢复、真实制动执行或 LVT1 在线链路。
+真实硬件使用 `sh tools/start_pcie.sh`。启动器临时替换 HUD 服务为独立开发目录中的真实 BAR1 桥，发布 LVT1 并回传带 request_id 的硬件 ACK。FPGA 接收、动作激活与机械制动效果分别记录。原服务文件保留，可用恢复脚本切回。真实测试见 `validation/pcie/REPORT.md`；此前回放证据单独保留。
 
 ## 事件与控制
 
@@ -30,7 +31,7 @@ sh tools/restore_afternoon.sh
 
 ## 跟踪与显示
 
-复用恢复源码中的 Windows ByteTrack-Lite，按检测时间戳进行摄像头内两阶段关联，类别族隔离，漏检保留 600 ms。Qt 使用同一组主跟踪 ID。Tesla 仅消费 Q1；在 Qt 原生渲染中预测最多 250 ms，平滑纠正，淡入约 180 ms，淡出最长 350 ms，600 ms 后删除。预测和渐隐对象不作为控制证据。
+复用恢复源码中的 Windows ByteTrack-Lite，按检测时间戳进行摄像头内两阶段关联，类别族隔离，漏检保留 600 ms。Qt 使用同一组主跟踪 ID。Tesla 仅消费配置的前向通道（比赛 Q4，历史回放 Q1）；在 Qt 原生渲染中预测最多 250 ms，平滑纠正，淡入约 180 ms，淡出最长 350 ms，600 ms 后删除。预测和渐隐对象不作为控制证据。
 
 模型、模式或 epoch 变化会清理旧身份与语义。MTL 掩码、导航 OCR、LVT1、HUD 接口和原生 BEV 保留；没有加入 Python/OpenCV 图像渲染或额外模型推理。
 

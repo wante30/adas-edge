@@ -1,0 +1,10 @@
+{
+  "legacy_hud_bridge.py": {
+    "sha256": "b424d743309be74d4b51d54a8214a2116fa1fc46421f25e5420de208771f160c",
+    "source": "/home/cat/qt_gpu_probe_ai_20261019/hud_bridge.py"
+  },
+  "vehicle_telemetry_v1.py": {
+    "sha256": "b06689b9c49cc983b6dffae4ea8a3ee6e19f61a4f1cb731dbd073b685fdc4ad3",
+    "source": "/home/cat/qt_gpu_probe_ai_20261019/pr3_rollback_20261030/vehicle_telemetry_v1.py"
+  }
+}

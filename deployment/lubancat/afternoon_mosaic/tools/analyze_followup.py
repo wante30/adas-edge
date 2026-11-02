@@ -60,7 +60,7 @@ def main():
         previous=set(events)
     requests=[r for r in timeline if r.get('stage')=='brake_requested']
     control_consistency=dict(identity_color_mismatches=mismatches,warning_requests=sum(r.get('severity')!='critical' for r in requests),
-        non_q1_requests=sum(r.get('source_id')!='Q1' for r in requests),cleared_requests=sum(r.get('lifecycle_state')!='ACTIVE' for r in requests),
+        non_forward_requests=sum(r.get('source_id')!=report.get('forward_source_id','Q1') for r in requests),cleared_requests=sum(r.get('lifecycle_state')!='ACTIVE' for r in requests),
         missing_critical_decisions=len({e['event_id'] for r in ai for e in r.get('hazard_details',[]) if e['severity']=='critical'}-{r['event_id'] for r in timeline if r.get('stage')=='control_decision'}))
     event_validation=dict(transitions=sum(r.get('stage')=='event_transition' for r in timeline),
         critical_decisions=sum(r.get('stage')=='control_decision' for r in timeline),requests=len(requests),

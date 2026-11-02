@@ -6,7 +6,7 @@
 
 `event_id = bridge_id:epoch:sequence`。同一来源、主跟踪 ID 和规则类型在升级/降级时保持 ID。模型、模式、epoch 或 AI 实例变化会清除旧上下文。所有时间戳为板端单调纳秒；板端墙钟不准确，不用它比较风险时序。
 
-规则处理 Q1 原生 640×360 的实测框。ROAD_Q1 只映射一次到 `ROAD_VIEW_1280x720`；MOSAIC_FULL 输出完整画面的 `MOSAIC_1280x720`。二进制 MVA2 维持原格式，JSON 的 `box_identities` 按二进制框顺序提供主 ID、来源和显示速度。
+规则处理配置前向摄像头原生 640×360 的实测框；比赛使用 Q4。`ROAD_Q1` 是保留的单路协议名，不表示物理来源固定为 Q1。`forward_source_id` 记录实际前向通道；Q4 四路框先减去 (640,360) 进行规则计算，再在事件输出时加回偏移。ROAD_Q1 只映射一次到 `ROAD_VIEW_1280x720`；MOSAIC_FULL 输出完整画面的 `MOSAIC_1280x720`。二进制 MVA2 维持原格式，JSON 的 `box_identities` 按二进制框顺序提供主 ID、来源和显示速度。
 
 Qt 先验证 epoch、模式、坐标空间和有效期，再以来源及主 ID 匹配。已有显式 ID 时不能退回其他 ID；没有主 ID 的旧协议才允许正确坐标空间中的同类 IoU 后备。跨象限框保留普通显示，来源标记为 UNASSIGNED，不能控制。
 

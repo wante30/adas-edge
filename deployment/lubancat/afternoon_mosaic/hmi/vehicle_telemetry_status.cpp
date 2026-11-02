@@ -92,11 +92,16 @@ void VehicleTelemetryStatus::publish(bool online, const QVariantMap &snapshot) {
                    valid && boolValue(snapshot, key));
     }
 
-    if (online == online_ && valid == valid_ && snapshot == snapshot_ &&
+    if (snapshot != snapshot_) {
+        snapshot_ = snapshot;
+        emit snapshotChanged();
+    }
+    // Generation/sample counters change continuously, but do not repaint the
+    // lane canvas or invalidate every ego-state binding when values are equal.
+    if (online == online_ && valid == valid_ &&
         lane == lane_state_ && ego == ego_state_) return;
     online_ = online;
     valid_ = valid;
-    snapshot_ = snapshot;
     lane_state_ = lane;
     ego_state_ = ego;
     emit statusChanged();

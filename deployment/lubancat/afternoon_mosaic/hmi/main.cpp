@@ -132,7 +132,8 @@ int main(int argc, char **argv) {
     const bool autoCycleCapture = args.contains("--capture-cycle");
     const bool sceneEnabled = !args.contains("--scene-off");
     const QString pgvLayout = stringArg(args, "--pgv-layout");
-    const int roadQuadrant = intArg(args, "--road-quadrant", 0);
+    const int roadQuadrant = intArg(args, "--road-quadrant", 3);
+    const int forwardQuadrant = std::clamp(intArg(args, "--forward-quadrant", roadQuadrant), 0, 3);
     const int startMode = std::clamp(intArg(args, "--start-mode", 0), 0, 2);
     const QString effectiveLayout = pgvLayout.isEmpty()
                                         ? ((pgvFile.isEmpty() && rawReplay.isEmpty())
@@ -157,6 +158,7 @@ int main(int argc, char **argv) {
     view.setResizeMode(QQuickView::SizeRootObjectToView);
     view.rootContext()->setContextProperty(QStringLiteral("pgvInputLayout"), effectiveLayout);
     view.rootContext()->setContextProperty(QStringLiteral("pgvRoadQuadrant"), roadQuadrant);
+    view.rootContext()->setContextProperty(QStringLiteral("forwardRoadQuadrant"), forwardQuadrant);
     view.rootContext()->setContextProperty(QStringLiteral("initialViewMode"), startMode);
     view.rootContext()->setContextProperty(QStringLiteral("autoCycleCapture"), autoCycleCapture);
     view.rootContext()->setContextProperty(QStringLiteral("sceneEnabled"), sceneEnabled);
@@ -245,6 +247,8 @@ int main(int argc, char **argv) {
                 sample["ai_frame_id"] = static_cast<qint64>(video->latestAiFrameId());
                 sample["ai_result_age_ms"] = video->aiResultAgeMs();
                 sample["ai_gui_update_ms"] = video->aiGuiUpdateMs();
+                sample["source_crc_errors"] = static_cast<qint64>(video->sourceCrcErrors());
+                sample["source_dropped_frames"] = static_cast<qint64>(video->sourceDroppedFrames());
                 sample["cpu_percent_of_all_cores"] = video->cpuPercent();
                 sample["gpu_load_percent"] = video->gpuLoadPercent();
                 sample["gpu_frequency_hz"] = static_cast<qint64>(video->gpuFrequencyHz());

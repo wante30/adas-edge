@@ -21,5 +21,15 @@ int main() {
     events=RiskLink::associate(QJsonArray{e},boxes,now,"MOSAIC_FULL","1");
     assert(!events[0].toMap().value("matched").toBool());
     assert(RiskLink::associate(QJsonArray{e},boxes,now,"MOSAIC_FULL","2").empty());
+    // Q4 is the physical forward source even in the legacy ROAD_Q1 mode.
+    e.insert("source_id","Q4"); e.insert("severity","critical");
+    e.insert("inference_mode","ROAD_Q1");e.insert("coordinate_space","ROAD_VIEW_1280x720");
+    b.insert("sourceId","Q4");b.insert("serverTrackId",7);boxes={b};
+    events=RiskLink::associate(QJsonArray{e},boxes,now,"ROAD_Q1","1");
+    assert(events.size()==1 && events[0].toMap().value("matched").toBool());
+    assert(boxes[0].toMap().value("hazardSeverity")=="critical");
+    b.insert("sourceId","Q1");boxes={b};
+    events=RiskLink::associate(QJsonArray{e},boxes,now,"ROAD_Q1","1");
+    assert(!events[0].toMap().value("matched").toBool());
     return 0;
 }

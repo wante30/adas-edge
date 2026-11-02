@@ -44,8 +44,9 @@ Item {
     property color red: "#FF5064"
     property color line: "#1B4052"
     property string inputLayout: (typeof pgvInputLayout !== "undefined" ? pgvInputLayout : "front")
-    // The user wants the top-right quadrant (Q2) as the default main view.
-    property int roadQuadrant: (typeof pgvRoadQuadrant !== "undefined" ? pgvRoadQuadrant : 0)
+    // Q4 is the competition forward camera; other thumbnails remain view-only.
+    property int forwardQuadrant: (typeof forwardRoadQuadrant !== "undefined" ? forwardRoadQuadrant : 3)
+    property int roadQuadrant: (typeof pgvRoadQuadrant !== "undefined" ? pgvRoadQuadrant : 3)
     property int navQuadrant: 1
     property int viewMode: (typeof initialViewMode !== "undefined" ? initialViewMode : 0)
     property bool autoCycle: (typeof autoCycleCapture !== "undefined" ? autoCycleCapture : false)
@@ -183,10 +184,10 @@ Item {
     // Real snapshots from the current PCIe 2x2 frame. The large viewport is
     // live; these dock thumbnails are snapshots, labelled SNAP.
     property var cameras: [
-        { name: "前视", source: "PCIE Q1", image: "assets/cam_front.png" },
+        { name: forwardQuadrant === 0 ? "前视" : "辅视", source: "PCIE Q1", image: "assets/cam_front.png" },
         { name: "导航", source: "PCIE Q2", image: "assets/cam_upper_right.png" },
         { name: "车内", source: "PCIE Q3", image: "assets/cam_lower_left.png" },
-        { name: "路口", source: "PCIE Q4", image: "assets/cam_hdmi.png" }
+        { name: forwardQuadrant === 3 ? "前视" : "辅视", source: "PCIE Q4", image: "assets/cam_hdmi.png" }
     ]
 
     Timer {
@@ -551,7 +552,7 @@ Item {
         return "模拟视频源"
     }
     function quadName(index) {
-        return ["PCIe Q1 · 前视", "PCIe Q2 · 导航", "PCIe Q3 · 车内", "PCIe Q4 · 路口"][index]
+        return "PCIe Q" + (index + 1) + (index === root.forwardQuadrant ? " · 前视" : [" · 辅视", " · 导航", " · 车内", " · 辅视"][index])
     }
     function clockText() { return Qt.formatDateTime(now, "HH:mm") }
     function dateText() { return Qt.formatDateTime(now, "yyyy/MM/dd") }
@@ -848,7 +849,7 @@ Item {
             readonly property bool active: (video.aiModelId === "MTL-FULL"
                                             || video.aiModelId === "MTL-FAST")
                                            && video.aiOnline
-            visible: active && root.viewMode === 0 && root.roadQuadrant === 0
+            visible: active && root.viewMode === 0 && root.roadQuadrant === root.forwardQuadrant
                      && video.inferenceReady && !root.videoQsg
             source: ""
             cache: false
@@ -905,7 +906,7 @@ Item {
             clip: true
             visible: (root.viewMode === 0 || root.viewMode === 1)
                      && video.aiOnline && video.inferenceReady && video.bboxCount > 0
-                     && (root.viewMode === 1 || root.roadQuadrant === 0)
+                     && (root.viewMode === 1 || root.roadQuadrant === root.forwardQuadrant)
             Repeater {
                 model: video.bboxModel
                 delegate: Item {
@@ -1822,7 +1823,7 @@ Item {
                 boxes: video.aiBoxes
                 laneState: vehicleTelemetry.laneState
                 displayView: video.aiDisplayView
-                roadQuadrant: video.aiRoadQuadrant
+                roadQuadrant: root.forwardQuadrant
                 demoMode: false
                 online: video.aiOnline
                 visible: root.sceneEnabled
@@ -2116,7 +2117,7 @@ Item {
                     verticalAlignment: Text.AlignVCenter
                 }
                 Repeater {
-                    model: video.aiModelOptions || []
+                    model: root.modelPickerOpen ? (video.aiModelOptions || []) : []
                     delegate: Rectangle {
                         property var option: modelData
                         x: 0

@@ -1,6 +1,7 @@
 """Latest-slot <=2 Hz reuse of existing MTL masks and bounded target crops."""
 from collections import deque
 import threading,time
+from forward_view import source_id, local_detection
 from competition_ai.road_geometry import crosswalk_polygons
 from competition_ai.hazard_events import paired_red_lamps
 
@@ -18,7 +19,7 @@ class SemanticWorker:
             if timestamp_ns<self.next_ns:return
             self.next_ns=timestamp_ns+500000000
             # CapiMtlDetector allocates fresh masks for each completion; frame is immutable.
-            self.pending=(frame,[dict(d) for d in detections if d.get("source_id")=="Q1"][:32],timestamp_ns,context,masks,letterbox)
+            self.pending=(frame,[local_detection(d,context) for d in detections if d.get("source_id")==source_id(context)][:32],timestamp_ns,context,masks,letterbox)
             self.cv.notify()
 
     def _process(self,frame,detections,ts,context,masks,letterbox):

@@ -1,4 +1,5 @@
 #include "video_item.h"
+#include "frame_crc.h"
 #include "risk_link.h"
 
 namespace {
@@ -61,10 +62,7 @@ static qint64 steadyNs() {
 }
 
 static uint32_t crc32Bytes(const unsigned char *bytes, size_t length) {
-    // zlib's slice-by-8 CRC is materially cheaper than a byte-at-a-time table
-    // on the RK3566 when validating 1.84 MB per frame at 60 Hz.
-    uLong crc = ::crc32(0L, Z_NULL, 0);
-    return static_cast<uint32_t>(::crc32(crc, bytes, static_cast<uInt>(length)));
+    return adasFrameCrc(bytes, length);
 }
 
 static uint32_t readLe32(const unsigned char *bytes) {
@@ -602,7 +600,8 @@ void VideoItem::startPgvProducer(double fps, const QString &pgvFile,
     last_source_ns_.store(steadyNs());
     update();
     pgv_pool_.clear();
-    for (int i = 0; i < 4; ++i) {
+    // Four queued slots plus renderer, AI handoff and writer need spare leases.
+    for (int i = 0; i < 8; ++i) {
         auto frame = std::make_shared<Frame>();
         frame->pixels.resize(kFrameBytes);
         pgv_pool_.push_back(std::move(frame));
@@ -964,9 +963,10 @@ void VideoItem::runPgvProducer(double fps, QString pgvFile, double aiHz, QString
         // Mark the QQuickFramebufferObject dirty once per accepted frame. The
         // renderer takes the newest queued frame in synchronize() and uploads
         // it; without this event the compositor keeps reusing the old texture.
-        // Keep one GUI update per accepted frame. Coalescing was measured to
-        // drop update handling below the producer rate and returned here.
-        if (!QMetaObject::invokeMethod(this, "requestFrameUpdate", Qt::QueuedConnection))
+        // Match replay's latest-only GUI wakeup; queued stale wakeups otherwise
+        // compete with the live PCIe producer when inference/GUI is busy.
+        if (!update_queued_.exchange(true) &&
+            !QMetaObject::invokeMethod(this, "requestFrameUpdate", Qt::QueuedConnection))
             update_queued_.store(false);
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
@@ -2049,13 +2049,20 @@ void VideoItem::updateMetrics() {
             presented_control_state_ = ai_control_state_;
         }
         bbox_model_->setBoxes(boxesForModel);
+        const qint64 afterModelNs = steadyNs();
         RiskLink::logApplied(eventsForModel, boxesForModel, nowNs);
         emit aiBoxesChanged();
+        const qint64 afterBoxesNs = steadyNs();
         // A receiver completion can race with clearing its dirty flag. Notify the
         // GUI snapshot unconditionally so boxes and panel always advance together.
         ai_status_dirty_.store(false);
         emit aiStatusChanged();
         ai_gui_update_ms_.store((steadyNs() - guiUpdateStartNs) / 1.0e6);
+        if (qEnvironmentVariableIsSet("QT_GUI_PROFILE"))
+            qInfo() << "GUI_PROFILE" << boxesForModel.size()
+                    << (afterModelNs-guiUpdateStartNs)/1.0e6
+                    << (afterBoxesNs-afterModelNs)/1.0e6
+                    << (steadyNs()-afterBoxesNs)/1.0e6;
     }
 
     last_produced_for_stats_ = produced;

@@ -8,10 +8,11 @@ BRAKE_KINDS=BRAKE_TYPES
 SEVERITIES={"critical"}
 
 class AutoBrakeController:
-    def __init__(self,*,enabled=None,port=38262,journal=None):
+    def __init__(self,*,enabled=None,port=38262,journal=None,forward_source_id="Q1"):
         self.enabled=(os.environ.get("ADAS_AUTO_BRAKE")=="1") if enabled is None else bool(enabled)
         self.mode=os.environ.get("ADAS_CONTROL_MODE","HARDWARE")
         self.authorized=os.environ.get("ADAS_CONTROL_AUTHORIZED","1" if self.enabled else "0")=="1"
+        self.forward_source_id=forward_source_id
         self.address=("127.0.0.1",int(port))
         if self.mode=="DRY_RUN":
             from control_transport import DryRunSocket
@@ -41,7 +42,7 @@ class AutoBrakeController:
         if e.get("lifecycle_state")!="ACTIVE" or not e.get("valid",False):return "event_cleared_or_invalid"
         if not self.enabled or not self.authorized:return "control_not_authorized"
         if self.mode not in ("DRY_RUN","HARDWARE"):return "invalid_control_mode"
-        if e.get("source_id")!="Q1" or e.get("track_id",0)<=0:return "not_measured_q1_target"
+        if e.get("source_id")!=self.forward_source_id or e.get("track_id",0)<=0:return "not_measured_forward_target"
         if e.get("kind") not in BRAKE_TYPES:return "unsupported_event_type"
         if not 0<=now-e.get("timestamp_ns",0)<=400000000 or e.get("expires_at_ns",0)<=now:return "stale_event"
         if e.get("predicted") or not e.get("control_eligible") or not e.get("path_valid"):return "ineligible_or_invalid_path"
@@ -69,7 +70,9 @@ class AutoBrakeController:
             ok=bool(reply.get("ok") and reply.get("accepted",reply.get("ok")))
             self.last_result=dict(reply,stage="brake_accepted" if ok else "brake_rejected",event_ids=[e["event_id"] for e in request["events"]],executed=bool(reply.get("executed",False)))
             for e in request["events"]:
-                self._record(self.last_result["stage"],e,now,request_id=request["request_id"],reason="dry_run_ack" if self.mode=="DRY_RUN" else reply.get("reason","hardware_ack"),executed=self.last_result["executed"],simulated=self.mode=="DRY_RUN")
+                self._record(self.last_result["stage"],e,now,request_id=request["request_id"],reason="dry_run_ack" if self.mode=="DRY_RUN" else reply.get("reason","hardware_ack"),executed=self.last_result["executed"],simulated=self.mode=="DRY_RUN",
+                    fpga_accepted=reply.get("fpga_accepted"),fpga_action_active=reply.get("fpga_action_active"),
+                    hardware_sequence=reply.get("sequence"),vehicle_feedback=reply.get("vehicle_feedback"))
                 if ok and e["kind"]=="CROSSWALK_BRAKE_PULSE":
                     self.pulses[e["event_id"]]=(now+300000000,e,request["request_id"])
                     self._record("pulse_simulated_execution",e,now,request_id=request["request_id"],simulated=True,executed=False,duration_ms=300)

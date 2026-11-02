@@ -781,8 +781,18 @@ def _current_rss_mb():
     return None
 
 
+def _set_current_python_thread_nice(nice_value=10):
+    """Set this Python thread absolutely; never retune RKNN native workers."""
+    try:
+        tid = threading.get_native_id()
+        if os.getpriority(os.PRIO_PROCESS, tid) != int(nice_value):
+            os.setpriority(os.PRIO_PROCESS, tid, int(nice_value))
+    except (AttributeError, OSError):
+        pass
+
+
 def _deprioritize_sidecar_process(nice_value=10):
-    """Lower only the Python sidecar leader; keep RKNN native workers intact."""
+    """Preserve measured RKNN caller/native scheduling; lower only the leader."""
     try:
         os.setpriority(os.PRIO_PROCESS, os.getpid(), int(nice_value))
     except (AttributeError, OSError):
@@ -808,7 +818,7 @@ def _navigation_ocr_process(request_queue, result_queue, ttl_ms):
         cpus = os.cpu_count() or 4
         if cpus > 1:
             os.sched_setaffinity(0, {cpus - 1})
-        os.nice(10)
+        _set_current_python_thread_nice(10)
     except (AttributeError, OSError):
         pass
     reader = Q2NavigationReader(ttl_ms=ttl_ms)
@@ -931,7 +941,8 @@ class AiReplayBridge:
         self.primary_tracks = PrimaryTracks()
         self.light_risk = LightRiskEngine()
         self.semantics = SemanticWorker()
-        self.auto_brake = AutoBrakeController(journal=self.event_store.journal)
+        self.auto_brake = AutoBrakeController(journal=self.event_store.journal,
+            forward_source_id="Q%d" % (self.args.forward_quadrant + 1))
         self.navigation = None
         self.nav_request = None
         self.nav_result = None
@@ -1002,7 +1013,8 @@ class AiReplayBridge:
         status["model_selection"] = self._model_selection_status(include_options=True)
         status["layout"] = self.args.layout
         status["display_view"] = "quad" if self.modes.adapter is not None else "front"
-        status["road_quadrant"] = 0
+        status["road_quadrant"] = self.args.forward_quadrant
+        status["forward_source_id"] = "Q%d" % (self.args.forward_quadrant + 1)
         status["inference"] = self.modes.status()
         self._write_dynamic_hmi(status)
         self.listener.start()
@@ -1422,7 +1434,7 @@ class AiReplayBridge:
             full_frame = self.frames[frame_id % len(self.frames)]
         decode_start_ns = time.perf_counter_ns()
         road, navigation_image = select_inference_frames(
-            full_frame, self.args.layout, 0,
+            full_frame, self.args.layout, self.args.forward_quadrant,
             self.args.navigation_quadrant,
         )
         self._last_decode_ms = (time.perf_counter_ns() - decode_start_ns) / 1e6
@@ -1430,6 +1442,7 @@ class AiReplayBridge:
         self.latest_source_timestamp_ns = int(timestamp_ns)
         pipeline_start_ns = time.perf_counter_ns()
         if self.modes.adapter is not None:
+            self.modes.adapter.road_quadrant = self.args.forward_quadrant
             self.modes.adapter.full_frame = (full_frame.full_bgr() if isinstance(full_frame, PackedRgb565) else full_frame)
         self.pipeline.advance(
             road, int(frame_id), int(timestamp_ns),
@@ -1476,11 +1489,11 @@ class AiReplayBridge:
         mode = self.modes.status()
         detections=(list(snapshot.main)+list(snapshot.specialist) if self.modes.adapter is None else self.modes.adapter.all_detections)
         tracking_start=time.perf_counter_ns()
-        self.primary_tracks.update(detections,(mode["mode"],mode["epoch"],self.active_model_id),timestamp_ns)
+        self.primary_tracks.update(detections,(mode["mode"],mode["epoch"],self.active_model_id,self.args.forward_quadrant),timestamp_ns)
         self._last_tracking_ms=(time.perf_counter_ns()-tracking_start)/1e6
         self.stage_timings.setdefault("risk_fast",deque(maxlen=3600))
         risk_start=time.perf_counter_ns()
-        risk_context=(mode["mode"],mode["epoch"],self.active_model_id)
+        risk_context=(mode["mode"],mode["epoch"],self.active_model_id,self.args.forward_quadrant)
         detector=getattr(self.pipeline.main_detector,"detector",None)
         masks=getattr(detector,"last_masks",None) if self.modes.adapter is None else None
         letterbox=getattr(detector,"last_letterbox",None) if masks is not None else None
@@ -1490,10 +1503,11 @@ class AiReplayBridge:
             risk_context,semantic_result) if self.args.hazards else []
         events = self.event_store.update(candidates, mode=mode["mode"], epoch=mode["epoch"],
             bridge_id=mode["bridge_id"], model_id=self.active_model_id, frame_id=frame_id,
-            timestamp_ns=timestamp_ns, measurement_ns=timestamp_ns)
+            timestamp_ns=timestamp_ns, measurement_ns=timestamp_ns, road_quadrant=self.args.forward_quadrant)
         self.stage_timings["risk_fast"].append((time.perf_counter_ns()-risk_start)/1e6)
         snapshot=replace(snapshot,hazards=RiskObservation(timestamp_ns=timestamp_ns,
-            events=events,tracks=tuple(self.primary_tracks.current),frame_id=frame_id))
+            events=events,tracks=tuple(self.primary_tracks.current),frame_id=frame_id,
+            source_id="Q%d" % (self.args.forward_quadrant + 1)))
         self.auto_brake.update(snapshot.hazards,context=mode)
         nav = self.navigation.current(int(timestamp_ns)).to_dict() if self.navigation else {}
         hud = build_hud_perception(road, snapshot)
@@ -1544,7 +1558,8 @@ class AiReplayBridge:
         )
         status["layout"] = self.args.layout
         status["display_view"] = "quad" if self.modes.adapter is not None else "front"
-        status["road_quadrant"] = 0
+        status["road_quadrant"] = self.args.forward_quadrant
+        status["forward_source_id"] = "Q%d" % (self.args.forward_quadrant + 1)
         status["inference"] = self.modes.status(frame_id)
         status["semantics"] = dict(semantic_result,metrics=self.semantics.metrics())
         status["risk_rules"] = self.light_risk.metrics()
@@ -1596,7 +1611,6 @@ class AiReplayBridge:
         return packet
 
     def _infer(self):
-        priority_reapplied = False
         completed_times = deque()
         rate_token = None
         while self.running.is_set():
@@ -1648,12 +1662,9 @@ class AiReplayBridge:
                         f"ANALYZE_DONE frame={frame_id} bytes={len(packet)} "
                         f"main_samples={len(self.pipeline.main_timings)}"
                     )
-                if not priority_reapplied:
-                    # RKNN may reset the Python leader to -19 during the first
-                    # detect call. Lower only that leader; native NPU workers
-                    # retain the priority required by the RKNN runtime.
-                    _deprioritize_sidecar_process()
-                    priority_reapplied = True
+                # Keep the measured RKNN inference-thread scheduling. OCR uses
+                # an absolute nice 10; only the bridge leader is deprioritized.
+                _deprioritize_sidecar_process()
                 infer_end_ns = time.monotonic_ns()
                 publish_started = time.perf_counter_ns()
                 self.result_socket.sendto(packet, self.result_address)
@@ -1710,6 +1721,7 @@ class AiReplayBridge:
                         "risk_rules":self.latest_dynamic_status.get("risk_rules"),
                         "semantics":self.latest_dynamic_status.get("semantics"),
                         "control":self.latest_dynamic_status.get("control"),
+                        "forward_source_id":self.latest_dynamic_status.get("forward_source_id"),
                     }, separators=(",", ":")) + "\n")
                 self.result_count += 1
                 self.latency_ms.append((time.perf_counter_ns() - started) / 1e6)
@@ -1948,6 +1960,7 @@ def parser():
     result.add_argument("--legacy-model-root", default="")
     result.add_argument("--request-port", type=int, default=38260)
     result.add_argument("--result-port", type=int, default=38261)
+    result.add_argument("--forward-quadrant", type=int, choices=range(4), default=3)
     result.add_argument("--road-quadrant", type=int, choices=range(4), default=0)
     result.add_argument("--navigation-quadrant", type=int, choices=range(4), default=1)
     result.add_argument("--main-hz", type=float, default=10.0)

@@ -3,6 +3,7 @@ from collections import deque
 import math
 import os
 import time
+from forward_view import source_id, local_detection
 
 VEHICLES={"car","truck","bus"}
 TWO_WHEELERS={"motorcycle","bicycle"}
@@ -37,16 +38,16 @@ class LightRiskEngine:
             self.context=context;self.history={};self.confirm={}
         events=[];seen=set();semantics=semantics or {}
         for original in detections[:32]:
-            if original.get("source_id")!="Q1" or not original.get("track_id"):continue
+            if original.get("source_id")!=source_id(context) or not original.get("track_id"):continue
             if original.get("predicted") or original.get("confidence",0)<.4:continue
-            d=dict(original);box=list(map(float,d["bbox"]))
+            d=local_detection(original,context);box=list(map(float,d["bbox"]))
             if not all(math.isfinite(v) for v in box):continue
-            # Q1 mosaic and road inference both measure the same native 640x360 image.
+            # Normalize the configured forward camera to its native 640x360 image.
             if not (0<=box[0]<box[2]<=640 and 0<=box[1]<box[3]<=360):continue
             d["bbox"]=box
             x=(box[0]+box[2])/1280;foot=box[3]/360;h=(box[3]-box[1])/360
             w=(box[2]-box[0])/640;area=h*w;cls=d["class_name"]
-            key=("Q1",d["track_id"]);seen.add(key)
+            key=(source_id(context),d["track_id"]);seen.add(key)
             history=self.history.setdefault(key,deque(maxlen=16))
             if history and timestamp_ns<=history[-1][0]:continue
             if history and timestamp_ns-history[-1][0]>400000000:history.clear()
