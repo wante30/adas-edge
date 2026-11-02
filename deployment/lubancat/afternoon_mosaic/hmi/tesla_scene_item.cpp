@@ -29,6 +29,7 @@
 #include <memory>
 #include <cmath>
 #include <vector>
+#include <chrono>
 
 namespace {
 struct SourceBox {
@@ -38,14 +39,20 @@ struct SourceBox {
     double confidence = 0;
     int missed = 0;
     bool predicted = false;
-    bool hazard = false;
+    int hazard = 0;
+    double vx=0,vy=0,vw=0,vh=0;
+    qint64 measuredNs=0, expiresNs=0;
+    QString source;
 };
 
 struct LiveCar {
     float x = 0, z = 0;
     QString cls = QStringLiteral("car");
     double seen = 0;
-    bool hazard = false;
+    int hazard = 0;
+    float tx=0,tz=0,vx=0,vz=0;
+    double born=0;
+    qint64 measuredNs=0,expiresNs=0;
 };
 
 struct DemoCar {
@@ -154,7 +161,7 @@ void quad3(std::vector<float> &v, const QVector3D &a, const QVector3D &b,
     tri3(v, a, c, d, r, g, bl);
 }
 
-void carMesh(std::vector<float> &v, float x, float z, const QString &cls, bool ego, bool hazard = false) {
+void carMesh(std::vector<float> &v, float x, float z, const QString &cls, bool ego, int hazard = 0) {
     const bool truck = cls == QStringLiteral("truck");
     const bool bus = cls == QStringLiteral("bus");
     const bool person = cls == QStringLiteral("person");
@@ -162,16 +169,16 @@ void carMesh(std::vector<float> &v, float x, float z, const QString &cls, bool e
     const float w = person ? .55f : (twoWheel ? .8f : (truck ? 2.25f : (bus ? 2.45f : 1.9f)));
     const float h = person ? 1.65f : (twoWheel ? 1.35f : (truck ? 2.7f : (bus ? 2.8f : 1.45f)));
     const float d = person ? .5f : (twoWheel ? 1.7f : (truck ? 7.2f : (bus ? 9.5f : 4.4f)));
-    const float r = ego ? .20f : (hazard ? .82f : (truck ? .24f : (bus ? .20f : .36f)));
-    const float g = ego ? .28f : (hazard ? .16f : (truck ? .28f : (bus ? .30f : .41f)));
+    const float r = ego ? .20f : (hazard ? (hazard == 2 ? .82f : .95f) : (truck ? .24f : (bus ? .20f : .36f)));
+    const float g = ego ? .28f : (hazard ? (hazard == 2 ? .16f : .69f) : (truck ? .28f : (bus ? .30f : .41f)));
     const float b = ego ? .38f : (hazard ? .18f : (truck ? .31f : (bus ? .35f : .46f)));
 
     // soft ground shadow
     quad(v, x - w * .62f, z - d * .55f, x + w * .62f, z + d * .55f, .012f, .025f, .03f, .035f);
 
     if (person) {
-        box3(v, x, .02f, z, .5f, .9f, .4f, hazard ? .85f : .30f, hazard ? .12f : .38f, hazard ? .12f : .42f);
-        box3(v, x, .92f, z, .34f, .55f, .30f, hazard ? .95f : .38f, hazard ? .20f : .46f, hazard ? .18f : .50f);
+        box3(v, x, .02f, z, .5f, .9f, .4f, hazard ? .85f : .30f, hazard ? (hazard == 2 ? .12f : .69f) : .38f, hazard ? .12f : .42f);
+        box3(v, x, .92f, z, .34f, .55f, .30f, hazard ? .95f : .38f, hazard ? (hazard == 2 ? .20f : .74f) : .46f, hazard ? .18f : .50f);
         return;
     }
     if (twoWheel) {
@@ -450,7 +457,14 @@ public:
             b.confidence = map.value(QStringLiteral("confidence")).toDouble();
             b.missed = map.value(QStringLiteral("missed")).toInt();
             b.predicted = map.value(QStringLiteral("predicted")).toBool();
-            b.hazard = map.value(QStringLiteral("hazard")).toBool();
+            b.hazard = !map.value(QStringLiteral("hazard")).toBool() ? 0 :
+                (map.value(QStringLiteral("hazardSeverity")).toString() == QStringLiteral("critical") ? 2 : 1);
+            b.vx=map.value("vx").toDouble();b.vy=map.value("vy").toDouble();
+            b.vw=map.value("vw").toDouble();b.vh=map.value("vh").toDouble();
+            b.measuredNs=map.value("detectTimestampNs").toLongLong();
+            b.expiresNs=map.value("hazardExpiresNs").toLongLong();
+            b.source=map.value("sourceId").toString();
+            if (!b.source.isEmpty() && b.source!=QString("Q%1").arg(scene->roadQuadrant()+1)) continue;
             // Stale/predicted tracks are retained by the tracker for continuity,
             // but must not be drawn as if they were current detections.
             if (b.id > 0 && b.w > 2 && b.h > 2 && !b.predicted && b.missed == 0 &&
@@ -545,6 +559,13 @@ public:
         frames_++;
         if (elapsed_ - last_report_ > 1.0) {
             // Rendering thread only updates an atomic; no QObject signal here.
+            static QFile sceneLog(qEnvironmentVariable("QT_SCENE_TIMELINE_LOG"));
+            if(!sceneLog.fileName().isEmpty() && (sceneLog.isOpen() || sceneLog.open(QIODevice::Append))) {
+                QJsonObject row;row.insert("scene_fps",frames_/(elapsed_-last_report_));
+                row.insert("live_tracks",live_.size());row.insert("source_key",source_key_);
+                row.insert("timestamp_ns",double(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count()));
+                sceneLog.write(QJsonDocument(row).toJson(QJsonDocument::Compact)+'\n');sceneLog.flush();
+            }
             last_report_ = elapsed_;
             frames_ = 0;
         }
@@ -624,10 +645,12 @@ private:
         double sourceW = 1280.0, sourceH = 720.0, offX = 0.0, offY = 0.0;
         if (display_view_ == QStringLiteral("quad")) {
             sourceW = 640.0; sourceH = 360.0;
-            offX = (road_quadrant_ % 2) * 640.0;
-            offY = (road_quadrant_ / 2) * 360.0;
+            offX = (road_quadrant_ % 2) * 640.0; offY = (road_quadrant_ / 2) * 360.0;
         }
+        const qint64 absoluteNs=std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
         for (const SourceBox &b : boxes_) {
+            if (b.measuredNs<=0 || absoluteNs-b.measuredNs>600000000LL) continue;
             if (!(b.cls == "car" || b.cls == "truck" || b.cls == "bus" ||
                   b.cls == "person" || b.cls == "motorcycle" || b.cls == "bicycle")) continue;
             const double boxCx = b.x + b.w * .5;
@@ -647,21 +670,40 @@ private:
             const float tz = std::clamp(0.72f * widthDepth + 0.28f * bottomDepth, 4.0f, 62.0f);
             auto it = live_.find(b.id);
             if (it == live_.end()) {
-                live_.insert(b.id, LiveCar{tx, tz, b.cls, now, b.hazard});
+                LiveCar car;car.x=tx;car.z=tz;car.tx=tx;car.tz=tz;car.cls=b.cls;
+                car.seen=now;car.born=now;car.measuredNs=b.measuredNs;car.expiresNs=b.expiresNs;
+                car.hazard=b.hazard;live_.insert(b.id,car);
             } else {
-                it->cls = b.cls;
-                it->hazard = b.hazard;
-                const float k = std::min(1.0f, float(dt_ * 5.0));
-                it->x += (tx - it->x) * k;
-                it->z += (tz - it->z) * k;
-                it->seen = now;
+                it->cls=b.cls;it->hazard=b.hazard;it->expiresNs=b.expiresNs;
+                if (b.measuredNs>it->measuredNs) {
+                    const double dt=(b.measuredNs-it->measuredNs)/1e9;
+                    if(dt>.02 && dt<.6) {
+                        it->vx=std::clamp(float((tx-it->tx)/dt),-12.f,12.f);
+                        it->vz=std::clamp(float((tz-it->tz)/dt),-30.f,30.f);
+                    }
+                    it->tx=tx;it->tz=tz;it->measuredNs=b.measuredNs;it->seen=now;
+                }
             }
         }
-        for (auto it = live_.begin(); it != live_.end();) {
-            // Matches the Qt tracker's 900 ms remove window; no ghost target.
-            if (now - it->seen > 0.9) it = live_.erase(it); else ++it;
+        for (auto it=live_.begin();it!=live_.end();) {
+            const double age=std::max(0.,double(absoluteNs-it->measuredNs)/1e9);
+            if(age>.6) {it=live_.erase(it);continue;}
+            const double predict=std::min(age,.25);
+            const float k=std::min(1.f,float(dt_*12));
+            it->x+=(it->tx+it->vx*predict-it->x)*k;
+            it->z+=(it->tz+it->vz*predict-it->z)*k;
+            const float fade=std::min(std::min(1.f,float((now-it->born)/.18)),std::clamp(float((.6-age)/.35),0.f,1.f));
+            const size_t start=v.size();
+            carMesh(v,it->x,it->z,it->cls,false,absoluteNs<it->expiresNs?it->hazard:0);
+            // Fade mesh height and tint toward the road; no texture readback or Python rendering.
+            for(size_t i=start;i+5<v.size();i+=6) {
+                v[i+1]*=fade;
+                v[i+3]=.018f+(v[i+3]-.018f)*fade;
+                v[i+4]=.028f+(v[i+4]-.028f)*fade;
+                v[i+5]=.036f+(v[i+5]-.036f)*fade;
+            }
+            ++it;
         }
-        for (const LiveCar &car : live_) carMesh(v, car.x, car.z, car.cls, false, car.hazard);
     }
 
     void drawBillboards(const QMatrix4x4 &mvp) {

@@ -1,0 +1,608 @@
+{
+  "kind": "SYNTHETIC_NUMERICAL_SEQUENCES",
+  "actual_video": false,
+  "hardware_executed": false,
+  "passed": true,
+  "cases": {
+    "stationary_large": {
+      "events": [
+        "FRONT_COLLISION_RISK:warning"
+      ],
+      "requests": 0,
+      "cleared": true,
+      "rule_metrics": {
+        "front": {
+          "enabled": true,
+          "count": 18,
+          "events": 17,
+          "mean_ms": 0.0015999999999999999,
+          "p95_ms": 0.003
+        },
+        "pedestrian": {
+          "enabled": true,
+          "count": 36,
+          "events": 0,
+          "mean_ms": 0.00035,
+          "p95_ms": 0.0005
+        },
+        "two_wheeler": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00023888888888888888,
+          "p95_ms": 0.0003
+        },
+        "cut_in": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002277777777777778,
+          "p95_ms": 0.0003
+        },
+        "oncoming": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002666666666666666,
+          "p95_ms": 0.0003
+        },
+        "braking": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002444444444444445,
+          "p95_ms": 0.0003
+        },
+        "crosswalk": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002444444444444445,
+          "p95_ms": 0.0003
+        }
+      }
+    },
+    "closing": {
+      "events": [
+        "FRONT_COLLISION_RISK:critical",
+        "FRONT_COLLISION_RISK:warning"
+      ],
+      "requests": 4,
+      "cleared": true,
+      "rule_metrics": {
+        "front": {
+          "enabled": true,
+          "count": 18,
+          "events": 16,
+          "mean_ms": 0.0015166666666666668,
+          "p95_ms": 0.002
+        },
+        "pedestrian": {
+          "enabled": true,
+          "count": 36,
+          "events": 0,
+          "mean_ms": 0.0003,
+          "p95_ms": 0.0004
+        },
+        "two_wheeler": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00025,
+          "p95_ms": 0.0003
+        },
+        "cut_in": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00025,
+          "p95_ms": 0.0003
+        },
+        "oncoming": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00025555555555555553,
+          "p95_ms": 0.0003
+        },
+        "braking": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00025555555555555553,
+          "p95_ms": 0.0003
+        },
+        "crosswalk": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002444444444444445,
+          "p95_ms": 0.0003
+        }
+      }
+    },
+    "pedestrian_crossing": {
+      "events": [
+        "PEDESTRIAN_CROSSING_PATH:critical",
+        "PEDESTRIAN_CROSSING_PATH:warning",
+        "PEDESTRIAN_IN_PATH:critical",
+        "PEDESTRIAN_IN_PATH:warning"
+      ],
+      "requests": 6,
+      "cleared": true,
+      "rule_metrics": {
+        "front": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0004722222222222222,
+          "p95_ms": 0.0006
+        },
+        "pedestrian": {
+          "enabled": true,
+          "count": 36,
+          "events": 24,
+          "mean_ms": 0.001011111111111111,
+          "p95_ms": 0.0016
+        },
+        "two_wheeler": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002777777777777777,
+          "p95_ms": 0.0003
+        },
+        "cut_in": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00023888888888888888,
+          "p95_ms": 0.0003
+        },
+        "oncoming": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00021666666666666668,
+          "p95_ms": 0.0003
+        },
+        "braking": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00023888888888888888,
+          "p95_ms": 0.0003
+        },
+        "crosswalk": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00025555555555555553,
+          "p95_ms": 0.0003
+        }
+      }
+    },
+    "bicycle_entry": {
+      "events": [
+        "TWO_WHEELER_PATH_CONFLICT:critical",
+        "TWO_WHEELER_PATH_CONFLICT:warning"
+      ],
+      "requests": 4,
+      "cleared": true,
+      "rule_metrics": {
+        "front": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00038333333333333334,
+          "p95_ms": 0.0006
+        },
+        "pedestrian": {
+          "enabled": true,
+          "count": 36,
+          "events": 0,
+          "mean_ms": 0.00029444444444444445,
+          "p95_ms": 0.0004
+        },
+        "two_wheeler": {
+          "enabled": true,
+          "count": 18,
+          "events": 16,
+          "mean_ms": 0.0013388888888888888,
+          "p95_ms": 0.0015
+        },
+        "cut_in": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00023888888888888888,
+          "p95_ms": 0.0003
+        },
+        "oncoming": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00025,
+          "p95_ms": 0.0003
+        },
+        "braking": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002444444444444445,
+          "p95_ms": 0.0003
+        },
+        "crosswalk": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00023888888888888888,
+          "p95_ms": 0.0003
+        }
+      }
+    },
+    "motorcycle_entry": {
+      "events": [
+        "TWO_WHEELER_PATH_CONFLICT:critical",
+        "TWO_WHEELER_PATH_CONFLICT:warning"
+      ],
+      "requests": 4,
+      "cleared": true,
+      "rule_metrics": {
+        "front": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00040555555555555554,
+          "p95_ms": 0.0005
+        },
+        "pedestrian": {
+          "enabled": true,
+          "count": 36,
+          "events": 0,
+          "mean_ms": 0.00029444444444444445,
+          "p95_ms": 0.0004
+        },
+        "two_wheeler": {
+          "enabled": true,
+          "count": 18,
+          "events": 16,
+          "mean_ms": 0.0013166666666666665,
+          "p95_ms": 0.0015
+        },
+        "cut_in": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002722222222222222,
+          "p95_ms": 0.0003
+        },
+        "oncoming": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002722222222222222,
+          "p95_ms": 0.0003
+        },
+        "braking": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002777777777777777,
+          "p95_ms": 0.0003
+        },
+        "crosswalk": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00023333333333333333,
+          "p95_ms": 0.0003
+        }
+      }
+    },
+    "vehicle_cut_in": {
+      "events": [
+        "FRONT_COLLISION_RISK:warning",
+        "VEHICLE_CUT_IN:critical",
+        "VEHICLE_CUT_IN:warning"
+      ],
+      "requests": 2,
+      "cleared": true,
+      "rule_metrics": {
+        "front": {
+          "enabled": true,
+          "count": 18,
+          "events": 12,
+          "mean_ms": 0.0011833333333333333,
+          "p95_ms": 0.0018
+        },
+        "pedestrian": {
+          "enabled": true,
+          "count": 36,
+          "events": 0,
+          "mean_ms": 0.0003,
+          "p95_ms": 0.0004
+        },
+        "two_wheeler": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002833333333333333,
+          "p95_ms": 0.0004
+        },
+        "cut_in": {
+          "enabled": true,
+          "count": 18,
+          "events": 8,
+          "mean_ms": 0.00075,
+          "p95_ms": 0.0015
+        },
+        "oncoming": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002611111111111111,
+          "p95_ms": 0.0003
+        },
+        "braking": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002777777777777777,
+          "p95_ms": 0.0003
+        },
+        "crosswalk": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002611111111111111,
+          "p95_ms": 0.0003
+        }
+      }
+    },
+    "oncoming_unverified": {
+      "events": [
+        "FRONT_COLLISION_RISK:critical",
+        "FRONT_COLLISION_RISK:warning",
+        "ONCOMING_PATH_CONFLICT:warning"
+      ],
+      "requests": 4,
+      "cleared": true,
+      "rule_metrics": {
+        "front": {
+          "enabled": true,
+          "count": 18,
+          "events": 16,
+          "mean_ms": 0.0016055555555555554,
+          "p95_ms": 0.002
+        },
+        "pedestrian": {
+          "enabled": true,
+          "count": 36,
+          "events": 0,
+          "mean_ms": 0.00034166666666666666,
+          "p95_ms": 0.0004
+        },
+        "two_wheeler": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002777777777777777,
+          "p95_ms": 0.0003
+        },
+        "cut_in": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002722222222222222,
+          "p95_ms": 0.0003
+        },
+        "oncoming": {
+          "enabled": true,
+          "count": 18,
+          "events": 17,
+          "mean_ms": 0.0011777777777777778,
+          "p95_ms": 0.0014
+        },
+        "braking": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00029444444444444445,
+          "p95_ms": 0.0004
+        },
+        "crosswalk": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0002777777777777777,
+          "p95_ms": 0.0003
+        }
+      }
+    },
+    "oncoming_verified": {
+      "events": [
+        "FRONT_COLLISION_RISK:critical",
+        "FRONT_COLLISION_RISK:warning",
+        "ONCOMING_PATH_CONFLICT:critical",
+        "ONCOMING_PATH_CONFLICT:warning"
+      ],
+      "requests": 8,
+      "cleared": true,
+      "rule_metrics": {
+        "front": {
+          "enabled": true,
+          "count": 18,
+          "events": 16,
+          "mean_ms": 0.0018055555555555557,
+          "p95_ms": 0.0023
+        },
+        "pedestrian": {
+          "enabled": true,
+          "count": 36,
+          "events": 0,
+          "mean_ms": 0.0003916666666666667,
+          "p95_ms": 0.0005
+        },
+        "two_wheeler": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0006722222222222222,
+          "p95_ms": 0.0004
+        },
+        "cut_in": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00032777777777777775,
+          "p95_ms": 0.0004
+        },
+        "oncoming": {
+          "enabled": true,
+          "count": 18,
+          "events": 17,
+          "mean_ms": 0.0013833333333333332,
+          "p95_ms": 0.0015
+        },
+        "braking": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0003333333333333333,
+          "p95_ms": 0.0004
+        },
+        "crosswalk": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0003222222222222222,
+          "p95_ms": 0.0004
+        }
+      }
+    },
+    "braking_closing": {
+      "events": [
+        "FRONT_COLLISION_RISK:critical",
+        "FRONT_COLLISION_RISK:warning",
+        "SUSPECTED_BRAKING_WITH_CLOSING:critical",
+        "SUSPECTED_BRAKING_WITH_CLOSING:warning"
+      ],
+      "requests": 8,
+      "cleared": true,
+      "rule_metrics": {
+        "front": {
+          "enabled": true,
+          "count": 18,
+          "events": 16,
+          "mean_ms": 0.0020666666666666663,
+          "p95_ms": 0.0039
+        },
+        "pedestrian": {
+          "enabled": true,
+          "count": 36,
+          "events": 0,
+          "mean_ms": 0.00039999999999999996,
+          "p95_ms": 0.0005
+        },
+        "two_wheeler": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00032777777777777775,
+          "p95_ms": 0.0004
+        },
+        "cut_in": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00030555555555555555,
+          "p95_ms": 0.0004
+        },
+        "oncoming": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0003111111111111111,
+          "p95_ms": 0.0004
+        },
+        "braking": {
+          "enabled": true,
+          "count": 18,
+          "events": 17,
+          "mean_ms": 0.001411111111111111,
+          "p95_ms": 0.0018
+        },
+        "crosswalk": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0003111111111111111,
+          "p95_ms": 0.0004
+        }
+      }
+    },
+    "crosswalk_person": {
+      "events": [
+        "PEDESTRIAN_CROSSING_PATH:critical",
+        "PEDESTRIAN_CROSSING_PATH:warning",
+        "PEDESTRIAN_IN_PATH:critical",
+        "PEDESTRIAN_IN_PATH:warning",
+        "PEDESTRIAN_NEAR_CROSSWALK:warning"
+      ],
+      "requests": 6,
+      "cleared": true,
+      "rule_metrics": {
+        "front": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0007833333333333334,
+          "p95_ms": 0.0011
+        },
+        "pedestrian": {
+          "enabled": true,
+          "count": 36,
+          "events": 24,
+          "mean_ms": 0.0013388888888888888,
+          "p95_ms": 0.0024
+        },
+        "two_wheeler": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.0003444444444444444,
+          "p95_ms": 0.0004
+        },
+        "cut_in": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00039444444444444444,
+          "p95_ms": 0.0004
+        },
+        "oncoming": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00032777777777777775,
+          "p95_ms": 0.0004
+        },
+        "braking": {
+          "enabled": true,
+          "count": 18,
+          "events": 0,
+          "mean_ms": 0.00030555555555555555,
+          "p95_ms": 0.0003
+        },
+        "crosswalk": {
+          "enabled": true,
+          "count": 18,
+          "events": 16,
+          "mean_ms": 0.001322222222222222,
+          "p95_ms": 0.0016
+        }
+      }
+    }
+  }
+}

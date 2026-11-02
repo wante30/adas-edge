@@ -1,0 +1,468 @@
+{
+  "kind": "ACTUAL_REAL_PCIE_Q4_ACCEPTANCE",
+  "input": "/dev/shm/pango-video/latest.pgv",
+  "control_mode": "HARDWARE",
+  "forward_source_id": "Q4",
+  "started_ns": 2550450024034,
+  "ended_ns": 3160496620487,
+  "continuous_seconds": 610.3031093499999,
+  "baseline_method_rates": {
+    "ROAD_Q1": {
+      "completed_fps": 6.07738930193458,
+      "results": 1823,
+      "measured_seconds": 299.141606647
+    },
+    "MOSAIC_FULL": {
+      "completed_fps": 13.94802034380994,
+      "results": 4321,
+      "measured_seconds": 309.43459312600004
+    }
+  },
+  "qt_fps": 18.277196264084278,
+  "source_counter_fps": 41.808071241597936,
+  "texture_counter_fps": 17.458532286281784,
+  "performance_passed": false,
+  "performance_note": "Different physical input and additional real PCIe capture load; not same-input replay comparison",
+  "hmi_cpu_percent_all_cores": {
+    "count": 3050,
+    "mean": 22.919748019219597,
+    "p50": 22.72727272727273,
+    "p95": 27.638190954773865,
+    "max": 34.274193548387096
+  },
+  "cpu_metric_note": "Qt field is HMI process only, not total system CPU",
+  "actual_system_cpu": {
+    "kind": "ACTUAL_SYSTEM_CPU_SAMPLE",
+    "boot_id": "40aa24eb-3034-4f10-b195-d36f03ef2a37",
+    "samples": [
+      {
+        "timestamp_ns": 2966141649822,
+        "total_busy_percent": 94.7103274559194,
+        "process_percent_all_four_cores": {
+          "hmi": 22.23613183600444,
+          "ai": 14.241118142160147,
+          "capture": 21.986287658071806,
+          "hardware_bridge": 2.4984417793263414,
+          "ocr": 21.736443480139172
+        }
+      },
+      {
+        "timestamp_ns": 2967152092568,
+        "total_busy_percent": 96.00997506234414,
+        "process_percent_all_four_cores": {
+          "hmi": 22.786108372947336,
+          "ai": 14.860505460617828,
+          "capture": 22.786108372947336,
+          "hardware_bridge": 2.7244260011132684,
+          "ocr": 22.043083099916444
+        }
+      },
+      {
+        "timestamp_ns": 2968169283481,
+        "total_busy_percent": 95.25,
+        "process_percent_all_four_cores": {
+          "hmi": 23.99629829639245,
+          "ai": 14.100917555612059,
+          "capture": 20.780299555638823,
+          "hardware_bridge": 2.9686142222341174,
+          "ocr": 22.01722214823637
+        }
+      },
+      {
+        "timestamp_ns": 2969183448700,
+        "total_busy_percent": 95.54455445544554,
+        "process_percent_all_four_cores": {
+          "hmi": 22.372502192979827,
+          "ai": 14.013545329668682,
+          "capture": 24.09346390013212,
+          "hardware_bridge": 2.704368396953605,
+          "ocr": 21.389095503178517
+        }
+      },
+      {
+        "timestamp_ns": 2970192444514,
+        "total_busy_percent": 95.75,
+        "process_percent_all_four_cores": {
+          "hmi": 22.916466979228264,
+          "ai": 14.045576535656032,
+          "capture": 24.394948719823635,
+          "hardware_bridge": 2.4641362343256197,
+          "ocr": 21.684398862065454
+        }
+      },
+      {
+        "timestamp_ns": 2971199214660,
+        "total_busy_percent": 97.0,
+        "process_percent_all_four_cores": {
+          "hmi": 21.073280523195514,
+          "ai": 15.37109873456614,
+          "capture": 21.073280523195514,
+          "hardware_bridge": 2.4792094733171193,
+          "ocr": 14.875256839902717
+        }
+      },
+      {
+        "timestamp_ns": 2972223992267,
+        "total_busy_percent": 96.22166246851386,
+        "process_percent_all_four_cores": {
+          "hmi": 18.8742061152527,
+          "ai": 22.10268874023014,
+          "capture": 17.384137211416963,
+          "hardware_bridge": 2.7317929903655225,
+          "ocr": 20.612619836394398
+        }
+      },
+      {
+        "timestamp_ns": 2973230388795,
+        "total_busy_percent": 96.79802955665025,
+        "process_percent_all_four_cores": {
+          "hmi": 20.47945135978746,
+          "ai": 22.67367829119326,
+          "capture": 20.47945135978746,
+          "hardware_bridge": 2.6818329161626435,
+          "ocr": 19.26043639789535
+        }
+      },
+      {
+        "timestamp_ns": 2974235890507,
+        "total_busy_percent": 97.50623441396509,
+        "process_percent_all_four_cores": {
+          "hmi": 21.614083682076085,
+          "ai": 20.62033270818753,
+          "capture": 21.614083682076085,
+          "hardware_bridge": 2.484377434721389,
+          "ocr": 20.868770451659667
+        }
+      },
+      {
+        "timestamp_ns": 2975240794021,
+        "total_busy_percent": 96.46464646464646,
+        "process_percent_all_four_cores": {
+          "hmi": 22.38928654528441,
+          "ai": 22.38928654528441,
+          "capture": 19.155278488743328,
+          "hardware_bridge": 2.736468355534761,
+          "ocr": 18.408968937233848
+        }
+      },
+      {
+        "timestamp_ns": 2976254182546,
+        "total_busy_percent": 96.73366834170855,
+        "process_percent_all_four_cores": {
+          "hmi": 21.383923508411783,
+          "ai": 22.129874328472656,
+          "capture": 22.129874328472656,
+          "hardware_bridge": 2.735153006889879,
+          "ocr": 18.648770501521902
+        }
+      },
+      {
+        "timestamp_ns": 2977258771066,
+        "total_busy_percent": 97.77227722772277,
+        "process_percent_all_four_cores": {
+          "hmi": 21.95534590905661,
+          "ai": 21.95534590905661,
+          "capture": 22.20203518893365,
+          "hardware_bridge": 2.4668927987704055,
+          "ocr": 18.995074550532124
+        }
+      },
+      {
+        "timestamp_ns": 2978265265010,
+        "total_busy_percent": 96.49122807017544,
+        "process_percent_all_four_cores": {
+          "hmi": 23.894069085457105,
+          "ai": 21.902896661669015,
+          "capture": 18.667241473013366,
+          "hardware_bridge": 2.488965529735115,
+          "ocr": 20.160620790854434
+        }
+      },
+      {
+        "timestamp_ns": 2979270142858,
+        "total_busy_percent": 96.49122807017544,
+        "process_percent_all_four_cores": {
+          "hmi": 21.852431860636745,
+          "ai": 21.35578568198591,
+          "capture": 20.36249332468424,
+          "hardware_bridge": 2.731553982579593,
+          "ocr": 19.120877878057154
+        }
+      },
+      {
+        "timestamp_ns": 2980276049687,
+        "total_busy_percent": 96.71717171717171,
+        "process_percent_all_four_cores": {
+          "hmi": 21.89413605025848,
+          "ai": 22.391730051400717,
+          "capture": 20.650151047402886,
+          "hardware_bridge": 2.487970005711191,
+          "ocr": 19.40616604454729
+        }
+      },
+      {
+        "timestamp_ns": 2981294926402,
+        "total_busy_percent": 97.0074812967581,
+        "process_percent_all_four_cores": {
+          "hmi": 22.38422576248447,
+          "ai": 21.389371284151828,
+          "capture": 22.881653001650793,
+          "hardware_bridge": 2.9845634349979293,
+          "ocr": 17.409953370821256
+        }
+      },
+      {
+        "timestamp_ns": 2982301260223,
+        "total_busy_percent": 98.51116625310173,
+        "process_percent_all_four_cores": {
+          "hmi": 22.33256413307404,
+          "ai": 21.596325755060608,
+          "capture": 23.314215303758612,
+          "hardware_bridge": 2.9449535120537194,
+          "ocr": 18.160546657664604
+        }
+      },
+      {
+        "timestamp_ns": 2983306726061,
+        "total_busy_percent": 96.72544080604534,
+        "process_percent_all_four_cores": {
+          "hmi": 20.602000952508018,
+          "ai": 22.835952863020935,
+          "capture": 19.11269967883274,
+          "hardware_bridge": 2.978602547350557,
+          "ocr": 20.850217831453897
+        }
+      },
+      {
+        "timestamp_ns": 2984319671552,
+        "total_busy_percent": 97.48743718592965,
+        "process_percent_all_four_cores": {
+          "hmi": 21.875163908362186,
+          "ai": 21.875163908362186,
+          "capture": 20.383675460064765,
+          "hardware_bridge": 2.7343954885452733,
+          "ocr": 20.383675460064765
+        }
+      },
+      {
+        "timestamp_ns": 2985333555609,
+        "total_busy_percent": 96.75810473815461,
+        "process_percent_all_four_cores": {
+          "hmi": 19.994404982935666,
+          "ai": 21.969161030633014,
+          "capture": 19.25387146504916,
+          "hardware_bridge": 2.9621340715460245,
+          "ocr": 20.73493850082217
+        }
+      },
+      {
+        "timestamp_ns": 2986344147977,
+        "total_busy_percent": 96.49122807017544,
+        "process_percent_all_four_cores": {
+          "hmi": 21.451027780437425,
+          "ai": 21.944154855849778,
+          "capture": 20.957900705025068,
+          "hardware_bridge": 2.4656353770617727,
+          "ocr": 18.985392403375652
+        }
+      },
+      {
+        "timestamp_ns": 2987354348644,
+        "total_busy_percent": 98.01980198019803,
+        "process_percent_all_four_cores": {
+          "hmi": 21.515088687490284,
+          "ai": 22.256988297403744,
+          "capture": 19.783989597692216,
+          "hardware_bridge": 2.72029856968268,
+          "ocr": 20.773189077576827
+        }
+      },
+      {
+        "timestamp_ns": 2988365719747,
+        "total_busy_percent": 97.27047146401985,
+        "process_percent_all_four_cores": {
+          "hmi": 22.476695431067455,
+          "ai": 21.48870881871284,
+          "capture": 20.500722206358226,
+          "hardware_bridge": 2.4699665308865333,
+          "ocr": 20.00672890018092
+        }
+      },
+      {
+        "timestamp_ns": 2989370487639,
+        "total_busy_percent": 97.25,
+        "process_percent_all_four_cores": {
+          "hmi": 20.07761301234639,
+          "ai": 23.05207419936067,
+          "capture": 21.069100074684485,
+          "hardware_bridge": 2.7265894214297566,
+          "ocr": 21.31697184026901
+        }
+      },
+      {
+        "timestamp_ns": 2990383555920,
+        "total_busy_percent": 96.0,
+        "process_percent_all_four_cores": {
+          "hmi": 20.050228624784275,
+          "ai": 21.287897058412934,
+          "capture": 19.06009387788135,
+          "hardware_bridge": 2.72287055398305,
+          "ocr": 21.040363371687203
+        }
+      },
+      {
+        "timestamp_ns": 2991407501708,
+        "total_busy_percent": 95.98997493734336,
+        "process_percent_all_four_cores": {
+          "hmi": 21.3051612114765,
+          "ai": 23.03930224031761,
+          "capture": 21.05742677878491,
+          "hardware_bridge": 2.9728131922990464,
+          "ocr": 18.084613586485865
+        }
+      },
+      {
+        "timestamp_ns": 2992424366544,
+        "total_busy_percent": 96.09756097560975,
+        "process_percent_all_four_cores": {
+          "hmi": 20.277197280436,
+          "ai": 21.743018770588,
+          "capture": 19.055679371976,
+          "hardware_bridge": 2.687339398612,
+          "ocr": 20.521500862128
+        }
+      },
+      {
+        "timestamp_ns": 2993431530141,
+        "total_busy_percent": 97.75561097256858,
+        "process_percent_all_four_cores": {
+          "hmi": 20.164938395541295,
+          "ai": 21.39450780990357,
+          "capture": 22.624077224265843,
+          "hardware_bridge": 2.705052711597003,
+          "ocr": 20.41085227841375
+        }
+      },
+      {
+        "timestamp_ns": 2994455046896,
+        "total_busy_percent": 98.03439803439802,
+        "process_percent_all_four_cores": {
+          "hmi": 19.356000857416262,
+          "ai": 22.33384714317261,
+          "capture": 22.08569328602625,
+          "hardware_bridge": 2.7296924286099857,
+          "ocr": 22.58200100031897
+        }
+      },
+      {
+        "timestamp_ns": 2995463971836,
+        "total_busy_percent": 94.54094292803971,
+        "process_percent_all_four_cores": {
+          "hmi": 21.68891670407226,
+          "ai": 20.714133930855528,
+          "capture": 21.445221010768076,
+          "hardware_bridge": 2.436956933041827,
+          "ocr": 15.109132984859325
+        }
+      }
+    ],
+    "mean_total_busy_percent": 96.64668743155936
+  },
+  "source_crc_errors": 0,
+  "source_dropped_frames": 11808,
+  "runtime_errors": [],
+  "duplicate_result_keys": 0,
+  "semantics_errors": 0,
+  "event_validation": {
+    "transitions": 770,
+    "critical_decisions": 117,
+    "requests": 45,
+    "accepted": 45,
+    "timeouts": 0,
+    "unmatched_hazard": 9,
+    "confirm_to_ui_ms": {
+      "count": 341,
+      "mean": 114.1371466480938,
+      "p50": 112.732921,
+      "p95": 206.931643,
+      "max": 265.530771
+    },
+    "clear_to_ui_ms": {
+      "count": 341,
+      "mean": 113.18928161290307,
+      "p50": 108.76137,
+      "p95": 215.336446,
+      "max": 254.238521
+    }
+  },
+  "control_consistency": {
+    "identity_color_mismatches": 0,
+    "warning_requests": 0,
+    "non_forward_requests": 0,
+    "cleared_requests": 0,
+    "missing_critical_decisions": 0
+  },
+  "control_stage_counts": {
+    "event_transition": 770,
+    "control_event_cleared": 360,
+    "control_decision": 117,
+    "brake_requested": 45,
+    "brake_accepted": 45,
+    "brake_rejected": 17
+  },
+  "decision_rejection_reasons": {
+    "ineligible_or_invalid_path": 17
+  },
+  "request_sources": {
+    "Q4": 45
+  },
+  "unique_hardware_requests": 45,
+  "unique_accepted_requests": 45,
+  "matching_ack_ids": true,
+  "fpga_accepted": 45,
+  "fpga_active_acks": 45,
+  "lvt1_brake_allow_acks": 45,
+  "lvt1_feedback_sequence_matches": true,
+  "simulated_hardware_requests": 0,
+  "vehicle_samples": 305,
+  "vehicle_online_samples": 305,
+  "vehicle_sensor_fresh_samples": 305,
+  "vehicle_file_age_ms": {
+    "count": 305,
+    "mean": 23.289328715840323,
+    "p50": 21.484375,
+    "p95": 47.19138145446777,
+    "max": 71.06447219848633
+  },
+  "capture_running_samples": 305,
+  "capture_sample_count": 305,
+  "capture_frames_increased": true,
+  "navigation_states": {
+    "VALID": 5237,
+    "UNREADABLE": 791,
+    "STALE": 116
+  },
+  "actual_event_result_counts": {
+    "FRONT_COLLISION_RISK:warning": 3051,
+    "VEHICLE_CUT_IN:warning": 433,
+    "PEDESTRIAN_IN_PATH:warning": 249,
+    "FRONT_COLLISION_RISK:critical": 32,
+    "PEDESTRIAN_NEAR_CROSSWALK:warning": 53,
+    "VEHICLE_CUT_IN:critical": 74,
+    "PEDESTRIAN_IN_PATH:critical": 11
+  },
+  "physical_actuator_verified": false,
+  "pcie_hot_recovery_verified": false,
+  "unit_tests": 49,
+  "native_crc_test": true,
+  "native_risk_link_test": true,
+  "native_vehicle_status_test": true,
+  "source_sync": {
+    "kind": "SOURCE_SYNC_CHECK",
+    "files": 186,
+    "mismatches": [],
+    "passed": true
+  },
+  "functional_chain_passed": true,
+  "passed": false
+}

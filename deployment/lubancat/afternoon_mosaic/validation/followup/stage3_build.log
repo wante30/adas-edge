@@ -1,0 +1,22 @@
+make: 进入目录“/home/cat/adas_risk_dev_20261102/build-stage4”
+g++ -c -pipe -O2 -Wall -Wextra -O2 -std=gnu++1z -Wall -W -D_REENTRANT -fPIC -DQT_NO_DEBUG -DQT_QUICK_LIB -DQT_GUI_LIB -DQT_QML_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -I../hmi -I. -isystem /usr/include/aarch64-linux-gnu/qt5 -isystem /usr/include/aarch64-linux-gnu/qt5/QtQuick -isystem /usr/include/aarch64-linux-gnu/qt5/QtGui -isystem /usr/include/aarch64-linux-gnu/qt5/QtQml -isystem /usr/include/aarch64-linux-gnu/qt5/QtNetwork -isystem /usr/include/aarch64-linux-gnu/qt5/QtCore -I. -I/usr/lib/aarch64-linux-gnu/qt5/mkspecs/linux-g++ -o video_item.o ../hmi/video_item.cpp
+g++ -c -pipe -O2 -Wall -Wextra -O2 -std=gnu++1z -Wall -W -D_REENTRANT -fPIC -DQT_NO_DEBUG -DQT_QUICK_LIB -DQT_GUI_LIB -DQT_QML_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -I../hmi -I. -isystem /usr/include/aarch64-linux-gnu/qt5 -isystem /usr/include/aarch64-linux-gnu/qt5/QtQuick -isystem /usr/include/aarch64-linux-gnu/qt5/QtGui -isystem /usr/include/aarch64-linux-gnu/qt5/QtQml -isystem /usr/include/aarch64-linux-gnu/qt5/QtNetwork -isystem /usr/include/aarch64-linux-gnu/qt5/QtCore -I. -I/usr/lib/aarch64-linux-gnu/qt5/mkspecs/linux-g++ -o tesla_scene_item.o ../hmi/tesla_scene_item.cpp
+../hmi/tesla_scene_item.cpp: In member function ‘void SceneRenderer::buildScene(std::vector<float>&)’:
+../hmi/tesla_scene_item.cpp:739:21: warning: unused variable ‘roadHalf’ [-Wunused-variable]
+  739 |         const float roadHalf = 7.0f;
+      |                     ^~~~~~~~
+../hmi/tesla_scene_item.cpp: At global scope:
+../hmi/tesla_scene_item.cpp:246:27: warning: ‘QVector<{anonymous}::ModelFace> {anonymous}::loadModelFaces()’ defined but not used [-Wunused-function]
+  246 | static QVector<ModelFace> loadModelFaces() {
+      |                           ^~~~~~~~~~~~~~
+../hmi/tesla_scene_item.cpp:142:28: warning: ‘{anonymous}::g_modelFaces’ defined but not used [-Wunused-variable]
+  142 | static QVector<ModelFace> *g_modelFaces = nullptr;
+      |                            ^~~~~~~~~~~~
+../hmi/tesla_scene_item.cpp:121:6: warning: ‘void {anonymous}::modelCar(std::vector<float>&, const QVector<{anonymous}::ModelFace>&, float, float, float, float, bool)’ defined but not used [-Wunused-function]
+  121 | void modelCar(std::vector<float> &v, const QVector<ModelFace> &faces, float x, float z,
+      |      ^~~~~~~~
+g++ -c -pipe -O2 -Wall -Wextra -O2 -std=gnu++1z -Wall -W -D_REENTRANT -fPIC -DQT_NO_DEBUG -DQT_QUICK_LIB -DQT_GUI_LIB -DQT_QML_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -I../hmi -I. -isystem /usr/include/aarch64-linux-gnu/qt5 -isystem /usr/include/aarch64-linux-gnu/qt5/QtQuick -isystem /usr/include/aarch64-linux-gnu/qt5/QtGui -isystem /usr/include/aarch64-linux-gnu/qt5/QtQml -isystem /usr/include/aarch64-linux-gnu/qt5/QtNetwork -isystem /usr/include/aarch64-linux-gnu/qt5/QtCore -I. -I/usr/lib/aarch64-linux-gnu/qt5/mkspecs/linux-g++ -o ai_box_model.o ../hmi/ai_box_model.cpp
+/usr/lib/qt5/bin/rcc -name qml ../hmi/qml.qrc -o qrc_qml.cpp
+g++ -c -pipe -O2 -Wall -Wextra -O2 -std=gnu++1z -Wall -W -D_REENTRANT -fPIC -DQT_NO_DEBUG -DQT_QUICK_LIB -DQT_GUI_LIB -DQT_QML_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -I../hmi -I. -isystem /usr/include/aarch64-linux-gnu/qt5 -isystem /usr/include/aarch64-linux-gnu/qt5/QtQuick -isystem /usr/include/aarch64-linux-gnu/qt5/QtGui -isystem /usr/include/aarch64-linux-gnu/qt5/QtQml -isystem /usr/include/aarch64-linux-gnu/qt5/QtNetwork -isystem /usr/include/aarch64-linux-gnu/qt5/QtCore -I. -I/usr/lib/aarch64-linux-gnu/qt5/mkspecs/linux-g++ -o qrc_qml.o qrc_qml.cpp
+g++ -Wl,-rpath,/usr/lib/aarch64-linux-gnu/mali -Wl,-O1 -o qt_gpu_probe main.o video_item.o vehicle_telemetry_status.o video_texture_item.o tesla_scene_item.o hud_control.o ai_box_model.o source_controller.o nav_bridge.o pcie_isp_control.o qsg_video_item.o qrc_qml.o moc_video_item.o moc_vehicle_telemetry_status.o moc_video_texture_item.o moc_tesla_scene_item.o moc_hud_control.o moc_ai_box_model.o moc_source_controller.o moc_nav_bridge.o moc_pcie_isp_control.o moc_qsg_video_item.o   -L/lib/aarch64-linux-gnu -l:libmali.so.1 -ldl -lz /usr/lib/aarch64-linux-gnu/libQt5Quick.so /usr/lib/aarch64-linux-gnu/libQt5Gui.so /usr/lib/aarch64-linux-gnu/libQt5Qml.so /usr/lib/aarch64-linux-gnu/libQt5Network.so /usr/lib/aarch64-linux-gnu/libQt5Core.so /usr/lib/aarch64-linux-gnu/libGL.so -lpthread
+make: 离开目录“/home/cat/adas_risk_dev_20261102/build-stage4”

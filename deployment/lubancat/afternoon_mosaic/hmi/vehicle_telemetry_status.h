@@ -11,7 +11,7 @@ class VehicleTelemetryStatus : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool online READ online NOTIFY statusChanged)
     Q_PROPERTY(bool valid READ valid NOTIFY statusChanged)
-    Q_PROPERTY(QVariantMap snapshot READ snapshot NOTIFY statusChanged)
+    Q_PROPERTY(QVariantMap snapshot READ snapshot NOTIFY snapshotChanged)
     Q_PROPERTY(QVariantMap laneState READ laneState NOTIFY statusChanged)
     Q_PROPERTY(QVariantMap egoState READ egoState NOTIFY statusChanged)
 public:
@@ -23,6 +23,7 @@ public:
     QVariantMap egoState() const { return ego_state_; }
 signals:
     void statusChanged();
+    void snapshotChanged();
 private:
     void refresh();
     void publish(bool online, const QVariantMap &snapshot);

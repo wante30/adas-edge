@@ -1,0 +1,20 @@
+{
+  "kind": "INTERRUPTED_REAL_PCIE_RUN",
+  "evidence_origin": "SSH stdout captured before authorized board reboot",
+  "old_boot_id": "89c1849b-56a7-4726-93bd-b23faddc2197",
+  "new_boot_id": "40aa24eb-3034-4f10-b195-d36f03ef2a37",
+  "capture_error": "capture_io",
+  "lvt1_error": "LVT1 identity/version/caps mismatch or link down",
+  "pci_endpoint_revision_at_failure": "ff",
+  "accepted_control_before_disconnect": {
+    "request_id": "c6c6c4dc45f64fb3aaa3f56fb51334dc",
+    "sequence": 1,
+    "accepted_word": 65538,
+    "fpga_action_active": true,
+    "vehicle_decision": "allow",
+    "vehicle_brake_allow": true
+  },
+  "automatic_hot_recovery_verified": false,
+  "reboot_method": "normal systemctl reboot timed out; /sbin/reboot -f emitted Rebooting and boot ID changed",
+  "q1_before_mapping_change": "Captured PGVF frame 9525 Q1 black_fraction=1.0; user selected Q4 as future forward camera"
+}

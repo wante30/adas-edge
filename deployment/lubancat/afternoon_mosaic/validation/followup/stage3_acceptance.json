@@ -1,0 +1,10 @@
+{
+  "python_tests": 22,
+  "native_risk_link_test_exit": 0,
+  "native_build": "success",
+  "board_replay_completions": 280,
+  "actual_warning_events": 2,
+  "hardware_tested": false,
+  "control_mode": "DRY_RUN",
+  "notes": "Protocol/UI foundation. Legacy producer replaced in stages 4-5; full latency/performance acceptance deferred."
+}

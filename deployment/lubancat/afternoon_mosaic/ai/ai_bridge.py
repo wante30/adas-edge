@@ -38,6 +38,10 @@ if str(ROOT) not in sys.path:
 from competition_ai.scenario import Lane
 from tools.competition_console.fpga_perception import TrafficCode, build_hud_perception
 from auto_brake import AutoBrakeController
+from light_semantics import SemanticWorker
+from light_risk import LightRiskEngine
+from primary_tracks import PrimaryTracks
+from risk_events import EventStore, RiskObservation
 from q2_navigation_reader import CARD_ROI, Q2NavigationReader
 from tools.competition_console.navigation_reader import NavigationObservation
 from tools.competition_console.navigation_reader import NavigationObservation
@@ -112,7 +116,7 @@ def map_detection_box(bbox, *, input_layout, display_view, road_quadrant):
 def build_dynamic_status(*, source, frame_id, timestamp_ns, now_ns, hud, navigation,
                          hazard_timestamp_ns, hazards, detections, signal_age_ms,
                          main_age_ms, specialist_age_ms, navigation_ttl_ms=3000,
-                         source_stopped=False, source_available=True,
+                         source_stopped=False, source_available=True, canonical_risks=False,
                          input_fps=None, submitted_fps=None, ai_fps=None):
     traffic_reason = str(hud.get("traffic_evidence") or "UNKNOWN")
     traffic = str(hud.get("traffic") or "OFF").upper()
@@ -166,10 +170,11 @@ def build_dynamic_status(*, source, frame_id, timestamp_ns, now_ns, hud, navigat
     hazard_kinds = []
     hazard_details = []
     if (not source_stopped and source_available and hazard_age_ms is not None
-            and hazard_age_ms < DYNAMIC_RESULT_TTL_MS):
+            and hazard_age_ms < (400.0 if canonical_risks else DYNAMIC_RESULT_TTL_MS)):
         for item in hazards:
             if not isinstance(item, dict) or not isinstance(item.get("kind"), str):
                 continue
+            if canonical_risks and (not item.get("valid") or item.get("lifecycle_state")!="ACTIVE" or item.get("expires_at_ns",0)<=now_ns):continue
             kind = item["kind"]
             hazard_kinds.append(kind)
             severity = item.get("severity", "warning")
@@ -199,8 +204,10 @@ def build_dynamic_status(*, source, frame_id, timestamp_ns, now_ns, hud, navigat
             target_class = item.get("target_class") or item.get("class_name")
             if isinstance(target_class, str) and target_class:
                 detail["target_class"] = target_class
+            if item.get("event_id"):
+                detail = dict(item)  # Preserve the canonical identity/lifecycle for every consumer.
             hazard_details.append(detail)
-    if (not source_stopped and source_available and traffic == "RED"
+    if (not canonical_risks and not source_stopped and source_available and traffic == "RED"
             and signal_age_ms is not None and signal_age_ms < 2500):
         hazard_kinds.append("RED_SIGNAL_CONFIRMED")
         hazard_details.append({
@@ -516,7 +523,7 @@ def encode_ai_result_packet(*, frame_id, timestamp_ns, flags, nav_direction,
     boxes = list(boxes[:MAX_BOXES])
     if status is not None:
         status_payload = json.dumps(status, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-        if len(status_payload) > 4096:
+        if len(status_payload) > 32768:
             raise ValueError("AI status payload exceeds the bounded result packet size")
         payload = bytearray(RESULT_HEADER_V2.pack(
             b"MVA2", int(frame_id), int(timestamp_ns), len(boxes), int(flags),
@@ -774,8 +781,18 @@ def _current_rss_mb():
     return None
 
 
+def _set_current_python_thread_nice(nice_value=10):
+    """Set this Python thread absolutely; never retune RKNN native workers."""
+    try:
+        tid = threading.get_native_id()
+        if os.getpriority(os.PRIO_PROCESS, tid) != int(nice_value):
+            os.setpriority(os.PRIO_PROCESS, tid, int(nice_value))
+    except (AttributeError, OSError):
+        pass
+
+
 def _deprioritize_sidecar_process(nice_value=10):
-    """Lower only the Python sidecar leader; keep RKNN native workers intact."""
+    """Preserve measured RKNN caller/native scheduling; lower only the leader."""
     try:
         os.setpriority(os.PRIO_PROCESS, os.getpid(), int(nice_value))
     except (AttributeError, OSError):
@@ -801,7 +818,7 @@ def _navigation_ocr_process(request_queue, result_queue, ttl_ms):
         cpus = os.cpu_count() or 4
         if cpus > 1:
             os.sched_setaffinity(0, {cpus - 1})
-        os.nice(10)
+        _set_current_python_thread_nice(10)
     except (AttributeError, OSError):
         pass
     reader = Q2NavigationReader(ttl_ms=ttl_ms)
@@ -910,7 +927,7 @@ class AiReplayBridge:
             raise
         self.pipeline = FrontPipeline(
             main, specialist, main_hz=args.main_hz,
-            specialist_hz=args.specialist_hz, hazards=args.hazards,
+            specialist_hz=args.specialist_hz, hazards=False,
             hazards_async=True,
             hazard_hz=(args.hazard_hz if args.hazard_hz > 0 else args.main_hz),
             # Qt already rate-limits live requests to --ai-hz. Running the
@@ -920,7 +937,12 @@ class AiReplayBridge:
         )
         from inference_mode import ModeControl
         self.modes = ModeControl(self)
-        self.auto_brake = AutoBrakeController()
+        self.event_store = EventStore()
+        self.primary_tracks = PrimaryTracks()
+        self.light_risk = LightRiskEngine()
+        self.semantics = SemanticWorker()
+        self.auto_brake = AutoBrakeController(journal=self.event_store.journal,
+            forward_source_id="Q%d" % (self.args.forward_quadrant + 1))
         self.navigation = None
         self.nav_request = None
         self.nav_result = None
@@ -991,7 +1013,8 @@ class AiReplayBridge:
         status["model_selection"] = self._model_selection_status(include_options=True)
         status["layout"] = self.args.layout
         status["display_view"] = "quad" if self.modes.adapter is not None else "front"
-        status["road_quadrant"] = 0
+        status["road_quadrant"] = self.args.forward_quadrant
+        status["forward_source_id"] = "Q%d" % (self.args.forward_quadrant + 1)
         status["inference"] = self.modes.status()
         self._write_dynamic_hmi(status)
         self.listener.start()
@@ -1105,6 +1128,8 @@ class AiReplayBridge:
         main_path = Path(main_model).absolute()
         specialist_path = Path(specialist_model).absolute() if specialist_model else None
         for profile_id, profile in self.model_profiles.items():
+            if profile.task == "mosaic":
+                continue
             if profile.main_model.absolute() != main_path:
                 continue
             expected_specialist = (
@@ -1133,10 +1158,6 @@ class AiReplayBridge:
         }
         if include_options:
             status["options"] = [profile.wire() for profile in self.model_profiles.values()]
-            from fast_mosaic_backend import available
-            status["options"].insert(4, {"id": "FAST-MOSAIC", "label": "FAST-MOSAIC · BDD 整图",
-                "available": available(), "legacy": False, "has_specialist": False,
-                "reason": "" if available() else "BDD model / independent generic library missing"})
         return status
 
     def _send_model_switch_reply(self, request_id, peer, state, requested_id, message):
@@ -1145,7 +1166,7 @@ class AiReplayBridge:
         payload = encode_model_switch_reply(
             request_id,
             state=state,
-            active_id=self.active_model_id,
+            active_id="FAST-MOSAIC" if self.modes.adapter is not None else self.active_model_id,
             requested_id=requested_id,
             message=message,
         )
@@ -1153,6 +1174,11 @@ class AiReplayBridge:
             return
         try:
             self.result_socket.sendto(payload, peer)
+            print("MODEL_SWITCH " + json.dumps({"request_id": request_id,
+                  "state": state, "requested_id": requested_id,
+                  "active_id": "FAST-MOSAIC" if self.modes.adapter is not None else self.active_model_id,
+                  "inference": self.modes.status(), "timestamp_ns": time.monotonic_ns()},
+                  separators=(",", ":")), flush=True)
         except OSError:
             pass
 
@@ -1171,11 +1197,10 @@ class AiReplayBridge:
             )
             return
         with self.model_switch_lock:
-            if self.modes.mode == "MOSAIC_FULL":
-                self._send_model_switch_reply(request_id, peer, "REJECTED", profile_id,
-                                              "先切换到 ROAD_Q1 再选择道路模型")
-                return
-            if profile_id == self.active_model_id and self.pending_model_switch is None:
+            expected_mode = "MOSAIC_FULL" if profile.task == "mosaic" else "ROAD_Q1"
+            actual_id = "FAST-MOSAIC" if self.modes.adapter is not None else self.active_model_id
+            if (self.modes.mode == expected_mode and profile_id == actual_id
+                    and self.pending_model_switch is None):
                 self.model_switch_state = "READY"
                 self.model_switch_message = "当前已是该方案"
                 immediate_state = "APPLIED"
@@ -1197,6 +1222,8 @@ class AiReplayBridge:
         # A newer full-frame choice supersedes a queued road model change.
         with self.model_switch_lock:
             pending, peer = self.pending_model_switch, self.model_switch_peer
+            if pending is not None and pending["profile_id"] == "FAST-MOSAIC":
+                return
             self.pending_model_switch = self.model_switch_peer = None
             self.model_switch_state = "READY"
             self.model_switch_message = "四路模式使用 FAST-MOSAIC"
@@ -1205,18 +1232,27 @@ class AiReplayBridge:
                                           pending["profile_id"], "已切换四路模式")
 
     def _apply_pending_model_switch(self):
-        if self.modes.mode == "MOSAIC_FULL":
-            return False
         with self.model_switch_lock:
             request = self.pending_model_switch
             if request is None:
                 return False
+            profile = self.model_profiles[request["profile_id"]]
+            expected_mode = "MOSAIC_FULL" if profile.task == "mosaic" else "ROAD_Q1"
+            if self.modes.mode != expected_mode:
+                return False  # HMI owns the epoch; its MVI1 handshake precedes MVM1.
             self.pending_model_switch = None
             peer = self.model_switch_peer
             self.model_switch_peer = None
         request_id = int(request["request_id"])
         profile_id = str(request["profile_id"])
         profile = self.model_profiles[profile_id]
+        if profile.task == "mosaic":
+            with self.model_switch_lock:
+                self.model_switch_state = "APPLIED"
+                self.model_switch_message = "FAST-MOSAIC 已生效"
+            self._send_model_switch_reply(request_id, peer, "APPLIED", profile_id,
+                                          "FAST-MOSAIC 已生效")
+            return True
         old_main = self.pipeline.main_detector
         old_specialist = self.pipeline.specialist_detector
         same_main = (
@@ -1286,7 +1322,8 @@ class AiReplayBridge:
 
     def _detections_to_boxes(self, snapshot):
         boxes = []
-        groups = (snapshot.main, snapshot.specialist) if self.modes.adapter is None else (self.modes.adapter.all_detections,)
+        self.box_identities = []
+        groups = (self.primary_tracks.current,)
         for detections in groups:
             for item in detections or ():
                 if len(boxes) >= MAX_BOXES:
@@ -1317,6 +1354,8 @@ class AiReplayBridge:
                     confidence = 0.0
                 if not math.isfinite(confidence):
                     confidence = 0.0
+                self.box_identities.append(dict(track_id=item.get("track_id",0),source_id=item.get("source_id","UNASSIGNED"),
+                    velocity=[v*(2 if self.modes.adapter is None else 1) for v in item.get("velocity",[0,0,0,0])]))
                 boxes.append((x1, y1, x2, y2, r, g, b,
                               CLASS_IDS.get(str(item.get("class_name", "")), 255),
                               min(1.0, max(0.0, confidence))))
@@ -1395,7 +1434,7 @@ class AiReplayBridge:
             full_frame = self.frames[frame_id % len(self.frames)]
         decode_start_ns = time.perf_counter_ns()
         road, navigation_image = select_inference_frames(
-            full_frame, self.args.layout, 0,
+            full_frame, self.args.layout, self.args.forward_quadrant,
             self.args.navigation_quadrant,
         )
         self._last_decode_ms = (time.perf_counter_ns() - decode_start_ns) / 1e6
@@ -1403,6 +1442,7 @@ class AiReplayBridge:
         self.latest_source_timestamp_ns = int(timestamp_ns)
         pipeline_start_ns = time.perf_counter_ns()
         if self.modes.adapter is not None:
+            self.modes.adapter.road_quadrant = self.args.forward_quadrant
             self.modes.adapter.full_frame = (full_frame.full_bgr() if isinstance(full_frame, PackedRgb565) else full_frame)
         self.pipeline.advance(
             road, int(frame_id), int(timestamp_ns),
@@ -1446,7 +1486,29 @@ class AiReplayBridge:
         )
         lane = next(iter(Lane))
         snapshot = self.pipeline.snapshot(lane, int(timestamp_ns))
-        self.auto_brake.update(snapshot.hazards)
+        mode = self.modes.status()
+        detections=(list(snapshot.main)+list(snapshot.specialist) if self.modes.adapter is None else self.modes.adapter.all_detections)
+        tracking_start=time.perf_counter_ns()
+        self.primary_tracks.update(detections,(mode["mode"],mode["epoch"],self.active_model_id,self.args.forward_quadrant),timestamp_ns)
+        self._last_tracking_ms=(time.perf_counter_ns()-tracking_start)/1e6
+        self.stage_timings.setdefault("risk_fast",deque(maxlen=3600))
+        risk_start=time.perf_counter_ns()
+        risk_context=(mode["mode"],mode["epoch"],self.active_model_id,self.args.forward_quadrant)
+        detector=getattr(self.pipeline.main_detector,"detector",None)
+        masks=getattr(detector,"last_masks",None) if self.modes.adapter is None else None
+        letterbox=getattr(detector,"last_letterbox",None) if masks is not None else None
+        self.semantics.submit(road,self.primary_tracks.current,timestamp_ns,risk_context,masks,letterbox)
+        semantic_result=self.semantics.current(timestamp_ns,risk_context)
+        candidates=self.light_risk.update(self.primary_tracks.current,timestamp_ns,
+            risk_context,semantic_result) if self.args.hazards else []
+        events = self.event_store.update(candidates, mode=mode["mode"], epoch=mode["epoch"],
+            bridge_id=mode["bridge_id"], model_id=self.active_model_id, frame_id=frame_id,
+            timestamp_ns=timestamp_ns, measurement_ns=timestamp_ns, road_quadrant=self.args.forward_quadrant)
+        self.stage_timings["risk_fast"].append((time.perf_counter_ns()-risk_start)/1e6)
+        snapshot=replace(snapshot,hazards=RiskObservation(timestamp_ns=timestamp_ns,
+            events=events,tracks=tuple(self.primary_tracks.current),frame_id=frame_id,
+            source_id="Q%d" % (self.args.forward_quadrant + 1)))
+        self.auto_brake.update(snapshot.hazards,context=mode)
         nav = self.navigation.current(int(timestamp_ns)).to_dict() if self.navigation else {}
         hud = build_hud_perception(road, snapshot)
         flags = 0
@@ -1477,6 +1539,7 @@ class AiReplayBridge:
             now_ns=time.monotonic_ns(),
             hud=hud.to_dict(),
             navigation=nav,
+            canonical_risks=True,
             hazard_timestamp_ns=snapshot.hazards.timestamp_ns,
             hazards=snapshot.hazards.events,
             detections=list(snapshot.main) + list(snapshot.specialist),
@@ -1495,8 +1558,15 @@ class AiReplayBridge:
         )
         status["layout"] = self.args.layout
         status["display_view"] = "quad" if self.modes.adapter is not None else "front"
-        status["road_quadrant"] = 0
+        status["road_quadrant"] = self.args.forward_quadrant
+        status["forward_source_id"] = "Q%d" % (self.args.forward_quadrant + 1)
         status["inference"] = self.modes.status(frame_id)
+        status["semantics"] = dict(semantic_result,metrics=self.semantics.metrics())
+        status["risk_rules"] = self.light_risk.metrics()
+        status["box_identities"] = self.box_identities
+        status["event_updates"] = [{k:e[k] for k in ("event_id", "lifecycle_state", "cleared_ns") if k in e}
+                                   for e in self.event_store.updates if e["lifecycle_state"] == "CLEARED"]
+        status["control"] = self.auto_brake.last_result or {"control_mode": os.environ.get("ADAS_CONTROL_MODE", "HARDWARE")}
         road = getattr(snapshot.hazards, "road", None)
         if road:
             status["road_scene"] = road
@@ -1541,7 +1611,6 @@ class AiReplayBridge:
         return packet
 
     def _infer(self):
-        priority_reapplied = False
         completed_times = deque()
         rate_token = None
         while self.running.is_set():
@@ -1593,12 +1662,9 @@ class AiReplayBridge:
                         f"ANALYZE_DONE frame={frame_id} bytes={len(packet)} "
                         f"main_samples={len(self.pipeline.main_timings)}"
                     )
-                if not priority_reapplied:
-                    # RKNN may reset the Python leader to -19 during the first
-                    # detect call. Lower only that leader; native NPU workers
-                    # retain the priority required by the RKNN runtime.
-                    _deprioritize_sidecar_process()
-                    priority_reapplied = True
+                # Keep the measured RKNN inference-thread scheduling. OCR uses
+                # an absolute nice 10; only the bridge leader is deprioritized.
+                _deprioritize_sidecar_process()
                 infer_end_ns = time.monotonic_ns()
                 publish_started = time.perf_counter_ns()
                 self.result_socket.sendto(packet, self.result_address)
@@ -1649,6 +1715,13 @@ class AiReplayBridge:
                         "navigation_ocr_age_ms": (self.latest_dynamic_status.get("navigation") or {}).get("ocr_age_ms"),
                         "hazards": self.latest_dynamic_status.get("hazards"),
                         "hazard_details": self.latest_dynamic_status.get("hazard_details"),
+                        "event_updates": self.latest_dynamic_status.get("event_updates"),
+                        "tracking_ms":self._last_tracking_ms,
+                        "risk_fast_ms":self.stage_timings["risk_fast"][-1],
+                        "risk_rules":self.latest_dynamic_status.get("risk_rules"),
+                        "semantics":self.latest_dynamic_status.get("semantics"),
+                        "control":self.latest_dynamic_status.get("control"),
+                        "forward_source_id":self.latest_dynamic_status.get("forward_source_id"),
                     }, separators=(",", ":")) + "\n")
                 self.result_count += 1
                 self.latency_ms.append((time.perf_counter_ns() - started) / 1e6)
@@ -1688,6 +1761,9 @@ class AiReplayBridge:
             self.close()
 
     def close(self):
+        self.auto_brake.close()
+        self.semantics.close()
+        self.event_store.journal.close()
         self.running.clear()
         self.latest.close()
         try:
@@ -1884,6 +1960,7 @@ def parser():
     result.add_argument("--legacy-model-root", default="")
     result.add_argument("--request-port", type=int, default=38260)
     result.add_argument("--result-port", type=int, default=38261)
+    result.add_argument("--forward-quadrant", type=int, choices=range(4), default=3)
     result.add_argument("--road-quadrant", type=int, choices=range(4), default=0)
     result.add_argument("--navigation-quadrant", type=int, choices=range(4), default=1)
     result.add_argument("--main-hz", type=float, default=10.0)

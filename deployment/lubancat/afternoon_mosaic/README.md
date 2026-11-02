@@ -1,169 +1,57 @@
-# ADAS integration from the afternoon snapshot
+# ADAS RK3566 危险感知与控制后续版
 
-Base: `9b396e8b346bfbbfa9856950937e1cd3f54516f4` (`adas-afternoon-20261101`).
+本目录在 PR #6 的 `d397af411d592447197fa2f194144dca52c765dd` 上继续开发。独立分支为 `feature/adas-risk-control-20261102`，独立板端目录为 `/home/cat/adas_risk_dev_20261102`。PR #6、下午版归档及正式自启动环境保留。
 
-`ai/` and `hmi/` are recovered from the two archives in
-`releases/adas_afternoon_20261101/`. No failed mode implementation is imported.
-`baseline_hashes.json` records the files before integration changes.
+2026-11-02 已恢复真实 PCIe 测试。按用户指定，比赛前向通道固定为 **Q4**，默认单路显示与推理、四路中的前向危险、Tesla 及自动制动均使用 Q4；Q1/Q2/Q3 不触发前向制动。本地录制回放仍使用进程内 **DRY_RUN**：制动请求、模拟 ACK 和点刹时序写入日志；不会向控制端口发送命令。LVT1 界面仍反映真实设备可用状态，DRY_RUN 的虚拟车辆状态仅在控制日志中明确标注。
 
-The original archived HMI binary SHA-256 is
-`27945c8037a8689251e6a2f07ceb2f528b0f34e268b1df6c678c05770f03ff4d`.
-The original backup's compiled Qt resource contains exactly the archived
-`main.qml`, and that compressed resource occurs in the archived executable.
-This establishes the QML source provenance independently of timestamps.
+## 运行
 
-Build in a new directory with `qmake ../hmi/qt_gpu_probe.pro` then `make -j2`.
-Never use a Makefile recovered from an archive: it contains old absolute paths.
-The board clock can reset; use current timestamps in the independent source
-copy before configuring a new build.
+运行包位于仓库 `releases/adas_risk_control_20261102/`；先在同一 RK3566 的空目录解压 ZIP。SHA-256 和逐文件清单与 ZIP 同目录提供。
 
-The verified road configuration uses `ADAS_DISABLE_ROAD_SCENE=1`,
-`ADAS_LEGACY_HAZARD=1`, `ADAS_AUTO_BRAKE=1`, and `--ocr-hz 2`.
-The test harness supports an isolated simulator at port 38362. After the user
-explicitly requested normal commands on 2026-11-01, the active integration
-session and supplied launch scripts use the existing HUD Bridge at port 38262.
-The original decision conditions and AutoBrakeController are preserved.
-
-
-## Implemented behavior
-
-| Function | Afternoon baseline | Integration |
-|---|---|---|
-| Road detectors | B / B-CAPI / MTL-FAST / MTL-FULL | Same paths, backends, segmentation and model menu |
-| Four views | Video mosaic | One complete-frame BDD inference, global boxes |
-| Navigation | Q2 OCR requested at 2 Hz | Same independent OCR process and quadrant selection |
-| Hazards / brake | Legacy Q1 events and existing controller | Same logic; other mosaic quadrants excluded |
-| HUD / LVT1 / BEV | Existing widgets and adapters | Preserved |
-| Requests | Fixed 10 Hz | Default adaptive, maximum 30 Hz; fixed mode retained |
-| Displayed AI FPS | Process lifetime average | Unique accepted results over the latest 1.2 s, sampled every 200 ms |
-
-See MODE_PROTOCOL.md for coordinates, epochs, reconnect and stale-result rules,
-and fast_mosaic/UPSTREAM.md for the exact PR #5 source provenance.
-
-## Build and run on RK3566
-
-Use an independent directory such as /home/cat/adas_mosaic_dev_20261101.
-The recovered sources require the board's existing Qt5, Mali, RKNN runtime,
-models, OCR assets and production road C API library. No driver, runtime,
-bitstream or model installation is performed by these scripts.
+在 RK3566 原有 Qt5 / Mali / RKNN / OCR / 模型环境中运行：
 
 ```sh
 sh tools/build.sh
-sh tools/start_local_replay.sh /home/cat/qt_gpu_probe_ai_20261019/local_quad_full.rgb
-# When the physical PCIe input is available again:
 sh tools/start_pcie.sh
-# Restore the original service and original HMI autostart loop:
+sh tools/start_local_replay.sh /home/cat/qt_gpu_probe_ai_20261019/local_quad_full.rgb
 sh tools/restore_afternoon.sh
 ```
 
-The launcher records boot ID, original HMI arguments/environment, original
-autostart parent, service state and owned test PIDs in
-evidence/integration_session.json. It stops the previous owned session before
-launching another. Formal autostart and archived executables stay untouched.
-For an already active integration session the record is reused. Normally one
-original HMI supplies the recovery arguments/environment. With local replay,
-if no original HMI is running, an archived restored-session record may supply
-those launch parameters; the current autostart parent and service state are
-rediscovered. This requires an existing recovery record on that board. An
-active session record from another boot is rejected before any PID signalling.
-The runtime package does not carry live PID records to another installation.
+回放使用完整 1350 帧、1280×720 RGB565 录制，循环请求 60 FPS。源帧率、Qt 场景图帧率、实际 AI 完成率分别计数。模型菜单保留 B、B-capi、MTL-FULL、MTL-FAST，并新增可直接选择的 FAST-MOSAIC。四路使用一次完整帧 BDD 推理；切回道路模式恢复上一个道路模型。切换通过模式/epoch/模型握手，旧结果不能覆盖新模式。
 
-The local source is the full 1350-frame, 1280x720 RGB565 recording, played in a
-loop at a requested 60 FPS. Its achieved source/render/AI rates are measured
-independently. Shared AI snapshots use an independent /dev/shm file.
+真实硬件使用 `sh tools/start_pcie.sh`。启动器临时替换 HUD 服务为独立开发目录中的真实 BAR1 桥，发布 LVT1 并回传带 request_id 的硬件 ACK。FPGA 接收、动作激活与机械制动效果分别记录。原服务文件保留，可用恢复脚本切回。真实测试见 `validation/pcie/REPORT.md`；此前回放证据单独保留。
 
-## Adaptive requests
+## 事件与控制
 
---ai-hz 0 enables completion-driven requests with one outstanding frame and
-a latest-frame slot; --ai-hz 10 retains the previous pacing cap.
-ADAS_AI_MAX_HZ overrides the adaptive cap (default 30; allowed 1–60).
-A request expires after 1.5 s. When Qt overlay updates exceed 12 ms or rendering
-falls below 25 FPS, the scheduler adds 30 ms of pacing. Model changes pause
-new frames until acknowledged and reset tracking and rate history. A mode
-change cancels a superseded queued road-model request.
+[统一事件协议](RISK_PROTOCOL.md) 定义 ACTIVE / CLEARED 生命周期和 WARNING / CRITICAL 严重程度。普通目标保持类别颜色，WARNING 为黄色，CRITICAL 为红色。视频框、面板、Tesla 和 HUD 消费同一份事件。没有匹配到目标的事件留在面板及 `unmatched_hazard` 日志，不给其他目标上色。
 
-The 200 ms metrics timer also checks for AI silence. No new result packets
-are required to reach zero FPS or clear offline targets. Inference counters
-use monotonic pipeline counts instead of bounded timing-buffer lengths.
+[危险规则](RISK_RULES.md) 覆盖前车接近、行人、两轮车、切入、方向已确认的对向冲突、制动灯变化与接近，以及 MTL 斑马线附近行人。几何路径为明确的图像空间假设，当前没有标定距离或方向测量。不能只凭框变大认定对向来车。
 
-## Evidence and limits
+[控制配置](CONTROL_MODES.md) 解释 CRITICAL 候选的检查、非阻塞 ACK、虚拟车辆状态及独立点刹测试。WARNING、CLEARED、预测目标、其他象限和过期事件都不能产生新的制动请求。
 
-validation/stage1.json and stage1.png document the recovered afternoon road
-baseline. validation/stage2_mode_switches.json records epoch switching before
-BDD integration. validation/stage3_switches.json and stage3_mosaic.png record
-actual complete-frame BDD integration before adaptive pacing.
+## 跟踪与显示
 
-Later acceptance uses local replay at the user's request after the physical
-PCIe feed was removed. Current replay results must not be described as fresh
-PCIe throughput or proof of a physical brake actuation. Earlier live tests
-received successful normal brake acknowledgements. A disconnected BAR can
-return all-ones values in the original vehicle-status producer; such records
-are invalid hardware evidence even if its legacy online field is true.
+复用恢复源码中的 Windows ByteTrack-Lite，按检测时间戳进行摄像头内两阶段关联，类别族隔离，漏检保留 600 ms。Qt 使用同一组主跟踪 ID。Tesla 仅消费配置的前向通道（比赛 Q4，历史回放 Q1）；在 Qt 原生渲染中预测最多 250 ms，平滑纠正，淡入约 180 ms，淡出最长 350 ms，600 ms 后删除。预测和渐隐对象不作为控制证据。
 
-Validation commands:
+模型、模式或 epoch 变化会清理旧身份与语义。MTL 掩码、导航 OCR、LVT1、HUD 接口和原生 BEV 保留；没有加入 Python/OpenCV 图像渲染或额外模型推理。
+
+## 性能与验证
+
+快速危险规则按每次有效完成执行；MTL 斑马线和少量车辆制动灯裁剪使用最新单槽后台任务，最多 2 Hz。性能统计每秒汇总一次。调度只保留一个未完成请求，始终使用最新帧；默认 PRESSURE 策略按 GUI 忙碌比例和渲染帧率选择最多 8 ms 退让，`QT_AI_PACING_POLICY=LEGACY` 可对照旧 30 ms 策略。
 
 ```sh
 python3 -m unittest discover -s tests -v
-ADAS_VALIDATION_LABEL=local_replay python3 tools/validate_integration.py
+python3 tools/validate_scenarios.py
+python3 tools/test_session.py start --build build-stage4 --label final_replay --ai-hz 0 --control-mode DRY_RUN --external-qml --raw-replay /home/cat/qt_gpu_probe_ai_20261019/local_quad_full.rgb
+python3 tools/validate_followup.py --label final_replay --seconds 610 --switch-every 60
 ```
 
+`validate_scenarios.py` 是明确标记的合成数值序列，不是实拍检测精度证明。`validate_synthetic_ui.py` 使用独立合成 AI 协议夹具在真实 Qt 界面验证黄框、红框、行人、点刹 ACK 与解除，并在屏幕显示合成测试标记。夹具仅使用 AI 通信协议，控制仍完全在进程内。
 
-## Final local replay acceptance, 2026-11-01
+完整报告见 `validation/followup/REPORT.md`。验收材料位于 `validation/followup/`；PR #6 的历史验收保留在 `validation/`。最终报告区分实际回放、合成测试及没有硬件无法验证的事项。
 
-The final `final_replay` run completed **612.179 seconds** continuously after
-model switches, road/mosaic switches, an intentional AI stop, zero-FPS/offline
-feedback and reconnection. The HMI process remained running. There were no
-duplicate result identities or inference/listener/crash markers in the logs.
+## 恢复与打包
 
-| Measured quantity | Result |
-|---|---:|
-| Local recording source, requested 60 FPS | 54.603 FPS achieved |
-| Texture uploads | 28.676 FPS |
-| Qt scene graph | 29.444 FPS mean |
-| ROAD_Q1 / MTL-FAST | 6.899 unique completions/s |
-| MOSAIC_FULL / FAST-MOSAIC | 14.534 unique completions/s |
-| CPU, normalized across four cores | 23.856% mean |
-| GPU driver load | 36.239% mean |
-| NPU driver load | 100% reported; a driver reading, not an independent utilization measurement |
+运行包包含不含 PID 的 `config/baseline_launch.json`，当前板无 PCIe、原 HMI 未启动时仍可获取正确回放参数。启动器记录当前 boot ID、基线参数、原自启动父进程和本测试进程，只停止本测试拥有的会话。跨启动的旧 PID 记录不能用于发信号。运行包不分发活动会话 PID 文件。
 
-Short profile-switch checks also completed for B (32 results, 9.285 FPS),
-B-CAPI (29 results, 13.739 FPS) and MTL-FULL (12 results, 5.124 FPS). These are
-short functional checks, not ten-minute benchmarks for each model.
-
-The continuous interval contains 384 results with hazards. The downloaded
-replay log contains 125 normal brake requests and 125 timeouts: no physical
-PCIe endpoint/HUD bridge was present. Physical brake execution, fresh live
-LVT1 and PCIe hot-plug recovery remain unverified. The disconnected board was
-rebooted to clear its stale hardware state; no PCIe driver recovery fix is
-claimed. Local replay screenshots retain some original PCIe-labelled UI
-fields, which are not hardware-connectivity evidence.
-
-Navigation code remains unchanged and OCR is requested at 2 Hz. On this
-recording, the Q2 navigation card is smaller/differently positioned: 83 results
-were VALID, 4 STALE and 6468 UNREADABLE, predominantly Q2_ARROW_NOT_FOUND.
-Navigation is therefore not claimed to pass throughout this replay.
-
-Reviewable evidence:
-
-- [Acceptance report](validation/REPORT.md), [derived metrics](validation/final_summary.json)
-- [Full runner report](validation/stage5_acceptance.json), [raw log snapshots](validation/stage5_logs.zip)
-- [Four-view hazard screenshot](validation/final_mosaic.png), [road/MTL](validation/stage5_model_MTL-FAST.png)
-- [BEV](validation/stage5_bev.png), [AI offline](validation/stage5_offline.png)
-- [Runtime hashes](validation/runtime_manifest.json)
-
-Derive the measurements independently from the archived log snapshots:
-
-```sh
-mkdir -p /tmp/adas-final-evidence
-unzip validation/stage5_logs.zip -d /tmp/adas-final-evidence
-python3 tools/analyze_acceptance.py /tmp/adas-final-evidence --label final_replay
-```
-
-The RK3566 runtime ZIP includes `build-stage4/qt_gpu_probe`, the independent
-BDD shared library, sources/assets and launch/recovery scripts. Extract it
-into an independent directory. Existing board models, Qt/Mali/RKNN libraries,
-OCR dependencies and the raw replay recording are prerequisites and are not
-bundled. The package preserves evidence hashes but excludes machine-specific
-active/restored PID records; capture an original HMI session first on a new
-installation. Restore with `sh tools/restore_afternoon.sh`; without PCIe the
-original autostart can only resume waiting for its input.
+`tools/package_followup.py` 在板端打包源码、原生 HMI、独立 FAST-MOSAIC C API、配置、测试及验收材料，并生成 SHA-256 清单。模型、OCR 资产和系统 RKNN/Mali/Qt 运行库使用原有外部安装；清单记录依赖，不重新安装或修改。

@@ -44,8 +44,9 @@ Item {
     property color red: "#FF5064"
     property color line: "#1B4052"
     property string inputLayout: (typeof pgvInputLayout !== "undefined" ? pgvInputLayout : "front")
-    // The user wants the top-right quadrant (Q2) as the default main view.
-    property int roadQuadrant: (typeof pgvRoadQuadrant !== "undefined" ? pgvRoadQuadrant : 0)
+    // Q4 is the competition forward camera; other thumbnails remain view-only.
+    property int forwardQuadrant: (typeof forwardRoadQuadrant !== "undefined" ? forwardRoadQuadrant : 3)
+    property int roadQuadrant: (typeof pgvRoadQuadrant !== "undefined" ? pgvRoadQuadrant : 3)
     property int navQuadrant: 1
     property int viewMode: (typeof initialViewMode !== "undefined" ? initialViewMode : 0)
     property bool autoCycle: (typeof autoCycleCapture !== "undefined" ? autoCycleCapture : false)
@@ -183,10 +184,10 @@ Item {
     // Real snapshots from the current PCIe 2x2 frame. The large viewport is
     // live; these dock thumbnails are snapshots, labelled SNAP.
     property var cameras: [
-        { name: "前视", source: "PCIE Q1", image: "assets/cam_front.png" },
+        { name: forwardQuadrant === 0 ? "前视" : "辅视", source: "PCIE Q1", image: "assets/cam_front.png" },
         { name: "导航", source: "PCIE Q2", image: "assets/cam_upper_right.png" },
         { name: "车内", source: "PCIE Q3", image: "assets/cam_lower_left.png" },
-        { name: "路口", source: "PCIE Q4", image: "assets/cam_hdmi.png" }
+        { name: forwardQuadrant === 3 ? "前视" : "辅视", source: "PCIE Q4", image: "assets/cam_hdmi.png" }
     ]
 
     Timer {
@@ -196,6 +197,12 @@ Item {
         onTriggered: root.now = new Date()
     }
 
+    Text {
+        anchors.horizontalCenter: parent.horizontalCenter; y: 75; z: 999
+        visible: video.aiModelId === "SYNTHETIC-DRY-RUN"
+        text: "合成事件测试 · 不是实拍识别结果 · DRY RUN"
+        color: "#FFD34D"; font.pixelSize: 20; font.bold: true
+    }
     // Capture-only helper; the normal UI never auto-switches.
     Timer {
         interval: 5000
@@ -235,7 +242,10 @@ Item {
         var counts = video.aiDetectionCounts || ({})
         var hazards = video.aiHazards || []
         var traffic = video.aiTraffic === "RED" ? 1 : (video.aiTraffic === "GREEN" ? 2 : 0)
-        var pedestrian = (counts["person"] || 0) > 0
+        var pedestrian = false
+        var events = video.aiHazardDetails || []
+        for(var i=0;i<events.length;++i)
+            if(events[i].valid && events[i].severity === "critical" && events[i].target_class === "person") pedestrian = true
         var obstacle = video.aiOnline && hazards.length > 0 && root.hazardHasVehicleTarget()
         pcieHud.sendPerception(true, traffic, pedestrian, obstacle, false, 0, 0,
                                 false, true, true, 0x101,
@@ -244,7 +254,7 @@ Item {
     function hazardHasVehicleTarget() {
         var details = video.aiHazardDetails || []
         for (var i = 0; i < details.length; ++i) {
-            if (details[i].valid === false) continue
+            if (details[i].valid === false || details[i].severity !== "critical") continue
             var target = String(details[i].target_class || "").toLowerCase()
             if (target === "car" || target === "truck" || target === "bus") return true
         }
@@ -409,6 +419,10 @@ Item {
     function hazardLabel(kind, targetClass) {
         var eventKind = String(kind || "").toUpperCase()
         var target = String(targetClass || "").toLowerCase()
+        if (eventKind === "PEDESTRIAN_NEAR_CROSSWALK") return "斑马线附近行人"
+        if (eventKind === "CROSSWALK_BRAKE_PULSE") return "斑马线点刹 · DRY RUN"
+        if (eventKind === "TWO_WHEELER_PATH_CONFLICT") return "两轮车路径冲突"
+        if (eventKind === "ONCOMING_PATH_CONFLICT") return "对向车辆路径冲突"
         if (eventKind === "NEAR_OBJECT_IN_PATH")
             return target === "person" ? "行人距离过近" : "前车距离过近"
         if (eventKind === "LEAD_RAPID_CLOSING") return "前车快速接近"
@@ -459,7 +473,7 @@ Item {
                     var detail = details[d]
                     rows.push({ label: hazardDetailLabel(detail),
                                 live: detail.valid !== false,
-                                value: hazardSeverityText(detail.severity) })
+                                severity: detail.severity, value: hazardSeverityText(detail.severity) })
                 }
                 return rows
             }
@@ -515,7 +529,7 @@ Item {
     }
 
     function metricLabel(index) {
-        return ["PCIE", "视频", "AI", "NPU", "GPU"][index]
+        return [root.sourceIsPcie() ? "PCIE" : "回放", "视频", "AI", "NPU", "GPU"][index]
     }
     function metricValue(index) {
         if (index === 0) return video.sourceOnline ? "在线" : "断开"
@@ -538,7 +552,7 @@ Item {
         return "模拟视频源"
     }
     function quadName(index) {
-        return ["PCIe Q1 · 前视", "PCIe Q2 · 导航", "PCIe Q3 · 车内", "PCIe Q4 · 路口"][index]
+        return "PCIe Q" + (index + 1) + (index === root.forwardQuadrant ? " · 前视" : [" · 辅视", " · 导航", " · 车内", " · 辅视"][index])
     }
     function clockText() { return Qt.formatDateTime(now, "HH:mm") }
     function dateText() { return Qt.formatDateTime(now, "yyyy/MM/dd") }
@@ -835,7 +849,7 @@ Item {
             readonly property bool active: (video.aiModelId === "MTL-FULL"
                                             || video.aiModelId === "MTL-FAST")
                                            && video.aiOnline
-            visible: active && root.viewMode === 0 && root.roadQuadrant === 0
+            visible: active && root.viewMode === 0 && root.roadQuadrant === root.forwardQuadrant
                      && video.inferenceReady && !root.videoQsg
             source: ""
             cache: false
@@ -892,14 +906,14 @@ Item {
             clip: true
             visible: (root.viewMode === 0 || root.viewMode === 1)
                      && video.aiOnline && video.inferenceReady && video.bboxCount > 0
-                     && (root.viewMode === 1 || root.roadQuadrant === 0)
+                     && (root.viewMode === 1 || root.roadQuadrant === root.forwardQuadrant)
             Repeater {
                 model: video.bboxModel
                 delegate: Item {
                     property bool nearHazard: Boolean(model.hazard)
-                                                 && model.hazardKind === "NEAR_OBJECT_IN_PATH"
+                                                 && (model.hazardSeverity === "warning" || model.hazardSeverity === "critical")
                     property bool hazardIsPerson: String(model.hazardTargetClass || "").toLowerCase() === "person"
-                    property color hazardTone: "#FF5064"
+                    property color hazardTone: model.hazardSeverity === "critical" ? "#FF5064" : "#FFD34D"
                     property color tone: nearHazard ? hazardTone : root.targetTone(model.className)
                     property bool hot: model.primary
                     property real predictSeconds: {
@@ -950,7 +964,7 @@ Item {
                             id: labelText
                             x: 7; anchors.verticalCenter: parent.verticalCenter
                             text: nearHazard
-                                  ? (hazardIsPerson ? "前方行人危险" : "前车距离过近")
+                                  ? root.hazardLabel(model.hazardKind, model.hazardTargetClass)
                                   : root.compactName(model.className) + "  "
                                     + Math.round((model.confidence || 0) * 100) + "%"
                             color: nearHazard ? hazardTone : Qt.rgba(tone.r, tone.g, tone.b, 0.95)
@@ -1146,6 +1160,7 @@ Item {
         // Single mode: a real hazard warning or the neutral monitoring strip.
         Rectangle {
             id: warningStrip
+            property color severityTone: hazardCard.criticalHazard ? root.red : root.amber
             visible: root.viewMode === 0
             x: parent.width / 2 - 181; y: parent.height - 37
             width: 362; height: 27; radius: 3
@@ -1153,7 +1168,7 @@ Item {
                    ? "#B326111A" : "#B308171E"
             border.width: 0.8
             border.color: (video.aiOnline && (video.aiHazards || []).length > 0)
-                          ? "#B9FF5064" : "#4A2A5B66"
+                          ? warningStrip.severityTone : "#4A2A5B66"
             Image {
                 x: 10; y: 6; width: 15; height: 15
                 source: "assets/icon_warning.png"; fillMode: Image.PreserveAspectFit
@@ -1399,9 +1414,14 @@ Item {
         layer.enabled: true
         layer.smooth: true; y: 359; width: 260; height: 100
         property bool activeHazard: root.hazardRows().length > 0
+        property bool criticalHazard: {
+            var events=video.aiHazardDetails || []
+            for(var i=0;i<events.length;++i) if(events[i].severity==="critical")return true
+            return false
+        }
         HudPanel {
             anchors.fill: parent
-            cut: 11; accent: hazardCard.activeHazard ? root.red : "#3A6572"
+            cut: 11; accent: hazardCard.activeHazard ? (hazardCard.criticalHazard ? root.red : root.amber) : "#3A6572"
             fillTop: hazardCard.activeHazard ? "#1D0B11" : "#0A1A22"
             fillBottom: hazardCard.activeHazard ? "#080B0F" : "#040F16"
             fillOpacity: 0.95; borderOpacity: hazardCard.activeHazard ? 0.64 : 0.48
@@ -1457,7 +1477,7 @@ Item {
             delegate: Item {
                 x: 10; y: 30 + index * 20; width: parent.width - 20; height: 18
                 Rectangle {
-                    x: 0; y: 2; width: 2; height: 13; color: root.red
+                    x: 0; y: 2; width: 2; height: 13; color: modelData.severity === "critical" ? root.red : root.amber
                     opacity: modelData.live ? 0.75 : 0.25
                 }
                 Image {
@@ -1476,14 +1496,19 @@ Item {
                 Text {
                     anchors.right: parent.right; y: 1
                     text: modelData.value
-                    color: modelData.live ? "#FF9DA5" : "#69585A"
+                    color: modelData.live ? (modelData.severity === "critical" ? "#FF9DA5" : "#FFD34D") : "#69585A"
                     font.family: root.num; font.pixelSize: 6
                 }
             }
         }
         Text {
             x: 14; y: parent.height - 14
-            text: root.hazardFooter()
+            text: {
+                var c=video.aiControlState || {}
+                if(c.control_mode === "DRY_RUN")
+                    return "DRY RUN · " + (c.stage === "brake_accepted" ? "制动请求已模拟接收" : c.stage === "pulse_ended" ? "点刹模拟结束" : c.stage === "control_event_cleared" ? "危险已解除" : c.stage === "brake_timeout" ? "ACK 超时" : "进程内控制回放")
+                return root.hazardFooter()
+            }
             color: hazardCard.activeHazard ? "#B8848A" : "#6F8A93"
             font.family: root.cjk; font.pixelSize: 6
             elide: Text.ElideRight; width: parent.width - 28
@@ -1798,11 +1823,11 @@ Item {
                 boxes: video.aiBoxes
                 laneState: vehicleTelemetry.laneState
                 displayView: video.aiDisplayView
-                roadQuadrant: video.aiRoadQuadrant
+                roadQuadrant: root.forwardQuadrant
                 demoMode: false
                 online: video.aiOnline
                 visible: root.sceneEnabled
-                sourceKey: video.sourceMode
+                sourceKey: video.sourceMode + ":" + video.inferenceMode + ":" + video.aiModelId
                 sourceFrameId: video.displayFrameId
                 sourceTimestampNs: video.displayTimestampNs
             }
@@ -2092,7 +2117,7 @@ Item {
                     verticalAlignment: Text.AlignVCenter
                 }
                 Repeater {
-                    model: video.aiModelOptions || []
+                    model: root.modelPickerOpen ? (video.aiModelOptions || []) : []
                     delegate: Rectangle {
                         property var option: modelData
                         x: 0
@@ -2129,7 +2154,7 @@ Item {
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                             onClicked: {
                                 root.viewMode = option.id === "FAST-MOSAIC" ? 1 : 0
-                                if (option.id !== "FAST-MOSAIC") video.requestModelSwitch(option.id)
+                                video.requestModelSwitch(option.id)
                                 root.modelPickerOpen = false
                             }
                         }

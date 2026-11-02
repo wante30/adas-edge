@@ -1,4 +1,4 @@
-"""Run the original brake decision logic against a UDP simulator in tests."""
+"""Run the isolated bridge with explicitly selected control transport."""
 import os
 from pathlib import Path
 import runpy

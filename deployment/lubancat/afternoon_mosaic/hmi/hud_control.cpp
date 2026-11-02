@@ -13,7 +13,8 @@ constexpr qint64 kOfflineAfterNs = 2500000000LL;
 }
 
 HudControl::HudControl(QObject *parent) : QObject(parent) {
-    socket_.bind(QHostAddress(QHostAddress::LocalHost), 0);
+    if (qEnvironmentVariable("ADAS_CONTROL_MODE") != QStringLiteral("DRY_RUN"))
+        socket_.bind(QHostAddress(QHostAddress::LocalHost), 0);
     connect(&socket_, &QUdpSocket::readyRead, this, &HudControl::readPending);
     connect(&ping_timer_, &QTimer::timeout, this, &HudControl::ping);
     ping_timer_.start(2000);
@@ -25,6 +26,10 @@ HudControl::HudControl(QObject *parent) : QObject(parent) {
 HudControl::~HudControl() = default;
 
 void HudControl::sendCommand(const QJsonObject &object) {
+    if (qEnvironmentVariable("ADAS_CONTROL_MODE") == QStringLiteral("DRY_RUN")) {
+        setStatus(QStringLiteral("DRY_RUN"), QStringLiteral("回放 · 未连接硬件控制"));
+        return;
+    }
     const QByteArray packet = QJsonDocument(object).toJson(QJsonDocument::Compact);
     if (socket_.writeDatagram(packet, QHostAddress(QHostAddress::LocalHost), kBridgePort) != packet.size()) {
         setStatus(QStringLiteral("OFFLINE"), QStringLiteral("bridge send failed"));

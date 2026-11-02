@@ -13,7 +13,7 @@ REQUEST = struct.Struct("<4sQQQff")
 
 
 class MosaicRoadAdapter:
-    """One full-frame inference, with only unambiguous Q1 objects sent to safety."""
+    """One full-frame inference, with only the configured forward camera sent to safety."""
     def __init__(self, detector, owns_detector=False):
         self.owns_detector = owns_detector
         self.full_detector = detector
@@ -22,17 +22,19 @@ class MosaicRoadAdapter:
         self.full_frame = None
         self.last_timing = None
         self.single_model = True
+        self.road_quadrant = 0
 
     def detect(self, road):
         assert self.full_frame is not None
         self.all_detections, elapsed = self.full_detector.detect(self.full_frame)
         self.last_timing = getattr(getattr(self.full_detector, "detector", self.full_detector), "last_timing", None)
         q1 = []
+        ox, oy = (self.road_quadrant % 2) * 640, (self.road_quadrant // 2) * 360
         for item in self.all_detections:
             x1, y1, x2, y2 = item["bbox"]
             # Crossing boxes remain visible, but never become a road command.
-            if 0 <= x1 < x2 <= 640 and 0 <= y1 < y2 <= 360:
-                q1.append(dict(item))
+            if ox <= x1 < x2 <= ox+640 and oy <= y1 < y2 <= oy+360:
+                q1.append(dict(item, bbox=[x1-ox,y1-oy,x2-ox,y2-oy]))
         return q1, elapsed
 
     def close(self):

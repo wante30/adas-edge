@@ -46,7 +46,7 @@ class SessionContract(unittest.TestCase):
             self.assertEqual(hmi[hmi.index('--raw-replay')+1],'long.rgb')
             self.assertEqual(hmi[hmi.index('--ai-hz')+1],'0')
             self.assertEqual(ai[ai.index('--ocr-hz')+1],'2')
-            self.assertEqual(env['ADAS_TEST_ACTION_PORT'],'38262')
+            self.assertEqual(env['ADAS_CONTROL_MODE'],'DRY_RUN')
             self.assertIn('QT_QML_FILE',hmi_env)
 
 if __name__=='__main__':unittest.main()
