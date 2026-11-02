@@ -32,7 +32,7 @@ class ModelProfile:
 
     @property
     def available(self) -> bool:
-        if self.task == "mosaic":
+        if self.backend == "fast_mosaic":
             from fast_mosaic_backend import available
             return available()
         return self.main_model.is_file() and (
@@ -41,7 +41,7 @@ class ModelProfile:
 
     @property
     def unavailable_reason(self) -> str:
-        if self.task == "mosaic" and not self.available:
+        if self.backend == "fast_mosaic" and not self.available:
             return "BDD model / independent generic library missing"
         missing = [path for path in (self.main_model, self.specialist_model)
                    if path is not None and not path.is_file()]
@@ -109,6 +109,9 @@ def build_model_profiles(model_root: str | Path,
         ModelProfile("B-capi", "B-CAPI · B05N P2 Raw-head INT8 (C API)", capi, None, (512, 288), "bdd10", backend="rknn_capi"),
         ModelProfile("MTL-FULL", "B-2a · Full Resolution MTL (C API)", mtl_full, None, (512, 288), "bdd10", backend="rknn_capi", task="mtl"),
         ModelProfile("MTL-FAST", "B-2a · Seg-256 MTL (C API)", mtl_fast, None, (512, 288), "bdd10", backend="rknn_capi", task="mtl"),
+        ModelProfile("FAST-Q4", "FAST-Q4 · BDD C API Q4 单路高速检测",
+                     Path(os.environ.get("ADAS_MOSAIC_MODEL", "/home/cat/cityscapes_arch_compare_20261027/models/bdd_yolov8n_512x288_raw_heads_int8_capi.rknn")),
+                     None, (512, 288), "bdd10", backend="fast_mosaic"),
         ModelProfile("FAST-MOSAIC", "FAST-MOSAIC · BDD 整图 C API",
                      Path(os.environ.get("ADAS_MOSAIC_MODEL", str(bdd))), None,
                      (512, 288), "bdd10", backend="fast_mosaic", task="mosaic"),

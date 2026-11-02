@@ -1273,11 +1273,17 @@ class AiReplayBridge:
         new_specialist = old_specialist if same_specialist else None
         try:
             if new_main is None:
-                new_main = RknnConsoleDetector(
-                    profile.main_model, profile.input_size,
-                    class_profile=profile.class_profile,
-                    backend=profile.backend, task=profile.task,
-                )
+                if profile.backend == "fast_mosaic":
+                    # ROAD path has already cropped packed RGB565 to physical Q4.
+                    # Reuse precisely the same 9-output BDD C ABI as FAST-MOSAIC.
+                    from fast_mosaic_backend import FastMosaicDetector
+                    new_main = FastMosaicDetector(backend=profile_id)
+                else:
+                    new_main = RknnConsoleDetector(
+                        profile.main_model, profile.input_size,
+                        class_profile=profile.class_profile,
+                        backend=profile.backend, task=profile.task,
+                    )
             if profile.specialist_model is not None and new_specialist is None:
                 new_specialist = RknnConsoleDetector(
                     profile.specialist_model, (512, 192), specialist=True,

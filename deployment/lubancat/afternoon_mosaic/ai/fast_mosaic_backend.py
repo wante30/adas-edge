@@ -14,7 +14,11 @@ def available():
 
 
 class FastMosaicDetector:
-    def __init__(self):
+    def __init__(self, backend="FAST-MOSAIC"):
+        self.backend = backend
+        self.task = "detect"
+        self.last_masks = None
+        self.last_letterbox = None
         spec = importlib.util.spec_from_file_location("adas_fast_mosaic_capi", ROOT / "fast_mosaic/scripts/capi_detector.py")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -42,7 +46,7 @@ class FastMosaicDetector:
     def detect(self, frame):
         rows, elapsed = self.inner.detect(frame)
         self.last_timing = dict(self.inner.last_timing, output_count=self.output_count,
-                                scale_count=self.scale_count, backend="FAST-MOSAIC")
+                                scale_count=self.scale_count, backend=self.backend)
         return rows, elapsed
 
     def close(self):
