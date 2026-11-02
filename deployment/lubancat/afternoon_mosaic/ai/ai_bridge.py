@@ -43,6 +43,7 @@ from light_risk import LightRiskEngine
 from primary_tracks import PrimaryTracks
 from risk_events import EventStore, RiskObservation
 from q2_navigation_reader import CARD_ROI, Q2NavigationReader
+from navigation_gate import NavigationGate
 from tools.competition_console.navigation_reader import NavigationObservation
 from tools.competition_console.navigation_reader import NavigationObservation
 from tools.competition_console.pipeline import FrontPipeline
@@ -816,11 +817,12 @@ def _navigation_ocr_process(request_queue, result_queue, ttl_ms):
     """Isolated OCR worker: no Python GIL/CPU coupling with YOLO sidecar."""
     try:
         cpus = os.cpu_count() or 4
-        if cpus > 1:
+        if cpus > 1 and os.environ.get("ADAS_OCR_LEGACY_AFFINITY") == "1":
             os.sched_setaffinity(0, {cpus - 1})
         _set_current_python_thread_nice(10)
     except (AttributeError, OSError):
         pass
+    cv2.setNumThreads(int(os.environ.get("ADAS_OPENCV_THREADS", "1")))
     reader = Q2NavigationReader(ttl_ms=ttl_ms)
     try:
         reader.warmup()
@@ -833,6 +835,13 @@ def _navigation_ocr_process(request_queue, result_queue, ttl_ms):
             continue
         if item is None:
             break
+        # Never recognize a queued obsolete card while a newer one is available.
+        while True:
+            try:
+                newer=request_queue.get_nowait()
+                if newer is None: return
+                item=newer
+            except queue.Empty: break
         image, frame_id, timestamp_ns = item
         try:
             observation = reader.update(image, frame_id, timestamp_ns)
@@ -852,6 +861,7 @@ def _navigation_ocr_process(request_queue, result_queue, ttl_ms):
 class AiReplayBridge:
     def __init__(self, args):
         self.args = args
+        cv2.setNumThreads(int(os.environ.get("ADAS_OPENCV_THREADS", "1")))
         model_root = Path(args.main_model).resolve().parent
         legacy_root = Path(args.legacy_model_root).resolve() if args.legacy_model_root else None
         if legacy_root is None:
@@ -969,6 +979,7 @@ class AiReplayBridge:
         self.latest_source_timestamp_ns = 0
         self.last_nav_thumb = None
         self.nav_ocr_skipped = 0
+        self.navigation_gate = NavigationGate()
         self.navigation_last_force_ns = 0
         self.latest = LatestFrameSlot()
         self.running = threading.Event()
@@ -1438,14 +1449,18 @@ class AiReplayBridge:
                  submitted_fps=None, ai_fps=None, schedule_timestamp_ns=None):
         if full_frame is None:
             full_frame = self.frames[frame_id % len(self.frames)]
+        analysis_cpu_started_ns = time.thread_time_ns()
+        decode_cpu_started_ns = time.thread_time_ns()
         decode_start_ns = time.perf_counter_ns()
         road, navigation_image = select_inference_frames(
             full_frame, self.args.layout, self.args.forward_quadrant,
             self.args.navigation_quadrant,
         )
         self._last_decode_ms = (time.perf_counter_ns() - decode_start_ns) / 1e6
+        self._last_decode_cpu_ms = (time.thread_time_ns()-decode_cpu_started_ns)/1e6
         self.stage_timings["rgb565_decode"].append(self._last_decode_ms)
         self.latest_source_timestamp_ns = int(timestamp_ns)
+        pipeline_cpu_started_ns = time.thread_time_ns()
         pipeline_start_ns = time.perf_counter_ns()
         if self.modes.adapter is not None:
             self.modes.adapter.road_quadrant = self.args.forward_quadrant
@@ -1455,38 +1470,32 @@ class AiReplayBridge:
             schedule_timestamp_ns=schedule_timestamp_ns,
         )
         self._last_pipeline_ms = (time.perf_counter_ns() - pipeline_start_ns) / 1e6
+        self._last_pipeline_cpu_ms = (time.thread_time_ns()-pipeline_cpu_started_ns)/1e6
         self.stage_timings["pipeline"].append(self._last_pipeline_ms)
         navigation_submit_started = time.perf_counter_ns()
         self._poll_navigation_ocr()
         if (self.navigation is not None and
                 (self.navigation_last_update_ns is None or
                  timestamp_ns - self.navigation_last_update_ns >= round(1e9 / self.args.ocr_hz))):
-            # Skip OCR when the navigation screen is visually unchanged and the
-            # last result is still fresh. This avoids burning CPU on a static map.
-            x0, y0, x1, y1 = CARD_ROI
-            card = navigation_image[y0:y1, x0:x1]
-            thumb = cv2.resize(cv2.cvtColor(card, cv2.COLOR_BGR2GRAY),
-                               (96, 45), interpolation=cv2.INTER_AREA)
-            current_nav = self.navigation.current(int(timestamp_ns))
-            changed = True
-            if self.last_nav_thumb is not None and current_nav.valid:
-                diff = np.abs(thumb.astype(np.int16) - self.last_nav_thumb.astype(np.int16)).mean()
-                changed = diff > 3.0
-            # Force a periodic full re-check even if the card looks static.
-            force = timestamp_ns - self.navigation_last_force_ns >= 10_000_000_000
-            if force:
-                changed = True
-                self.navigation_last_force_ns = int(timestamp_ns)
-            self.last_nav_thumb = thumb
-            self.navigation_last_update_ns = int(timestamp_ns)
+            current_nav=self.navigation.current(int(timestamp_ns))
+            changed=self.navigation_gate.wants(navigation_image,int(timestamp_ns),
+                current_nav.valid,current_nav.ocr_timestamp_ns)
+            self.navigation_last_update_ns=int(timestamp_ns)
             if changed:
-                nav960 = cv2.resize(navigation_image, (960, 540), interpolation=cv2.INTER_LINEAR)
+                nav960=cv2.resize(navigation_image,(960,540),interpolation=cv2.INTER_LINEAR)
+                job=(nav960,int(frame_id),int(timestamp_ns))
                 try:
-                    self.nav_request.put_nowait((nav960, int(frame_id), int(timestamp_ns)))
+                    self.nav_request.put_nowait(job)
+                    self.navigation_gate.submitted(navigation_image,int(timestamp_ns))
                 except queue.Full:
-                    self.nav_ocr_skipped += 1
-            else:
-                self.nav_ocr_skipped += 1
+                    # Replace, rather than waiting behind, a stale pending request.
+                    try: self.nav_request.get_nowait()
+                    except queue.Empty: pass
+                    try:
+                        self.nav_request.put_nowait(job)
+                        self.navigation_gate.submitted(navigation_image,int(timestamp_ns))
+                    except queue.Full: self.nav_ocr_skipped+=1
+            else: self.nav_ocr_skipped+=1
         self.stage_timings["navigation_submit"].append(
             (time.perf_counter_ns() - navigation_submit_started) / 1e6
         )
@@ -1494,9 +1503,11 @@ class AiReplayBridge:
         snapshot = self.pipeline.snapshot(lane, int(timestamp_ns))
         mode = self.modes.status()
         detections=(list(snapshot.main)+list(snapshot.specialist) if self.modes.adapter is None else self.modes.adapter.all_detections)
+        tracking_cpu_start=time.thread_time_ns()
         tracking_start=time.perf_counter_ns()
         self.primary_tracks.update(detections,(mode["mode"],mode["epoch"],self.active_model_id,self.args.forward_quadrant),timestamp_ns)
         self._last_tracking_ms=(time.perf_counter_ns()-tracking_start)/1e6
+        self._last_tracking_cpu_ms=(time.thread_time_ns()-tracking_cpu_start)/1e6
         self.stage_timings.setdefault("risk_fast",deque(maxlen=3600))
         risk_start=time.perf_counter_ns()
         risk_context=(mode["mode"],mode["epoch"],self.active_model_id,self.args.forward_quadrant)
@@ -1614,9 +1625,15 @@ class AiReplayBridge:
         self.stage_timings["packet_encode"].append(
             (time.perf_counter_ns() - packet_started) / 1e6
         )
+        self._last_analysis_cpu_ms=(time.thread_time_ns()-analysis_cpu_started_ns)/1e6
         return packet
 
     def _infer(self):
+        cpu_profile = None
+        if os.environ.get("ADAS_CPU_PROFILE"):
+            import cProfile
+            cpu_profile=cProfile.Profile(timer=time.thread_time)
+            cpu_profile.enable()
         completed_times = deque()
         rate_token = None
         while self.running.is_set():
@@ -1722,6 +1739,10 @@ class AiReplayBridge:
                         "hazards": self.latest_dynamic_status.get("hazards"),
                         "hazard_details": self.latest_dynamic_status.get("hazard_details"),
                         "event_updates": self.latest_dynamic_status.get("event_updates"),
+                        "analysis_thread_cpu_ms":self._last_analysis_cpu_ms,
+                        "decode_thread_cpu_ms":self._last_decode_cpu_ms,
+                        "pipeline_thread_cpu_ms":self._last_pipeline_cpu_ms,
+                        "tracking_thread_cpu_ms":self._last_tracking_cpu_ms,
                         "tracking_ms":self._last_tracking_ms,
                         "risk_fast_ms":self.stage_timings["risk_fast"][-1],
                         "risk_rules":self.latest_dynamic_status.get("risk_rules"),
@@ -1731,6 +1752,8 @@ class AiReplayBridge:
                     }, separators=(",", ":")) + "\n")
                 self.result_count += 1
                 self.latency_ms.append((time.perf_counter_ns() - started) / 1e6)
+                if cpu_profile is not None and self.result_count % 100 == 0:
+                    cpu_profile.dump_stats(os.environ["ADAS_CPU_PROFILE"])
             except BaseException as exc:
                 self.error_count += 1
                 self.last_error = f"{type(exc).__name__}: {exc}"

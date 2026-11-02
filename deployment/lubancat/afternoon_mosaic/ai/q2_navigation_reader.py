@@ -8,6 +8,7 @@ in recognition-only mode.
 from __future__ import annotations
 
 import logging
+import os
 import re
 import time
 
@@ -40,7 +41,9 @@ class Q2NavigationReader(NavigationReader):
                 "Global.log_level": "error",
                 "Global.use_det": False,
                 "Global.use_cls": False,
-                "EngineConfig.onnxruntime.intra_op_num_threads": 2,
+                # Same recognizer/height; avoid padding a short distance line to 320.
+                "Rec.rec_img_shape": [3, 48, int(os.environ.get("ADAS_OCR_MIN_WIDTH", "128"))],
+                "EngineConfig.onnxruntime.intra_op_num_threads": int(os.environ.get("ADAS_OCR_THREADS", "1")),
                 "EngineConfig.onnxruntime.inter_op_num_threads": 1,
             })
         return self._ocr
@@ -169,8 +172,10 @@ class Q2NavigationReader(NavigationReader):
         distance_started = time.perf_counter()
         left = min(card.shape[1], int(box[0] + box[2] + 5))
         top = max(0, int(box[1] - 12))
-        right = min(card.shape[1], left + 170)
-        bottom = min(card.shape[0], int(box[1] + box[3] + 12))
+        right = min(card.shape[1], left + max(90, int(box[3] * 3)))
+        # Distance is beside the upper arrow; exclude the road-name line and
+        # the secondary maneuver icon, which can be decoded as extra digits.
+        bottom = min(card.shape[0], int(box[1] + box[3] * .65))
         number_line = card[top:bottom, left:right]
         if number_line.size == 0:
             return finish(reason="Q2_DISTANCE_REGION_NOT_FOUND")
