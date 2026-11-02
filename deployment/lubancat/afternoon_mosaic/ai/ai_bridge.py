@@ -1583,7 +1583,9 @@ class AiReplayBridge:
         status["box_identities"] = self.box_identities
         status["event_updates"] = [{k:e[k] for k in ("event_id", "lifecycle_state", "cleared_ns") if k in e}
                                    for e in self.event_store.updates if e["lifecycle_state"] == "CLEARED"]
-        status["control"] = self.auto_brake.last_result or {"control_mode": os.environ.get("ADAS_CONTROL_MODE", "HARDWARE")}
+        status["control"] = dict(self.auto_brake.last_result or {}, control_mode=self.auto_brake.mode,
+            enabled=self.auto_brake.enabled, authorized=self.auto_brake.authorized,
+            forward_source_id=self.auto_brake.forward_source_id)
         road = getattr(snapshot.hazards, "road", None)
         if road:
             status["road_scene"] = road

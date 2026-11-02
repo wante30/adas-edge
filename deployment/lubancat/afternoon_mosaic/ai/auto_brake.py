@@ -42,6 +42,7 @@ class AutoBrakeController:
         if e.get("lifecycle_state")!="ACTIVE" or not e.get("valid",False):return "event_cleared_or_invalid"
         if not self.enabled or not self.authorized:return "control_not_authorized"
         if self.mode not in ("DRY_RUN","HARDWARE"):return "invalid_control_mode"
+        if self.mode=="HARDWARE" and e.get("synthetic"):return "synthetic_hardware_event"
         if e.get("source_id")!=self.forward_source_id or e.get("track_id",0)<=0:return "not_measured_forward_target"
         if e.get("kind") not in BRAKE_TYPES:return "unsupported_event_type"
         if not 0<=now-e.get("timestamp_ns",0)<=400000000 or e.get("expires_at_ns",0)<=now:return "stale_event"
@@ -68,6 +69,7 @@ class AutoBrakeController:
             if reply.get("request_id")!=request["request_id"]:
                 self.journal.write("brake_ack_unmatched",timestamp_ns=now,reply=reply);return
             ok=bool(reply.get("ok") and reply.get("accepted",reply.get("ok")))
+            if self.mode=="HARDWARE":ok=ok and reply.get("fpga_accepted") is True
             self.last_result=dict(reply,stage="brake_accepted" if ok else "brake_rejected",event_ids=[e["event_id"] for e in request["events"]],executed=bool(reply.get("executed",False)))
             for e in request["events"]:
                 self._record(self.last_result["stage"],e,now,request_id=request["request_id"],reason="dry_run_ack" if self.mode=="DRY_RUN" else reply.get("reason","hardware_ack"),executed=self.last_result["executed"],simulated=self.mode=="DRY_RUN",

@@ -45,3 +45,21 @@ class ControlEligibilityTest(unittest.TestCase):
         self.assertLess(time.perf_counter()-started,.01)
         self.now+=300000000;self.update()
         self.assertEqual(self.c.last_result["stage"],"brake_timeout")
+
+    def test_hardware_q4_rejects_nonphysical_and_wrong_context(self):
+        self.c.mode="HARDWARE";self.c.forward_source_id="Q4"
+        event=dict(self.event,source_id="Q4")
+        vehicle=dict(available=True,authorized=True)
+        context=dict(mode="ROAD_Q1",epoch="1")
+        for changes in (dict(source_id="Q1"),dict(source_id="Q2"),dict(source_id="Q3"),
+                        dict(synthetic=True),dict(predicted=True),dict(mode_epoch="2"),
+                        dict(inference_mode="MOSAIC_FULL"),dict(timestamp_ns=0)):
+            self.assertIsNotNone(self.c._reason(dict(event,**changes),self.now,context,vehicle))
+        self.assertIsNone(self.c._reason(event,self.now,context,vehicle))
+
+    def test_hardware_generic_ok_without_fpga_acceptance_is_rejected(self):
+        self.c.mode="HARDWARE"
+        self.c.pending=dict(request_id="match",events=[self.event],sent_ns=self.now)
+        self.c.sock.recvfrom=lambda size:(b'{"request_id":"match","ok":true}',None)
+        self.c._poll(self.now)
+        self.assertEqual(self.c.last_result["stage"],"brake_rejected")

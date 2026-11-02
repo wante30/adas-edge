@@ -1524,7 +1524,8 @@ Item {
                 var c=video.aiControlState || {}
                 if(c.control_mode === "DRY_RUN")
                     return "DRY RUN · " + (c.stage === "brake_accepted" ? "制动请求已模拟接收" : c.stage === "pulse_ended" ? "点刹模拟结束" : c.stage === "control_event_cleared" ? "危险已解除" : c.stage === "brake_timeout" ? "ACK 超时" : "进程内控制回放")
-                return root.hazardFooter()
+                return (c.authorized && c.enabled ? "比赛控制已授权 · " : "性能诊断 · 控制不活动 · ") +
+                    (c.fpga_accepted ? "FPGA已接收 · " : "") + root.hazardFooter()
             }
             color: hazardCard.activeHazard ? "#B8848A" : "#6F8A93"
             font.family: root.cjk; font.pixelSize: 6
