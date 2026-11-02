@@ -861,7 +861,7 @@ def _navigation_ocr_process(request_queue, result_queue, ttl_ms):
 class AiReplayBridge:
     def __init__(self, args):
         self.args = args
-        cv2.setNumThreads(int(os.environ.get("ADAS_OPENCV_THREADS", "1")))
+        cv2.setNumThreads(int(os.environ.get("ADAS_AI_OPENCV_THREADS", "4")))
         model_root = Path(args.main_model).resolve().parent
         legacy_root = Path(args.legacy_model_root).resolve() if args.legacy_model_root else None
         if legacy_root is None:
@@ -1754,6 +1754,7 @@ class AiReplayBridge:
                 self.latency_ms.append((time.perf_counter_ns() - started) / 1e6)
                 if cpu_profile is not None and self.result_count % 100 == 0:
                     cpu_profile.dump_stats(os.environ["ADAS_CPU_PROFILE"])
+                    cpu_profile.enable()
             except BaseException as exc:
                 self.error_count += 1
                 self.last_error = f"{type(exc).__name__}: {exc}"

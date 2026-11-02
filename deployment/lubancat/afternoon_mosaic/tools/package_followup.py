@@ -18,6 +18,7 @@ def main():
     for name in ("ai","hmi","fast_mosaic","tools","tests","validation","config","hardware"):
         paths.extend(p for p in (ROOT/name).rglob("*") if p.is_file() and not any(
             part in ("__pycache__",".git") or part.startswith("build-") for part in p.relative_to(ROOT).parts)
+            and not p.name.startswith("diagnostic_") and not p.name.endswith("_static_tesla.qml")
             and p.suffix not in (".pyc",".o",".xwd") and not p.name.endswith((".bak",".pre-audit")))
     paths.extend(ROOT.glob("*.md"));paths.append(ROOT/"baseline_hashes.json")
     binary=ROOT/"build-stage4/qt_gpu_probe";library=ROOT/"fast_mosaic/capi/libp2capi_generic.so"
@@ -26,8 +27,8 @@ def main():
         if p not in paths:paths.append(p)
     files={str(p.relative_to(ROOT)):dict(bytes=p.stat().st_size,sha256=sha(p)) for p in sorted(set(paths))}
     manifest=dict(schema="ADAS_FOLLOWUP_RUNTIME_V1",source_commit=args.source_commit,
-        base_commit="d397af411d592447197fa2f194144dca52c765dd",architecture=platform.machine(),
-        default_control_mode="DRY_RUN",external_dependencies=[
+        base_commit="a9054ec21fb4a97637f06bbf0ece1d36f0f08c2e",architecture=platform.machine(),
+        default_control_mode="HARDWARE",default_control_authorized=False,external_dependencies=[
             "RK3566 aarch64 Linux / Qt5 / Mali EGL / installed RKNN runtime",
             "Python3.8+, numpy, OpenCV, Pillow and existing OCR environment",
             "Original B, B-capi, MTL-FULL, MTL-FAST and BDD model assets (see ai/model_profiles.py)",

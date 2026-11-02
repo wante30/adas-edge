@@ -97,6 +97,22 @@ def hardware_bridge(state, enable):
 
 def start(args):
     assert (ROOT / args.build / "qt_gpu_probe").is_file()
+    if not getattr(args,"no_ai",False):
+        generic=ROOT/"fast_mosaic/capi/libp2capi_generic.so"
+        if not generic.is_file():
+            raise RuntimeError("Missing bundled FAST-Q4/FAST-MOSAIC library: "+str(generic))
+    adopt=getattr(args,"adopt_session",None)
+    if adopt:
+        source=Path(adopt).resolve()
+        adopted=json.loads(source.read_text(encoding="utf-8"))
+        if adopted["boot_id"]!=BOOT.read_text().strip():
+            raise RuntimeError("Cannot adopt PIDs from a previous boot")
+        for key,marker in (("test_hmi_pid",b"qt_gpu_probe"),("test_ai_pid",b"isolated_ai.py")):
+            pid=adopted.get(key)
+            path=Path(f"/proc/{pid}/cmdline")
+            if pid and path.exists() and marker not in path.read_bytes():
+                raise RuntimeError("Session PID no longer belongs to ADAS: "+str(pid))
+        save(adopted)
     if STATE.exists():
         old = json.loads(STATE.read_text())
         if old["boot_id"] != BOOT.read_text().strip():
@@ -201,7 +217,8 @@ def start(args):
     if args.external_qml:
         hmi_env["QT_QML_FILE"] = str(ROOT / "hmi/main.qml")
     if getattr(args, "diagnostic_static_tesla", False):
-        diagnostic_qml = EVIDENCE / (args.label + "_static_tesla.qml")
+        hmi_env["QT_DIAGNOSTIC_STATIC_TESLA"]="1"
+        diagnostic_qml = ROOT / "hmi" / (args.label + "_static_tesla.qml")
         diagnostic_qml.write_text((ROOT / "hmi/main.qml").read_text(encoding="utf-8").replace(
             "boxes: video.aiBoxes", "boxes: []"), encoding="utf-8")
         hmi_env["QT_QML_FILE"] = str(diagnostic_qml)
@@ -239,6 +256,7 @@ if __name__ == "__main__":
     parser.add_argument("--raw-replay", default="")
     parser.add_argument("--action-port", default="38262")
     parser.add_argument("--control-mode", choices=["DRY_RUN", "HARDWARE"])
+    parser.add_argument("--adopt-session", help="Take over an existing ADAS session on this boot")
     parser.add_argument("--authorize-control", action="store_true",
                         help="Explicitly authorize actuator sends; OFF for performance tests")
     parser.add_argument("--no-ai", action="store_true", help="Diagnostic only")

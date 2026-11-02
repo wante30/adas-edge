@@ -10,10 +10,10 @@ ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "evidence"
 
 
-def proc_sample():
+def proc_sample(selected=None):
     total = list(map(int, Path("/proc/stat").read_text().splitlines()[0].split()[1:]))
     tasks = {}
-    for proc in Path("/proc").iterdir():
+    for proc in ([Path("/proc")/str(pid) for pid in selected] if selected else Path("/proc").iterdir()):
         if not proc.name.isdigit():
             continue
         try:
@@ -58,14 +58,22 @@ def sample(label, seconds):
         assert b"ADAS_CONTROL_AUTHORIZED=0" in env, "Performance requires actuator sends OFF"
     paths = {key: EVIDENCE/(state["label"]+"_"+key+".jsonl") for key in ("hmi", "ai")}
     offsets = {key: (p.stat().st_size if p.exists() else 0) for key,p in paths.items()}
-    previous = proc_sample()
+    # Discover once. Reopening every kernel task each second perturbs a small SoC.
+    selected=[]
+    for proc in Path("/proc").iterdir():
+        if not proc.name.isdigit(): continue
+        try: cmd=proc.joinpath("cmdline").read_bytes()
+        except OSError: continue
+        if any(key in cmd for key in (b"qt_gpu_probe", b"isolated_ai.py", b"spawn_main", b"pango_video_capture", b"hardware_bridge.py", b"Xorg", b"profile_system.py")):
+            selected.append(int(proc.name))
+    previous = proc_sample(selected)
     deadline = time.monotonic()+seconds
     with (EVIDENCE/(label+"_system.jsonl")).open("w", buffering=1) as out:
         out.write(json.dumps(dict(kind="metadata", session=state, seconds=seconds,
                                   boot_id=Path("/proc/sys/kernel/random/boot_id").read_text().strip()))+"\n")
         while time.monotonic()<deadline:
-            time.sleep(1)
-            current=proc_sample()
+            time.sleep(2)
+            current=proc_sample(selected)
             dt=(current["timestamp_ns"]-previous["timestamp_ns"])/1e9
             delta=[b-a for a,b in zip(previous["cpu"], current["cpu"])]
             total=sum(delta[:8]); idle=delta[3]+delta[4]
@@ -88,6 +96,14 @@ def sample(label, seconds):
                           ("lvt1",Path("/dev/shm/adas_vehicle_status.json"))):
                 try: row[key]=json.loads(p.read_text())
                 except (OSError,ValueError): row[key]={}
+            row["frequencies"]={}
+            for key,path in (("npu_hz","/sys/class/devfreq/fde40000.npu/cur_freq"),
+                             ("gpu_hz","/sys/class/devfreq/fde60000.gpu/cur_freq"),
+                             ("dram_hz","/sys/class/devfreq/dmc/cur_freq"),
+                             ("cpu_khz","/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq"),
+                             ("temperature_millic","/sys/class/thermal/thermal_zone0/temp")):
+                try:row["frequencies"][key]=int(Path(path).read_text().strip())
+                except (OSError,ValueError):pass
             out.write(json.dumps(row,separators=(",",":"))+"\n")
             previous=current
     print("PROFILE_DONE", label, flush=True)
