@@ -168,7 +168,7 @@
   "tests/vehicle_telemetry_test.cpp": "960ac8a5eb11219f55be1b260be0a81b6b312a51a0353bee0411d8289ccbefec",
   "tools/analyze_acceptance.py": "7a7daea865923f154dd9b82a4af10a061878329ca3d1033d2cbc0d36c988fa5b",
   "tools/analyze_followup.py": "eab570823b87476678c641a5fd5c0aeff59befce474c569a57042cd24b35598f",
-  "tools/analyze_performance.py": "adfb38790f425551c2803c0d5f2166919c04cd92c71070ccced261ae486c2a20",
+  "tools/analyze_performance.py": "fabb0361538a6cc0a99f809d86bd5cefdf0a9cb1eec63bcb36e61c223a6e9b08",
   "tools/analyze_real_pcie.py": "4f9a0f05117a53aafaaa378e5ef093d226226c674907803ecf7068ebc2d904b0",
   "tools/audit_performance_acceptance.py": "c73a1959910ae40a3d292f791a3e445402f88114463896db11d62199a3570edd",
   "tools/benchmark_fast_capi.py": "5e7704910fd3f7d830eff63e1ca4cd88e0c7168205dc94e33b479e9502a6dd32",

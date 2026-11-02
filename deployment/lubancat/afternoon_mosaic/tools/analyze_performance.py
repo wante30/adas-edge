@@ -54,6 +54,16 @@ def analyze_rows(lines, label="samples", contiguous=True):
         navigation=dict(Counter(a.get("navigation_state") for a in ai)),
         lvt1_online=sum(bool(r.get("lvt1",{}).get("online")) for r in rows),samples=len(rows),
         capture_running=sum(r.get("capture",{}).get("state")=="running" for r in rows))
+    if len(hmi)>1:
+        # Metrics intervals vary when GUI is busy. Weight rates by their actual
+        # process-monotonic interval, including stalls rather than rewarding them.
+        weighted={k:[0.,0.] for k in ("scene_graph_fps","texture_upload_fps","source_fps")}
+        for before,after in zip(hmi,hmi[1:]):
+            elapsed=(after["process_elapsed_ms"]-before["process_elapsed_ms"])/1000
+            if elapsed<=0 or (not contiguous and elapsed>2):continue
+            for key,value in weighted.items():
+                if after.get(key) is not None:value[0]+=after[key]*elapsed;value[1]+=elapsed
+        result["hmi_time_weighted_fps"]={k:v[0]/v[1] for k,v in weighted.items() if v[1]}
     if contiguous and len(rows)>1:
         a,b=rows[0],rows[-1]
         seconds=(b["timestamp_ns"]-a["timestamp_ns"])/1e9
