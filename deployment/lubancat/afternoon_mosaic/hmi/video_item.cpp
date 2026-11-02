@@ -401,6 +401,17 @@ private:
 };
 
 VideoItem::VideoItem(QQuickItem *parent) : QQuickFramebufferObject(parent) {
+    connect(this,&VideoItem::aiStatusChanged,this,[this] {
+        const QVariantList model={inferenceMode(),inferenceReady(),aiModelId(),aiModelState(),
+                                  aiModelMessage(),aiModelOptions(),aiDisplayView()};
+        const QVariantList nav={aiNavigation(),aiNavigationRoad(),aiNavigationState(),
+                                aiNavigationDirection(),aiNavigationDistanceM()};
+        if(presented_model_status_!=model) {presented_model_status_=model;emit modelStatusChanged();}
+        if(presented_navigation_status_!=nav) {presented_navigation_status_=nav;emit navigationStatusChanged();}
+        const QString traffic=aiTraffic();
+        if(presented_traffic_status_!=traffic) {presented_traffic_status_=traffic;emit trafficStatusChanged();}
+    });
+
     inference_epoch_.store(static_cast<quint64>(steadyNs()));
     display_queue_ = std::make_shared<DisplayQueue>();
     bbox_model_ = std::make_unique<AiBoxModel>();
@@ -923,12 +934,17 @@ void VideoItem::runPgvProducer(double fps, QString pgvFile, double aiHz, QString
             std::this_thread::sleep_for(std::chrono::milliseconds(2));
             continue;
         }
+        const qint64 readStartedNs=steadyNs();
         const ssize_t payloadGot = ::pread(fd, slot->pixels.data(), kFrameBytes, kPgvHeaderBytes);
+        pgv_read_ms_.store((steadyNs()-readStartedNs)/1e6);
         ::close(fd);
         previous = info;
         havePrevious = true;
-        if (payloadGot != static_cast<ssize_t>(kFrameBytes) ||
-            (verifyCrc && crc32Bytes(slot->pixels.data(), kFrameBytes) != expectedCrc)) {
+        const qint64 crcStartedNs=steadyNs();
+        const bool crcValid=payloadGot==static_cast<ssize_t>(kFrameBytes)
+            && (!verifyCrc || crc32Bytes(slot->pixels.data(), kFrameBytes)==expectedCrc);
+        pgv_crc_ms_.store((steadyNs()-crcStartedNs)/1e6);
+        if (!crcValid) {
             source_crc_errors_.fetch_add(1);
             std::this_thread::sleep_for(std::chrono::milliseconds(2));
             continue;
@@ -1721,8 +1737,14 @@ void VideoItem::requestModelSwitch(const QString &profileId) {
         emit aiStatusChanged();
         return;
     }
-    requestInferenceMode(profileId == QStringLiteral("FAST-MOSAIC")
-                         ? QStringLiteral("MOSAIC_FULL") : QStringLiteral("ROAD_Q1"));
+    const int targetMode=profileId==QStringLiteral("FAST-MOSAIC")?1:0;
+    if(inference_mode_.load()==targetMode && profileId!=aiModelId()) {
+        // A different single-camera model needs a new epoch as well: no old
+        // MTL/Q4 result may satisfy the new model's freshness handshake.
+        inference_epoch_.fetch_add(1);
+        inference_applied_epoch_.store(0);
+    }
+    requestInferenceMode(targetMode ? QStringLiteral("MOSAIC_FULL") : QStringLiteral("ROAD_Q1"));
     {
         QMutexLocker locker(&ai_metrics_mutex_);
         if (profileId == ai_model_id_ && ai_model_state_ != QStringLiteral("SWITCHING")) {
@@ -1939,7 +1961,7 @@ void VideoItem::setAiNavigationQuadrant(int quadrant) {
 
 QVariantList VideoItem::aiBoxes() const {
     QMutexLocker locker(&ai_metrics_mutex_);
-    return ai_boxes_;
+    return presented_boxes_;
 }
 
 QVariantList VideoItem::aiHazards() const {
@@ -2043,12 +2065,13 @@ void VideoItem::updateMetrics() {
         {
             QMutexLocker locker(&ai_metrics_mutex_);
             boxesForModel = ai_boxes_;
+            presented_boxes_ = boxesForModel;
             eventsForModel = ai_hazard_details_;
             presented_hazards_ = ai_hazards_;
             presented_hazard_details_ = eventsForModel;
             presented_control_state_ = ai_control_state_;
         }
-        bbox_model_->setBoxes(boxesForModel);
+        if (!nativeTargetOverlay()) bbox_model_->setBoxes(boxesForModel);
         const qint64 afterModelNs = steadyNs();
         RiskLink::logApplied(eventsForModel, boxesForModel, nowNs);
         emit aiBoxesChanged();
@@ -2057,7 +2080,12 @@ void VideoItem::updateMetrics() {
         // GUI snapshot unconditionally so boxes and panel always advance together.
         ai_status_dirty_.store(false);
         emit aiStatusChanged();
-        ai_gui_update_ms_.store((steadyNs() - guiUpdateStartNs) / 1.0e6);
+        const double guiUpdateMs=(steadyNs()-guiUpdateStartNs)/1.0e6;
+        ai_gui_update_ms_.store(guiUpdateMs);
+        if(guiUpdateMs>50.) {
+            gui_long_updates_.fetch_add(1);
+            gui_long_update_ms_.store(gui_long_update_ms_.load()+guiUpdateMs);
+        }
         if (qEnvironmentVariableIsSet("QT_GUI_PROFILE"))
             qInfo() << "GUI_PROFILE" << boxesForModel.size()
                     << (afterModelNs-guiUpdateStartNs)/1.0e6

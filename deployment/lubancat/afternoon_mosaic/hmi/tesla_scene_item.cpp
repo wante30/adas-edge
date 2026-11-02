@@ -1,3 +1,4 @@
+#include "video_item.h"
 #include "tesla_scene_item.h"
 
 #include <QCoreApplication>
@@ -865,4 +866,15 @@ private:
 
 QQuickFramebufferObject::Renderer *TeslaSceneItem::createRenderer() const {
     return new SceneRenderer();
+}
+
+void TeslaSceneItem::setVideoSource(QObject *value) {
+    if(qEnvironmentVariableIsSet("QT_DIAGNOSTIC_STATIC_TESLA"))return;
+    if(video_source_==value)return;
+    if(video_source_)disconnect(video_source_,nullptr,this,nullptr);
+    video_source_=value;
+    if(auto video=qobject_cast<VideoItem *>(value)) {
+        connect(video,&VideoItem::aiBoxesChanged,this,[this,video]{setBoxes(video->aiBoxes());});
+        setBoxes(video->aiBoxes());
+    }
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include <QPointer>
 
 #include <QMutex>
 #include <QQuickFramebufferObject>
@@ -8,6 +9,7 @@
 
 class TeslaSceneItem : public QQuickFramebufferObject {
     Q_OBJECT
+    Q_PROPERTY(QObject *videoSource READ videoSource WRITE setVideoSource)
     Q_PROPERTY(QVariantList boxes READ boxes WRITE setBoxes NOTIFY boxesChanged)
     Q_PROPERTY(QVariantMap laneState READ laneState WRITE setLaneState NOTIFY laneStateChanged)
     Q_PROPERTY(QString displayView READ displayView WRITE setDisplayView NOTIFY displayViewChanged)
@@ -20,6 +22,8 @@ class TeslaSceneItem : public QQuickFramebufferObject {
     Q_PROPERTY(double sceneFps READ sceneFps NOTIFY sceneFpsChanged)
 
 public:
+    QObject *videoSource() const { return video_source_; }
+    void setVideoSource(QObject *value);
     explicit TeslaSceneItem(QQuickItem *parent = nullptr);
 
     QQuickFramebufferObject::Renderer *createRenderer() const override;
@@ -59,6 +63,7 @@ signals:
     void sceneFpsChanged();
 
 private:
+    QPointer<QObject> video_source_;
     mutable QMutex mutex_;
     QVariantList boxes_;
     QVariantMap lane_state_;

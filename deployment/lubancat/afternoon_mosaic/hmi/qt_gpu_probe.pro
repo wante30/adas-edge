@@ -12,6 +12,7 @@ SOURCES += \
     tesla_scene_item.cpp \
     hud_control.cpp \
     ai_box_model.cpp \
+    target_overlay_item.cpp \
     source_controller.cpp \
     nav_bridge.cpp \
     pcie_isp_control.cpp \
@@ -24,6 +25,7 @@ HEADERS += \
     tesla_scene_item.h \
     hud_control.h \
     ai_box_model.h \
+    target_overlay_item.h \
     source_controller.h \
     nav_bridge.h \
     pcie_isp_control.h \
