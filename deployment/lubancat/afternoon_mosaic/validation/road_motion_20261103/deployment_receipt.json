@@ -1,0 +1,18 @@
+{
+  "boot_id": "70bf0f4f-fd84-45ce-9542-faec8848730e",
+  "source_commit": "2c6656c0",
+  "hmi_pid": 109998,
+  "ai_pid": 23299,
+  "runtime": "/home/cat/adas_issue10_road_motion_20261103",
+  "binary_sha256": "f8ac9538a9935ba59b1a209d0aa1bcf0352a899c3f2f7b97845980a3878e352a",
+  "original_binary_preserved": true,
+  "source": "REAL_PCIE",
+  "road_motion": "SCHEMATIC_ANIMATION_NOT_MEASURED_SPEED",
+  "tests": {
+    "road_motion_test": 0,
+    "bev_display_state_test": 0,
+    "qmake_make": 0
+  },
+  "executable": "/home/cat/adas_issue10_road_motion_20261103/build/qt_gpu_probe_road_v2",
+  "evidence": "/dev/shm/adas_road_motion_20261103/evidence_verified"
+}
