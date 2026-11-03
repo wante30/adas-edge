@@ -500,7 +500,13 @@ public:
         display_view_ = scene->displayView();
         road_quadrant_ = scene->roadQuadrant();
         online_ = scene->online();
-        road_source_ns_ = scene->sourceTimestampNs();
+        // The video widget is hidden on the spatial page, so its last rendered
+        // timestamp can stop advancing while capture continues normally.
+        auto *sourceVideo = qobject_cast<VideoItem *>(scene->videoSource());
+        const qint64 syncNowNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+        road_source_ns_ = sourceVideo && sourceVideo->sourceOnline()
+            ? syncNowNs - qint64(sourceVideo->sourceAgeMs() * 1e6) : 0;
         demo_ = scene->demoMode();
         viewport_ = scene->size().toSize();
         const QString key = scene->sourceKey();
