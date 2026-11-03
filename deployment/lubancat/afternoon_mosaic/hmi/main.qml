@@ -1265,7 +1265,7 @@ Item {
                 color: root.ink; font.family: root.cjk; font.pixelSize: 20; font.weight: Font.DemiBold
             }
             Text {
-                x: 25; y: 43; text: "BEV  ·  YOLO TRACKS  ·  RELATIVE_ONLY  /  SCHEMATIC ROAD"
+                x: 25; y: 43; text: "BEV  ·  YOLO TRACKS  ·  RELATIVE_ONLY  /  道路示意动画"
                 color: "#76AAB7"; font.family: root.num; font.pixelSize: 7; font.letterSpacing: 0.7
             }
             Row {
@@ -1301,7 +1301,7 @@ Item {
                     color: root.ink; font.family: root.cjk; font.pixelSize: 12; font.weight: Font.DemiBold
                 }
                 Text {
-                    x: 12; y: 57; text: "空间示意 · 未标定"; color: root.amber
+                    x: 12; y: 57; text: "道路示意动画 · 非实测车速"; color: root.amber
                     font.family: root.cjk; font.pixelSize: 7
                 }
                 Text {
@@ -1322,7 +1322,7 @@ Item {
                 }
                 Rectangle { x: 12; y: 47; width: 194; height: 1; color: "#1D3B46" }
                 Text {
-                    x: 12; y: 55; text: "LIVE TRACKS · RELATIVE_ONLY"
+                    x: 12; y: 55; text: "实测轨迹 · 半透明短时预测"
                     color: root.amber; font.family: root.cjk; font.pixelSize: 6
                 }
                 Text {
@@ -1851,7 +1851,7 @@ Item {
         Text {
             x: 16; y: parent.height - 15
             text: "LIVE · Q" + (video.aiRoadQuadrant + 1) + " · F" + video.displayFrameId + " · "
-                  + video.aiDetectionCount + " targets · RELATIVE_ONLY · SCHEMATIC ROAD / LVT1 STYLE"
+                  + video.aiDetectionCount + " targets · 相对位置/短时预测 · 道路示意/非车速"
             color: "#7FB3B8"; font.family: root.cjk; font.pixelSize: 6
         }
     }

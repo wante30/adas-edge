@@ -1,0 +1,18 @@
+{
+  "baseline_replay": {
+    "path": "/home/cat/adas_issue10_20261102/candidate/build-replay/bev_replay",
+    "sha256": "0f8a42d1862dbefea706613d0202619639df89b682f7c2087239ab8b65d04370"
+  },
+  "previous_hmi": {
+    "path": "/home/cat/adas_issue10_road_motion_20261103/build/qt_gpu_probe_road_v2",
+    "sha256": "f8ac9538a9935ba59b1a209d0aa1bcf0352a899c3f2f7b97845980a3878e352a"
+  },
+  "original_issue10_hmi": {
+    "path": "/home/cat/adas_issue10_20261102/candidate/build/qt_gpu_probe",
+    "sha256": "3c05c88bf286c427f77560da1a78b266d4ba5f26cceefb273848a895ac01946a"
+  },
+  "measurements": {
+    "path": "/dev/shm/adas_lifecycle_20261103/measurements.jsonl",
+    "sha256": "5cac55d08df364f9c629314c52c99fd569ce03ddebf1aa162f7aff01a75f6af7"
+  }
+}

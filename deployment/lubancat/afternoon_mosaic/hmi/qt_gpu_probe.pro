@@ -24,6 +24,8 @@ HEADERS += \
     video_texture_item.h \
     tesla_scene_item.h \
     bev_display_state.h \
+    road_motion.h \
+    bev_lifecycle.h \
     hud_control.h \
     ai_box_model.h \
     target_overlay_item.h \

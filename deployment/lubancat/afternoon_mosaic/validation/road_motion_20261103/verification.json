@@ -1,0 +1,9 @@
+{
+  "source": "RK3566 live render log",
+  "samples": 36,
+  "moving_samples": 36,
+  "road_animation_relative_units_per_second": 5.982556828109699,
+  "scene_fps_mean": 29.076511262880633,
+  "max_live_tracks": 1,
+  "note": "Animation rate is not measured vehicle speed. Recording can reduce UI FPS."
+}

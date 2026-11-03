@@ -1,0 +1,20 @@
+{
+  "boot_id": "4df359ec-2b14-4512-a971-e20a7ee674a5",
+  "measurement_sha256": "5cac55d08df364f9c629314c52c99fd569ce03ddebf1aa162f7aff01a75f6af7",
+  "measurement_path": "/dev/shm/adas_lifecycle_20261103/measurements.jsonl",
+  "raw_video": "/home/cat/qt_gpu_probe_ai_20261019/local_quad_full.rgb",
+  "runs": [
+    {
+      "label": "after",
+      "binary": "/dev/shm/adas_road_motion_20261103/build/bev_lifecycle_replay",
+      "binary_sha256": "24308808b0e2043f013f77d4c847ff225c8dfcfd7261f02e7fbf276a754cba0e",
+      "launch_monotonic_ns": 1147260773657,
+      "player_exit": 0,
+      "recorder_exit": 255,
+      "end_monotonic_ns": 1221989213067
+    }
+  ],
+  "complete": true,
+  "mode": "RECORDED_RKNN_RENDERER_ONLY",
+  "actuation": false
+}
