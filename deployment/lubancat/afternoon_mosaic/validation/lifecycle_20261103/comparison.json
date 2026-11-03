@@ -1,0 +1,105 @@
+{
+  "before": {
+    "trace_rows": 21501,
+    "visible_display_id_count": 239,
+    "visible_classes": {
+      "not_logged": 239
+    },
+    "visible_track_duration_s": {
+      "median": 1.287806216,
+      "p99": 13.632339032780006,
+      "max": 51.249897821
+    },
+    "server_id_reassociations": 0,
+    "nonpositive_server_id_rows": 0,
+    "opacity_recovery_jumps": 8,
+    "opacity_recovery_examples": [
+      {
+        "track_id": 23,
+        "dt": 0.095337367,
+        "from": 0.23153510689735413,
+        "to": 1
+      },
+      {
+        "track_id": 33,
+        "dt": 0.09820819,
+        "from": 0.3463902473449707,
+        "to": 1
+      },
+      {
+        "track_id": 104,
+        "dt": 0.095218953,
+        "from": 0.24950560927391052,
+        "to": 1
+      },
+      {
+        "track_id": 170,
+        "dt": 0.095025873,
+        "from": 0.18676866590976715,
+        "to": 1
+      },
+      {
+        "track_id": 225,
+        "dt": 0.098872011,
+        "from": 0.21212998032569885,
+        "to": 1
+      }
+    ],
+    "speed_relative_units_per_s": {
+      "median": 0.9651428770197373,
+      "p99": 13.845832120288422,
+      "max": 19.704533025980794
+    },
+    "step_normalized_to_60hz": {
+      "median": 0.016085714616995622,
+      "p99": 0.2307638686714737,
+      "max": 0.3284088837663466
+    },
+    "model_height_scales": [],
+    "scene_fps": {
+      "median": 30.74106046038944,
+      "p99": 51.315348091596846,
+      "max": 52.155484572597096
+    },
+    "coasting_rows_after_600ms": 3190,
+    "note": "Renderer-only replay; fewer displayed IDs is not detection accuracy. Coordinates are relative units. FPS includes concurrent X11 recording and is not whole-HMI throughput."
+  },
+  "after": {
+    "trace_rows": 37058,
+    "visible_display_id_count": 154,
+    "visible_classes": {
+      "car": 118,
+      "truck": 8,
+      "person": 28
+    },
+    "visible_track_duration_s": {
+      "median": 2.7470545825,
+      "p99": 14.38578050421,
+      "max": 58.530652879
+    },
+    "server_id_reassociations": 25,
+    "nonpositive_server_id_rows": 0,
+    "opacity_recovery_jumps": 0,
+    "opacity_recovery_examples": [],
+    "speed_relative_units_per_s": {
+      "median": 1.754031720104621,
+      "p99": 12.09767211187938,
+      "max": 12.64911064067361
+    },
+    "step_normalized_to_60hz": {
+      "median": 0.02923386200174368,
+      "p99": 0.201627868531323,
+      "max": 0.2108185106778935
+    },
+    "model_height_scales": [
+      1
+    ],
+    "scene_fps": {
+      "median": 56.978606071842485,
+      "p99": 60.231123943538705,
+      "max": 60.28684854140186
+    },
+    "coasting_rows_after_600ms": 7231,
+    "note": "Renderer-only replay; fewer displayed IDs is not detection accuracy. Coordinates are relative units. FPS includes concurrent X11 recording and is not whole-HMI throughput."
+  }
+}

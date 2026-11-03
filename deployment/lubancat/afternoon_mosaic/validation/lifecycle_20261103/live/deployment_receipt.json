@@ -1,0 +1,13 @@
+{
+  "boot_id": "4df359ec-2b14-4512-a971-e20a7ee674a5",
+  "binary": "/home/cat/adas_issue10_lifecycle_20261103/build/qt_gpu_probe",
+  "sha256": "cb8a7f415314d5b72c6b1de1b0c8714ef0065d46b6e941b8ef08830e1d50a948",
+  "previous_hmi_pid": 5569,
+  "new_hmi_pid": 71096,
+  "unchanged_ai_pid": 5568,
+  "mode": "REAL_PCIE",
+  "control_mode": "HARDWARE",
+  "control_authorized": true,
+  "host_date": "2026-11-03",
+  "note": "HMI-only replacement; AI process and FPGA bridge retained."
+}

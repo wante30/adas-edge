@@ -1322,7 +1322,7 @@ Item {
                 }
                 Rectangle { x: 12; y: 47; width: 194; height: 1; color: "#1D3B46" }
                 Text {
-                    x: 12; y: 55; text: "LIVE TRACKS · RELATIVE_ONLY"
+                    x: 12; y: 55; text: "实测轨迹 · 半透明短时预测"
                     color: root.amber; font.family: root.cjk; font.pixelSize: 6
                 }
                 Text {
@@ -1851,7 +1851,7 @@ Item {
         Text {
             x: 16; y: parent.height - 15
             text: "LIVE · Q" + (video.aiRoadQuadrant + 1) + " · F" + video.displayFrameId + " · "
-                  + video.aiDetectionCount + " targets · RELATIVE_ONLY · 道路示意动画 / 非实测车速"
+                  + video.aiDetectionCount + " targets · 相对位置/短时预测 · 道路示意/非车速"
             color: "#7FB3B8"; font.family: root.cjk; font.pixelSize: 6
         }
     }
