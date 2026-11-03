@@ -1,6 +1,7 @@
 #include "video_item.h"
 #include "tesla_scene_item.h"
 #include "bev_display_state.h"
+#include "road_motion.h"
 
 #include <QCoreApplication>
 #include <QDateTime>
@@ -499,6 +500,7 @@ public:
         display_view_ = scene->displayView();
         road_quadrant_ = scene->roadQuadrant();
         online_ = scene->online();
+        road_source_ns_ = scene->sourceTimestampNs();
         demo_ = scene->demoMode();
         viewport_ = scene->size().toSize();
         const QString key = scene->sourceKey();
@@ -587,6 +589,7 @@ public:
             if(!sceneLog.fileName().isEmpty() && (sceneLog.isOpen() || sceneLog.open(QIODevice::Append))) {
                 QJsonObject row;row.insert("scene_fps",frames_/(elapsed_-last_report_));
                 row.insert("live_tracks",live_.size());row.insert("source_key",source_key_);
+                row.insert("road_mode","SCHEMATIC_ANIMATION");row.insert("road_offset",road_motion_.distance);row.insert("road_moving",road_motion_.moving);
                 row.insert("timestamp_ns",double(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count()));
                 sceneLog.write(QJsonDocument(row).toJson(QJsonDocument::Compact)+'\n');sceneLog.flush();
             }
@@ -791,21 +794,26 @@ private:
             return;
         }
         if (type == QStringLiteral("dashed")) {
-            for (int i = 0; i < 22; ++i) {
-                const float z0 = i * 4.0f + .7f;
-                quad(v, x - .045f, z0, x + .045f, z0 + 2.35f, .031f, .48f, .55f, .58f);
+            for (int i = -1; i < 24; ++i) {
+                const float z0 = i * 4.0f + .7f - road_motion_.phase(4.0);
+                if (z0 + 2.35f > 0 && z0 < 90)
+                    quad(v, x - .045f, std::max(0.f, z0), x + .045f, std::min(90.f, z0 + 2.35f), .031f, .48f, .55f, .58f);
             }
             return;
         }
         // Unknown: faint dotted guide, deliberately not a solid/dashed claim.
-        for (int i = 0; i < 30; ++i) {
-            const float z0 = i * 3.0f + .5f;
-            quad(v, x - .025f, z0, x + .025f, z0 + .8f, .026f, .18f, .24f, .26f);
+        for (int i = -1; i < 32; ++i) {
+            const float z0 = i * 3.0f + .5f - road_motion_.phase(3.0);
+            if (z0 + .8f > 0 && z0 < 90)
+                quad(v, x - .025f, std::max(0.f, z0), x + .025f, std::min(90.f, z0 + .8f), .026f, .18f, .24f, .26f);
         }
     }
 
     void buildScene(std::vector<float> &v) {
         billboards_.clear();
+        const qint64 roadNowNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+        road_motion_.advance(roadNowNs, road_source_ns_);
         // Four same-direction lanes, 3.5 m each. The FSD blue path is only
         // the ego lane (second from the left), not the whole road.
         const float roadHalf = 7.0f;
@@ -832,14 +840,16 @@ private:
         laneEdge(v, 7.105f, rightType);
         // Dashed lane boundaries at -3.5, 0, +3.5.
         for (float laneX : {-3.5f, 0.0f, 3.5f}) {
-            for (int i = 0; i < 22; ++i) {
-                const float z0 = i * 4.0f + .7f;
-                quad(v, laneX - .045f, z0, laneX + .045f, z0 + 2.35f, .032f, .48f, .55f, .58f);
+            for (int i = -1; i < 24; ++i) {
+                const float z0 = i * 4.0f + .7f - road_motion_.phase(4.0);
+                if (z0 + 2.35f > 0 && z0 < 90)
+                    quad(v, laneX - .045f, std::max(0.f, z0), laneX + .045f, std::min(90.f, z0 + 2.35f), .032f, .48f, .55f, .58f);
             }
         }
         // Roadside grid and city silhouettes.
-        for (int i = 0; i < 8; ++i) {
-            const float z = 8.0f + i * 9.0f;
+        for (int i = 0; i < 12; ++i) {
+            const float z = -1.0f + i * 9.0f - road_motion_.phase(9.0);
+            if (z < 0 || z > 90) continue;
             quad(v, -30, z, -7.6f, z + .06f, .022f, .085f, .11f, .13f);
             quad(v, 7.6f, z, 30, z + .06f, .022f, .085f, .11f, .13f);
         }
@@ -887,6 +897,8 @@ private:
     QString display_view_ = QStringLiteral("front");
     int road_quadrant_ = 1;
     qint64 last_render_ns_ = 0;
+    qint64 road_source_ns_ = 0;
+    SchematicRoadMotion road_motion_;
     QHash<int, LiveCar> live_;
     QFile trace_{qEnvironmentVariable("QT_BEV_TRACE")};
     QHash<QString,int> births_;
