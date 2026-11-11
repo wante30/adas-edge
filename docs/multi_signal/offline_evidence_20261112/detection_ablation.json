@@ -1,0 +1,82 @@
+{
+  "112454_bdd_q4_full": {
+    "correct": 1,
+    "total": 6
+  },
+  "112454_bdd_q4_top60": {
+    "correct": 1,
+    "total": 6
+  },
+  "112454_bdd_q4_center60_zoom": {
+    "correct": 0,
+    "total": 6
+  },
+  "112454_bdd_original_full": {
+    "correct": 1,
+    "total": 6
+  },
+  "112454_bdd_original_top60": {
+    "correct": 1,
+    "total": 6
+  },
+  "112454_p2_q4_full": {
+    "correct": 2,
+    "total": 6
+  },
+  "112454_p2_q4_top60": {
+    "correct": 1,
+    "total": 6
+  },
+  "112454_p2_q4_center60_zoom": {
+    "correct": 1,
+    "total": 6
+  },
+  "112454_p2_original_full": {
+    "correct": 0,
+    "total": 6
+  },
+  "112454_p2_original_top60": {
+    "correct": 1,
+    "total": 6
+  },
+  "113421_bdd_q4_full": {
+    "correct": 3,
+    "total": 6
+  },
+  "113421_bdd_q4_top60": {
+    "correct": 3,
+    "total": 6
+  },
+  "113421_bdd_q4_center60_zoom": {
+    "correct": 2,
+    "total": 6
+  },
+  "113421_bdd_original_full": {
+    "correct": 3,
+    "total": 6
+  },
+  "113421_bdd_original_top60": {
+    "correct": 3,
+    "total": 6
+  },
+  "113421_p2_q4_full": {
+    "correct": 4,
+    "total": 6
+  },
+  "113421_p2_q4_top60": {
+    "correct": 1,
+    "total": 6
+  },
+  "113421_p2_q4_center60_zoom": {
+    "correct": 0,
+    "total": 6
+  },
+  "113421_p2_original_full": {
+    "correct": 2,
+    "total": 6
+  },
+  "113421_p2_original_top60": {
+    "correct": 0,
+    "total": 6
+  }
+}

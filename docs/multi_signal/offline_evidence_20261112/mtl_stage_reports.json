@@ -1,0 +1,336 @@
+{
+  "112454": {
+    "counts": {
+      "gt_objects": 6,
+      "reviewed_frames": 3,
+      "mtl_head_iou50_at0.05": 0,
+      "mtl_lamp_coverage50_at0.05": 3,
+      "mtl_head_iou50_at0.15": 0,
+      "mtl_lamp_coverage50_at0.15": 2,
+      "mtl_head_iou50_at0.25": 0,
+      "mtl_lamp_coverage50_at0.25": 0,
+      "mtl_previous_gt_iou50_at0.25": 0,
+      "mtl_misses": 6,
+      "manual_q4_baseline_color_total": 6,
+      "manual_q4_baseline_color_correct": 2,
+      "manual_q4_baseline_color_unknown": 4,
+      "manual_q4_baseline_color_wrong_known": 0,
+      "manual_q4_baseline_shape_total": 6,
+      "manual_q4_baseline_shape_correct": 0,
+      "manual_q4_baseline_shape_unknown": 6,
+      "manual_q4_baseline_shape_wrong_known": 0,
+      "manual_q4_baseline_arrow_total": 6,
+      "manual_q4_baseline_arrow_correct": 0,
+      "manual_q4_baseline_arrow_unknown": 6,
+      "manual_q4_baseline_arrow_wrong_known": 0,
+      "manual_q4_improved_color_total": 6,
+      "manual_q4_improved_color_correct": 6,
+      "manual_q4_improved_color_unknown": 0,
+      "manual_q4_improved_color_wrong_known": 0,
+      "manual_q4_improved_shape_total": 6,
+      "manual_q4_improved_shape_correct": 0,
+      "manual_q4_improved_shape_unknown": 6,
+      "manual_q4_improved_shape_wrong_known": 0,
+      "manual_q4_improved_arrow_total": 6,
+      "manual_q4_improved_arrow_correct": 0,
+      "manual_q4_improved_arrow_unknown": 6,
+      "manual_q4_improved_arrow_wrong_known": 0,
+      "manual_q4_observed_positive_total": 6,
+      "manual_q4_observed_positive_correct": 0,
+      "manual_q4_ego_unknown_total": 9,
+      "manual_q4_ego_unknown_correct": 9,
+      "manual_q4_observed_unsupported_total": 3,
+      "manual_q4_observed_unsupported_correct": 3,
+      "manual_original_baseline_color_total": 6,
+      "manual_original_baseline_color_correct": 2,
+      "manual_original_baseline_color_unknown": 4,
+      "manual_original_baseline_color_wrong_known": 0,
+      "manual_original_baseline_shape_total": 6,
+      "manual_original_baseline_shape_correct": 1,
+      "manual_original_baseline_shape_unknown": 5,
+      "manual_original_baseline_shape_wrong_known": 0,
+      "manual_original_baseline_arrow_total": 6,
+      "manual_original_baseline_arrow_correct": 1,
+      "manual_original_baseline_arrow_unknown": 5,
+      "manual_original_baseline_arrow_wrong_known": 0,
+      "manual_original_improved_color_total": 6,
+      "manual_original_improved_color_correct": 6,
+      "manual_original_improved_color_unknown": 0,
+      "manual_original_improved_color_wrong_known": 0,
+      "manual_original_improved_shape_total": 6,
+      "manual_original_improved_shape_correct": 6,
+      "manual_original_improved_shape_unknown": 0,
+      "manual_original_improved_shape_wrong_known": 0,
+      "manual_original_improved_arrow_total": 6,
+      "manual_original_improved_arrow_correct": 6,
+      "manual_original_improved_arrow_unknown": 0,
+      "manual_original_improved_arrow_wrong_known": 0,
+      "manual_original_observed_positive_total": 6,
+      "manual_original_observed_positive_correct": 6,
+      "manual_original_ego_unknown_total": 9,
+      "manual_original_ego_unknown_correct": 9,
+      "manual_original_observed_unsupported_total": 3,
+      "manual_original_observed_unsupported_correct": 3
+    },
+    "frames": 106,
+    "source_sha256": "deafab569a9bf1362601f2043ce84cbf9b33532ecda7e0a47f7daf48535b8708",
+    "accuracy": {
+      "manual_q4_baseline_color": {
+        "correct": 2,
+        "total": 6,
+        "accuracy": 0.3333333333333333
+      },
+      "manual_q4_baseline_shape": {
+        "correct": 0,
+        "total": 6,
+        "accuracy": 0.0
+      },
+      "manual_q4_baseline_arrow": {
+        "correct": 0,
+        "total": 6,
+        "accuracy": 0.0
+      },
+      "manual_q4_improved_color": {
+        "correct": 6,
+        "total": 6,
+        "accuracy": 1.0
+      },
+      "manual_q4_improved_shape": {
+        "correct": 0,
+        "total": 6,
+        "accuracy": 0.0
+      },
+      "manual_q4_improved_arrow": {
+        "correct": 0,
+        "total": 6,
+        "accuracy": 0.0
+      },
+      "manual_q4_observed_positive": {
+        "correct": 0,
+        "total": 6,
+        "accuracy": 0.0
+      },
+      "manual_q4_ego_unknown": {
+        "correct": 9,
+        "total": 9,
+        "accuracy": 1.0
+      },
+      "manual_q4_observed_unsupported": {
+        "correct": 3,
+        "total": 3,
+        "accuracy": 1.0
+      },
+      "manual_original_baseline_color": {
+        "correct": 2,
+        "total": 6,
+        "accuracy": 0.3333333333333333
+      },
+      "manual_original_baseline_shape": {
+        "correct": 1,
+        "total": 6,
+        "accuracy": 0.16666666666666666
+      },
+      "manual_original_baseline_arrow": {
+        "correct": 1,
+        "total": 6,
+        "accuracy": 0.16666666666666666
+      },
+      "manual_original_improved_color": {
+        "correct": 6,
+        "total": 6,
+        "accuracy": 1.0
+      },
+      "manual_original_improved_shape": {
+        "correct": 6,
+        "total": 6,
+        "accuracy": 1.0
+      },
+      "manual_original_improved_arrow": {
+        "correct": 6,
+        "total": 6,
+        "accuracy": 1.0
+      },
+      "manual_original_observed_positive": {
+        "correct": 6,
+        "total": 6,
+        "accuracy": 1.0
+      },
+      "manual_original_ego_unknown": {
+        "correct": 9,
+        "total": 9,
+        "accuracy": 1.0
+      },
+      "manual_original_observed_unsupported": {
+        "correct": 3,
+        "total": 3,
+        "accuracy": 1.0
+      }
+    },
+    "association_scope": "Observed-arrow accuracy and unsupported ego-relevance rejection; positive ego-road association NOT evaluated",
+    "localization_rules": {
+      "head": "IoU>=0.5",
+      "lamp": ">=50% manual luminous face covered; center inside head; 0.25*lamp_area<=pred_area<=1.5*head_area; one-to-one"
+    },
+    "scope": "Sparse reviewed overhead heads; no full-scene precision claims"
+  },
+  "113421": {
+    "counts": {
+      "gt_objects": 6,
+      "reviewed_frames": 3,
+      "mtl_head_iou50_at0.05": 0,
+      "mtl_lamp_coverage50_at0.05": 4,
+      "mtl_head_iou50_at0.15": 0,
+      "mtl_lamp_coverage50_at0.15": 3,
+      "mtl_head_iou50_at0.25": 0,
+      "mtl_lamp_coverage50_at0.25": 2,
+      "mtl_previous_gt_iou50_at0.25": 0,
+      "detected_mtl_q4_color_total": 2,
+      "detected_mtl_q4_color_correct": 2,
+      "detected_mtl_q4_color_unknown": 0,
+      "detected_mtl_q4_color_wrong_known": 0,
+      "detected_mtl_q4_shape_total": 2,
+      "detected_mtl_q4_shape_correct": 0,
+      "detected_mtl_q4_shape_unknown": 2,
+      "detected_mtl_q4_shape_wrong_known": 0,
+      "detected_mtl_original_color_total": 2,
+      "detected_mtl_original_color_correct": 2,
+      "detected_mtl_original_color_unknown": 0,
+      "detected_mtl_original_color_wrong_known": 0,
+      "detected_mtl_original_shape_total": 2,
+      "detected_mtl_original_shape_correct": 2,
+      "detected_mtl_original_shape_unknown": 0,
+      "detected_mtl_original_shape_wrong_known": 0,
+      "mtl_misses": 4,
+      "manual_q4_baseline_color_total": 6,
+      "manual_q4_baseline_color_correct": 6,
+      "manual_q4_baseline_color_unknown": 0,
+      "manual_q4_baseline_color_wrong_known": 0,
+      "manual_q4_baseline_shape_total": 6,
+      "manual_q4_baseline_shape_correct": 0,
+      "manual_q4_baseline_shape_unknown": 6,
+      "manual_q4_baseline_shape_wrong_known": 0,
+      "manual_q4_improved_color_total": 6,
+      "manual_q4_improved_color_correct": 6,
+      "manual_q4_improved_color_unknown": 0,
+      "manual_q4_improved_color_wrong_known": 0,
+      "manual_q4_improved_shape_total": 6,
+      "manual_q4_improved_shape_correct": 0,
+      "manual_q4_improved_shape_unknown": 6,
+      "manual_q4_improved_shape_wrong_known": 0,
+      "manual_q4_observed_unsupported_total": 9,
+      "manual_q4_observed_unsupported_correct": 9,
+      "manual_q4_ego_unknown_total": 9,
+      "manual_q4_ego_unknown_correct": 9,
+      "manual_original_baseline_color_total": 6,
+      "manual_original_baseline_color_correct": 6,
+      "manual_original_baseline_color_unknown": 0,
+      "manual_original_baseline_color_wrong_known": 0,
+      "manual_original_baseline_shape_total": 6,
+      "manual_original_baseline_shape_correct": 0,
+      "manual_original_baseline_shape_unknown": 6,
+      "manual_original_baseline_shape_wrong_known": 0,
+      "manual_original_improved_color_total": 6,
+      "manual_original_improved_color_correct": 6,
+      "manual_original_improved_color_unknown": 0,
+      "manual_original_improved_color_wrong_known": 0,
+      "manual_original_improved_shape_total": 6,
+      "manual_original_improved_shape_correct": 5,
+      "manual_original_improved_shape_unknown": 1,
+      "manual_original_improved_shape_wrong_known": 0,
+      "manual_original_observed_unsupported_total": 9,
+      "manual_original_observed_unsupported_correct": 9,
+      "manual_original_ego_unknown_total": 9,
+      "manual_original_ego_unknown_correct": 9
+    },
+    "frames": 392,
+    "source_sha256": "ce5578b70a18cf619eb086246d46019776a72a47fb85f1a89f6e8e03541bb75c",
+    "accuracy": {
+      "detected_mtl_q4_color": {
+        "correct": 2,
+        "total": 2,
+        "accuracy": 1.0
+      },
+      "detected_mtl_q4_shape": {
+        "correct": 0,
+        "total": 2,
+        "accuracy": 0.0
+      },
+      "detected_mtl_original_color": {
+        "correct": 2,
+        "total": 2,
+        "accuracy": 1.0
+      },
+      "detected_mtl_original_shape": {
+        "correct": 2,
+        "total": 2,
+        "accuracy": 1.0
+      },
+      "manual_q4_baseline_color": {
+        "correct": 6,
+        "total": 6,
+        "accuracy": 1.0
+      },
+      "manual_q4_baseline_shape": {
+        "correct": 0,
+        "total": 6,
+        "accuracy": 0.0
+      },
+      "manual_q4_improved_color": {
+        "correct": 6,
+        "total": 6,
+        "accuracy": 1.0
+      },
+      "manual_q4_improved_shape": {
+        "correct": 0,
+        "total": 6,
+        "accuracy": 0.0
+      },
+      "manual_q4_observed_unsupported": {
+        "correct": 9,
+        "total": 9,
+        "accuracy": 1.0
+      },
+      "manual_q4_ego_unknown": {
+        "correct": 9,
+        "total": 9,
+        "accuracy": 1.0
+      },
+      "manual_original_baseline_color": {
+        "correct": 6,
+        "total": 6,
+        "accuracy": 1.0
+      },
+      "manual_original_baseline_shape": {
+        "correct": 0,
+        "total": 6,
+        "accuracy": 0.0
+      },
+      "manual_original_improved_color": {
+        "correct": 6,
+        "total": 6,
+        "accuracy": 1.0
+      },
+      "manual_original_improved_shape": {
+        "correct": 5,
+        "total": 6,
+        "accuracy": 0.8333333333333334
+      },
+      "manual_original_observed_unsupported": {
+        "correct": 9,
+        "total": 9,
+        "accuracy": 1.0
+      },
+      "manual_original_ego_unknown": {
+        "correct": 9,
+        "total": 9,
+        "accuracy": 1.0
+      }
+    },
+    "association_scope": "Observed-arrow accuracy and unsupported ego-relevance rejection; positive ego-road association NOT evaluated",
+    "localization_rules": {
+      "head": "IoU>=0.5",
+      "lamp": ">=50% manual luminous face covered; center inside head; 0.25*lamp_area<=pred_area<=1.5*head_area; one-to-one"
+    },
+    "scope": "Sparse reviewed overhead heads; no full-scene precision claims"
+  }
+}
