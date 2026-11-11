@@ -5,8 +5,10 @@ See reports/phase0.md for source links. No implicit category availability.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
+from functools import lru_cache
 from pathlib import Path
 
 import cv2
@@ -31,9 +33,16 @@ def file_hash(path):
 
 
 def poly_points(poly):
-    """Flatten Scalabel L/C Bezier paths; reject unsupported/malformed geometry."""
-    vertices = np.asarray(poly['vertices'], dtype=np.float64)
-    types = poly.get('types', 'L' * len(vertices))
+    """Flatten modern dict or legacy [x,y,type] Scalabel L/C paths."""
+    if isinstance(poly, dict):
+        vertices = np.asarray(poly['vertices'], dtype=np.float64)
+        types = poly.get('types', 'L' * len(vertices))
+    else:
+        raw = np.asarray(poly, dtype=object)
+        if raw.ndim != 2 or raw.shape[1] not in (2, 3):
+            raise ValueError('legacy poly2d must contain [x,y,(type)] vertices')
+        vertices = np.asarray(raw[:, :2], dtype=np.float64)
+        types = ''.join(str(x[2]) if len(x) > 2 else 'L' for x in poly)
     if len(vertices) < 2 or vertices.shape[1:] != (2,) or len(types) != len(vertices):
         raise ValueError('invalid poly2d vertices/types')
     if not np.isfinite(vertices).all() or set(types) - {'L', 'C'} or types[0] != 'L':
@@ -58,7 +67,7 @@ def poly_points(poly):
 def raster(poly, shape, width=8, force_closed=False):
     layer = np.zeros(shape, np.uint8)
     pts = poly_points(poly)
-    if force_closed or poly.get('closed', False):
+    if force_closed or (poly.get('closed', False) if isinstance(poly, dict) else False):
         if len(pts) < 3:
             raise ValueError('polygon needs >=3 points')
         cv2.fillPoly(layer, [pts], 1)
@@ -67,12 +76,72 @@ def raster(poly, shape, width=8, force_closed=False):
     return layer
 
 
+def polyline_list(polys):
+    """Normalize BDD's flat polyline and list-of-polylines serializations."""
+    if not polys:
+        return []
+    first = polys[0]
+    if isinstance(first, dict):
+        return polys
+    if isinstance(first, (list, tuple)) and first and isinstance(first[0], (int, float)):
+        return [polys]
+    return polys
+
+
+def frame_labels(frame):
+    """Read the modern frame labels or historical objects/frames wrappers."""
+    if isinstance(frame, list):
+        if len(frame) != 1:
+            raise ValueError('lane JSON list must contain exactly one frame')
+        frame = frame[0]
+    if isinstance(frame, dict) and 'frames' in frame:
+        if len(frame['frames']) != 1:
+            raise ValueError('lane JSON frames wrapper must contain exactly one frame')
+        frame = frame['frames'][0]
+    labels = frame.get('labels', frame.get('objects')) if isinstance(frame, dict) else None
+    if labels is None:
+        raise ValueError('missing lane labels/objects; null means unavailable task')
+    return labels
+
+
+def select_frame(data, image_name):
+    """Select exactly one historical multi-frame JSON record by image name."""
+    if isinstance(data, list):
+        matches = [frame for frame in data if frame.get('name') == image_name]
+        if len(matches) != 1:
+            raise ValueError(f'expected one BDD frame named {image_name}, got {len(matches)}')
+        return matches[0]
+    if isinstance(data, dict) and 'frames' in data:
+        matches = [frame for frame in data['frames'] if frame.get('name') == image_name]
+        if len(matches) != 1:
+            raise ValueError(f'expected one BDD frame named {image_name}, got {len(matches)}')
+        return matches[0]
+    return data
+
+
+def bdd_lane_png(out, path):
+    """Decode prior category/style PNG as positive-only labels (255 is unknown)."""
+    a = np.asarray(Image.open(path))
+    if a.shape != out['lane'].shape or a.ndim != 2:
+        raise ValueError('expected native-size single-channel BDD lane mask')
+    known = (a != 255) & ((a & 0x0f) < 8)
+    # Historical renderer uses 255 for the entire background, so only labeled
+    # line pixels are valid; never infer negative line examples from that PNG.
+    out['lane_valid'][known] = 1
+    out['lane'][known] = 1
+    style = (a >> 4) & 1
+    for value in (0, 1):
+        mask = known & (style == value)
+        out['target'][1 + value, mask] = 1
+        out['valid'][1 + value, mask] = 1
+
+
 def empty_targets(shape):
     return {k: np.zeros((4, *shape), np.uint8) for k in ('target', 'valid')} | {
         'lane': np.zeros(shape, np.uint8), 'lane_valid': np.zeros(shape, np.uint8)}
 
 
-def bdd_targets(shape, *, drivable=None, lane_frame=None, line_width=8):
+def bdd_targets(shape, *, drivable=None, drivable_frame=None, lane_frame=None, lane_png=None, line_width=8):
     out = empty_targets(shape)
     y, v = out['target'], out['valid']
     if drivable is not None:
@@ -81,21 +150,36 @@ def bdd_targets(shape, *, drivable=None, lane_frame=None, line_width=8):
             raise ValueError('expected native BDD drivable IDs 0/1/2/255')
         y[0] = (a == 0) | (a == 1)
         v[0] = a != 255
+    if drivable_frame is not None:
+        if drivable is not None:
+            raise ValueError('choose drivable PNG or raw JSON, not both')
+        v[0] = 1
+        for label in frame_labels(drivable_frame):
+            category = label.get('category', '')
+            if category not in ('area/drivable', 'area/alternative'):
+                continue
+            geometries = polyline_list(label.get('poly2d') or [])
+            if not geometries:
+                raise ValueError('drivable polygon has no poly2d geometry')
+            for poly in geometries:
+                mask = raster(poly, shape, force_closed=True)
+                y[0] |= mask
     if lane_frame is not None:
-        labels = lane_frame.get('labels')
-        if labels is None:
-            raise ValueError('missing lane labels; use null lane_frame for unavailable task')
+        labels = frame_labels(lane_frame)
         v[1:3] = 1
         out['lane_valid'][:] = 1
         ignored = np.zeros(shape, np.uint8)
         for label in labels:
+            if not label.get('category', '').startswith('lane/') and label.get('category', '') not in (
+                    'double other', 'double white', 'double yellow', 'single other', 'single white', 'single yellow'):
+                continue
             category = label.get('category', '').removeprefix('lane/')
             if category in ('crosswalk', 'road curb', 'background'):
                 continue
             if category not in ('double other', 'double white', 'double yellow', 'single other', 'single white', 'single yellow'):
                 raise ValueError(f'unknown lane category: {category}')
             attrs = label.get('attributes') or {}
-            geometries = label.get('poly2d')
+            geometries = polyline_list(label.get('poly2d') or [])
             if not geometries:
                 raise ValueError('lane without supported poly2d; convert RLE explicitly first')
             for poly in geometries:
@@ -104,7 +188,7 @@ def bdd_targets(shape, *, drivable=None, lane_frame=None, line_width=8):
                     ignored |= mask
                     continue
                 out['lane'] |= mask
-                style = attrs.get('laneStyle')
+                style = attrs.get('laneStyle', attrs.get('style'))
                 if style in ('solid', 'dashed'):
                     y[1 if style == 'solid' else 2] |= mask
                 else:
@@ -112,6 +196,10 @@ def bdd_targets(shape, *, drivable=None, lane_frame=None, line_width=8):
                     v[1:3, mask > 0] = 0
         v[1:3, ignored > 0] = 0
         out['lane_valid'][ignored > 0] = 0
+    if lane_png is not None:
+        if lane_frame is not None:
+            raise ValueError('choose raw lane JSON or legacy lane PNG, not both')
+        bdd_lane_png(out, lane_png)
     # v[3] deliberately remains zero: BDD crosswalk curves are not dense GT.
     return out
 
@@ -166,8 +254,16 @@ def validate_manifest(rows, *, check_files=True):
     return rows
 
 
+@lru_cache(maxsize=4)
+def _load_manifest_cached(path, size, mtime_ns):
+    rows = [json.loads(line) for line in Path(path).read_text(encoding='utf-8-sig').splitlines() if line.strip()]
+    return validate_manifest(rows)
+
+
 def load_manifest(path):
-    return validate_manifest([json.loads(line) for line in Path(path).read_text(encoding='utf-8-sig').splitlines() if line.strip()])
+    manifest = Path(path).resolve()
+    stat = manifest.stat()
+    return copy.deepcopy(_load_manifest_cached(str(manifest), stat.st_size, stat.st_mtime_ns))
 
 
 def letterbox(image, target=None, valid=None, size=(320, 192)):
@@ -236,13 +332,16 @@ def convert_index(index, output, line_width=8):
             shape = im.height, im.width
         source = row['source']
         if source == 'bdd100k':
-            lane = read_json(source_path(row['lane_json'])) if row.get('lane_json') else None
-            if isinstance(lane, list):
-                matches = [f for f in lane if f['name'] == Path(row['image']).name]
-                if len(matches) != 1:
-                    raise ValueError('lane JSON must have exactly one matching frame')
-                lane = matches[0]
-            masks = bdd_targets(shape, drivable=source_path(row['drivable_png']) if row.get('drivable_png') else None, lane_frame=lane, line_width=line_width)
+            raw = read_json(source_path(row['label_json'])) if row.get('label_json') else None
+            lane = read_json(source_path(row['lane_json'])) if row.get('lane_json') else raw
+            if raw is not None:
+                raw = select_frame(raw, Path(row['image']).name)
+            if lane is not None:
+                lane = select_frame(lane, Path(row['image']).name)
+            masks = bdd_targets(shape, drivable=source_path(row['drivable_png']) if row.get('drivable_png') else None,
+                                drivable_frame=raw, lane_frame=lane,
+                                lane_png=source_path(row['lane_png']) if row.get('lane_png') else None,
+                                line_width=line_width)
         elif source == 'mapillary_vistas':
             masks = vistas_targets(shape, source_path(row['label_png']), source_path(row['config']), row['mapping'])
         else:

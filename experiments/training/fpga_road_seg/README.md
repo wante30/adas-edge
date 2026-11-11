@@ -33,8 +33,7 @@ holdout images remain test-only and cannot be PTQ calibration samples.
     "id": "bdd-video1-frame1",
     "source": "bdd100k",
     "image": "bdd/images/train/video1.jpg",
-    "drivable_png": "bdd/drivable/train/video1.png",
-    "lane_json": "bdd/lanes/train/video1.json",
+    "label_json": "bdd/labels/train/video1.json",
     "split": "train",
     "group_id": "bdd-video1",
     "license": "BDD100K accepted data terms; record version/location"
@@ -57,7 +56,12 @@ This is a schema example, not an existing usable dataset. Omit unavailable task
 paths; never fabricate an empty lane JSON for an unannotated frame. An explicitly
 annotated empty lane task is valid negative supervision. Raw drivable PNG uses
 0=direct, 1=alternative, 2=background, 255=ignore, not a thresholded binary PNG.
-Only raw lane `poly2d` L/C paths are accepted. Unsupported RLE/schema fails closed.
+Raw lane `poly2d` L/C paths accept modern `vertices/types` objects and the older
+flat `[x,y,type]` serialization, including frame `objects` and
+`attributes.style`. An optional `label_json` supplies both drivable polygons and
+lane objects. The previous MTL lane PNG encoding is accepted as `lane_png`;
+because its background is 255, it contributes positive-only pixels and does not
+invent negative supervision. Unsupported RLE/schema fails closed.
 Line paths have default native width 8px and resize with the image; dataset
 coordinates are never interpreted in network-pixel space. Use 4/8/12 native px
 conversion runs and compare thin-line F1/recall before selecting width. Rasterize
@@ -105,3 +109,24 @@ Small/Nano reject 384x216 because CAAM patch dimensions are incompatible. Their
 Profiles count Conv/ConvTranspose/Linear/MatMul MACs, FLOPs=2*MACs; exclude
 activation/pooling/elementwise costs. They cannot be compared unqualified to the
 upstream README's 1.40G FLOPs with unspecified arithmetic convention.
+
+## Export, benchmark and offline Q4 mock
+
+FP32 export, train-only static QDQ calibration, layer inventories and comparison:
+
+```powershell
+python -m experiments.training.fpga_road_seg.export --checkpoint outputs/candidate-real/best.pt --manifest outputs/road-converted-w8/manifest.jsonl --output outputs/candidate-export --calibration-count 256
+python -m experiments.training.fpga_road_seg.benchmark --device cuda --output outputs/gpu-throughput.json
+```
+
+Synthetic checkpoints/manifests require the explicit `--synthetic-smoke` flag.
+QDQ is a Conv-only quantization experiment: Add/Resize/I/O remain float32 and
+the graph is not a PG2L200H artifact. The report and calibration manifest record
+operator/tensor shapes, hashes, scales, zero-points and illustrative bias/requant
+contracts.
+
+`offline_q4` takes an explicit `q4_native` image or bottom-right Q4 crop from a
+2x2 mosaic, a four-channel `.npy` mock mask and same-frame detection JSON. This
+tool never imports the running FAST-Q4 service and cannot send data to hardware.
+The draft protocol and coordinate requirements are documented in
+[`docs/fpga_road_seg_handoff.md`](../../../docs/fpga_road_seg_handoff.md).

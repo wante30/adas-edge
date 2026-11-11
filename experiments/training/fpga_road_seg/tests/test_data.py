@@ -4,7 +4,7 @@ import pytest
 from PIL import Image
 from experiments.training.fpga_road_seg.dataset_adapter import (
     bdd_targets, vistas_targets, poly_points, raster, letterbox, restore,
-    validate_manifest, convert_index, RoadDataset,
+    validate_manifest, convert_index, RoadDataset, select_frame,
 )
 
 
@@ -43,6 +43,37 @@ def test_bezier_not_control_polygon_and_width_sensitivity():
     assert thick.sum()>thin.sum()
     with pytest.raises(ValueError):
         poly_points(poly([[0,0],[1,1]],types='LC'))
+
+
+def test_historical_bdd_objects_style_flat_bezier_and_positive_only_png(tmp_path):
+    legacy = {'objects': [
+        {'category': 'area/drivable', 'poly2d': [[[1, 1, 'L'], [10, 1, 'L'], [10, 10, 'L'], [1, 10, 'L']]]},
+        {'category': 'lane/single white', 'attributes': {'style': 'solid'},
+         'poly2d': [[2, 2, 'L'], [2, 4, 'C'], [8, 4, 'C'], [8, 8, 'C']]},
+        {'category': 'lane/single yellow', 'attributes': {'style': 'dashed'},
+         'poly2d': [[[12, 2, 'L'], [12, 12, 'L']]]},
+    ]}
+    out = bdd_targets((16, 16), drivable_frame=legacy, lane_frame=legacy, line_width=2)
+    assert out['target'][0, 5, 5] == 1 and out['valid'][0].all()
+    assert out['target'][1].sum() > 0 and out['target'][2].sum() > 0
+
+    # Historical PNG renderer used 255 as background; only encoded line pixels
+    # are valid so unlabeled background can never become a negative example.
+    png = np.full((16, 16), 255, np.uint8)
+    png[3:7, 3] = 6  # category single white, style solid
+    path = tmp_path / 'legacy-lane.png'
+    Image.fromarray(png).save(path)
+    decoded = bdd_targets((16, 16), lane_png=path)
+    assert decoded['target'][1].sum() == 4
+    assert decoded['valid'][1].sum() == 4
+    assert decoded['valid'][1, 0, 0] == 0
+
+
+def test_historical_bdd_multiframe_json_is_matched_by_image_name():
+    rows = [{'name': 'a.jpg', 'objects': []}, {'name': 'b.jpg', 'objects': []}]
+    assert select_frame(rows, 'b.jpg') is rows[1]
+    with pytest.raises(ValueError, match='expected one BDD frame'):
+        select_frame(rows, 'missing.jpg')
 
 
 def test_vistas_uses_config_names_void_and_missing_styles(tmp_path):

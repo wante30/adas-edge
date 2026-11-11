@@ -28,8 +28,10 @@ These are software references, not a claim of PG2L200H compatibility.
 
 Upstream README reports Small 90.6% drivable mIoU / 29.3% lane IoU, 0.12M
 parameters / 1.40G FLOPs; Nano 87.3% / 23.3%, 0.03M / 0.57G. These are
-**upstream results**, not our reproduction. Weight link is a Google Drive folder;
-weights are not in Git and have not been downloaded or verified.
+**upstream results**, not our reproduction. Official Small and Nano weights were
+downloaded to ignored local output, loaded strictly, and run on six upstream
+demo images. Torch/ONNX max logit errors were 0.0001374 (Small) and 0.0008965
+(Nano). This is export parity, not accuracy evaluation; no GT accompanies the demos.
 Upstream loader uses RGB uint8 converted to float /255 during training,
 640x384 letterboxing and a 12-pixel top/bottom output crop against 640x360 labels.
 Its original loss/loader is CUDA/path coupled. Our portable harness preserves the
@@ -73,11 +75,32 @@ downloaded license; no assumption of unrestricted commercial redistribution.
 
 RTX 4060 Laptop 8GB, Python 3.10, torch 2.5.1+cu121, ONNX 1.17.0,
 ONNX Runtime 1.23.2; CUDA available. Suitable for measured smoke/throughput runs.
-Searched local D:/Datasets and existing project data: BDD validation images/boxes,
-Cityscapes validation object annotations, historical MTL outputs found; no verified
-BDD lane/drivable or Mapillary dense training labels found. Validation holdout
-images must not be trained on or used for PTQ calibration. No real training
-accuracy can be claimed until labelled train/val/test manifests exist.
+The previous MTL training record in PR #4 (`research/b05n_p2_mtl/README.md`)
+confirms a real BDD100K segmentation run on AutoDL using
+`/root/autodl-tmp/bdd100k`: 100k 1280x720 images, lane/drivable JSON, and
+rendered `label_mtl/lane`, `label_mtl/drivable`, plus split indices. Its old
+lane renderer used background 255 and encoded category/style/direction values.
+This is a confirmed historical source, **not proof that the rented server or its
+data still exists or is reachable**. The current Windows machine has validation
+images/boxes, historical predictions/checkpoints, and a small detection-only
+BDD subset; a complete verified segmentation train/val/test set has not yet been
+located locally. Previous historical IoUs belong to that prior sparse-lane task
+and are not results for dense crosswalk or this four-mask task.
+
+The adapter now accepts old raw `objects`/`style`/flat `[x,y,type]` JSON, old
+rendered lane PNG as positive-only supervision (255 background is unknown), and
+drivable polygons. Existing BDD test/holdout frames must stay test-only and out
+of PTQ calibration. The BDD lane PNG alone cannot supervise background negatives.
+Mapillary dense crosswalk data remains user-supplied and unverified. Thus no new
+real-data training or road accuracy is claimed until source bytes, task coverage,
+grouped splits and label semantics are validated.
+
+Measured synthetic-tensor GPU throughput suggests 70k samples x 50 epochs would
+take about 0.95h for Candidate 320x192 and 3.83h for TwinLiteNet+ Small 320x192
+on the local RTX 4060 Laptop under resident-tensor microbenchmark conditions.
+These are optimistic lower-bound estimates excluding image decode, augmentation,
+validation, checkpointing and data transfer. A 4090 rental is not justified
+before the old annotated dataset is recovered and real loader throughput measured.
 
 ## Evidence categories
 

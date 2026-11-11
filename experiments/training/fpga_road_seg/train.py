@@ -51,9 +51,15 @@ def main():
     channels = len(names_for(cfg['model']))
     coverage = np.zeros(channels, np.int64)
     positives = coverage.copy()
-    for _, y, v in train:
-        coverage += v.sum((1,2)).numpy().astype(np.int64)
-        positives += (y*v).sum((1,2)).numpy().astype(np.int64)
+    for row in train.rows:
+        with np.load(row['masks'], allow_pickle=False) as masks:
+            if baseline:
+                y = np.stack([masks['target'][0], masks['lane']])
+                v = np.stack([masks['valid'][0], masks['lane_valid']])
+            else:
+                y, v = masks['target'], masks['valid']
+            coverage += v.sum((1,2)).astype(np.int64)
+            positives += (y*v).sum((1,2)).astype(np.int64)
     # Refuse a four-class claim with absent channels/positive labels.
     if not args.synthetic_smoke and (np.any(coverage == 0) or np.any(positives == 0)):
         p.error(f'missing supervised training channels/positives: coverage={coverage}, positives={positives}')
