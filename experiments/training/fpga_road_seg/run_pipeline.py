@@ -231,6 +231,7 @@ class Pipeline:
             ax.plot([e['epoch'] for e in hist], [e['validation']['loss'] for e in hist], '--', label=f'{name} val')
             found = True
         if found:
+            ax.axvline(3.5, color='gray', linestyle=':', label='512-sample pilot -> full split')
             ax.set(xlabel='Epoch', ylabel='Masked BCE + Dice loss', title='BDD100K real-data training')
             ax.legend(fontsize=7, ncol=2)
             ax.grid(alpha=.2)
