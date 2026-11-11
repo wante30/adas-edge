@@ -8,10 +8,11 @@ BRAKE_KINDS=BRAKE_TYPES
 SEVERITIES={"critical"}
 
 class AutoBrakeController:
-    def __init__(self,*,enabled=None,port=38262,journal=None,forward_source_id="Q1"):
+    def __init__(self,*,enabled=None,port=38262,journal=None,forward_source_id="Q1",physical_input=False):
         self.enabled=(os.environ.get("ADAS_AUTO_BRAKE")=="1") if enabled is None else bool(enabled)
         self.mode=os.environ.get("ADAS_CONTROL_MODE","HARDWARE")
         self.authorized=os.environ.get("ADAS_CONTROL_AUTHORIZED","1" if self.enabled else "0")=="1"
+        self.physical_input=bool(physical_input)
         self.forward_source_id=forward_source_id
         self.address=("127.0.0.1",int(port))
         if self.mode=="DRY_RUN":
@@ -42,6 +43,8 @@ class AutoBrakeController:
         if e.get("lifecycle_state")!="ACTIVE" or not e.get("valid",False):return "event_cleared_or_invalid"
         if not self.enabled or not self.authorized:return "control_not_authorized"
         if self.mode not in ("DRY_RUN","HARDWARE"):return "invalid_control_mode"
+        if self.mode=="HARDWARE" and not self.physical_input:return "nonphysical_hardware_input"
+        if self.mode=="HARDWARE" and (self.forward_source_id!="Q4" or e.get("source_id")!="Q4"):return "not_physical_q4"
         if self.mode=="HARDWARE" and e.get("synthetic"):return "synthetic_hardware_event"
         if e.get("source_id")!=self.forward_source_id or e.get("track_id",0)<=0:return "not_measured_forward_target"
         if e.get("kind") not in BRAKE_TYPES:return "unsupported_event_type"

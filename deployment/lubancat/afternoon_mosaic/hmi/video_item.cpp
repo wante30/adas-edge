@@ -1325,6 +1325,8 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                     const auto identity=identities[i].toObject();
                     const int id=identity.value(QStringLiteral("track_id")).toInt();
                     item.insert(QStringLiteral("serverTrackId"),id);
+                    item.insert(QStringLiteral("isTracked"),id>0);
+                    item.insert(QStringLiteral("trackerEpoch"), QString::number(resultModeEpoch) + ":" + QString::number(ai_epoch_.load()));
                     item.insert(QStringLiteral("sourceId"),identity.value(QStringLiteral("source_id")).toString());
                     item.insert(QStringLiteral("trackId"),id>0?id:1000000000+i);
                     item.insert(QStringLiteral("frameId"),static_cast<qulonglong>(frameId));
@@ -1737,7 +1739,7 @@ void VideoItem::requestModelSwitch(const QString &profileId) {
         emit aiStatusChanged();
         return;
     }
-    const int targetMode=profileId.startsWith(QStringLiteral("FAST-MOSAIC"))?1:0;
+    const int targetMode=profileId==QStringLiteral("FAST-MOSAIC")?1:0;
     if(inference_mode_.load()==targetMode && profileId!=aiModelId()) {
         // A different single-camera model needs a new epoch as well: no old
         // MTL/Q4 result may satisfy the new model's freshness handshake.

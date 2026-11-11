@@ -1,5 +1,8 @@
 #include "video_item.h"
 #include "tesla_scene_item.h"
+#include "bev_display_state.h"
+#include "road_motion.h"
+#include "bev_lifecycle.h"
 
 #include <QCoreApplication>
 #include <QDateTime>
@@ -35,6 +38,8 @@
 namespace {
 struct SourceBox {
     int id = 0;
+    int serverId = 0;
+    QString epoch;
     QString cls;
     double x = 0, y = 0, w = 0, h = 0;
     double confidence = 0;
@@ -46,15 +51,15 @@ struct SourceBox {
     QString source;
 };
 
-struct LiveCar {
-    float x = 0, z = 0;
-    QString cls = QStringLiteral("car");
-    double seen = 0;
-    int hazard = 0;
-    float tx=0,tz=0,vx=0,vz=0;
-    double born=0;
-    qint64 measuredNs=0,expiresNs=0;
-};
+struct CarDraw { int first=0,count=0;float alpha=1; };
+int sceneClass(const QString &name) {
+    if(name=="person")return 0;
+    if(name=="bicycle")return 1;
+    if(name=="motorcycle")return 3;
+    if(name=="bus")return 5;
+    if(name=="truck")return 7;
+    return 2;
+}
 
 struct DemoCar {
     float x = 0, z = 0;
@@ -302,17 +307,10 @@ static QVector<ModelFace> loadModelFaces() {
 
 TeslaSceneItem::TeslaSceneItem(QQuickItem *parent) : QQuickFramebufferObject(parent) {
     setFlag(ItemHasContents, true);
-    auto *timer = animation_timer_ = new QTimer(this);
+    auto *timer = new QTimer(this);
     timer->setInterval(16);
     connect(timer, &QTimer::timeout, this, [this]() { update(); });
     timer->start();
-}
-
-void TeslaSceneItem::setActive(bool active) {
-    if (active_.exchange(active) == active) return;
-    if (active) animation_timer_->start(); else animation_timer_->stop();
-    emit activeChanged();
-    update();
 }
 
 QVariantList TeslaSceneItem::boxes() const {
@@ -324,6 +322,13 @@ void TeslaSceneItem::setBoxes(const QVariantList &boxes) {
         QMutexLocker locker(&mutex_);
         boxes_ = boxes;
     }
+    static QFile measurements(qEnvironmentVariable("QT_BEV_MEASUREMENTS"));
+    if (!measurements.fileName().isEmpty() && (measurements.isOpen() || measurements.open(QIODevice::WriteOnly))) {
+        const qint64 nowNs=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        QJsonObject row;row["arrival_ns"]=nowNs;row["source_key"]=sourceKey();
+        row["boxes"]=QJsonArray::fromVariantList(boxes);
+        measurements.write(QJsonDocument(row).toJson(QJsonDocument::Compact)+'\n');measurements.flush();
+    }
     // Auditable bridge from real tracker output to scene objects. This file
     // contains no demo objects and no metric distance claim.
     QJsonArray objects;
@@ -332,11 +337,16 @@ void TeslaSceneItem::setBoxes(const QVariantList &boxes) {
         const QVariantMap b = entry.toMap();
         const QString cls = b.value(QStringLiteral("className")).toString();
         const bool predicted = b.value(QStringLiteral("predicted")).toBool();
+        const bool tracked = b.value(QStringLiteral("isTracked")).toBool() && b.value(QStringLiteral("serverTrackId")).toInt()>0;
         const bool mappable = cls == QStringLiteral("car") || cls == QStringLiteral("truck") ||
                               cls == QStringLiteral("bus") || cls == QStringLiteral("person") ||
                               cls == QStringLiteral("motorcycle") || cls == QStringLiteral("bicycle");
         QJsonObject o;
         o.insert(QStringLiteral("track_id"), static_cast<qint64>(b.value(QStringLiteral("trackId")).toULongLong()));
+        o.insert(QStringLiteral("is_tracked"), tracked);
+        o.insert(QStringLiteral("server_track_id"), b.value(QStringLiteral("serverTrackId")).toInt());
+        o.insert(QStringLiteral("source_id"), b.value(QStringLiteral("sourceId")).toString());
+        o.insert(QStringLiteral("epoch"), b.value(QStringLiteral("trackerEpoch")).toString());
         o.insert(QStringLiteral("class"), cls);
         o.insert(QStringLiteral("confidence"), b.value(QStringLiteral("confidence")).toDouble());
         o.insert(QStringLiteral("bbox"), QJsonArray{b.value(QStringLiteral("x")).toDouble(),
@@ -346,9 +356,9 @@ void TeslaSceneItem::setBoxes(const QVariantList &boxes) {
         o.insert(QStringLiteral("predicted"), predicted);
         o.insert(QStringLiteral("missed"), b.value(QStringLiteral("missed")).toInt());
         o.insert(QStringLiteral("track_state"), predicted ? QStringLiteral("PREDICTED")
-                                                          : QStringLiteral("CONFIRMED"));
+                                                          : (tracked ? QStringLiteral("CONFIRMED") : QStringLiteral("UNTRACKED")));
         o.insert(QStringLiteral("spatial_validity"),
-                 (!predicted && mappable) ? QStringLiteral("RELATIVE_ONLY") : QStringLiteral("UNKNOWN"));
+                 (!predicted && tracked && mappable) ? QStringLiteral("RELATIVE_ONLY") : QStringLiteral("UNKNOWN"));
         const qint64 detect_ns = static_cast<qint64>(b.value(QStringLiteral("detectTimestampNs")).toULongLong());
         newest_detect_ns = std::max(newest_detect_ns, detect_ns);
         o.insert(QStringLiteral("detect_timestamp_ns"), detect_ns);
@@ -439,7 +449,6 @@ void TeslaSceneItem::setSourceTimestampNs(qint64 ns) {
 
 class SceneRenderer : public QQuickFramebufferObject::Renderer {
 public:
-    bool active_ = true;
     SceneRenderer() { clock_.start(); }
 
     QOpenGLFramebufferObject *createFramebufferObject(const QSize &size) override {
@@ -451,15 +460,20 @@ public:
 
     void synchronize(QQuickFramebufferObject *item) override {
         auto *scene = static_cast<TeslaSceneItem *>(item);
-        active_ = scene->active();
-        if (!active_) { boxes_.clear(); live_.clear(); return; }
         const QVariantList list = scene->boxes();
         QVector<SourceBox> next;
         next.reserve(list.size());
         for (const QVariant &entry : list) {
             const QVariantMap map = entry.toMap();
             SourceBox b;
-            b.id = map.value(QStringLiteral("trackId")).toInt();
+            // Detection-order placeholders remain available to the 2D overlay,
+            // but cannot own a persistent BEV object. Require server provenance.
+            b.id = map.value(QStringLiteral("serverTrackId")).toInt();
+            const auto *video = qobject_cast<VideoItem *>(scene->videoSource());
+            if (!map.value(QStringLiteral("isTracked")).toBool() || b.id <= 0 ||
+                !video || map.value(QStringLiteral("trackerEpoch")).toString() != video->aiTrackingEpoch()) continue;
+            b.serverId = map.value("serverTrackId").toInt();
+            b.epoch = map.value("trackerEpoch").toString();
             b.cls = map.value(QStringLiteral("className")).toString();
             b.x = map.value(QStringLiteral("x")).toDouble();
             b.y = map.value(QStringLiteral("y")).toDouble();
@@ -475,7 +489,7 @@ public:
             b.measuredNs=map.value("detectTimestampNs").toLongLong();
             b.expiresNs=map.value("hazardExpiresNs").toLongLong();
             b.source=map.value("sourceId").toString();
-            if (!b.source.isEmpty() && b.source!=QString("Q%1").arg(scene->roadQuadrant()+1)) continue;
+            if (b.source!=QString("Q%1").arg(scene->roadQuadrant()+1)) continue;
             // Stale/predicted tracks are retained by the tracker for continuity,
             // but must not be drawn as if they were current detections.
             if (b.id > 0 && b.w > 2 && b.h > 2 && !b.predicted && b.missed == 0 &&
@@ -487,12 +501,20 @@ public:
         display_view_ = scene->displayView();
         road_quadrant_ = scene->roadQuadrant();
         online_ = scene->online();
+        // The video widget is hidden on the spatial page, so its last rendered
+        // timestamp can stop advancing while capture continues normally.
+        auto *sourceVideo = qobject_cast<VideoItem *>(scene->videoSource());
+        const qint64 syncNowNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+        road_source_ns_ = sourceVideo && sourceVideo->sourceOnline()
+            ? syncNowNs - qint64(sourceVideo->sourceAgeMs() * 1e6) : 0;
         demo_ = scene->demoMode();
         viewport_ = scene->size().toSize();
         const QString key = scene->sourceKey();
         if (key != source_key_) {
             source_key_ = key;
-            live_.clear();
+            lifecycle_.clear();track_boxes_.clear();
+
         }
         const double now = clock_.nsecsElapsed() / 1e9;
         dt_ = std::clamp(now - last_time_, 0.001, 0.12);
@@ -501,7 +523,6 @@ public:
     }
 
     void render() override {
-        if (!active_) return;
         auto *ctx = QOpenGLContext::currentContext();
         if (!ctx) return;
         auto *f = ctx->functions();
@@ -555,7 +576,15 @@ public:
         QMatrix4x4 mvp = projection * view;
         program_->setUniformValue("uMVP", mvp);
         checkGl("uniforms");
-        f->glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size() / 6));
+        program_->setUniformValue("uAlpha",1.f);
+        f->glDrawArrays(GL_TRIANGLES, 0, opaque_vertices_);
+        f->glEnable(GL_BLEND);
+        f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        for (const auto &draw : car_draws_) {
+            program_->setUniformValue("uAlpha",draw.alpha);
+            f->glDrawArrays(GL_TRIANGLES,draw.first,draw.count);
+        }
+        f->glDisable(GL_BLEND);
         checkGl("draw");
         program_->disableAttributeArray(pos);
         program_->disableAttributeArray(col);
@@ -574,7 +603,8 @@ public:
             static QFile sceneLog(qEnvironmentVariable("QT_SCENE_TIMELINE_LOG"));
             if(!sceneLog.fileName().isEmpty() && (sceneLog.isOpen() || sceneLog.open(QIODevice::Append))) {
                 QJsonObject row;row.insert("scene_fps",frames_/(elapsed_-last_report_));
-                row.insert("live_tracks",live_.size());row.insert("source_key",source_key_);
+                row.insert("live_tracks",visible_tracks_);row.insert("tentative_tracks",int(lifecycle_.tracks.size())-visible_tracks_);row.insert("reassociations",lifecycle_.reassociations);row.insert("discarded_tentative",lifecycle_.discardedTentative);row.insert("source_key",source_key_);
+                row.insert("road_mode","SCHEMATIC_ANIMATION");row.insert("road_offset",road_motion_.distance);row.insert("road_moving",road_motion_.moving);
                 row.insert("timestamp_ns",double(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count()));
                 sceneLog.write(QJsonDocument(row).toJson(QJsonDocument::Compact)+'\n');sceneLog.flush();
             }
@@ -594,14 +624,16 @@ private:
         void main(){ vColor=aColor; gl_Position=uMVP*vec4(aPos,1.0); })";
         const char *fs = R"(#version 330 core
         in vec3 vColor; out vec4 fragColor;
-        void main(){ fragColor=vec4(vColor,1.0); })";
+        uniform float uAlpha;
+        void main(){ fragColor=vec4(vColor,uAlpha); })";
 #else
         const char *vs = R"(#version 300 es
         in vec3 aPos; in vec3 aColor; uniform mat4 uMVP; out vec3 vColor;
         void main(){ vColor=aColor; gl_Position=uMVP*vec4(aPos,1.0); })";
         const char *fs = R"(#version 300 es
         precision mediump float; in vec3 vColor; out vec4 fragColor;
-        void main(){ fragColor=vec4(vColor,1.0); })";
+        uniform float uAlpha;
+        void main(){ fragColor=vec4(vColor,uAlpha); })";
 #endif
         if (!program_->addShaderFromSourceCode(QOpenGLShader::Vertex, vs) ||
             !program_->addShaderFromSourceCode(QOpenGLShader::Fragment, fs) ||
@@ -646,75 +678,57 @@ private:
     }
 
     void addLive(std::vector<float> &v) {
-        if (!online_) {
-            live_.clear();
-            return;
-        }
-        const double now = elapsed_;
-        // Box coordinates are in the AI display view. In quad mode the AI
-        // statuses with display_view=quad; subtract the selected quadrant
-        // offset so navigation/cabin quadrants cannot leak into the road BEV.
-        double sourceW = 1280.0, sourceH = 720.0, offX = 0.0, offY = 0.0;
-        if (display_view_ == QStringLiteral("quad")) {
-            sourceW = 640.0; sourceH = 360.0;
-            offX = (road_quadrant_ % 2) * 640.0; offY = (road_quadrant_ / 2) * 360.0;
-        }
-        const qint64 absoluteNs=std::chrono::duration_cast<std::chrono::nanoseconds>(
+        visible_tracks_=0;
+        if (!online_) { lifecycle_.clear();track_boxes_.clear();return; }
+        double sourceW=1280.,sourceH=720.,offX=0.,offY=0.;
+        if(display_view_=="quad") {sourceW=640.;sourceH=360.;offX=(road_quadrant_%2)*640.;offY=(road_quadrant_/2)*360.;}
+        const qint64 nowNs=std::chrono::duration_cast<std::chrono::nanoseconds>(
             std::chrono::steady_clock::now().time_since_epoch()).count();
-        for (const SourceBox &b : boxes_) {
-            if (b.measuredNs<=0 || absoluteNs-b.measuredNs>600000000LL) continue;
-            if (!(b.cls == "car" || b.cls == "truck" || b.cls == "bus" ||
-                  b.cls == "person" || b.cls == "motorcycle" || b.cls == "bicycle")) continue;
-            const double boxCx = b.x + b.w * .5;
-            const double boxBottom = b.y + b.h;
-            if (boxCx < offX || boxCx > offX + sourceW ||
-                boxBottom < offY || boxBottom > offY + sourceH)
-                continue;
-            const double cx = (boxCx - offX) / sourceW;
-            const double bottom = (boxBottom - offY) / sourceH;
-            const float tx = std::clamp(float(-1.75 + (cx - .5) * 14.0), -6.8f, 6.8f);
-            // Non-calibrated relative depth: bbox width is a scale cue, not a
-            // metric distance. It separates near/far detections much better
-            // than a constant bottom-to-depth line and never yields metres.
-            const bool narrow = b.cls == "person" || b.cls == "bicycle" || b.cls == "motorcycle";
-            const float widthDepth = (narrow ? 1200.0f : 2600.0f) / std::max(24.0f, float(b.w));
-            const float bottomDepth = 3.8f + float(1.0 - bottom) * 42.0f;
-            const float tz = std::clamp(0.72f * widthDepth + 0.28f * bottomDepth, 4.0f, 62.0f);
-            auto it = live_.find(b.id);
-            if (it == live_.end()) {
-                LiveCar car;car.x=tx;car.z=tz;car.tx=tx;car.tz=tz;car.cls=b.cls;
-                car.seen=now;car.born=now;car.measuredNs=b.measuredNs;car.expiresNs=b.expiresNs;
-                car.hazard=b.hazard;live_.insert(b.id,car);
-            } else {
-                it->cls=b.cls;it->hazard=b.hazard;it->expiresNs=b.expiresNs;
-                if (b.measuredNs>it->measuredNs) {
-                    const double dt=(b.measuredNs-it->measuredNs)/1e9;
-                    if(dt>.02 && dt<.6) {
-                        it->vx=std::clamp(float((tx-it->tx)/dt),-12.f,12.f);
-                        it->vz=std::clamp(float((tz-it->tz)/dt),-30.f,30.f);
-                    }
-                    it->tx=tx;it->tz=tz;it->measuredNs=b.measuredNs;it->seen=now;
-                }
-            }
+        const double renderDt=last_render_ns_?std::clamp(double(nowNs-last_render_ns_)/1e9,0.,.12):.016;
+        last_render_ns_=nowNs;
+        std::vector<BevLife::Observation> observations;std::vector<SourceBox> sources;
+        qint64 measuredFrame=0;
+        for(const auto &b:boxes_) {
+            if(b.measuredNs<=0 || b.measuredNs>nowNs || nowNs-b.measuredNs>600000000LL)continue;
+            if(!(b.cls=="car" || b.cls=="truck" || b.cls=="bus" || b.cls=="person" || b.cls=="motorcycle" || b.cls=="bicycle"))continue;
+            const double cx=b.x+b.w*.5,bottom=b.y+b.h;
+            if(cx<offX || cx>offX+sourceW || bottom<offY || bottom>offY+sourceH)continue;
+            BevLife::Observation o;o.serverId=b.serverId;o.cls=sceneClass(b.cls);o.confidence=b.confidence;
+            o.bx=(b.x-offX)/sourceW;o.by=(b.y-offY)/sourceH;o.bw=b.w/sourceW;o.bh=b.h/sourceH;o.measuredNs=b.measuredNs;
+            o.x=std::clamp(-1.75+(o.bx+o.bw*.5-.5)*14.,-6.8,6.8);
+            const bool narrow=o.cls==0 || o.cls==1 || o.cls==3;
+            o.z=std::clamp(.72*(narrow?1200.:2600.)/std::max(24.,b.w)+.28*(3.8+(1.-(o.by+o.bh))*42.),4.,62.);
+            observations.push_back(o);sources.push_back(b);measuredFrame=std::max(measuredFrame,b.measuredNs);
         }
-        for (auto it=live_.begin();it!=live_.end();) {
-            const double age=std::max(0.,double(absoluteNs-it->measuredNs)/1e9);
-            if(age>.6) {it=live_.erase(it);continue;}
-            const double predict=std::min(age,.25);
-            const float k=std::min(1.f,float(dt_*12));
-            it->x+=(it->tx+it->vx*predict-it->x)*k;
-            it->z+=(it->tz+it->vz*predict-it->z)*k;
-            const float fade=std::min(std::min(1.f,float((now-it->born)/.18)),std::clamp(float((.6-age)/.35),0.f,1.f));
-            const size_t start=v.size();
-            carMesh(v,it->x,it->z,it->cls,false,absoluteNs<it->expiresNs?it->hazard:0);
-            // Fade mesh height and tint toward the road; no texture readback or Python rendering.
-            for(size_t i=start;i+5<v.size();i+=6) {
-                v[i+1]*=fade;
-                v[i+3]=.018f+(v[i+3]-.018f)*fade;
-                v[i+4]=.028f+(v[i+4]-.028f)*fade;
-                v[i+5]=.036f+(v[i+5]-.036f)*fade;
+        const auto ids=lifecycle_.update(observations,measuredFrame,nowNs);
+        for(size_t i=0;i<ids.size();++i)if(ids[i])track_boxes_[ids[i]]=sources[i];
+        lifecycle_.advance(nowNs,renderDt);
+        for(auto it=track_boxes_.begin();it!=track_boxes_.end();) {
+            const bool exists=std::any_of(lifecycle_.tracks.begin(),lifecycle_.tracks.end(),[&](const BevLife::Track &t){return t.id==it.key();});
+            if(!exists)it=track_boxes_.erase(it);else ++it;
+        }
+        // Far-to-near alpha rendering preserves full model dimensions during fade.
+        std::vector<const BevLife::Track *> ordered;
+        for(const auto &t:lifecycle_.tracks)if(t.confirmed)ordered.push_back(&t);
+        std::sort(ordered.begin(),ordered.end(),[](auto a,auto b){return a->drawZ>b->drawZ;});
+        for(const auto *track:ordered) {
+            const auto &t=*track;const auto b=track_boxes_.value(t.id);const float alpha=t.opacity(nowNs);
+            ++visible_tracks_;
+            if(!trace_.fileName().isEmpty() && (trace_.isOpen() || trace_.open(QIODevice::WriteOnly))) {
+                QJsonObject row;row["render_ns"]=nowNs;row["visual_dt"]=renderDt;
+                row["capture_timestamp_ns"]=qint64(t.lastNs);row["track_id"]=t.id;row["server_track_id"]=t.serverId;
+                row["source_id"]=b.source;row["epoch"]=b.epoch;row["source_key"]=source_key_;
+                row["class"]=b.cls;row["bbox"]=QJsonArray{b.x,b.y,b.w,b.h};row["bbox_width"]=b.w;
+                row["raw_x"]=t.last.x;row["raw_z"]=t.last.z;row["filtered_x"]=t.drawX;row["filtered_z"]=t.drawZ;
+                row["measurement_age_s"]=t.age(nowNs);row["fade"]=alpha;row["birth_count"]=1;
+                row["lifecycle"]=t.age(nowNs)>.25?"COASTING":"MEASURED";row["display_only_hold"]=t.age(nowNs)>.25;
+                row["reassociated_count"]=t.reassociated;row["model_height_scale"]=1.;
+                trace_.write(QJsonDocument(row).toJson(QJsonDocument::Compact)+'\n');
             }
-            ++it;
+            if(alpha<=0)continue;
+            const int start=int(v.size()/6);
+            carMesh(v,float(t.drawX),float(t.drawZ),b.cls,false,nowNs<b.expiresNs?b.hazard:0);
+            car_draws_.push_back({start,int(v.size()/6)-start,alpha});
         }
     }
 
@@ -772,21 +786,26 @@ private:
             return;
         }
         if (type == QStringLiteral("dashed")) {
-            for (int i = 0; i < 22; ++i) {
-                const float z0 = i * 4.0f + .7f;
-                quad(v, x - .045f, z0, x + .045f, z0 + 2.35f, .031f, .48f, .55f, .58f);
+            for (int i = -1; i < 24; ++i) {
+                const float z0 = i * 4.0f + .7f - road_motion_.phase(4.0);
+                if (z0 + 2.35f > 0 && z0 < 90)
+                    quad(v, x - .045f, std::max(0.f, z0), x + .045f, std::min(90.f, z0 + 2.35f), .031f, .48f, .55f, .58f);
             }
             return;
         }
         // Unknown: faint dotted guide, deliberately not a solid/dashed claim.
-        for (int i = 0; i < 30; ++i) {
-            const float z0 = i * 3.0f + .5f;
-            quad(v, x - .025f, z0, x + .025f, z0 + .8f, .026f, .18f, .24f, .26f);
+        for (int i = -1; i < 32; ++i) {
+            const float z0 = i * 3.0f + .5f - road_motion_.phase(3.0);
+            if (z0 + .8f > 0 && z0 < 90)
+                quad(v, x - .025f, std::max(0.f, z0), x + .025f, std::min(90.f, z0 + .8f), .026f, .18f, .24f, .26f);
         }
     }
 
     void buildScene(std::vector<float> &v) {
-        billboards_.clear();
+        billboards_.clear();car_draws_.clear();
+        const qint64 roadNowNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+        road_motion_.advance(roadNowNs, road_source_ns_);
         // Four same-direction lanes, 3.5 m each. The FSD blue path is only
         // the ego lane (second from the left), not the whole road.
         const float roadHalf = 7.0f;
@@ -813,14 +832,16 @@ private:
         laneEdge(v, 7.105f, rightType);
         // Dashed lane boundaries at -3.5, 0, +3.5.
         for (float laneX : {-3.5f, 0.0f, 3.5f}) {
-            for (int i = 0; i < 22; ++i) {
-                const float z0 = i * 4.0f + .7f;
-                quad(v, laneX - .045f, z0, laneX + .045f, z0 + 2.35f, .032f, .48f, .55f, .58f);
+            for (int i = -1; i < 24; ++i) {
+                const float z0 = i * 4.0f + .7f - road_motion_.phase(4.0);
+                if (z0 + 2.35f > 0 && z0 < 90)
+                    quad(v, laneX - .045f, std::max(0.f, z0), laneX + .045f, std::min(90.f, z0 + 2.35f), .032f, .48f, .55f, .58f);
             }
         }
         // Roadside grid and city silhouettes.
-        for (int i = 0; i < 8; ++i) {
-            const float z = 8.0f + i * 9.0f;
+        for (int i = 0; i < 12; ++i) {
+            const float z = -1.0f + i * 9.0f - road_motion_.phase(9.0);
+            if (z < 0 || z > 90) continue;
             quad(v, -30, z, -7.6f, z + .06f, .022f, .085f, .11f, .13f);
             quad(v, 7.6f, z, 30, z + .06f, .022f, .085f, .11f, .13f);
         }
@@ -843,10 +864,12 @@ private:
                      .035f, .052f, .062f, false);
             }
         }
-        if (demo_) addDemo(v); else addLive(v);
+        if (demo_) addDemo(v);
         // Ego is a real 3D member of the same projected world, not a QML
         // overlay. Its shape is a presentation model, not a measurement.
         carMesh(v, -1.75f, 0.65f, QStringLiteral("car"), true);
+        opaque_vertices_=int(v.size()/6);
+        if(!demo_)addLive(v);
     }
 
     std::unique_ptr<QOpenGLShaderProgram> program_;
@@ -867,7 +890,14 @@ private:
     QVariantMap lane_state_;
     QString display_view_ = QStringLiteral("front");
     int road_quadrant_ = 1;
-    QHash<int, LiveCar> live_;
+    qint64 last_render_ns_ = 0;
+    qint64 road_source_ns_ = 0;
+    SchematicRoadMotion road_motion_;
+    BevLife::Tracker lifecycle_;
+    QHash<int,SourceBox> track_boxes_;
+    std::vector<CarDraw> car_draws_;
+    int opaque_vertices_=0,visible_tracks_=0;
+    QFile trace_{qEnvironmentVariable("QT_BEV_TRACE")};
     QString source_key_;
     bool online_ = false;
     bool demo_ = false;
@@ -885,7 +915,7 @@ void TeslaSceneItem::setVideoSource(QObject *value) {
     if(video_source_)disconnect(video_source_,nullptr,this,nullptr);
     video_source_=value;
     if(auto video=qobject_cast<VideoItem *>(value)) {
-        connect(video,&VideoItem::aiBoxesChanged,this,[this,video]{if(active())setBoxes(video->aiBoxes());});
+        connect(video,&VideoItem::aiBoxesChanged,this,[this,video]{setBoxes(video->aiBoxes());});
         setBoxes(video->aiBoxes());
     }
 }

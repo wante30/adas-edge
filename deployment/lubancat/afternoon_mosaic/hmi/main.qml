@@ -56,9 +56,7 @@ Item {
     property bool modelPickerOpen: false
     property bool videoQsg: typeof videoQsgMode !== "undefined" ? videoQsgMode : false
     property var fpgaControl: fpgaIsp
-    property bool detectionLite: video.aiModelId === "FAST-MOSAIC-LITE"
     property bool autoHudSend: true
-    // Keep a distinct name from the C++ context property to avoid self-binding.
     property bool sceneRenderingEnabled: (typeof sceneEnabled !== "undefined" ? sceneEnabled : true)
     property int trackingMode: 2  // 0=RAW, 1=FIX4, 2=TIME
     property int testTraffic: 1
@@ -176,7 +174,6 @@ Item {
     }
 
     Component.onCompleted: {
-        console.log("SCENE_WORKLOAD", "enabled", root.sceneRenderingEnabled, "active", teslaLive.active)
         video.requestInferenceMode(viewMode === 1 ? "MOSAIC_FULL" : "ROAD_Q1")
         video.aiRoadQuadrant = roadQuadrant
         video.aiNavigationQuadrant = navQuadrant
@@ -205,12 +202,6 @@ Item {
         text: "合成事件测试 · 不是实拍识别结果 · DRY RUN"
         color: "#FFD34D"; font.pixelSize: 20; font.bold: true
     }
-    Text {
-        anchors.horizontalCenter: parent.horizontalCenter; y: 75; z: 999
-        visible: root.detectionLite
-        text: "FAST-MOSAIC Lite · 纯检测，控制不活动"
-        color: "#FFD34D"; font.pixelSize: 20; font.bold: true
-    }
     // Capture-only helper; the normal UI never auto-switches.
     Timer {
         interval: 5000
@@ -223,7 +214,7 @@ Item {
     // root BAR1 bridge every 500 ms. Other V2 fields are manual-test only.
     Timer {
         interval: 500
-        running: root.autoHudSend && !root.detectionLite
+        running: root.autoHudSend
         repeat: true
         onTriggered: root.sendAiHud()
     }
@@ -804,15 +795,15 @@ Item {
     }
 
     Text {
-        x: 400; y: 701; width: 55; height: 15
+        x: 1176; y: 6; width: 84; height: 28
         text: root.clockText()
         color: root.ink
-        font.family: root.num; font.pixelSize: 8; font.weight: Font.DemiBold
+        font.family: root.num; font.pixelSize: 19; font.weight: Font.DemiBold
         horizontalAlignment: Text.AlignRight
         verticalAlignment: Text.AlignVCenter
     }
     Text {
-        x: 460; y: 701; width: 82; height: 15
+        x: 1176; y: 35; width: 84; height: 15
         text: root.dateText()
         color: "#6E929F"; font.family: root.num; font.pixelSize: 7
         horizontalAlignment: Text.AlignRight
@@ -1274,7 +1265,7 @@ Item {
                 color: root.ink; font.family: root.cjk; font.pixelSize: 20; font.weight: Font.DemiBold
             }
             Text {
-                x: 25; y: 43; text: "BEV  ·  YOLO TRACKS  ·  RELATIVE_ONLY  /  SCHEMATIC ROAD"
+                x: 25; y: 43; text: "BEV  ·  YOLO TRACKS  ·  RELATIVE_ONLY  /  道路示意动画"
                 color: "#76AAB7"; font.family: root.num; font.pixelSize: 7; font.letterSpacing: 0.7
             }
             Row {
@@ -1310,7 +1301,7 @@ Item {
                     color: root.ink; font.family: root.cjk; font.pixelSize: 12; font.weight: Font.DemiBold
                 }
                 Text {
-                    x: 12; y: 57; text: "空间示意 · 未标定"; color: root.amber
+                    x: 12; y: 57; text: "道路示意动画 · 非实测车速"; color: root.amber
                     font.family: root.cjk; font.pixelSize: 7
                 }
                 Text {
@@ -1331,7 +1322,7 @@ Item {
                 }
                 Rectangle { x: 12; y: 47; width: 194; height: 1; color: "#1D3B46" }
                 Text {
-                    x: 12; y: 55; text: "LIVE TRACKS · RELATIVE_ONLY"
+                    x: 12; y: 55; text: "实测轨迹 · 半透明短时预测"
                     color: root.amber; font.family: root.cjk; font.pixelSize: 6
                 }
                 Text {
@@ -1532,8 +1523,7 @@ Item {
                 var c=video.aiControlState || {}
                 if(c.control_mode === "DRY_RUN")
                     return "DRY RUN · " + (c.stage === "brake_accepted" ? "制动请求已模拟接收" : c.stage === "pulse_ended" ? "点刹模拟结束" : c.stage === "control_event_cleared" ? "危险已解除" : c.stage === "brake_timeout" ? "ACK 超时" : "进程内控制回放")
-                return (c.authorized && c.enabled ? "比赛控制已授权 · " : "性能诊断 · 控制不活动 · ") +
-                    (c.fpga_accepted ? "FPGA已接收 · " : "") + root.hazardFooter()
+                return root.hazardFooter()
             }
             color: hazardCard.activeHazard ? "#B8848A" : "#6F8A93"
             font.family: root.cjk; font.pixelSize: 6
@@ -1846,16 +1836,14 @@ Item {
             TeslaSceneItem {
                 id: teslaLive
                 anchors.fill: parent
-                active: !root.detectionLite && root.sceneRenderingEnabled
                 videoSource: video
                 laneState: vehicleTelemetry.laneState
                 displayView: video.aiDisplayView
                 roadQuadrant: root.forwardQuadrant
                 demoMode: false
                 online: video.aiOnline
-                visible: root.sceneRenderingEnabled && !root.detectionLite
-                         && (root.viewMode === 0 || root.viewMode === 2)
-                sourceKey: video.sourceMode + ":" + video.inferenceMode + ":" + video.aiModelId
+                visible: root.sceneRenderingEnabled && (root.viewMode === 0 || root.viewMode === 2)
+                sourceKey: video.sourceMode + ":" + video.inferenceMode + ":" + video.aiModelId + ":Q" + (root.forwardQuadrant + 1) + ":" + video.aiTrackingEpoch
                 sourceFrameId: video.displayFrameId
                 sourceTimestampNs: video.displayTimestampNs
             }
@@ -1863,7 +1851,7 @@ Item {
         Text {
             x: 16; y: parent.height - 15
             text: "LIVE · Q" + (video.aiRoadQuadrant + 1) + " · F" + video.displayFrameId + " · "
-                  + video.aiDetectionCount + " targets · RELATIVE_ONLY · SCHEMATIC ROAD / LVT1 STYLE"
+                  + video.aiDetectionCount + " targets · 相对位置/短时预测 · 道路示意/非车速"
             color: "#7FB3B8"; font.family: root.cjk; font.pixelSize: 6
         }
     }
@@ -2056,7 +2044,7 @@ Item {
         color: "#7195A0"; font.family: root.num; font.pixelSize: 6
     }
     Text {
-        x: 550; y: 701; width: 450; height: 15
+        x: 500; y: 701; width: 550; height: 15
         text: "1 / 2 / 3 切换视图   ·   Q 退出"
         color: "#6F909B"; font.family: root.cjk; font.pixelSize: 7
         horizontalAlignment: Text.AlignHCenter
@@ -2181,7 +2169,7 @@ Item {
                                      && video.aiModelState !== "SENDING"
                             cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                             onClicked: {
-                                root.viewMode = option.id.indexOf("FAST-MOSAIC") === 0 ? 1 : 0
+                                root.viewMode = option.id === "FAST-MOSAIC" ? 1 : 0
                                 video.requestModelSwitch(option.id)
                                 root.modelPickerOpen = false
                             }

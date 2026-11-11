@@ -954,7 +954,8 @@ class AiReplayBridge:
         self.mosaic_profile_id = "FAST-MOSAIC"
         self.semantics = SemanticWorker()
         self.auto_brake = AutoBrakeController(journal=self.event_store.journal,
-            forward_source_id="Q%d" % (self.args.forward_quadrant + 1))
+            forward_source_id="Q%d" % (self.args.forward_quadrant + 1),
+            physical_input=self.args.source=="PGV_LIVE")
         self.navigation = None
         self.nav_request = None
         self.nav_result = None
@@ -1219,7 +1220,7 @@ class AiReplayBridge:
             layout=self.args.layout,display_view="quad",road_quadrant=self.args.forward_quadrant,
             inference=self.modes.status(frame_id),box_identities=self.box_identities,event_updates=[],
             semantics={},risk_rules={},control=dict(control_mode=self.auto_brake.mode,enabled=False,
-                authorized=self.auto_brake.authorized,inactive_reason="PURE_DETECTION_LITE"),
+                authorized=self.auto_brake.authorized,inactive_reason="PURE_DETECTION_LITE",context_epoch=self.modes.status()["epoch"]),
             workload=dict(lite=True,ocr_pid=None,semantics_active=False,tesla_active=False,hud_active=False))
         self.latest_dynamic_status = status
         self._last_analysis_cpu_ms = 0.
@@ -1658,7 +1659,8 @@ class AiReplayBridge:
         status["forward_source_id"] = "Q%d" % (self.args.forward_quadrant + 1)
         status["inference"] = self.modes.status(frame_id)
         status["workload"] = dict(lite=False,ocr_pid=self.nav_process.pid if self.nav_process else None,
-            semantics_active=True,tesla_active=True,hud_active=True)
+            semantics_active=self.semantics.thread.is_alive(),ocr_alive=self.nav_process.is_alive() if self.nav_process else False,
+            tesla_active=True,hud_active=True)
         status["semantics"] = dict(semantic_result,metrics=self.semantics.metrics())
         status["risk_rules"] = self.light_risk.metrics()
         status["box_identities"] = self.box_identities
@@ -1666,7 +1668,7 @@ class AiReplayBridge:
                                    for e in self.event_store.updates if e["lifecycle_state"] == "CLEARED"]
         status["control"] = dict(self.auto_brake.last_result or {}, control_mode=self.auto_brake.mode,
             enabled=self.auto_brake.enabled, authorized=self.auto_brake.authorized,
-            forward_source_id=self.auto_brake.forward_source_id)
+            forward_source_id=self.auto_brake.forward_source_id,context_epoch=mode["epoch"])
         road = getattr(snapshot.hazards, "road", None)
         if road:
             status["road_scene"] = road
