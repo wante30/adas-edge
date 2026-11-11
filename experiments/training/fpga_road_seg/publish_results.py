@@ -76,7 +76,7 @@ def publish(repo, output, push=False):
 ''' + '\n'.join(result_rows) + '''
 
 指标口径、checkpoint 哈希、训练曲线、真实道路对比和量化前后精度见
-[`README_RESULT.md`](experiments/training/fpga_road_seg/reports/real_bdd_final/README_RESULT.md)
+[`README_RESULT.md`](https://github.com/wante30/adas-edge/blob/feature/issue15-fpga-road-seg-20261112/experiments/training/fpga_road_seg/reports/real_bdd_final/README_RESULT.md)
 及同目录 `metrics.csv`、`*-export-report.json`。Small 保留两头参考结构，无实/虚线输出。
 所有报告均由本次 checkpoint 和真实 held-out 评估生成。合成 smoke 结果不作为道路精度。
 
