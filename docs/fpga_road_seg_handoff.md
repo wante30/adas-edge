@@ -21,14 +21,17 @@ Software candidate input is fixed-shape NCHW `float32 [1,3,192,320]`, RGB,
 values in `[0,1]` (`uint8 / 255`), letterboxed with fill 114. Output is raw
 logits `[1,4,192,320]`, ordered `drivable_area`, `solid_lane`, `dashed_lane`,
 `crosswalk`; independent sigmoid thresholds produce overlapping masks. The
-candidate has 8,508 parameters and 50,703,360 multiply-accumulates at 320x192
+candidate has 8,508 parameters and 25,351,680 multiply-accumulates at 320x192
 (FLOPs reported as 2x MAC). These are software shape/profile counts, not device
 resource estimates.
 
-The TwinLiteNet+ Small reference has 121,552 parameters and 647,936,512 MACs at
+Candidate-plus has 32,524 parameters and 84,718,080 MACs at 320x192, with the
+same Conv/DW/PW/ReLU/Add/nearest-Resize operator family.
+
+The TwinLiteNet+ Small reference has 121,552 parameters and 323,968,256 MACs at
 320x192 under the same counter. It uses PReLU, dilated convolutions, transpose
 convolution, CAAM MatMul/Linear/Softmax, pooling and reshape/transpose. The
-four-head software extension adds 117,716 parameters and 580,659,712 MACs.
+four-head software extension has 117,716 parameters and 290,329,856 MACs.
 Reference architectures and the four-head variant are compatibility comparators,
 not the default candidate. Small CAAM fails at 384x216; tested valid sizes are
 320x192, 512x288 and 640x384. Ask the software team before changing dimensions.

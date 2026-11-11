@@ -1,5 +1,9 @@
 # Phase 0: source and repository audit
 
+> Historical initial audit. Data recovery and the positive-only BDD crosswalk
+> experiment have since progressed; see `real_bdd_recovery.md` and the generated
+> real-data results. The unavailable-data statements below describe phase 0 only.
+
 Date: 2026-11-12 (Asia/Shanghai). Issue: https://github.com/wante30/adas-edge/issues/15
 
 ## Confirmed repository boundary

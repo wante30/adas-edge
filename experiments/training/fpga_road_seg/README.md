@@ -62,12 +62,14 @@ flat `[x,y,type]` serialization, including frame `objects` and
 lane objects. The previous MTL lane PNG encoding is accepted as `lane_png`;
 because its background is 255, it contributes positive-only pixels and does not
 invent negative supervision. Unsupported RLE/schema fails closed.
-Line paths have default native width 8px and resize with the image; dataset
+Line paths have default native width 10px and resize with the image; dataset
 coordinates are never interpreted in network-pixel space. Use 4/8/12 native px
 conversion runs and compare thin-line F1/recall before selecting width. Rasterize
 curves, not their Bezier control polygons. No automatic filling of dashed gaps.
 
-BDD crosswalk sparse curves have **zero crosswalk validity**. Vistas config label
+BDD crosswalk sparse curves have **positive-pixel-only weak validity**. The core
+three-task runs explicitly exclude crosswalk loss and metrics; separate weak
+fine-tuning does not establish dense crosswalk IoU or precision. Vistas config label
 names resolve IDs dynamically; unmapped channels have zero validity, void pixels
 are ignored. Mapping road into drivable is an explicit semantic proxy choice,
 not proof that road is safe to drive. Vistas generic line markings cannot infer
@@ -85,7 +87,9 @@ python -m experiments.training.fpga_road_seg.infer --checkpoint outputs/candidat
 
 Converted manifest and provenance include image/index hashes, fixed splits,
 native raster width and per-channel positive/valid pixel counts. Full manifests
-are validated for sequence leakage, repeated paths/IDs and duplicate image bytes.
+are validated for sequence leakage, repeated paths/IDs and cross-split duplicate
+image bytes. Original train frames sharing an official val sequence prefix are
+quarantined in `split-audit.json`; source files and masks remain intact.
 Training refuses missing supervised channels or zero positive training labels.
 Loss averages BCE (configurable positive class weights) plus masked Dice over
 available channels. Metrics accumulate TP/FP/FN/TN globally over valid pixels;

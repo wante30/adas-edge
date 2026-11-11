@@ -6,6 +6,7 @@ QDQ is an interchange graph, NOT a PG2L200H memory/RTL weight image.
 from __future__ import annotations
 
 import argparse
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -109,9 +110,9 @@ def quantization_metadata(path):
                 shift_contract='illustrative Q30 multiplier/right shift approximation; not validated on FPGA',layers=records)
 
 
-def compare(model, fp32_path, int8_path, manifest, cfg, split='val'):
+def compare(model, fp32_path, int8_path, manifest, cfg, split='val', disabled_channels=()):
     fp,iq=session(fp32_path),session(int8_path)
-    names=names_for(cfg['model']); ds=RoadDataset(manifest,split,(cfg['width'],cfg['height']),len(names)==2)
+    names=names_for(cfg['model']); ds=RoadDataset(manifest,split,(cfg['width'],cfg['height']),len(names)==2,disabled_channels)
     fm,im=Metrics(len(names)),Metrics(len(names))
     torch_error=int8_error=0.; probability_error=[]; agreement=total=0
     model.eval()
@@ -149,7 +150,17 @@ def export(checkpoint, manifest, output, calibration_count=16, compare_split='va
     if calibration_count<1 or not rows:
         raise ValueError('nonempty TRAIN-only PTQ calibration required')
     # load_manifest validates global sequence/content leakage before selecting calibration.
-    out=Path(output); out.mkdir(parents=True,exist_ok=False)
+    out=Path(output)
+    completed=out/'export-report.json'
+    if completed.exists():
+        previous=__import__('json').loads(completed.read_text(encoding='utf-8'))
+        if previous.get('checkpoint_sha256')==file_hash(checkpoint) and previous.get('dataset_manifest_sha256')==file_hash(manifest):
+            return previous
+        raise ValueError('completed export belongs to a different checkpoint/manifest; use a new output')
+    if out.exists():
+        backup=out.with_name(out.name + f'.incomplete-{time.time_ns()}')
+        out.rename(backup)
+    out.mkdir(parents=True,exist_ok=False)
     fp=out/'model.fp32.onnx'; prepared=out/'model.preprocessed.onnx'; iq=out/'model.int8.qdq.onnx'
     model.eval()
     x=torch.zeros(1,3,size[1],size[0])
@@ -171,7 +182,7 @@ def export(checkpoint, manifest, output, calibration_count=16, compare_split='va
     write_json(out/'quantization.json',quant)
     calibration=[dict(id=r['id'],group_id=r['group_id'],split=r['split'],image=r['image'],sha256=file_hash(r['image']),source=r['source'],license=r['license']) for r in rows]
     write_json(out/'calibration-manifest.json',calibration)
-    comparison=compare(model,fp,iq,manifest,cfg,compare_split)
+    comparison=compare(model,fp,iq,manifest,cfg,compare_split,ck.get('excluded_channels', ()))
     write_json(out/'comparison.json',comparison)
     allowed={'Conv','Relu','Add','Resize','Constant','Identity','Shape','Gather','Slice','Concat','Unsqueeze'}
     unsupported=sorted(set(fp_inventory['operators'])-allowed)
