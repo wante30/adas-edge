@@ -1,0 +1,448 @@
+{
+  "model_root": "D:/Datasets/adas_edge_training",
+  "videos": [
+    {
+      "id": "112454",
+      "path": "D:\\BaiduNetdiskDownload\\紫光同创杯赛题三参考素材\\video_20260929_112454.mp4",
+      "labels": [
+        {
+          "frame_id": 30,
+          "objects": [
+            {
+              "id": 0,
+              "bbox_native": [
+                498,
+                219,
+                654,
+                291
+              ],
+              "previous_q4_bbox": [
+                168,
+                75,
+                216,
+                95
+              ],
+              "color": "RED",
+              "shape": "LEFT_ARROW",
+              "ego_relevance": "UNKNOWN",
+              "attribute_roi_native": [
+                498,
+                219,
+                654,
+                291
+              ],
+              "lamp_bbox_native": [
+                519,
+                239,
+                554,
+                276
+              ],
+              "lamp_label_note": "Manual visual review on original image; boxes enclose luminous face, independent of model."
+            },
+            {
+              "id": 1,
+              "bbox_native": [
+                813,
+                213,
+                969,
+                285
+              ],
+              "previous_q4_bbox": [
+                273,
+                73,
+                321,
+                93
+              ],
+              "color": "RED",
+              "shape": "STRAIGHT_ARROW",
+              "ego_relevance": "UNKNOWN",
+              "attribute_roi_native": [
+                813,
+                213,
+                969,
+                285
+              ],
+              "lamp_bbox_native": [
+                834,
+                231,
+                866,
+                269
+              ],
+              "lamp_label_note": "Manual visual review on original image; boxes enclose luminous face, independent of model."
+            }
+          ]
+        },
+        {
+          "frame_id": 60,
+          "objects": [
+            {
+              "id": 0,
+              "bbox_native": [
+                513,
+                216,
+                669,
+                291
+              ],
+              "previous_q4_bbox": [
+                173,
+                74,
+                221,
+                95
+              ],
+              "color": "RED",
+              "shape": "LEFT_ARROW",
+              "ego_relevance": "UNKNOWN",
+              "attribute_roi_native": [
+                513,
+                216,
+                669,
+                291
+              ],
+              "lamp_bbox_native": [
+                536,
+                236,
+                571,
+                274
+              ],
+              "lamp_label_note": "Manual visual review on original image; boxes enclose luminous face, independent of model."
+            },
+            {
+              "id": 1,
+              "bbox_native": [
+                834,
+                210,
+                987,
+                285
+              ],
+              "previous_q4_bbox": [
+                280,
+                72,
+                327,
+                93
+              ],
+              "color": "RED",
+              "shape": "STRAIGHT_ARROW",
+              "ego_relevance": "UNKNOWN",
+              "attribute_roi_native": [
+                834,
+                210,
+                987,
+                285
+              ],
+              "lamp_bbox_native": [
+                855,
+                230,
+                887,
+                266
+              ],
+              "lamp_label_note": "Manual visual review on original image; boxes enclose luminous face, independent of model."
+            }
+          ]
+        },
+        {
+          "frame_id": 90,
+          "objects": [
+            {
+              "id": 0,
+              "bbox_native": [
+                525,
+                213,
+                681,
+                285
+              ],
+              "previous_q4_bbox": [
+                177,
+                73,
+                225,
+                93
+              ],
+              "color": "RED",
+              "shape": "LEFT_ARROW",
+              "ego_relevance": "UNKNOWN",
+              "attribute_roi_native": [
+                525,
+                213,
+                681,
+                285
+              ],
+              "lamp_bbox_native": [
+                542,
+                233,
+                576,
+                272
+              ],
+              "lamp_label_note": "Manual visual review on original image; boxes enclose luminous face, independent of model."
+            },
+            {
+              "id": 1,
+              "bbox_native": [
+                846,
+                207,
+                1002,
+                279
+              ],
+              "previous_q4_bbox": [
+                284,
+                71,
+                332,
+                91
+              ],
+              "color": "RED",
+              "shape": "STRAIGHT_ARROW",
+              "ego_relevance": "UNKNOWN",
+              "attribute_roi_native": [
+                846,
+                207,
+                1002,
+                279
+              ],
+              "lamp_bbox_native": [
+                864,
+                225,
+                896,
+                263
+              ],
+              "lamp_label_note": "Manual visual review on original image; boxes enclose luminous face, independent of model."
+            }
+          ]
+        }
+      ],
+      "sha256": "deafab569a9bf1362601f2043ce84cbf9b33532ecda7e0a47f7daf48535b8708"
+    },
+    {
+      "id": "113421",
+      "path": "D:\\BaiduNetdiskDownload\\紫光同创杯赛题三参考素材\\video_20260929_113421.mp4",
+      "labels": [
+        {
+          "frame_id": 60,
+          "objects": [
+            {
+              "id": 0,
+              "bbox_native": [
+                806,
+                564,
+                875,
+                598
+              ],
+              "previous_q4_bbox": [
+                269,
+                189,
+                291,
+                197
+              ],
+              "color": "GREEN",
+              "shape": "ROUND",
+              "ego_relevance": "UNKNOWN",
+              "attribute_roi_native": [
+                803,
+                561,
+                878,
+                601
+              ],
+              "lamp_bbox_native": [
+                846,
+                570,
+                868,
+                592
+              ],
+              "lamp_label_note": "Manual visual review on original image; boxes enclose luminous face, independent of model."
+            },
+            {
+              "id": 1,
+              "bbox_native": [
+                958,
+                562,
+                1030,
+                597
+              ],
+              "previous_q4_bbox": [
+                320,
+                189,
+                339,
+                197
+              ],
+              "color": "GREEN",
+              "shape": "ROUND",
+              "ego_relevance": "UNKNOWN",
+              "attribute_roi_native": [
+                955,
+                559,
+                1033,
+                600
+              ],
+              "lamp_bbox_native": [
+                998,
+                565,
+                1026,
+                592
+              ],
+              "lamp_label_note": "Manual visual review on original image; boxes enclose luminous face, independent of model."
+            }
+          ]
+        },
+        {
+          "frame_id": 180,
+          "objects": [
+            {
+              "id": 0,
+              "bbox_native": [
+                843,
+                544,
+                924,
+                583
+              ],
+              "previous_q4_bbox": [
+                281,
+                182,
+                307,
+                193
+              ],
+              "color": "GREEN",
+              "shape": "ROUND",
+              "ego_relevance": "UNKNOWN",
+              "attribute_roi_native": [
+                840,
+                541,
+                927,
+                586
+              ],
+              "lamp_bbox_native": [
+                885,
+                549,
+                912,
+                577
+              ],
+              "lamp_label_note": "Manual visual review on original image; boxes enclose luminous face, independent of model."
+            },
+            {
+              "id": 1,
+              "bbox_native": [
+                1018,
+                541,
+                1098,
+                583
+              ],
+              "previous_q4_bbox": [
+                340,
+                180,
+                365,
+                193
+              ],
+              "color": "GREEN",
+              "shape": "ROUND",
+              "ego_relevance": "UNKNOWN",
+              "attribute_roi_native": [
+                1015,
+                538,
+                1101,
+                586
+              ],
+              "lamp_bbox_native": [
+                1062,
+                548,
+                1087,
+                578
+              ],
+              "lamp_label_note": "Manual visual review on original image; boxes enclose luminous face, independent of model."
+            }
+          ]
+        },
+        {
+          "frame_id": 300,
+          "objects": [
+            {
+              "id": 0,
+              "bbox_native": [
+                940,
+                393,
+                1067,
+                452
+              ],
+              "previous_q4_bbox": [
+                313,
+                125,
+                356,
+                143
+              ],
+              "color": "GREEN",
+              "shape": "ROUND",
+              "ego_relevance": "UNKNOWN",
+              "attribute_roi_native": [
+                937,
+                390,
+                1070,
+                455
+              ],
+              "lamp_bbox_native": [
+                1014,
+                401,
+                1047,
+                438
+              ],
+              "lamp_label_note": "Manual visual review on original image; boxes enclose luminous face, independent of model."
+            },
+            {
+              "id": 1,
+              "bbox_native": [
+                1241,
+                392,
+                1375,
+                452
+              ],
+              "previous_q4_bbox": [
+                414,
+                124,
+                458,
+                142
+              ],
+              "color": "GREEN",
+              "shape": "ROUND",
+              "ego_relevance": "UNKNOWN",
+              "attribute_roi_native": [
+                1238,
+                389,
+                1378,
+                455
+              ],
+              "lamp_bbox_native": [
+                1321,
+                398,
+                1357,
+                441
+              ],
+              "lamp_label_note": "Manual visual review on original image; boxes enclose luminous face, independent of model."
+            }
+          ]
+        }
+      ],
+      "sha256": "ce5578b70a18cf619eb086246d46019776a72a47fb85f1a89f6e8e03541bb75c"
+    },
+    {
+      "id": "112507",
+      "path": "D:\\BaiduNetdiskDownload\\紫光同创杯赛题三参考素材\\video_20260929_112507.mp4",
+      "labels": []
+    },
+    {
+      "id": "113452",
+      "path": "D:\\BaiduNetdiskDownload\\紫光同创杯赛题三参考素材\\video_20260929_113452.mp4",
+      "labels": []
+    },
+    {
+      "id": "112739",
+      "path": "D:\\BaiduNetdiskDownload\\紫光同创杯赛题三参考素材\\video_20260929_112739.mp4",
+      "labels": []
+    },
+    {
+      "id": "113343",
+      "path": "D:\\BaiduNetdiskDownload\\紫光同创杯赛题三参考素材\\video_20260929_113343.mp4",
+      "labels": []
+    },
+    {
+      "id": "113539",
+      "path": "D:\\BaiduNetdiskDownload\\紫光同创杯赛题三参考素材\\video_20260929_113539.mp4",
+      "labels": []
+    }
+  ],
+  "baseline_ref": "cb0007b563f81487999ac8824c04f1da8a2817f9",
+  "annotation_notes": "Sparse visual review; original head ROIs padded to avoid clipping. previous_q4_bbox preserved for old detector IoU comparison. No interpolation claimed as manual ground truth."
+}
