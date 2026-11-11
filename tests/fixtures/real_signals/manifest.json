@@ -1,0 +1,271 @@
+[
+  {
+    "file": "02_0.png",
+    "source_id": "02",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Red_arrow_traffic_lights.JPG",
+    "source_sha256": "79ff44f57b0af2d07fe0f65be7ae594fb9c1d8954d349585a14ea0bb988bb40e",
+    "bbox": [
+      421,
+      61,
+      520,
+      173
+    ],
+    "sha256": "ac83704b2c7ae44cbcecf63c95f4273f8891143c87df4d5f2bb2809603a68256",
+    "expected_color": "RED",
+    "expected_shape": "LEFT_ARROW",
+    "ground_truth": {
+      "bbox": [
+        421,
+        61,
+        520,
+        173
+      ],
+      "color": "RED",
+      "shape": "LEFT_ARROW"
+    },
+    "author": "LincolnGroup11",
+    "license": "CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+  },
+  {
+    "file": "03_1.png",
+    "source_id": "03",
+    "source_url": "https://commons.wikimedia.org/wiki/File:U-turn_traffic_light.jpg",
+    "source_sha256": "f6b511b27066df1eaf892b804d6e88e321ca21f254d1b2eeff31b325fc0e6561",
+    "bbox": [
+      1639,
+      1049,
+      1788,
+      1195
+    ],
+    "sha256": "56718496450db2984f06c5d9469594fa848a11bb1ef2ef4d0e0fdae57d8b45bd",
+    "expected_color": "GREEN",
+    "expected_shape": "UTURN_ARROW",
+    "ground_truth": {
+      "bbox": [
+        1639,
+        1049,
+        1788,
+        1195
+      ],
+      "color": "GREEN",
+      "shape": "UTURN_ARROW"
+    },
+    "author": "MrSwagger21",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+  },
+  {
+    "file": "11_0.png",
+    "source_id": "11",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Jianshe_Avenue_%26_Taibei_Road,_June_2023.jpg",
+    "source_sha256": "1b40f7f23b3be67110256b725042579df65f3024368bf462b91b6cbc44746cf4",
+    "bbox": [
+      1920,
+      791,
+      2117,
+      1174
+    ],
+    "sha256": "13b7674db7ddfaa7535a0ca7d20a559463b4d0b0256f24105837c227ee09d35a",
+    "expected_color": "RED",
+    "expected_shape": "LEFT_ARROW",
+    "ground_truth": {
+      "bbox": [
+        1920,
+        791,
+        2117,
+        1174
+      ],
+      "color": "RED",
+      "shape": "LEFT_ARROW"
+    },
+    "author": "David Chen",
+    "license": "CC BY-SA 2.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/2.0"
+  },
+  {
+    "file": "11_1.png",
+    "source_id": "11",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Jianshe_Avenue_%26_Taibei_Road,_June_2023.jpg",
+    "source_sha256": "1b40f7f23b3be67110256b725042579df65f3024368bf462b91b6cbc44746cf4",
+    "bbox": [
+      2354,
+      776,
+      2530,
+      1184
+    ],
+    "sha256": "ae6a7c220b7df6fc66b874227b705c7904c27629fbcb5aea8771a9906d05eb50",
+    "expected_color": "RED",
+    "expected_shape": "STRAIGHT_ARROW",
+    "ground_truth": {
+      "bbox": [
+        2354,
+        776,
+        2530,
+        1184
+      ],
+      "color": "RED",
+      "shape": "STRAIGHT_ARROW"
+    },
+    "author": "David Chen",
+    "license": "CC BY-SA 2.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/2.0"
+  },
+  {
+    "file": "12_1.png",
+    "source_id": "12",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Traffic_signal_-_red_and_right_arrow,_Otsu_2024-01.jpg",
+    "source_sha256": "305decf2dcd2ada748eecec533e81f1927ba449dfd3d184af6c7000d4c8771dd",
+    "bbox": [
+      1605,
+      1097,
+      2140,
+      1648
+    ],
+    "sha256": "dc01ab9f30634cb2f1fff9d3822622d53252a42e8caf26ff4abdaace56ff1f10",
+    "expected_color": "GREEN",
+    "expected_shape": "RIGHT_ARROW",
+    "ground_truth": {
+      "bbox": [
+        1605,
+        1097,
+        2140,
+        1648
+      ],
+      "color": "GREEN",
+      "shape": "RIGHT_ARROW"
+    },
+    "author": "運動会プロテインパワー",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+  },
+  {
+    "file": "23_1.png",
+    "source_id": "23",
+    "source_url": "https://commons.wikimedia.org/wiki/File:UK_Green_Traffic_Light%5ESignal_Filter_Arrows_Pointing_Going_Straight_On_And_Turning_Left_-_geograph.org.uk_-_5113135.jpg",
+    "source_sha256": "b2b047142b32b3c422eca272663c0052be2d28528929813b6247f80589ed0a9e",
+    "bbox": [
+      188,
+      1040,
+      310,
+      1154
+    ],
+    "sha256": "d635435a3acfd213621991477d852d0bd01a9ba9f8308d1afa08c3acba5054b1",
+    "expected_color": "GREEN",
+    "expected_shape": "LEFT_ARROW",
+    "ground_truth": {
+      "bbox": [
+        188,
+        1040,
+        310,
+        1154
+      ],
+      "color": "GREEN",
+      "shape": "LEFT_ARROW"
+    },
+    "author": "Gary ",
+    "license": "CC BY-SA 2.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/2.0"
+  },
+  {
+    "file": "20_0.png",
+    "source_id": "20",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Tamura_Cross_Road.jpg",
+    "source_sha256": "c9357c0d5c6990a3c6abb29dbaa0d7ea302b4ecf09f4c137c00aca534e6705a3",
+    "bbox": [
+      1254,
+      538,
+      1302,
+      598
+    ],
+    "sha256": "ef9fa0a3e0d0c22c16b5600c6ec40d7d92ef67acbcd46d909f7d7dc86a1cbb02",
+    "expected_color": "RED",
+    "expected_shape": "UNKNOWN",
+    "ground_truth": {
+      "bbox": [
+        1254,
+        538,
+        1302,
+        598
+      ],
+      "color": "RED",
+      "shape": "ROUND"
+    },
+    "author": "KitaTKO",
+    "license": "CC0",
+    "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  {
+    "file": "01_1.png",
+    "source_id": "01",
+    "source_url": "https://commons.wikimedia.org/wiki/File:UK_Red_Traffic_Light_With_Green_Filter_Arrow_-_geograph.org.uk_-_6409628.jpg",
+    "source_sha256": "930322e739fb3b72d34b94fef4185c8ed322d6fd5a21d2bc86a2a5c4885b8516",
+    "bbox": [
+      520,
+      808,
+      604,
+      880
+    ],
+    "sha256": "d92e85d29269a47b3a6856fb3a3f9c8f30511d61427e8c54dfc0fcbc51fce708",
+    "expected_color": "GREEN",
+    "expected_shape": "UNKNOWN",
+    "ground_truth": {
+      "bbox": [
+        520,
+        808,
+        604,
+        880
+      ],
+      "color": "GREEN",
+      "shape": "LEFT_ARROW"
+    },
+    "author": "Gary ",
+    "license": "CC BY-SA 2.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/2.0"
+  },
+  {
+    "file": "13_1.png",
+    "source_id": "13",
+    "source_url": "https://commons.wikimedia.org/wiki/File:Red_and_yellow_traffic_lights.jpg",
+    "source_sha256": "9d2ea808e8da19cbba713585ce55c1f7ecc55f9043623f1d43ba56c98046e0bd",
+    "bbox": [
+      1779,
+      1515,
+      2124,
+      1814
+    ],
+    "sha256": "f7b28c967fc0bcab3da2bc3081535cd3ded09bbb4dc66d0cc510c53541c5028e",
+    "expected_color": "YELLOW",
+    "expected_shape": "UNKNOWN",
+    "ground_truth": {
+      "bbox": [
+        1779,
+        1515,
+        2124,
+        1814
+      ],
+      "color": "YELLOW",
+      "shape": "ROUND"
+    },
+    "author": "Santeri Viinamäki",
+    "license": "CC BY-SA 4.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+  },
+  {
+    "file": "23_head.png",
+    "source_id": "23",
+    "source_url": "https://commons.wikimedia.org/wiki/File:UK_Green_Traffic_Light%5ESignal_Filter_Arrows_Pointing_Going_Straight_On_And_Turning_Left_-_geograph.org.uk_-_5113135.jpg",
+    "source_sha256": "b2b047142b32b3c422eca272663c0052be2d28528929813b6247f80589ed0a9e",
+    "bbox": [
+      110,
+      580,
+      380,
+      1190
+    ],
+    "sha256": "ee8455b3e1097c3917eb20ae41185e149370e15278850bf5bbd63adfd15b9012",
+    "license": "CC BY-SA 2.0",
+    "author": "Gary",
+    "license_url": "https://creativecommons.org/licenses/by-sa/2.0/",
+    "purpose": "REGION_SPLIT_ONLY"
+  }
+]

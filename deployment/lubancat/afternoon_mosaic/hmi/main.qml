@@ -46,7 +46,7 @@ Item {
         MouseArea { anchors.fill: parent; onClicked: root.signalDebugOpen = !root.signalDebugOpen }
     }
     Rectangle {
-        x: 16; y: 104; width: 690; height: Math.min(390, 116 + signalRows.height); z: 1000
+        x: 16; y: 104; width: 690; height: Math.min(540, 116 + signalRows.height); z: 1000
         visible: root.signalDebugOpen; color: "#EE071821"; border.color: "#3CE3FF"; radius: 4
         Text { x: 10; y: 8; text: "Q4 MULTI SIGNAL · DEBUG ONLY"; color: "#8CF5FF"; font.pixelSize: 13 }
         Column {
@@ -55,14 +55,20 @@ Item {
                 model: ["left", "straight", "right"]
                 delegate: Text {
                     property var row: (root.signalDebugState.directions || {})[modelData] || {}
-                    text: modelData.toUpperCase() + "  " + (row.color || "UNKNOWN") + "  " + (row.reason || "DISABLED_OR_WAITING")
+                    property var observed: (root.signalDebugState.observed_directions || {})[modelData] || {}
+                    text: modelData.toUpperCase() + "  VISIBLE=" + (observed.color || "UNKNOWN")
+                          + "  EGO=" + (row.color || "UNKNOWN") + "  " + (row.reason || "DISABLED_OR_WAITING")
                     color: row.color === "GREEN" ? "#45F3B0" : (row.color === "RED" ? "#FF5064" : "#FFBC5C")
                     font.pixelSize: 11
                 }
             }
         }
+        Flickable {
+            x: 10; y: 90; width: 670; height: parent.height - 100
+            clip: true; contentWidth: width; contentHeight: signalRows.height
+            boundsBehavior: Flickable.StopAtBounds
         Column {
-            id: signalRows; x: 10; y: 90; width: 670; spacing: 5
+            id: signalRows; width: 670; spacing: 5
             Repeater {
                 model: root.signalDebugState.signals || []
                 delegate: Text {
@@ -76,6 +82,7 @@ Item {
                           + modelData.reason + " · " + (modelData.association_reason || "UNASSOCIATED")
                 }
             }
+        }
         }
     }
 

@@ -1,0 +1,448 @@
+{
+  "scope": "MANUAL_NATIVE_ROIS_ATTRIBUTE_EVALUATION_NOT_DETECTOR_RECALL",
+  "images": [
+    {
+      "id": "00",
+      "split": "exploratory",
+      "sha256": "e9bf11c4a6b9fad3a8d7879bf5ecf948b3d5782597c00d93a392dda9360b6826",
+      "objects": [
+        {
+          "bbox": [
+            180,
+            444,
+            396,
+            929
+          ],
+          "color": "RED",
+          "shape": "LEFT_ARROW"
+        },
+        {
+          "bbox": [
+            425,
+            468,
+            624,
+            914
+          ],
+          "color": "GREEN",
+          "shape": "ROUND"
+        }
+      ]
+    },
+    {
+      "id": "01",
+      "split": "development",
+      "sha256": "930322e739fb3b72d34b94fef4185c8ed322d6fd5a21d2bc86a2a5c4885b8516",
+      "objects": [
+        {
+          "bbox": [
+            586,
+            622,
+            673,
+            719
+          ],
+          "color": "RED",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            520,
+            808,
+            604,
+            880
+          ],
+          "color": "GREEN",
+          "shape": "LEFT_ARROW"
+        }
+      ]
+    },
+    {
+      "id": "02",
+      "split": "development",
+      "sha256": "79ff44f57b0af2d07fe0f65be7ae594fb9c1d8954d349585a14ea0bb988bb40e",
+      "objects": [
+        {
+          "bbox": [
+            421,
+            61,
+            520,
+            173
+          ],
+          "color": "RED",
+          "shape": "LEFT_ARROW"
+        },
+        {
+          "bbox": [
+            524,
+            65,
+            638,
+            177
+          ],
+          "color": "RED",
+          "shape": "ROUND"
+        }
+      ]
+    },
+    {
+      "id": "03",
+      "split": "development",
+      "sha256": "f6b511b27066df1eaf892b804d6e88e321ca21f254d1b2eeff31b325fc0e6561",
+      "objects": [
+        {
+          "bbox": [
+            665,
+            746,
+            842,
+            900
+          ],
+          "color": "RED",
+          "shape": "UTURN_ARROW"
+        },
+        {
+          "bbox": [
+            1639,
+            1049,
+            1788,
+            1195
+          ],
+          "color": "GREEN",
+          "shape": "UTURN_ARROW"
+        }
+      ]
+    },
+    {
+      "id": "04",
+      "split": "development",
+      "sha256": "75aa566f6c5ddace1f564c09e128f94dc4ac18253fe733198d253774f7383e54",
+      "objects": [
+        {
+          "bbox": [
+            638,
+            462,
+            774,
+            579
+          ],
+          "color": "RED",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            640,
+            622,
+            772,
+            744
+          ],
+          "color": "YELLOW",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            496,
+            831,
+            612,
+            940
+          ],
+          "color": "GREEN",
+          "shape": "LEFT_ARROW"
+        }
+      ]
+    },
+    {
+      "id": "08",
+      "split": "exploratory",
+      "sha256": "d22aef90f47b3be21168cae0b7367266d2db2da2a9e3369aff64c96621d4e574",
+      "objects": [
+        {
+          "bbox": [
+            826,
+            713,
+            883,
+            768
+          ],
+          "color": "RED",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            1164,
+            749,
+            1212,
+            790
+          ],
+          "color": "GREEN",
+          "shape": "RIGHT_ARROW"
+        }
+      ]
+    },
+    {
+      "id": "09",
+      "split": "exploratory",
+      "sha256": "3d2b1623dc2565e4fe72edbb006820fe753c63f74c66f4ffbc460eb05bf55000",
+      "objects": [
+        {
+          "bbox": [
+            739,
+            686,
+            792,
+            725
+          ],
+          "color": "RED",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            739,
+            720,
+            790,
+            756
+          ],
+          "color": "GREEN",
+          "shape": "RIGHT_ARROW"
+        },
+        {
+          "bbox": [
+            977,
+            778,
+            1020,
+            806
+          ],
+          "color": "RED",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            977,
+            802,
+            1018,
+            830
+          ],
+          "color": "GREEN",
+          "shape": "RIGHT_ARROW"
+        }
+      ]
+    },
+    {
+      "id": "11",
+      "split": "development",
+      "sha256": "1b40f7f23b3be67110256b725042579df65f3024368bf462b91b6cbc44746cf4",
+      "objects": [
+        {
+          "bbox": [
+            1920,
+            791,
+            2117,
+            1174
+          ],
+          "color": "RED",
+          "shape": "LEFT_ARROW"
+        },
+        {
+          "bbox": [
+            2354,
+            776,
+            2530,
+            1184
+          ],
+          "color": "RED",
+          "shape": "STRAIGHT_ARROW"
+        }
+      ]
+    },
+    {
+      "id": "12",
+      "split": "development",
+      "sha256": "305decf2dcd2ada748eecec533e81f1927ba449dfd3d184af6c7000d4c8771dd",
+      "objects": [
+        {
+          "bbox": [
+            1581,
+            319,
+            2082,
+            891
+          ],
+          "color": "RED",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            1605,
+            1097,
+            2140,
+            1648
+          ],
+          "color": "GREEN",
+          "shape": "RIGHT_ARROW"
+        }
+      ]
+    },
+    {
+      "id": "13",
+      "split": "exploratory",
+      "sha256": "9d2ea808e8da19cbba713585ce55c1f7ecc55f9043623f1d43ba56c98046e0bd",
+      "objects": [
+        {
+          "bbox": [
+            1779,
+            1148,
+            2124,
+            1469
+          ],
+          "color": "RED",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            1779,
+            1515,
+            2124,
+            1814
+          ],
+          "color": "YELLOW",
+          "shape": "ROUND"
+        }
+      ]
+    },
+    {
+      "id": "14",
+      "split": "exploratory",
+      "sha256": "7374400c80cdb7fe22e68b3116db7a99e95aacbee05969de3f1b4e6ee6255348",
+      "objects": [
+        {
+          "bbox": [
+            31,
+            20,
+            121,
+            233
+          ],
+          "color": "UNKNOWN",
+          "shape": "UNKNOWN"
+        }
+      ]
+    },
+    {
+      "id": "19",
+      "split": "regression_after_holdout_review",
+      "sha256": "3db139d90aa8bd71ec2ab49b692502c6f9579443b319c2f63613561ff4d24c8f",
+      "objects": [
+        {
+          "bbox": [
+            347,
+            103,
+            430,
+            196
+          ],
+          "color": "RED",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            176,
+            227,
+            254,
+            303
+          ],
+          "color": "GREEN",
+          "shape": "UNKNOWN"
+        }
+      ]
+    },
+    {
+      "id": "20",
+      "split": "regression_after_holdout_review",
+      "sha256": "c9357c0d5c6990a3c6abb29dbaa0d7ea302b4ecf09f4c137c00aca534e6705a3",
+      "objects": [
+        {
+          "bbox": [
+            1254,
+            538,
+            1302,
+            598
+          ],
+          "color": "RED",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            1251,
+            589,
+            1306,
+            630
+          ],
+          "color": "GREEN",
+          "shape": "RIGHT_ARROW"
+        }
+      ]
+    },
+    {
+      "id": "21",
+      "split": "regression_after_holdout_review",
+      "sha256": "6e3a63b935764a484feebc125be255da7e9255c708b678e1cb3efb300979404f",
+      "objects": [
+        {
+          "bbox": [
+            403,
+            533,
+            475,
+            600
+          ],
+          "color": "YELLOW",
+          "shape": "LEFT_ARROW"
+        },
+        {
+          "bbox": [
+            811,
+            576,
+            883,
+            635
+          ],
+          "color": "GREEN",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            1144,
+            533,
+            1208,
+            597
+          ],
+          "color": "GREEN",
+          "shape": "ROUND"
+        }
+      ]
+    },
+    {
+      "id": "23",
+      "split": "regression_after_holdout_review",
+      "sha256": "b2b047142b32b3c422eca272663c0052be2d28528929813b6247f80589ed0a9e",
+      "objects": [
+        {
+          "bbox": [
+            190,
+            904,
+            306,
+            1020
+          ],
+          "color": "GREEN",
+          "shape": "STRAIGHT_ARROW"
+        },
+        {
+          "bbox": [
+            188,
+            1040,
+            310,
+            1154
+          ],
+          "color": "GREEN",
+          "shape": "LEFT_ARROW"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Exploratory images were inspected during development; they are not an independent test set.",
+    "Held-out labels were fixed after algorithm changes; no thresholds adjusted on their results.",
+    "Photo03 is a real-photo montage of different times, not simultaneous red and green U-turn signals.",
+    "Photo22 excluded: diagram, not a real road photo.",
+    "Photo18 excluded from directional metrics: severely oblique camera view.",
+    "The original held-out pass exposed a false U-turn on a red round lamp (photo20). Concavity veto was added afterwards. These four images are now regressions, not an independent held-out score. Frozen pre-fix results are retained in evidence/photo_v2_frozen_report.json."
+  ]
+}

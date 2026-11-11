@@ -64,7 +64,7 @@ class LatestSignalWorker:
             self.pending = (frame, list(candidates), frame_id, timestamp_ns, tuple(context))
             self.condition.notify()
 
-    def current(self, now_ns, *, context, available=True, reason=''):
+    def current(self, now_ns, *, context, available=True, reason='', compact=False):
         with self.condition:
             result = self.result if tuple(context) == self.context else None
             metrics = dict(completed=self.completed, replaced=self.replaced,
@@ -75,7 +75,16 @@ class LatestSignalWorker:
                           rejections=[reason or 'WAITING_FOR_FRESH_DETECTION'])
         result = expire_result(result, now_ns, available=available, reason=reason)
         result['metrics'] = metrics
-        return associate(result, now_ns=now_ns, bindings=self.bindings if available else ())
+        result = associate(result, now_ns=now_ns, bindings=self.bindings if available else (), copy_result=False)
+        if compact:
+            # Full masks/template evidence is retained in the low-rate JSONL.
+            # The per-AI-frame MVA2 debug extension carries a bounded summary.
+            for row in result['signals']:
+                row['evidence'] = {k: v for k, v in row.get('evidence', {}).items()
+                                   if k in ('glow_pixels', 'native_roi_size', 'glow_bbox')}
+                row['association_evidence'] = [{k: b[k] for k in ('calibration_id', 'evidence_type', 'timestamp_ns')}
+                                               for b in row.get('association_evidence', [])]
+        return result
 
     def close(self):
         with self.condition:

@@ -14,9 +14,11 @@ from .multi_signal import DIRECTIONS, iou, unknown_directions
 ARROWS = {'LEFT_ARROW': 'left', 'STRAIGHT_ARROW': 'straight', 'RIGHT_ARROW': 'right', 'UTURN_ARROW': 'uturn'}
 
 
-def associate(result, *, now_ns, bindings=(), navigation_intent=None):
-    out = deepcopy(result)
+def associate(result, *, now_ns, bindings=(), navigation_intent=None, copy_result=True):
+    out = deepcopy(result) if copy_result else result
     for signal in out['signals']:
+        for key in ('associated_directions', 'association_confidence', 'association_expires_at_ns', 'head_id', 'group_id'):
+            signal.pop(key, None)
         signal['direction'] = ARROWS.get(signal['shape'])
         signal.update(association='UNASSOCIATED', ego_relevant='UNKNOWN',
                       association_reason='NO_HEAD_ROAD_BINDING', association_evidence=[])
@@ -41,7 +43,8 @@ def associate(result, *, now_ns, bindings=(), navigation_intent=None):
                 if not identity or not times or not evidence or not math.isfinite(confidence) or not .8 <= confidence <= 1:
                     continue
                 raw = binding['bbox']
-                if len(raw) != 4 or not all(math.isfinite(float(v)) for v in raw) or iou(raw, signal['bbox']) < .5:
+                if (len(raw) != 4 or not all(math.isfinite(float(v)) for v in raw)
+                        or max(iou(raw, signal['bbox']), iou(raw, signal.get('parent_head_bbox', signal['bbox']))) < .5):
                     continue
                 allowed = binding['directions']
                 if not allowed or any(d not in DIRECTIONS for d in allowed):
@@ -90,4 +93,23 @@ def associate(result, *, now_ns, bindings=(), navigation_intent=None):
                 timestamp_ns=min(s['timestamp_ns'] for s in signals),
                 expires_at_ns=min(s['association_expires_at_ns'] for s in signals))
     out['navigation_intent'] = navigation_intent  # context only; never used above
+    # Descriptive visual summary, explicitly separate from ego-road passage
+    # signals above. It may include other roads and grants no relevance.
+    out['observed_directions'] = unknown_directions('NO_CONFIRMED_VISUAL_ARROW')
+    for direction in DIRECTIONS:
+        rows = [s for s in out['signals'] if s.get('valid') and s.get('direction') == direction
+                and s['color'] != 'UNKNOWN' and s['timestamp_ns'] <= now_ns < s['expires_at_ns']]
+        if not rows:
+            continue
+        colors = {s['color'] for s in rows}
+        common = dict(signal_ids=[s['track_id'] for s in rows], ego_relevant='UNKNOWN',
+                      timestamp_ns=min(s['timestamp_ns'] for s in rows),
+                      expires_at_ns=min(s['expires_at_ns'] for s in rows))
+        if len(colors) > 1:
+            out['observed_directions'][direction].update(common, reason='CONFLICTING_VISIBLE_ARROWS',
+                                                        conflict_colors=sorted(colors))
+        else:
+            out['observed_directions'][direction] = dict(common, color=next(iter(colors)), valid=True,
+                confidence=min(min(s['confidence'], s['color_confidence'], s['shape_confidence']) for s in rows),
+                reason='VISUAL_ARROW_ONLY_EGO_ROAD_UNCONFIRMED')
     return out

@@ -1,0 +1,75 @@
+{
+  "video": "D:\\BaiduNetdiskDownload\\\u7d2b\u5149\u540c\u521b\u676f\u8d5b\u9898\u4e09\u53c2\u8003\u7d20\u6750\\video_20260929_112454.mp4",
+  "source_video_sha256": "deafab569a9bf1362601f2043ce84cbf9b33532ecda7e0a47f7daf48535b8708",
+  "detector_evidence": {
+    "evidence": "PC_STATIC_ONNX_CPU_NOT_RK3566",
+    "video": "D:\\BaiduNetdiskDownload\\\u7d2b\u5149\u540c\u521b\u676f\u8d5b\u9898\u4e09\u53c2\u8003\u7d20\u6750\\video_20260929_112454.mp4",
+    "video_sha256": "deafab569a9bf1362601f2043ce84cbf9b33532ecda7e0a47f7daf48535b8708",
+    "main_model": "D:\\Datasets\\adas_edge_training\\rect_models\\yolo11n_512x288_split.onnx",
+    "main_sha256": "967f5382c65ac39396c0c129a6702f98848e541e4923ae2e9f31d17e0af12fde",
+    "specialist_model": "D:\\Datasets\\adas_edge_training\\tl_specialist\\tl_specialist_512x192_split.onnx",
+    "specialist_sha256": "e67bff26a5a91c51c58731b7477b3ac74aff7fe8634b6406f8f7f67a29e3d459",
+    "frames": 106,
+    "source_fps": 30.0,
+    "stride": 1,
+    "wall_seconds": 4.791351400082931,
+    "latency": {
+      "main_ms": {
+        "mean": 17.966396226415092,
+        "p95": 20.086000000000002
+      },
+      "specialist_ms": {
+        "mean": 11.470150943396227,
+        "p95": 13.723500000000001
+      }
+    }
+  },
+  "native_size": [
+    640,
+    360
+  ],
+  "frames": 106,
+  "attribute_updates": 8,
+  "attribute_ms_mean": 0.9822124999999999,
+  "attribute_ms_p95": 1.287065,
+  "unknown_reasons": {
+    "MIXED_OR_DIM_GLOW": 21,
+    "INSUFFICIENT_SHAPE_PIXELS": 11
+  },
+  "metrics": {
+    "detection_recall": {
+      "correct": 5,
+      "total": 6,
+      "accuracy": 0.8333333333333334
+    },
+    "color_accuracy_matched": {
+      "correct": 2,
+      "total": 5,
+      "accuracy": 0.4
+    },
+    "arrow_shape_accuracy_matched": {
+      "correct": 0,
+      "total": 5,
+      "accuracy": 0.0
+    },
+    "direction_association_accuracy": {
+      "correct": 0,
+      "total": 0,
+      "accuracy": null
+    },
+    "unknown_direction_correctness": {
+      "correct": 9,
+      "total": 9,
+      "accuracy": 1.0
+    },
+    "matched_attribute_tracks": 5,
+    "scope": "RAW_DETECTOR_RECALL_AND_VALID_TRACK_ATTRIBUTES_ON_SPARSE_GT"
+  },
+  "untested": [
+    "simultaneous_different_direction_colors",
+    "yellow",
+    "real_direction_ground_truth",
+    "occlusion_ground_truth",
+    "full_vehicle_performance_acceptance"
+  ]
+}

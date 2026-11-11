@@ -40,11 +40,11 @@ class HSVBackend:
     def classify(self, roi, *, request=None):
         if roi.size == 0 or min(roi.shape[:2]) < 4:
             return Attributes(reason="INSUFFICIENT_PIXELS")
-        # Bound native work without upsampling tiny lamps into false detail.
-        if max(roi.shape[:2]) > 192:
-            return Attributes(reason="ROI_TOO_LARGE")
+        native_size = [roi.shape[1], roi.shape[0]]
+        roi = bounded_roi(roi)
         h, w = roi.shape[:2]
-        result = classify_traffic_light(roi, {"bbox": [0, 0, w, h], "confidence": 1.0})
+        result = classify_traffic_light(roi, {"bbox": [0, 0, w, h], "confidence": 1.0},
+                                        min_saturation=90, min_value=130)
         color = result.value
         hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
         hue, sat, val = cv2.split(hsv)
@@ -58,11 +58,41 @@ class HSVBackend:
         total = sum(counts.values())
         dominant = max(counts, key=counts.get)
         ratio = counts[dominant] / max(1, total)
-        evidence = dict(glow_pixels=total, native_roi_size=[w, h], color_counts=counts)
+        evidence = dict(glow_pixels=total, native_roi_size=native_size,
+                        analysis_roi_size=[w, h], color_counts=counts)
+        # Amber lamps can have a red/orange halo around a saturated yellow
+        # core. Accept the core only for spatially coincident warm colours;
+        # this must never select a brighter red/green head over its neighbour.
+        if ratio < .8 and counts['GREEN'] < max(1, .02*total):
+            warm = masks['RED'] | masks['YELLOW']
+            core = valid & (val >= 240)
+            core_total = int((core & warm).sum())
+            yellow_core = int((core & masks['YELLOW']).sum())
+            centers = [np.argwhere(masks[k]).mean(axis=0) for k in ('RED', 'YELLOW') if masks[k].any()]
+            points = cv2.findNonZero(warm.astype(np.uint8))
+            extent = max(cv2.boundingRect(points)[2:]) if points is not None else 0
+            if (len(centers) == 2 and np.linalg.norm(centers[0]-centers[1]) < .25*extent
+                    and core_total >= 16 and yellow_core/core_total >= .8):
+                core_color = classify_traffic_light(roi, {'bbox': [0, 0, w, h]},
+                                                   min_saturation=90, min_value=240)
+                if core_color.value == 'YELLOW':
+                    color = dominant = 'YELLOW'
+                    ratio = yellow_core/core_total
+                    evidence['color_method'] = 'COINCIDENT_AMBER_BRIGHT_CORE'
         if total < 4 or ratio < .8 or color != dominant:
             return Attributes(reason="MIXED_OR_DIM_GLOW", evidence=evidence)
         return Attributes(color=color, color_confidence=ratio,
                           reason="COLOR_ONLY", evidence=evidence)
+
+
+def bounded_roi(roi):
+    """Downsample large native crops; never manufacture detail in small lamps."""
+    h, w = roi.shape[:2]
+    if max(h, w) <= 192:
+        return roi
+    scale = 192/max(h, w)
+    return cv2.resize(roi, (max(1, round(w*scale)), max(1, round(h*scale))),
+                      interpolation=cv2.INTER_AREA)
 
 
 @dataclass(frozen=True)
@@ -72,6 +102,7 @@ class Candidate:
     frame_id: int
     timestamp_ns: int
     detector: str = "main"
+    head_bbox: tuple | None = None
 
 
 def iou(a, b):
@@ -147,6 +178,7 @@ class _Track:
     color: str = "UNKNOWN"
     shape: str = "UNKNOWN"
     shape_hits: int = 0
+    head_bbox: tuple | None = None
 
 
 def unknown_directions(reason):
@@ -161,11 +193,12 @@ class MultiSignalTracker:
     visible for debugging until TTL, but immediately lose direction validity.
     """
 
-    def __init__(self, backend=None, ttl_ms=1200, confirm_updates=2, max_signals=8):
+    def __init__(self, backend=None, ttl_ms=1200, confirm_updates=2, max_signals=8, split_heads=True):
         self.backend = backend or HSVBackend()
         self.ttl_ns = int(ttl_ms * 1e6)
         self.confirm_updates = max(1, confirm_updates)
         self.max_signals = max_signals
+        self.split_heads = split_heads
         self.tracks = []
         self.next_id = 1
         self.context = None
@@ -197,13 +230,48 @@ class MultiSignalTracker:
             duplicate = next((entry for entry in unique if same_physical_candidate(entry[0], candidate)), None)
             if duplicate is not None:
                 duplicate[1].add(candidate.detector)
+                old = duplicate[0]
+                if ((candidate.bbox[2]-candidate.bbox[0])*(candidate.bbox[3]-candidate.bbox[1])
+                        > (old.bbox[2]-old.bbox[0])*(old.bbox[3]-old.bbox[1])):
+                    # Keep the whole head when Specialist encloses just one
+                    # illuminated bulb, so its other faces remain observable.
+                    duplicate[0] = candidate
             elif len(unique) < self.max_signals:
                 unique.append([candidate, {candidate.detector}])
             else:
                 self.rejections.append("CANDIDATE_LIMIT")
+        expanded = []
+        for candidate, detectors in unique:
+            x1, y1 = (int(math.floor(x)) for x in candidate.bbox[:2])
+            x2, y2 = (int(math.ceil(x)) for x in candidate.bbox[2:])
+            splitter = getattr(self.backend, 'regions', None) if self.split_heads else None
+            regions = splitter(frame[y1:y2, x1:x2]) if splitter else [(0, 0, x2-x1, y2-y1)]
+            for a, b, c, d in regions:
+                expanded.append([Candidate((x1+a, y1+b, x1+c, y1+d), candidate.confidence,
+                    frame_id, timestamp_ns, candidate.detector, candidate.bbox), detectors])
+        # Independent lamp faces, including those proposed from overlapping
+        # main/specialist head boxes, must still consume only one track each.
+        unique = []
+        for candidate, detectors in expanded:
+            duplicate = next((entry for entry in unique if iou(entry[0].bbox, candidate.bbox) >= .5), None)
+            if duplicate:
+                duplicate[1].update(detectors)
+            elif len(unique) < self.max_signals:
+                unique.append([candidate, detectors])
+            else:
+                self.rejections.append('LAMP_REGION_LIMIT')
         used = set()
         old_tracks = list(self.tracks)
-        for candidate, detectors in unique:
+        contested = set()
+        for old in old_tracks:
+            scores = sorted((iou(c.bbox, old.bbox), index) for index, (c, _) in enumerate(unique)
+                            if iou(c.bbox, old.bbox) >= .3)
+            if len(scores) > 1 and scores[-1][0]-scores[-2][0] < .15:
+                contested.update(index for _, index in scores)
+        for index, (candidate, detectors) in enumerate(unique):
+            if index in contested:
+                self.rejections.append('COMPETING_TRACK_CANDIDATES')
+                continue
             matches = [(iou(candidate.bbox, t.bbox), t) for t in old_tracks
                        if t.track_id not in used and iou(candidate.bbox, t.bbox) >= .3]
             matches.sort(key=lambda pair: pair[0], reverse=True)
@@ -236,6 +304,7 @@ class MultiSignalTracker:
             used.add(track.track_id)
             track.bbox, track.timestamp_ns, track.frame_id = candidate.bbox, timestamp_ns, frame_id
             track.confidence, track.attributes, track.detectors = candidate.confidence, attributes, tuple(sorted(detectors))
+            track.head_bbox = candidate.head_bbox
             observed = (attributes.color, attributes.shape)
             track.hits = track.hits+1 if track.pending[0] == observed[0] else 1
             track.shape_hits = track.shape_hits+1 if track.pending[1] == observed[1] else 1
@@ -258,6 +327,7 @@ class MultiSignalTracker:
             fresh = available and 0 <= age < self.ttl_ns and track.frame_id == self.last_frame_id
             row = dict(track_id=track.track_id, source_id="Q4", bbox=list(track.bbox),
                        bbox_space="q4_native", frame_id=track.frame_id,
+                       parent_head_bbox=list(track.head_bbox or track.bbox),
                        timestamp_ns=track.timestamp_ns, expires_at_ns=track.timestamp_ns+self.ttl_ns,
                        age_ms=age/1e6, valid=fresh, color=track.color if fresh else "UNKNOWN",
                        shape=track.shape if fresh else "UNKNOWN", confidence=track.confidence,

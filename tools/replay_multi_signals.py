@@ -28,17 +28,24 @@ def score_frames(predictions, labels):
     counts = Counter()
     for label in labels:
         fid = label['frame_id']
-        predicted = predictions[fid]['signals']
+        predicted = [s for s in predictions[fid]['signals'] if s.get('valid')]
+        raw = predictions[fid].get('raw_detections', [])
+        used_raw = set()
         used = set()
         for truth in label.get('objects', []):
             counts['gt_objects'] += 1
+            raw_choices = [(iou(p['bbox'], truth['bbox']), n) for n, p in enumerate(raw) if n not in used_raw]
+            raw_match = max(raw_choices) if raw_choices else None
+            if raw_match and raw_match[0] >= .5:
+                counts['matched_objects'] += 1
+                used_raw.add(raw_match[1])
             choices = [(iou(p['bbox'], truth['bbox']), n, p) for n, p in enumerate(predicted) if n not in used]
             match = max(choices, key=lambda item: item[0]) if choices else None
             if not match or match[0] < .5:
                 continue
             _, n, observation = match
             used.add(n)
-            counts['matched_objects'] += 1
+            counts['matched_attribute_tracks'] += 1
             for key in ('color', 'shape'):
                 if truth.get(key) and truth[key] != 'UNKNOWN':
                     counts[key+'_total'] += 1
@@ -58,7 +65,8 @@ def score_frames(predictions, labels):
                 arrow_shape_accuracy_matched=metric('shape_correct', 'shape_total'),
                 direction_association_accuracy=metric('association_correct', 'association_total'),
                 unknown_direction_correctness=metric('unknown_direction_correct', 'unknown_direction_total'),
-                scope='MANUALLY_REVIEWED_SPARSE_FRAMES_NOT_FULL_VIDEO_GT')
+                matched_attribute_tracks=counts['matched_attribute_tracks'],
+                scope='RAW_DETECTOR_RECALL_AND_VALID_TRACK_ATTRIBUTES_ON_SPARSE_GT')
 
 
 def main():
@@ -94,6 +102,14 @@ def main():
             native = cv2.resize(image, (args.width, args.height), interpolation=cv2.INTER_AREA)
             ns = 1_000_000_000+round(fid/fps*1e9)
             rows = cached.get(fid, {})
+            raw_detections = []
+            for label in ('main', 'specialist'):
+                for row in rows.get(label, []):
+                    if row.get('class_name') != 'traffic light' or row.get('confidence', 0) < .25:
+                        continue
+                    box = [v*(args.width/w if n%2 == 0 else args.height/h) for n, v in enumerate(row['bbox'])]
+                    if not any(iou(box, old['bbox']) >= .5 for old in raw_detections):
+                        raw_detections.append(dict(bbox=box, confidence=row['confidence'], detector=label))
             if fid >= next_update:
                 candidate_list, detected_rows = [], []
                 for label in ('main', 'specialist'):
@@ -121,6 +137,7 @@ def main():
             result['observation_frame_id'] = result['frame_id']
             result['frame_id'] = fid
             result['video_timestamp_ms'] = fid/fps*1000
+            result['raw_detections'] = raw_detections
             results[fid] = result
             output.write(json.dumps(result, allow_nan=False)+'\n')
             before = cv2.resize(native, (640, 360))
@@ -140,14 +157,19 @@ def main():
             writer.write(canvas)
             fid += 1
     cap.release(); writer.release()
-    labels = json.loads(args.labels.read_text(encoding='utf-8'))['frames'] if args.labels else []
-    report = dict(video=summary['video'], source_video_sha256=hashlib.sha256(Path(summary['video']).read_bytes()).hexdigest(),
+    video_hash = hashlib.sha256(Path(summary['video']).read_bytes()).hexdigest()
+    label_document = json.loads(args.labels.read_text(encoding='utf-8')) if args.labels else {}
+    if label_document and (label_document.get('source_video_sha256') != video_hash
+                           or (args.width, args.height) != (640, 360)):
+        raise ValueError('Ground truth video hash or Q4 resolution mismatch')
+    labels = label_document.get('frames', [])
+    report = dict(video=summary['video'], source_video_sha256=video_hash,
                   detector_evidence=summary, native_size=[args.width, args.height], frames=fid,
                   attribute_updates=len(timings), attribute_ms_mean=float(np.mean(timings)),
                   attribute_ms_p95=float(np.percentile(timings, 95)), unknown_reasons=dict(reasons),
                   metrics=score_frames(results, labels),
                   untested=['simultaneous_different_direction_colors', 'yellow', 'real_direction_ground_truth',
-                            'occlusion_ground_truth', 'RK3566_same_video_AB'])
+                            'occlusion_ground_truth', 'full_vehicle_performance_acceptance'])
     (args.output_dir/'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps({k: v for k, v in report.items() if k != 'detector_evidence'}, indent=2))
 

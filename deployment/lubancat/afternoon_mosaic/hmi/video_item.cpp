@@ -1788,8 +1788,10 @@ QVariantMap VideoItem::multiSignalDebug() const {
     QMutexLocker locker(&ai_metrics_mutex_);
     QVariantMap result = ai_multi_signal_;
     const qint64 now = steadyNs();
-    const bool online = ai_online_.load() && !ai_model_switching_.load()
+    const bool online = source_online_.load() && ai_online_.load() && !ai_model_switching_.load()
         && now - last_ai_result_ns_.load() < 1500000000LL;
+    const QString offlineReason = !source_online_.load() ? QStringLiteral("SOURCE_OFFLINE")
+        : ai_model_switching_.load() ? QStringLiteral("MODEL_SWITCHING") : QStringLiteral("AI_OFFLINE");
     QVariantList lampRows = result.value(QStringLiteral("signals")).toList();
     for (QVariant &value : lampRows) {
         QVariantMap signal = value.toMap();
@@ -1801,24 +1803,27 @@ QVariantMap VideoItem::multiSignalDebug() const {
             signal[QStringLiteral("shape")] = QStringLiteral("UNKNOWN");
             signal[QStringLiteral("valid")] = false;
             signal[QStringLiteral("association")] = QStringLiteral("UNASSOCIATED");
-            signal[QStringLiteral("reason")] = online ? QStringLiteral("EXPIRED") : QStringLiteral("AI_OFFLINE");
+            signal[QStringLiteral("ego_relevant")] = QStringLiteral("UNKNOWN");
+            signal[QStringLiteral("reason")] = online ? QStringLiteral("EXPIRED") : offlineReason;
         }
         value = signal;
     }
     result[QStringLiteral("signals")] = lampRows;
-    QVariantMap directions = result.value(QStringLiteral("directions")).toMap();
-    for (const QString &key : {QStringLiteral("left"), QStringLiteral("straight"), QStringLiteral("right")}) {
-        QVariantMap direction = directions.value(key).toMap();
-        const qint64 stamp = direction.value(QStringLiteral("timestamp_ns")).toLongLong();
-        const qint64 expiry = direction.value(QStringLiteral("expires_at_ns")).toLongLong();
-        if (!online || (direction.value(QStringLiteral("valid")).toBool() && (now < stamp || now >= expiry))) {
-            direction[QStringLiteral("color")] = QStringLiteral("UNKNOWN");
-            direction[QStringLiteral("valid")] = false;
-            direction[QStringLiteral("reason")] = online ? QStringLiteral("EXPIRED_OR_UNASSOCIATED") : QStringLiteral("AI_OFFLINE");
+    for (const QString &collection : {QStringLiteral("directions"), QStringLiteral("observed_directions")}) {
+        QVariantMap directions = result.value(collection).toMap();
+        for (const QString &key : {QStringLiteral("left"), QStringLiteral("straight"), QStringLiteral("right")}) {
+            QVariantMap direction = directions.value(key).toMap();
+            const qint64 stamp = direction.value(QStringLiteral("timestamp_ns")).toLongLong();
+            const qint64 expiry = direction.value(QStringLiteral("expires_at_ns")).toLongLong();
+            if (!online || (direction.value(QStringLiteral("valid")).toBool() && (now < stamp || now >= expiry))) {
+                direction[QStringLiteral("color")] = QStringLiteral("UNKNOWN");
+                direction[QStringLiteral("valid")] = false;
+                direction[QStringLiteral("reason")] = online ? QStringLiteral("EXPIRED_OR_UNASSOCIATED") : offlineReason;
+            }
+            directions[key] = direction;
         }
-        directions[key] = direction;
+        result[collection] = directions;
     }
-    result[QStringLiteral("directions")] = directions;
     return result;
 }
 

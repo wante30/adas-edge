@@ -1229,8 +1229,8 @@ class AiReplayBridge:
         if self.multi_signals is not None:
             status["multi_signal"] = self.multi_signals.current(time.monotonic_ns(),
                 context=getattr(self, "_signal_context", ()),
-                available=self.args.forward_quadrant == 3,
-                reason="" if self.args.forward_quadrant == 3 else "NOT_PHYSICAL_Q4")
+                available=self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front"), compact=True,
+                reason="" if self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front") else "NOT_PHYSICAL_Q4_OR_UNSUPPORTED_LAYOUT")
         self.latest_dynamic_status = status
         self._last_analysis_cpu_ms = 0.
         return encode_ai_result_packet(frame_id=frame_id,timestamp_ns=timestamp_ns,flags=0,
@@ -1609,7 +1609,7 @@ class AiReplayBridge:
                     fresh.extend(candidates_from_rows(rows, frame_id=frame_id,
                         timestamp_ns=timestamp_ns, space="q4_native",
                         width=road.shape[1], height=road.shape[0], detector=label))
-            if self.args.forward_quadrant == 3 and snapshot.main_age_ms is not None and abs(snapshot.main_age_ms) < .001:
+            if self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front") and snapshot.main_age_ms is not None and abs(snapshot.main_age_ms) < .001:
                 self.multi_signals.submit(road, fresh, frame_id=frame_id,
                     timestamp_ns=timestamp_ns, context=context)
         if self.lite:
@@ -1704,8 +1704,8 @@ class AiReplayBridge:
         if self.multi_signals is not None:
             status["multi_signal"] = self.multi_signals.current(time.monotonic_ns(),
                 context=getattr(self, "_signal_context", ()),
-                available=self.args.forward_quadrant == 3,
-                reason="" if self.args.forward_quadrant == 3 else "NOT_PHYSICAL_Q4")
+                available=self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front"), compact=True,
+                reason="" if self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front") else "NOT_PHYSICAL_Q4_OR_UNSUPPORTED_LAYOUT")
         self.latest_dynamic_status = status
         hmi_started = time.perf_counter_ns()
         self._write_dynamic_hmi(status)

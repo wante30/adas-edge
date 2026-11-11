@@ -95,3 +95,26 @@ def test_ambiguous_head_bindings_fail_closed():
     out = associate(result([signal()]), now_ns=1_100_000_000,
                     bindings=[binding(), binding(head_id='other')])
     assert out['signals'][0]['association_reason'] == 'AMBIGUOUS_HEAD_ROAD_BINDING'
+
+
+def test_three_directions_visible_then_road_bound_then_expired():
+    rows = [signal(), dict(signal(2, 'RED', 'STRAIGHT_ARROW'), bbox=[60, 10, 90, 60]),
+            dict(signal(3, 'YELLOW', 'RIGHT_ARROW'), bbox=[110, 10, 140, 60])]
+    visible = associate(result(rows), now_ns=1_100_000_000)
+    assert [visible['observed_directions'][d]['color'] for d in ('left', 'straight', 'right')] == ['GREEN', 'RED', 'YELLOW']
+    assert all(r['color'] == 'UNKNOWN' for r in visible['directions'].values())
+    bindings = [binding(head_id=str(n), bbox=row['bbox'], directions=[direction])
+                for n, (row, direction) in enumerate(zip(rows, ('left', 'straight', 'right')))]
+    bound = associate(visible, now_ns=1_100_000_000, bindings=bindings)
+    assert [bound['directions'][d]['color'] for d in ('left', 'straight', 'right')] == ['GREEN', 'RED', 'YELLOW']
+    removed = associate(bound, now_ns=1_200_000_000)
+    assert all(r['color'] == 'UNKNOWN' for r in removed['directions'].values())
+    assert all('head_id' not in row for row in removed['signals'])
+    expired = associate(bound, now_ns=2_300_000_000, bindings=bindings)
+    assert all(r['color'] == 'UNKNOWN' for r in expired['observed_directions'].values())
+
+
+def test_same_direction_visible_conflict_is_not_silently_red_priority():
+    out = associate(result([signal(), signal(2, 'RED')]), now_ns=1_100_000_000)
+    assert out['observed_directions']['left']['color'] == 'UNKNOWN'
+    assert out['observed_directions']['left']['reason'] == 'CONFLICTING_VISIBLE_ARROWS'

@@ -1,0 +1,14 @@
+# Real photograph regression crops
+
+These are original native-pixel crops, not synthetic images. Expected UNKNOWN denotes a classifier abstention, not a replacement for the visual ground truth. All sources and exact crop coordinates/hashes are in manifest.json. Changes: crop and lossless PNG conversion only. Each crop retains its source Creative Commons license.
+
+- `02_0.png`: LincolnGroup11, [Red arrow traffic lights.JPG](https://commons.wikimedia.org/wiki/File:Red_arrow_traffic_lights.JPG), [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0).
+- `03_1.png`: MrSwagger21, [U-turn traffic light.jpg](https://commons.wikimedia.org/wiki/File:U-turn_traffic_light.jpg), [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0).
+- `11_0.png`: David Chen, [Jianshe Avenue & Taibei Road, June 2023.jpg](https://commons.wikimedia.org/wiki/File:Jianshe_Avenue_%26_Taibei_Road,_June_2023.jpg), [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0).
+- `11_1.png`: David Chen, [Jianshe Avenue & Taibei Road, June 2023.jpg](https://commons.wikimedia.org/wiki/File:Jianshe_Avenue_%26_Taibei_Road,_June_2023.jpg), [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0).
+- `12_1.png`: 運動会プロテインパワー, [Traffic signal - red and right arrow, Otsu 2024-01.jpg](https://commons.wikimedia.org/wiki/File:Traffic_signal_-_red_and_right_arrow,_Otsu_2024-01.jpg), [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0).
+- `23_1.png`: Gary , [UK Green Traffic Light^Signal Filter Arrows Pointing Going Straight On And Turning Left - geograph.org.uk - 5113135.jpg](https://commons.wikimedia.org/wiki/File:UK_Green_Traffic_Light%5ESignal_Filter_Arrows_Pointing_Going_Straight_On_And_Turning_Left_-_geograph.org.uk_-_5113135.jpg), [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0).
+- `20_0.png`: KitaTKO, [Tamura Cross Road.jpg](https://commons.wikimedia.org/wiki/File:Tamura_Cross_Road.jpg), [CC0](http://creativecommons.org/publicdomain/zero/1.0/deed.en).
+- `01_1.png`: Gary , [UK Red Traffic Light With Green Filter Arrow - geograph.org.uk - 6409628.jpg](https://commons.wikimedia.org/wiki/File:UK_Red_Traffic_Light_With_Green_Filter_Arrow_-_geograph.org.uk_-_6409628.jpg), [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0).
+- `13_1.png`: Santeri Viinamäki, [Red and yellow traffic lights.jpg](https://commons.wikimedia.org/wiki/File:Red_and_yellow_traffic_lights.jpg), [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0).
+- `23_head.png`: Gary, [UK Green Traffic Light^Signal Filter Arrows Pointing Going Straight On And Turning Left - geograph.org.uk - 5113135.jpg](https://commons.wikimedia.org/wiki/File:UK_Green_Traffic_Light%5ESignal_Filter_Arrows_Pointing_Going_Straight_On_And_Turning_Left_-_geograph.org.uk_-_5113135.jpg), [CC BY-SA 2.0](https://creativecommons.org/licenses/by-sa/2.0/).
