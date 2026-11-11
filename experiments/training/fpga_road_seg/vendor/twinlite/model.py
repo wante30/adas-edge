@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 import sys
-from . import config as cfg 
+from . import config as cfg
 import matplotlib.pyplot as plt
 from torch.nn import Module, Conv2d, Parameter, Softmax
 import cv2
@@ -72,7 +72,7 @@ class CAAM(nn.Module):
         self.proj_query = nn.Linear(feat_in, feat_inner)
         self.proj_key = nn.Linear(feat_in, feat_inner)
         self.proj_value = nn.Linear(feat_in, feat_inner)
-              
+
         self.conv_out = nn.Sequential(
             nn.Conv2d(feat_inner, feat_in, kernel_size=1, bias=False),
             norm_layer(feat_in),
@@ -104,21 +104,21 @@ class CAAM(nn.Module):
         local_feats = self.gcn(local_feats) # [B, bin_num_h * bin_num_w, K, C]
         global_feats = self.fuse(local_feats) # [B, 1, K, C]
         global_feats = self.relu(global_feats).repeat(1, x.shape[1], 1, 1) # [B, bin_num_h * bin_num_w, K, C]
-        
+
         query = self.proj_query(x) # [B, bin_num_h * bin_num_w, rH * rW, C//2]
         key = self.proj_key(local_feats) # [B, bin_num_h * bin_num_w, K, C//2]
         value = self.proj_value(global_feats) # [B, bin_num_h * bin_num_w, K, C//2]
-        
+
         aff_map = torch.matmul(query, key.transpose(2, 3)) # [B, bin_num_h * bin_num_w, rH * rW, K]
         aff_map = F.softmax(aff_map, dim=-1)
         out = torch.matmul(aff_map, value) # [B, bin_num_h * bin_num_w, rH * rW, C]
-        
+
         out = out.view(B, -1, rH, rW, value.shape[-1]) # [B, bin_num_h * bin_num_w, rH, rW, C]
         out = patch_recover(out, self.bin_size) # [B, C, H, W]
-        
+
         out_conv = self.conv_out(out)
         out = residual + out_conv
-        
+
         return out
 
 
@@ -362,7 +362,7 @@ class Encoder(nn.Module):
     def __init__(self, config):
         super().__init__()
         chanel_img = cfg.chanel_img
-        model_cfg = cfg.sc_ch_dict[config] 
+        model_cfg = cfg.sc_ch_dict[config]
         self.level1 = ConvBatchnormRelu(chanel_img, model_cfg['chanels'][0], stride = 2)
         self.sample1 = AvgDownsampler(1)
         self.sample2 = AvgDownsampler(2)
@@ -380,7 +380,7 @@ class Encoder(nn.Module):
         for i in range(0, model_cfg['q']):
             self.level3.append(DepthwiseESP(model_cfg['chanels'][3] , model_cfg['chanels'][3]))
         self.b3 = ConvBatchnormRelu(model_cfg['chanels'][4],model_cfg['chanels'][2])
-        
+
     def forward(self, input):
         '''
         :param input: Receives the input RGB image
@@ -391,7 +391,7 @@ class Encoder(nn.Module):
         inp2 = self.sample2(input)
         output0_cat = self.b1(torch.cat([output0, inp1], 1))
         output1_0 = self.level2_0(output0_cat) # down-sampled
-        
+
         for i, layer in enumerate(self.level2):
             if i==0:
                 output1 = layer(output1_0)
@@ -407,7 +407,7 @@ class Encoder(nn.Module):
                 output2 = layer(output2)
         output2_cat=torch.cat([output2_0, output2], 1)
         out_encoder = self.b3(output2_cat)
-        
+
         return out_encoder,inp1,inp2
 
 class UpSimpleBlock(nn.Module):
@@ -449,7 +449,7 @@ class SingleLiteNetPlus(nn.Module):
 
         super().__init__()
         chanel_img = cfg.chanel_img
-        model_cfg = cfg.sc_ch_dict[args.config] 
+        model_cfg = cfg.sc_ch_dict[args.config]
         self.encoder = Encoder(args.config)
 
 
@@ -489,7 +489,7 @@ class TwinLiteNetPlus(nn.Module):
 
         super().__init__()
         chanel_img = cfg.chanel_img
-        model_cfg = cfg.sc_ch_dict[args.config] 
+        model_cfg = cfg.sc_ch_dict[args.config]
         self.encoder = Encoder(args.config)
         self.sigle_ll = False
         self.sigle_da = False
@@ -499,7 +499,7 @@ class TwinLiteNetPlus(nn.Module):
 
         self.up_1_da = UpConvBlock(cfg.sc_ch_dict[args.config]['chanels'][1],cfg.sc_ch_dict[args.config]['chanels'][0]) # out: Hx4, Wx4
         self.up_2_da = UpConvBlock(cfg.sc_ch_dict[args.config]['chanels'][0],8) #out: Hx2, Wx2
-        self.out_da = UpConvBlock(8,2,last=True)  
+        self.out_da = UpConvBlock(8,2,last=True)
 
         self.up_1_ll = UpConvBlock(cfg.sc_ch_dict[args.config]['chanels'][1],cfg.sc_ch_dict[args.config]['chanels'][0]) # out: Hx4, Wx4
         self.up_2_ll = UpConvBlock(cfg.sc_ch_dict[args.config]['chanels'][0],8) #out: Hx2, Wx2
