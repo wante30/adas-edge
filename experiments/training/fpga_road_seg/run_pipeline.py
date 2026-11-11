@@ -21,6 +21,7 @@ class Pipeline:
         self.repo = Path(repo).resolve()
         self.data = Path(data).resolve()
         self.out = Path(out).resolve()
+        self.out.mkdir(parents=True, exist_ok=True)
         self.epochs = epochs
         self.log_path = self.out / 'run.log'
         self.log = open(self.log_path, 'a', encoding='utf-8', buffering=1)
@@ -55,8 +56,9 @@ class Pipeline:
                 if set(data) == {images.name, labels.name}:
                     self.note(f'archives_verified images={images.stat().st_size} labels={labels.stat().st_size}')
                     return images, labels
-            self.note('waiting_for_resumable_download')
-            time.sleep(30)
+            self.note('starting_resumable_public_archive_download')
+            self.run([sys.executable, '-m', 'experiments.training.fpga_road_seg.download_official_bdd',
+                      '--output', archives])
 
     def record_failure(self, name, error):
         folder = self.out / 'failures'
@@ -155,7 +157,8 @@ class Pipeline:
             fp = int((prediction & ~target & valid).sum())
             fn = int((~prediction & target & valid).sum())
             iou = tp / (tp + fp + fn) if tp + fp + fn else 1.0
-            scored.append((iou, i, row['id'], tp, fp, fn))
+            if i < scan_limit:
+                scored.append((iou, i, row['id'], tp, fp, fn))
             if i in compare_ids:
                 output = overlay(image, native, names_for(name), f'{name} / held-out BDD val', cfg.get('threshold', .5))
                 output.save(compare_dir / f'{row["id"]}.png')

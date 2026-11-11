@@ -34,6 +34,10 @@ def main():
     x,g=letterbox(image,size=(cfg['width'],cfg['height']))
     with torch.no_grad():
         prob=restore(model(x[None].to(args.device)).sigmoid()[0].cpu().numpy(),g)
+    output_names=names_for(cfg['model'])
+    for channel in ck.get('excluded_channels', ()):
+        if channel in output_names:
+            prob[output_names.index(channel)]=0
     label='SYNTHETIC-TRAINED / NOT ACCURACY EVIDENCE' if ck['evidence']=='synthetic_smoke' else 'CANDIDATE / NOT FPGA'
     overlay(image,prob,names_for(cfg['model']),label,cfg.get('threshold',.5)).save(args.output)
     write_json(str(args.output)+'.json',dict(checkpoint_sha256=file_hash(args.checkpoint),image_sha256=file_hash(args.image),evidence=ck['evidence'],geometry=g))

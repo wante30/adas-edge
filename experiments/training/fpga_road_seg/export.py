@@ -110,9 +110,11 @@ def quantization_metadata(path):
                 shift_contract='illustrative Q30 multiplier/right shift approximation; not validated on FPGA',layers=records)
 
 
-def compare(model, fp32_path, int8_path, manifest, cfg, split='val', disabled_channels=()):
+def compare(model, fp32_path, int8_path, manifest, cfg, split='val', disabled_channels=(), compare_count=0):
     fp,iq=session(fp32_path),session(int8_path)
     names=names_for(cfg['model']); ds=RoadDataset(manifest,split,(cfg['width'],cfg['height']),len(names)==2,disabled_channels)
+    if compare_count:
+        ds.rows = ds.rows[:compare_count]
     fm,im=Metrics(len(names)),Metrics(len(names))
     torch_error=int8_error=0.; probability_error=[]; agreement=total=0
     model.eval()
@@ -137,7 +139,7 @@ def compare(model, fp32_path, int8_path, manifest, cfg, split='val', disabled_ch
                 note='Synthetic data metrics are software smoke only; real quantization acceptance requires labelled held-out road data.')
 
 
-def export(checkpoint, manifest, output, calibration_count=16, compare_split='val', synthetic_smoke=False):
+def export(checkpoint, manifest, output, calibration_count=16, compare_split='val', synthetic_smoke=False, compare_count=0):
     torch.set_num_threads(4)
     model,ck=load_checkpoint(checkpoint)
     cfg=ck['config']; size=cfg['width'],cfg['height']
@@ -182,7 +184,7 @@ def export(checkpoint, manifest, output, calibration_count=16, compare_split='va
     write_json(out/'quantization.json',quant)
     calibration=[dict(id=r['id'],group_id=r['group_id'],split=r['split'],image=r['image'],sha256=file_hash(r['image']),source=r['source'],license=r['license']) for r in rows]
     write_json(out/'calibration-manifest.json',calibration)
-    comparison=compare(model,fp,iq,manifest,cfg,compare_split,ck.get('excluded_channels', ()))
+    comparison=compare(model,fp,iq,manifest,cfg,compare_split,ck.get('excluded_channels', ()),compare_count)
     write_json(out/'comparison.json',comparison)
     allowed={'Conv','Relu','Add','Resize','Constant','Identity','Shape','Gather','Slice','Concat','Unsqueeze'}
     unsupported=sorted(set(fp_inventory['operators'])-allowed)
@@ -205,8 +207,11 @@ def main():
     p.add_argument('--output',required=True); p.add_argument('--calibration-count',type=int,default=16)
     p.add_argument('--compare-split',choices=['val','test'],default='val')
     p.add_argument('--synthetic-smoke',action='store_true')
+    p.add_argument('--compare-count',type=int,default=0,help='explicit pilot comparison subset; zero evaluates the full split')
     args=p.parse_args()
-    print(export(args.checkpoint,args.manifest,args.output,args.calibration_count,args.compare_split,args.synthetic_smoke)['comparison'])
+    if args.compare_count < 0:
+        p.error('--compare-count must be nonnegative')
+    print(export(args.checkpoint,args.manifest,args.output,args.calibration_count,args.compare_split,args.synthetic_smoke,args.compare_count)['comparison'])
 
 
 if __name__=='__main__':
