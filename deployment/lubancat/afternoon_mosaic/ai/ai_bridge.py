@@ -959,7 +959,7 @@ class AiReplayBridge:
             forward_source_id="Q%d" % (self.args.forward_quadrant + 1),
             physical_input=self.args.source=="PGV_LIVE")
         self.multi_signals = LatestSignalWorker(
-            hz=args.signal_attribute_hz, jsonl_path=args.signal_jsonl) if args.multi_signals else None
+            hz=args.signal_attribute_hz, jsonl_path=args.signal_jsonl, bindings_path=args.signal_bindings, failure_dir=args.signal_failure_dir) if args.multi_signals else None
         self.navigation = None
         self.nav_request = None
         self.nav_result = None
@@ -2112,6 +2112,8 @@ def parser():
     result.add_argument("--multi-signals", action="store_true", help="Enable debug-only Q4 multi-lamp attributes")
     result.add_argument("--signal-attribute-hz", type=float, default=2.)
     result.add_argument("--signal-jsonl", default="")
+    result.add_argument("--signal-failure-dir", default="", help="Save up to 64 native failure ROIs; optional disk IO")
+    result.add_argument("--signal-bindings", default="", help="Time-limited calibrated head-road evidence JSON file")
     result.add_argument("--specialist-hz", type=float, default=3.0)
     result.add_argument(
         "--hazards", dest="hazards", action="store_true", default=True,

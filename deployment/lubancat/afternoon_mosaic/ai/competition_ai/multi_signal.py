@@ -31,13 +31,13 @@ class Attributes:
 
 
 class AttributeBackend(Protocol):
-    def classify(self, roi: np.ndarray) -> Attributes: ...
+    def classify(self, roi: np.ndarray, *, request=None) -> Attributes: ...
 
 
 class HSVBackend:
     """Reuse existing HSV color logic, with an additional mixed-glow veto."""
 
-    def classify(self, roi):
+    def classify(self, roi, *, request=None):
         if roi.size == 0 or min(roi.shape[:2]) < 4:
             return Attributes(reason="INSUFFICIENT_PIXELS")
         # Bound native work without upsampling tiny lamps into false detail.
@@ -78,6 +78,19 @@ def iou(a, b):
     intersection = max(0., min(a[2], b[2])-max(a[0], b[0])) * max(0., min(a[3], b[3])-max(a[1], b[1]))
     area = (a[2]-a[0])*(a[3]-a[1]) + (b[2]-b[0])*(b[3]-b[1]) - intersection
     return intersection / area if area > 0 else 0.
+
+
+def same_physical_candidate(a, b):
+    if iou(a.bbox, b.bbox) >= .5:
+        return True
+    # Specialist may enclose only the illuminated bulb while main encloses
+    # the whole head. Cross-backend containment avoids creating a second ID.
+    if a.detector == b.detector:
+        return False
+    intersection = max(0., min(a.bbox[2], b.bbox[2])-max(a.bbox[0], b.bbox[0])) * max(0., min(a.bbox[3], b.bbox[3])-max(a.bbox[1], b.bbox[1]))
+    smaller = min((a.bbox[2]-a.bbox[0])*(a.bbox[3]-a.bbox[1]),
+                  (b.bbox[2]-b.bbox[0])*(b.bbox[3]-b.bbox[1]))
+    return smaller > 0 and intersection/smaller >= .9
 
 
 def q4_box(bbox, *, space, width, height):
@@ -133,6 +146,7 @@ class _Track:
     hits: int = 0
     color: str = "UNKNOWN"
     shape: str = "UNKNOWN"
+    shape_hits: int = 0
 
 
 def unknown_directions(reason):
@@ -180,7 +194,7 @@ class MultiSignalTracker:
             if box is None or not math.isfinite(candidate.confidence) or not .25 <= candidate.confidence <= 1:
                 self.rejections.append("INVALID_CANDIDATE")
                 continue
-            duplicate = next((entry for entry in unique if iou(entry[0].bbox, box) >= .5), None)
+            duplicate = next((entry for entry in unique if same_physical_candidate(entry[0], candidate)), None)
             if duplicate is not None:
                 duplicate[1].add(candidate.detector)
             elif len(unique) < self.max_signals:
@@ -202,8 +216,12 @@ class MultiSignalTracker:
                 continue
             x1, y1 = (int(math.floor(x)) for x in candidate.bbox[:2])
             x2, y2 = (int(math.ceil(x)) for x in candidate.bbox[2:])
-            attributes = self.backend.classify(frame[y1:y2, x1:x2])
-            if attributes.color not in COLORS or attributes.shape not in SHAPES:
+            request = dict(frame_id=frame_id, timestamp_ns=timestamp_ns,
+                           bbox=list(candidate.bbox), context=list(context), source_id="Q4")
+            attributes = self.backend.classify(frame[y1:y2, x1:x2], request=request)
+            if (attributes.color not in COLORS or attributes.shape not in SHAPES
+                    or not all(math.isfinite(v) and 0 <= v <= 1 for v in
+                               (attributes.color_confidence, attributes.shape_confidence))):
                 attributes = Attributes(reason="INVALID_BACKEND_RESULT")
             if matches:
                 track = matches[0][1]
@@ -219,15 +237,16 @@ class MultiSignalTracker:
             track.bbox, track.timestamp_ns, track.frame_id = candidate.bbox, timestamp_ns, frame_id
             track.confidence, track.attributes, track.detectors = candidate.confidence, attributes, tuple(sorted(detectors))
             observed = (attributes.color, attributes.shape)
-            track.hits = track.hits+1 if track.pending == observed else 1
+            track.hits = track.hits+1 if track.pending[0] == observed[0] else 1
+            track.shape_hits = track.shape_hits+1 if track.pending[1] == observed[1] else 1
             track.pending = observed
             # A changed/unknown observation invalidates immediately; confirmation
             # requires separate source frames, never repeated reads of a cache.
             track.color = attributes.color if track.hits >= self.confirm_updates else "UNKNOWN"
-            track.shape = attributes.shape if track.hits >= self.confirm_updates else "UNKNOWN"
+            track.shape = attributes.shape if track.shape_hits >= self.confirm_updates else "UNKNOWN"
         for track in self.tracks:
             if track.track_id not in used:
-                track.hits = 0
+                track.hits = track.shape_hits = 0
                 track.color = track.shape = "UNKNOWN"
         return True
 
@@ -244,6 +263,8 @@ class MultiSignalTracker:
                        shape=track.shape if fresh else "UNKNOWN", confidence=track.confidence,
                        color_confidence=track.attributes.color_confidence,
                        shape_confidence=track.attributes.shape_confidence,
+                       color_reason="STABILIZING" if track.hits < self.confirm_updates else track.attributes.reason,
+                       shape_reason="STABILIZING" if track.shape_hits < self.confirm_updates else track.attributes.reason,
                        detectors=list(track.detectors), backend=track.attributes.backend,
                        evidence=track.attributes.evidence, association="UNASSOCIATED",
                        ego_relevant="UNKNOWN", direction=None,

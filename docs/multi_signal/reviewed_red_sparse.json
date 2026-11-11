@@ -1,0 +1,98 @@
+{
+  "source_video_sha256": "deafab569a9bf1362601f2043ce84cbf9b33532ecda7e0a47f7daf48535b8708",
+  "reviewer": "Codex visual review 2026-11-11",
+  "coordinate_space": "Q4_640x360",
+  "annotation_scope": "Two overhead vehicle heads only; other lamps not exhaustively annotated; head road relevance unverified",
+  "frames": [
+    {
+      "frame_id": 30,
+      "objects": [
+        {
+          "bbox": [
+            168,
+            75,
+            216,
+            95
+          ],
+          "color": "RED",
+          "shape": "LEFT_ARROW"
+        },
+        {
+          "bbox": [
+            273,
+            73,
+            321,
+            93
+          ],
+          "color": "RED",
+          "shape": "STRAIGHT_ARROW"
+        }
+      ],
+      "directions": {
+        "left": "UNKNOWN",
+        "straight": "UNKNOWN",
+        "right": "UNKNOWN"
+      }
+    },
+    {
+      "frame_id": 60,
+      "objects": [
+        {
+          "bbox": [
+            173,
+            74,
+            221,
+            95
+          ],
+          "color": "RED",
+          "shape": "LEFT_ARROW"
+        },
+        {
+          "bbox": [
+            280,
+            72,
+            327,
+            93
+          ],
+          "color": "RED",
+          "shape": "STRAIGHT_ARROW"
+        }
+      ],
+      "directions": {
+        "left": "UNKNOWN",
+        "straight": "UNKNOWN",
+        "right": "UNKNOWN"
+      }
+    },
+    {
+      "frame_id": 90,
+      "objects": [
+        {
+          "bbox": [
+            177,
+            73,
+            225,
+            93
+          ],
+          "color": "RED",
+          "shape": "LEFT_ARROW"
+        },
+        {
+          "bbox": [
+            284,
+            71,
+            332,
+            91
+          ],
+          "color": "RED",
+          "shape": "STRAIGHT_ARROW"
+        }
+      ],
+      "directions": {
+        "left": "UNKNOWN",
+        "straight": "UNKNOWN",
+        "right": "UNKNOWN"
+      }
+    }
+  ]
+}
