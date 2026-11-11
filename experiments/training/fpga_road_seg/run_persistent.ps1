@@ -4,6 +4,7 @@ param(
     [switch]$Publish
 )
 $ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $false
 $segRepo = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 Set-Location -LiteralPath $segRepo
 $segOutput = Join-Path $segRepo 'outputs\fpga_road_seg_final'
