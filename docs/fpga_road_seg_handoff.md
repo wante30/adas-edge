@@ -25,6 +25,12 @@ candidate has 8,508 parameters and 25,351,680 multiply-accumulates at 320x192
 (FLOPs reported as 2x MAC). These are software shape/profile counts, not device
 resource estimates.
 
+The real BDD core run supervises only drivable/solid/dashed. Its fixed graph
+retains an untrained fourth crosswalk logit: consumers must suppress it and mark
+that channel invalid, as recorded in the export report's `excluded_channels`.
+Separate sparse-curve weak fine-tuning does not establish a deployable dense
+crosswalk detector. Do not present crosswalk confidence as validated road output.
+
 Candidate-plus has 32,524 parameters and 84,718,080 MACs at 320x192, with the
 same Conv/DW/PW/ReLU/Add/nearest-Resize operator family.
 

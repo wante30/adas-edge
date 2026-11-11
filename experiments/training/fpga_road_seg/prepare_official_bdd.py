@@ -17,7 +17,9 @@ def extract_prefix(archive, prefix, suffix, root):
             name = info.filename.replace('\\', '/')
             if not name.startswith(prefix) or not name.lower().endswith(suffix):
                 continue
-            target = root / name
+            target = (root / name).resolve()
+            if not target.is_relative_to(root.resolve()):
+                raise ValueError(f'archive member escapes data directory: {name}')
             target.parent.mkdir(parents=True, exist_ok=True)
             if target.exists():
                 if target.stat().st_size != info.file_size:

@@ -40,7 +40,7 @@ def main():
             prob[output_names.index(channel)]=0
     label='SYNTHETIC-TRAINED / NOT ACCURACY EVIDENCE' if ck['evidence']=='synthetic_smoke' else 'CANDIDATE / NOT FPGA'
     overlay(image,prob,names_for(cfg['model']),label,cfg.get('threshold',.5)).save(args.output)
-    write_json(str(args.output)+'.json',dict(checkpoint_sha256=file_hash(args.checkpoint),image_sha256=file_hash(args.image),evidence=ck['evidence'],geometry=g))
+    write_json(str(args.output)+'.json',dict(checkpoint_sha256=file_hash(args.checkpoint),image_sha256=file_hash(args.image),evidence=ck['evidence'],geometry=g,excluded_channels=ck.get('excluded_channels', [])))
 
 
 if __name__ == '__main__':

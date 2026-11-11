@@ -148,7 +148,9 @@ def export(checkpoint, manifest, output, calibration_count=16, compare_split='va
         raise ValueError('synthetic-trained checkpoint requires --synthetic-smoke')
     if any(r['source']=='synthetic' for r in all_rows) and not synthetic_smoke:
         raise ValueError('synthetic calibration requires --synthetic-smoke')
-    rows=sorted([r for r in all_rows if r['split']=='train'],key=lambda r:r['id'])[:calibration_count]
+    candidates=sorted([r for r in all_rows if r['split']=='train'],key=lambda r:r['id'])
+    indices=np.linspace(0,len(candidates)-1,min(calibration_count,len(candidates)),dtype=int) if candidates else []
+    rows=[candidates[int(i)] for i in indices]
     if calibration_count<1 or not rows:
         raise ValueError('nonempty TRAIN-only PTQ calibration required')
     # load_manifest validates global sequence/content leakage before selecting calibration.
@@ -189,10 +191,13 @@ def export(checkpoint, manifest, output, calibration_count=16, compare_split='va
     allowed={'Conv','Relu','Add','Resize','Constant','Identity','Shape','Gather','Slice','Concat','Unsqueeze'}
     unsupported=sorted(set(fp_inventory['operators'])-allowed)
     report=dict(evidence=ck['evidence'],model=cfg['model'],checkpoint_sha256=file_hash(checkpoint),
+                excluded_channels=ck.get('excluded_channels', []),
+                deployment_note='Excluded output channels are untrained/invalid and must be suppressed by consumers, even though the fixed graph retains their logits.',
                 dataset_manifest_sha256=file_hash(manifest),ort_version=ort.__version__,onnx_version=onnx.__version__,
                 input=dict(name='rgb',shape=[1,3,size[1],size[0]],dtype='float32',color='RGB',normalization='uint8 / 255; letterbox fill=114'),
                 output=dict(name='logits',shape=[1,len(names_for(cfg['model'])),size[1],size[0]],class_names=names_for(cfg['model']),sigmoid='software; binary channel threshold 0.5'),
                 fp32_sha256=file_hash(fp),int8_sha256=file_hash(iq),calibration_samples=len(rows),
+                calibration_selection='uniformly spaced over sorted TRAIN IDs; no validation/test calibration',
                 comparison=comparison,fp32_operators=fp_inventory['operators'],int8_operators=iq_inventory['operators'],
                 hypothetical_profile='Conv/Depthwise/Pointwise/ReLU/Add/nearest Resize; NOT confirmed FPGA capabilities',
                 operators_outside_candidate_profile=unsupported,hardware_status='awaiting teammate; no board measurements',

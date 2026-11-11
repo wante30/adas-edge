@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -31,6 +32,8 @@ def download(name, out, workers=8, attempts=12):
     if dest.is_file() and dest.stat().st_size == expected_size and digest(dest) == expected_md5:
         print(f'{name}: already verified size={expected_size} md5={expected_md5}', flush=True)
         return dict(path=str(dest.resolve()), size=expected_size, md5=expected_md5, source=BASE + name)
+    if shutil.disk_usage(out).free < 2 * expected_size + 1024**3:
+        raise OSError('insufficient disk space for resumable chunks and verified archive assembly')
     chunk_dir = Path(out) / f'.{name}.chunks'
     chunk_dir.mkdir(exist_ok=True)
     chunks = [(start, min(start + CHUNK_SIZE, expected_size) - 1)
@@ -46,7 +49,8 @@ def download(name, out, workers=8, attempts=12):
             try:
                 with requests.get(BASE + name, headers={'Range': f'bytes={start}-{end}'},
                                   stream=True, timeout=(30, 180)) as response:
-                    if response.status_code != 206 or response.headers.get('Content-Range', '').split('/')[-1] != str(expected_size):
+                    expected_range = f'bytes {start}-{end}/{expected_size}'
+                    if response.status_code != 206 or response.headers.get('Content-Range', '') != expected_range:
                         raise IOError(f'expected byte range {start}-{end}, got HTTP {response.status_code} {response.headers.get("Content-Range")}')
                     tmp = chunk.with_suffix('.tmp')
                     received = 0
