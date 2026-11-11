@@ -42,8 +42,10 @@ def comparisons(out, manifest):
             x, geometry = letterbox(image, size=(cfg['width'],cfg['height']))
             with torch.no_grad():
                 prob = model(x[None].cuda()).sigmoid()[0].cpu().numpy()
-            if 'crosswalk' in checkpoint.get('excluded_channels', ()):
-                prob[3] = 0
+            output_names = names_for(cfg['model'])
+            for channel in checkpoint.get('excluded_channels', ()):
+                if channel in output_names:
+                    prob[output_names.index(channel)] = 0
             panels.append((name, overlay(image,restore(prob,geometry),names_for(name),name)))
         w,h,caption = 640,360,26
         canvas = Image.new('RGB',(w*3,(h+caption)*2),'white')

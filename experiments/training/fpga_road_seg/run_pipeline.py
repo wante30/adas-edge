@@ -147,8 +147,10 @@ class Pipeline:
             with torch.no_grad():
                 probability = model(inp[None].cuda()).sigmoid()[0].cpu().numpy()
             native = restore(probability, geometry)
-            if 'crosswalk' in ck.get('excluded_channels', ()):
-                native[3] = 0
+            output_names = names_for(ck['config']['model'])
+            for channel in ck.get('excluded_channels', ()):
+                if channel in output_names:
+                    native[output_names.index(channel)] = 0
             with np.load(row['masks'], allow_pickle=False) as masks:
                 target = masks['target'][0].astype(bool)
                 valid = masks['valid'][0].astype(bool)
