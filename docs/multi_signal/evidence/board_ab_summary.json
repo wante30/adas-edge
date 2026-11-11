@@ -1,0 +1,60 @@
+[
+  {
+    "model": "fast_q4",
+    "results": [
+      {
+        "label": "A_off",
+        "model": "FAST-Q4",
+        "enabled": false,
+        "seconds": 30.202372622,
+        "ai_fps": 17.250300382708787,
+        "qt_fps": 28.061672191320348,
+        "cpu_busy_percent": 83.482623058489,
+        "attribute_ms_mean": null,
+        "signal_age_ms_p95": null
+      },
+      {
+        "label": "B_on",
+        "model": "FAST-Q4",
+        "enabled": true,
+        "seconds": 30.177426831,
+        "ai_fps": 16.270439582198453,
+        "qt_fps": 28.764160096326183,
+        "cpu_busy_percent": 83.38515385999676,
+        "attribute_ms_mean": 4.462029826839795,
+        "signal_age_ms_p95": 1280.7989065
+      }
+    ],
+    "note": "Short replay with blank non-Q4 cameras; not full competition acceptance",
+    "algorithm_revision": "pre-photo-improvements"
+  },
+  {
+    "model": "mtl_fast",
+    "results": [
+      {
+        "label": "A_off",
+        "model": "MTL-FAST",
+        "enabled": false,
+        "seconds": 30.162019824,
+        "ai_fps": 6.763472777697621,
+        "qt_fps": 27.82033853332518,
+        "cpu_busy_percent": 77.82724314414604,
+        "attribute_ms_mean": null,
+        "signal_age_ms_p95": null
+      },
+      {
+        "label": "B_on",
+        "model": "MTL-FAST",
+        "enabled": true,
+        "seconds": 30.175990108,
+        "ai_fps": 6.694063700214678,
+        "qt_fps": 27.698613594642982,
+        "cpu_busy_percent": 77.92077395710109,
+        "attribute_ms_mean": 1.1967266881772884,
+        "signal_age_ms_p95": 1656.3713539
+      }
+    ],
+    "note": "Short replay with blank non-Q4 cameras; not full competition acceptance",
+    "algorithm_revision": "pre-photo-improvements"
+  }
+]

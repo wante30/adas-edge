@@ -1,0 +1,424 @@
+{
+  "scope": "REGRESSION_CHECK_NOT_ACCURACY",
+  "opencv": "4.10.0",
+  "python": "3.8.10 (default, Mar 18 2025, 20:04:55) \n[GCC 9.4.0]",
+  "passed": 9,
+  "total": 9,
+  "results": [
+    {
+      "file": "02_0.png",
+      "color": "RED",
+      "shape": "LEFT_ARROW",
+      "color_confidence": 1.0,
+      "shape_confidence": 0.7948164146868251,
+      "reason": "GLOW_CONTOUR_TEMPLATE",
+      "backend": "arm_hsv_contour_v1",
+      "evidence": {
+        "glow_pixels": 1352,
+        "native_roi_size": [
+          99,
+          112
+        ],
+        "analysis_roi_size": [
+          99,
+          112
+        ],
+        "color_counts": {
+          "RED": 1352,
+          "YELLOW": 0,
+          "GREEN": 0
+        },
+        "glow_bbox": [
+          18,
+          23,
+          89,
+          92
+        ],
+        "glow_area": 958.0,
+        "edge_variance": 1060.66162109375,
+        "edge_contrast": 1.6161139993106601,
+        "template_scores": {
+          "STRAIGHT_ARROW": 0.405,
+          "LEFT_ARROW": 0.795,
+          "RIGHT_ARROW": 0.329,
+          "UTURN_ARROW": 0.374,
+          "ROUND": 0.37
+        },
+        "circularity": 0.298,
+        "solidity": 0.538,
+        "concavity_depth": 0.331
+      },
+      "elapsed_ms": 190.5799449996266,
+      "passed": true
+    },
+    {
+      "file": "03_1.png",
+      "color": "GREEN",
+      "shape": "UTURN_ARROW",
+      "color_confidence": 1.0,
+      "shape_confidence": 0.71849234393404,
+      "reason": "GLOW_CONTOUR_TEMPLATE",
+      "backend": "arm_hsv_contour_v1",
+      "evidence": {
+        "glow_pixels": 4618,
+        "native_roi_size": [
+          149,
+          146
+        ],
+        "analysis_roi_size": [
+          149,
+          146
+        ],
+        "color_counts": {
+          "RED": 0,
+          "YELLOW": 0,
+          "GREEN": 4618
+        },
+        "glow_bbox": [
+          22,
+          32,
+          125,
+          122
+        ],
+        "glow_area": 5255.0,
+        "edge_variance": 95.18598937988281,
+        "edge_contrast": 1.0927568862017452,
+        "template_scores": {
+          "STRAIGHT_ARROW": 0.415,
+          "LEFT_ARROW": 0.529,
+          "RIGHT_ARROW": 0.403,
+          "UTURN_ARROW": 0.718,
+          "ROUND": 0.608
+        },
+        "circularity": 0.461,
+        "solidity": 0.814,
+        "concavity_depth": 0.266
+      },
+      "elapsed_ms": 179.55573099970934,
+      "passed": true
+    },
+    {
+      "file": "11_0.png",
+      "color": "RED",
+      "shape": "LEFT_ARROW",
+      "color_confidence": 1.0,
+      "shape_confidence": 0.7334993773349938,
+      "reason": "GLOW_CONTOUR_TEMPLATE",
+      "backend": "arm_hsv_contour_v1",
+      "evidence": {
+        "glow_pixels": 632,
+        "native_roi_size": [
+          197,
+          383
+        ],
+        "analysis_roi_size": [
+          99,
+          192
+        ],
+        "color_counts": {
+          "RED": 632,
+          "YELLOW": 0,
+          "GREEN": 0
+        },
+        "glow_bbox": [
+          30,
+          34,
+          66,
+          69
+        ],
+        "glow_area": 597.0,
+        "edge_variance": 2356.086181640625,
+        "edge_contrast": 1.9645735198376226,
+        "template_scores": {
+          "STRAIGHT_ARROW": 0.624,
+          "LEFT_ARROW": 0.733,
+          "RIGHT_ARROW": 0.506,
+          "UTURN_ARROW": 0.538,
+          "ROUND": 0.684
+        },
+        "circularity": 0.445,
+        "solidity": 0.752,
+        "concavity_depth": 0.27
+      },
+      "elapsed_ms": 205.69237400013662,
+      "passed": true
+    },
+    {
+      "file": "11_1.png",
+      "color": "RED",
+      "shape": "STRAIGHT_ARROW",
+      "color_confidence": 1.0,
+      "shape_confidence": 0.8265162200282088,
+      "reason": "GLOW_CONTOUR_TEMPLATE",
+      "backend": "arm_hsv_contour_v1",
+      "evidence": {
+        "glow_pixels": 517,
+        "native_roi_size": [
+          176,
+          408
+        ],
+        "analysis_roi_size": [
+          83,
+          192
+        ],
+        "color_counts": {
+          "RED": 517,
+          "YELLOW": 0,
+          "GREEN": 0
+        },
+        "glow_bbox": [
+          24,
+          29,
+          57,
+          65
+        ],
+        "glow_area": 512.0,
+        "edge_variance": 2438.816650390625,
+        "edge_contrast": 1.8731847605985752,
+        "template_scores": {
+          "STRAIGHT_ARROW": 0.827,
+          "LEFT_ARROW": 0.577,
+          "RIGHT_ARROW": 0.545,
+          "UTURN_ARROW": 0.499,
+          "ROUND": 0.621
+        },
+        "circularity": 0.363,
+        "solidity": 0.689,
+        "concavity_depth": 0.319
+      },
+      "elapsed_ms": 161.9793469999422,
+      "passed": true
+    },
+    {
+      "file": "12_1.png",
+      "color": "GREEN",
+      "shape": "RIGHT_ARROW",
+      "color_confidence": 0.9990630124150855,
+      "shape_confidence": 0.6634844868735084,
+      "reason": "GLOW_CONTOUR_TEMPLATE",
+      "backend": "arm_hsv_contour_v1",
+      "evidence": {
+        "glow_pixels": 4269,
+        "native_roi_size": [
+          535,
+          551
+        ],
+        "analysis_roi_size": [
+          186,
+          192
+        ],
+        "color_counts": {
+          "RED": 3,
+          "YELLOW": 1,
+          "GREEN": 4265
+        },
+        "glow_bbox": [
+          19,
+          16,
+          175,
+          183
+        ],
+        "glow_area": 3579.0,
+        "edge_variance": 192.75503540039062,
+        "edge_contrast": 0.930395789052925,
+        "template_scores": {
+          "STRAIGHT_ARROW": 0.408,
+          "LEFT_ARROW": 0.296,
+          "RIGHT_ARROW": 0.663,
+          "UTURN_ARROW": 0.387,
+          "ROUND": 0.311
+        },
+        "circularity": 0.13,
+        "solidity": 0.395,
+        "concavity_depth": 0.318
+      },
+      "elapsed_ms": 286.92208499887784,
+      "passed": true
+    },
+    {
+      "file": "23_1.png",
+      "color": "GREEN",
+      "shape": "LEFT_ARROW",
+      "color_confidence": 1.0,
+      "shape_confidence": 0.7543604651162791,
+      "reason": "GLOW_CONTOUR_TEMPLATE",
+      "backend": "arm_hsv_contour_v1",
+      "evidence": {
+        "glow_pixels": 1390,
+        "native_roi_size": [
+          122,
+          114
+        ],
+        "analysis_roi_size": [
+          122,
+          114
+        ],
+        "color_counts": {
+          "RED": 0,
+          "YELLOW": 0,
+          "GREEN": 1390
+        },
+        "glow_bbox": [
+          21,
+          25,
+          99,
+          86
+        ],
+        "glow_area": 2300.0,
+        "edge_variance": 127.63156127929688,
+        "edge_contrast": 1.0444272089939493,
+        "template_scores": {
+          "STRAIGHT_ARROW": 0.554,
+          "LEFT_ARROW": 0.754,
+          "RIGHT_ARROW": 0.458,
+          "UTURN_ARROW": 0.466,
+          "ROUND": 0.627
+        },
+        "circularity": 0.324,
+        "solidity": 0.726,
+        "concavity_depth": 0.277
+      },
+      "elapsed_ms": 298.18662800062157,
+      "passed": true
+    },
+    {
+      "file": "20_0.png",
+      "color": "RED",
+      "shape": "UNKNOWN",
+      "color_confidence": 0.9950248756218906,
+      "shape_confidence": 0.0,
+      "reason": "INSUFFICIENT_ARROW_CONCAVITY",
+      "backend": "arm_hsv_contour_v1",
+      "evidence": {
+        "glow_pixels": 402,
+        "native_roi_size": [
+          48,
+          60
+        ],
+        "analysis_roi_size": [
+          48,
+          60
+        ],
+        "color_counts": {
+          "RED": 400,
+          "YELLOW": 0,
+          "GREEN": 2
+        },
+        "glow_bbox": [
+          13,
+          24,
+          36,
+          47
+        ],
+        "glow_area": 381.0,
+        "edge_variance": 18128.677734375,
+        "edge_contrast": 2.48772279028799,
+        "template_scores": {
+          "STRAIGHT_ARROW": 0.47,
+          "LEFT_ARROW": 0.47,
+          "RIGHT_ARROW": 0.47,
+          "UTURN_ARROW": 0.656,
+          "ROUND": 0.906
+        },
+        "circularity": 0.772,
+        "solidity": 0.919,
+        "concavity_depth": 0.09
+      },
+      "elapsed_ms": 193.76721899971017,
+      "passed": true
+    },
+    {
+      "file": "01_1.png",
+      "color": "GREEN",
+      "shape": "UNKNOWN",
+      "color_confidence": 1.0,
+      "shape_confidence": 0.0,
+      "reason": "AMBIGUOUS_SHAPE_TEMPLATE",
+      "backend": "arm_hsv_contour_v1",
+      "evidence": {
+        "glow_pixels": 197,
+        "native_roi_size": [
+          84,
+          72
+        ],
+        "analysis_roi_size": [
+          84,
+          72
+        ],
+        "color_counts": {
+          "RED": 0,
+          "YELLOW": 0,
+          "GREEN": 197
+        },
+        "glow_bbox": [
+          28,
+          21,
+          53,
+          58
+        ],
+        "glow_area": 305.5,
+        "edge_variance": 1060.1011962890625,
+        "edge_contrast": 2.0259675149356617,
+        "template_scores": {
+          "STRAIGHT_ARROW": 0.568,
+          "LEFT_ARROW": 0.54,
+          "RIGHT_ARROW": 0.358,
+          "UTURN_ARROW": 0.436,
+          "ROUND": 0.467
+        },
+        "circularity": 0.369,
+        "solidity": 0.677,
+        "concavity_depth": 0.213
+      },
+      "elapsed_ms": 287.6602800006367,
+      "passed": true
+    },
+    {
+      "file": "13_1.png",
+      "color": "YELLOW",
+      "shape": "UNKNOWN",
+      "color_confidence": 0.8672795545772368,
+      "shape_confidence": 0.0,
+      "reason": "NO_ARROW_CONCAVITY",
+      "backend": "arm_hsv_contour_v1",
+      "evidence": {
+        "glow_pixels": 10773,
+        "native_roi_size": [
+          345,
+          299
+        ],
+        "analysis_roi_size": [
+          192,
+          166
+        ],
+        "color_counts": {
+          "RED": 3193,
+          "YELLOW": 7580,
+          "GREEN": 0
+        },
+        "color_method": "COINCIDENT_AMBER_BRIGHT_CORE",
+        "glow_bbox": [
+          29,
+          26,
+          145,
+          150
+        ],
+        "glow_area": 9563.5,
+        "edge_variance": 1064.6546630859375,
+        "edge_contrast": 1.3796945489621613,
+        "template_scores": {
+          "STRAIGHT_ARROW": 0.51,
+          "LEFT_ARROW": 0.509,
+          "RIGHT_ARROW": 0.525,
+          "UTURN_ARROW": 0.696,
+          "ROUND": 0.802
+        },
+        "circularity": 0.697,
+        "solidity": 0.936,
+        "concavity_depth": 0.087
+      },
+      "elapsed_ms": 271.8131550009275,
+      "passed": true
+    }
+  ]
+}

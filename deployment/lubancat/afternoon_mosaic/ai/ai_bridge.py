@@ -35,6 +35,8 @@ ROOT = Path(_configured_root).resolve() if _configured_root else Path(__file__).
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from competition_ai.multi_signal import candidates_from_rows
+from competition_ai.multi_signal_worker import LatestSignalWorker
 from competition_ai.scenario import Lane
 from tools.competition_console.fpga_perception import TrafficCode, build_hud_perception
 from auto_brake import AutoBrakeController
@@ -956,6 +958,8 @@ class AiReplayBridge:
         self.auto_brake = AutoBrakeController(journal=self.event_store.journal,
             forward_source_id="Q%d" % (self.args.forward_quadrant + 1),
             physical_input=self.args.source=="PGV_LIVE")
+        self.multi_signals = LatestSignalWorker(
+            hz=args.signal_attribute_hz, jsonl_path=args.signal_jsonl, bindings_path=args.signal_bindings, failure_dir=args.signal_failure_dir) if args.multi_signals else None
         self.navigation = None
         self.nav_request = None
         self.nav_result = None
@@ -1222,6 +1226,11 @@ class AiReplayBridge:
             semantics={},risk_rules={},control=dict(control_mode=self.auto_brake.mode,enabled=False,
                 authorized=self.auto_brake.authorized,inactive_reason="PURE_DETECTION_LITE",context_epoch=self.modes.status()["epoch"]),
             workload=dict(lite=True,ocr_pid=None,semantics_active=False,tesla_active=False,hud_active=False))
+        if self.multi_signals is not None:
+            status["multi_signal"] = self.multi_signals.current(time.monotonic_ns(),
+                context=getattr(self, "_signal_context", ()),
+                available=self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front"), compact=True,
+                reason="" if self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front") else "NOT_PHYSICAL_Q4_OR_UNSUPPORTED_LAYOUT")
         self.latest_dynamic_status = status
         self._last_analysis_cpu_ms = 0.
         return encode_ai_result_packet(frame_id=frame_id,timestamp_ns=timestamp_ns,flags=0,
@@ -1586,6 +1595,23 @@ class AiReplayBridge:
         self.primary_tracks.update(detections,(mode["mode"],mode["epoch"],self.active_model_id,self.args.forward_quadrant),timestamp_ns)
         self._last_tracking_ms=(time.perf_counter_ns()-tracking_start)/1e6
         self._last_tracking_cpu_ms=(time.thread_time_ns()-tracking_cpu_start)/1e6
+        if self.multi_signals is not None:
+            # select_inference_frames returns native Q4, never the enlarged display.
+            context = (mode["bridge_id"], mode["epoch"], mode["mode"],
+                       self.mosaic_profile_id if self.modes.adapter else self.active_model_id,
+                       self.args.forward_quadrant)
+            self._signal_context = context
+            fresh = []
+            for label, rows, age in (("main", snapshot.main, snapshot.main_age_ms),
+                                     ("specialist", snapshot.specialist, snapshot.specialist_age_ms)):
+                # Cached boxes are not reinterpreted on a later video frame.
+                if age is not None and abs(age) < .001:
+                    fresh.extend(candidates_from_rows(rows, frame_id=frame_id,
+                        timestamp_ns=timestamp_ns, space="q4_native",
+                        width=road.shape[1], height=road.shape[0], detector=label))
+            if self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front") and snapshot.main_age_ms is not None and abs(snapshot.main_age_ms) < .001:
+                self.multi_signals.submit(road, fresh, frame_id=frame_id,
+                    timestamp_ns=timestamp_ns, context=context)
         if self.lite:
             return self._lite_result(snapshot,frame_id,timestamp_ns,input_fps,submitted_fps,ai_fps)
         self.stage_timings.setdefault("risk_fast",deque(maxlen=3600))
@@ -1675,6 +1701,11 @@ class AiReplayBridge:
         self.stage_timings["status_build"].append(
             (time.perf_counter_ns() - status_started) / 1e6
         )
+        if self.multi_signals is not None:
+            status["multi_signal"] = self.multi_signals.current(time.monotonic_ns(),
+                context=getattr(self, "_signal_context", ()),
+                available=self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front"), compact=True,
+                reason="" if self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front") else "NOT_PHYSICAL_Q4_OR_UNSUPPORTED_LAYOUT")
         self.latest_dynamic_status = status
         hmi_started = time.perf_counter_ns()
         self._write_dynamic_hmi(status)
@@ -1817,6 +1848,7 @@ class AiReplayBridge:
                         "boxes": int(struct.unpack_from("<I", packet, 20)[0]),
                         "traffic": self.latest_dynamic_status.get("traffic"),
                         "traffic_reason": self.latest_dynamic_status.get("traffic_reason"),
+                        "multi_signal": self.latest_dynamic_status.get("multi_signal"),
                         "detection_counts": timing_detection_counts(self.latest_dynamic_status),
                         "specialist_age_ms": self.latest_dynamic_status.get("specialist_age_ms"),
                         "navigation_state": (self.latest_dynamic_status.get("navigation") or {}).get("state"),
@@ -1900,6 +1932,8 @@ class AiReplayBridge:
         self.telemetry.stop()
         self.modes.shutdown()
         self.pipeline.main_detector.close()
+        if self.multi_signals is not None:
+            self.multi_signals.close()
         if self.pipeline.specialist_detector is not None:
             self.pipeline.specialist_detector.close()
         self._write_summary()
@@ -2075,6 +2109,11 @@ def parser():
         "--hazard-hz", type=float, default=0.0,
         help="hazard analysis cadence; 0 follows the YOLO cadence",
     )
+    result.add_argument("--multi-signals", action="store_true", help="Enable debug-only Q4 multi-lamp attributes")
+    result.add_argument("--signal-attribute-hz", type=float, default=2.)
+    result.add_argument("--signal-jsonl", default="")
+    result.add_argument("--signal-failure-dir", default="", help="Save up to 64 native failure ROIs; optional disk IO")
+    result.add_argument("--signal-bindings", default="", help="Time-limited calibrated head-road evidence JSON file")
     result.add_argument("--specialist-hz", type=float, default=3.0)
     result.add_argument(
         "--hazards", dest="hazards", action="store_true", default=True,

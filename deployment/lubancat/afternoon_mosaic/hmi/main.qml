@@ -32,6 +32,60 @@ Item {
         }
     }
 
+    property bool signalDebugOpen: false
+    property var signalDebugState: ({})
+    Timer {
+        interval: 100; running: root.signalDebugOpen; repeat: true; triggeredOnStart: true
+        onTriggered: root.signalDebugState = video.multiSignalDebug()
+    }
+    Rectangle {
+        x: 860; y: 76; width: 112; height: 24; z: 900
+        color: root.signalDebugOpen ? "#165044" : "#0B2630"
+        border.color: root.cyan; radius: 2
+        Text { anchors.centerIn: parent; text: "SIGNAL DEBUG"; color: root.cyanHot; font.pixelSize: 9 }
+        MouseArea { anchors.fill: parent; onClicked: root.signalDebugOpen = !root.signalDebugOpen }
+    }
+    Rectangle {
+        x: 16; y: 104; width: 690; height: Math.min(540, 116 + signalRows.height); z: 1000
+        visible: root.signalDebugOpen; color: "#EE071821"; border.color: "#3CE3FF"; radius: 4
+        Text { x: 10; y: 8; text: "Q4 MULTI SIGNAL · DEBUG ONLY"; color: "#8CF5FF"; font.pixelSize: 13 }
+        Column {
+            x: 10; y: 30; spacing: 3
+            Repeater {
+                model: ["left", "straight", "right"]
+                delegate: Text {
+                    property var row: (root.signalDebugState.directions || {})[modelData] || {}
+                    property var observed: (root.signalDebugState.observed_directions || {})[modelData] || {}
+                    text: modelData.toUpperCase() + "  VISIBLE=" + (observed.color || "UNKNOWN")
+                          + "  EGO=" + (row.color || "UNKNOWN") + "  " + (row.reason || "DISABLED_OR_WAITING")
+                    color: row.color === "GREEN" ? "#45F3B0" : (row.color === "RED" ? "#FF5064" : "#FFBC5C")
+                    font.pixelSize: 11
+                }
+            }
+        }
+        Flickable {
+            x: 10; y: 90; width: 670; height: parent.height - 100
+            clip: true; contentWidth: width; contentHeight: signalRows.height
+            boundsBehavior: Flickable.StopAtBounds
+        Column {
+            id: signalRows; width: 670; spacing: 5
+            Repeater {
+                model: root.signalDebugState.signals || []
+                delegate: Text {
+                    width: 670; wrapMode: Text.Wrap; color: modelData.valid ? "#EAFBFF" : "#8297A1"; font.pixelSize: 10
+                    text: "#" + modelData.track_id + "  " + modelData.color + " / " + modelData.shape
+                          + "  arrow=" + (modelData.direction || "UNKNOWN") + " ego=" + modelData.ego_relevant
+                          + "  det=" + Number(modelData.confidence).toFixed(2)
+                          + " color=" + Number(modelData.color_confidence).toFixed(2)
+                          + " shape=" + Number(modelData.shape_confidence).toFixed(2)
+                          + " age=" + Math.round(modelData.age_ms) + "ms\n"
+                          + modelData.reason + " · " + (modelData.association_reason || "UNASSOCIATED")
+                }
+            }
+        }
+        }
+    }
+
     property string cjk: "Noto Sans CJK SC"
     property string num: "DejaVu Sans"
     property color ink: "#EAFBFF"
@@ -989,6 +1043,26 @@ Item {
             visible: video.aiModelId === "FAST-Q4" && video.aiOnline
             text: "FAST-Q4 高速检测 · 车道/斑马线分割不可用"
             color: "#A4C4CC"; font.family: root.cjk; font.pixelSize: 10
+        }
+
+        Item {
+            anchors.fill: parent; z: 8; clip: true
+            visible: root.signalDebugOpen && (root.viewMode === 0 || root.viewMode === 1)
+                     && (root.viewMode === 1 || root.roadQuadrant === 3)
+            Repeater {
+                model: root.signalDebugOpen ? (root.signalDebugState.signals || []) : []
+                delegate: Rectangle {
+                    property var b: modelData.bbox
+                    property bool quad: root.viewMode === 1 && root.inputLayout === "quad"
+                    x: video.x + (b[0] + (quad ? 640 : 0)) / (quad ? 1280 : 640) * video.width
+                    y: video.y + (b[1] + (quad ? 360 : 0)) / (quad ? 720 : 360) * video.height
+                    width: (b[2]-b[0]) / (quad ? 1280 : 640) * video.width
+                    height: (b[3]-b[1]) / (quad ? 720 : 360) * video.height
+                    color: "transparent"; border.width: 2
+                    border.color: modelData.valid ? "#FFBC5C" : "#8297A1"
+                    Text { y: -14; text: "#" + modelData.track_id + " " + modelData.color + " " + modelData.shape; color: parent.border.color; font.pixelSize: 10 }
+                }
+            }
         }
 
         // Frame border and status chip.

@@ -1,0 +1,35 @@
+{
+  "reason": "Repair test-created shell wait/SIGSTOP duplicates",
+  "terminated": [
+    [
+      2807,
+      "3712"
+    ],
+    [
+      322917,
+      "711789"
+    ],
+    [
+      331667,
+      "732183"
+    ],
+    [
+      337180,
+      "744958"
+    ],
+    [
+      453418,
+      "1094731"
+    ],
+    [
+      462310,
+      "1113319"
+    ]
+  ],
+  "remaining_formal_hmi": [
+    505334
+  ],
+  "launcher": 2801,
+  "hardware_writes": false,
+  "services_edited": false
+}

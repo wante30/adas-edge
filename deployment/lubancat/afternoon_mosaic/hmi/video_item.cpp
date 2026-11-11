@@ -1195,6 +1195,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                             latestResultId = 0;
                             tracks_.clear();
                             ai_boxes_.clear();
+            ai_multi_signal_.clear();
                             latest_ai_frame_id_.store(0);
                             ai_completion_ns_.clear();
                             ai_fps_.store(0.0);
@@ -1240,6 +1241,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                             submitted.clear();
                             tracks_.clear();
                             ai_boxes_.clear();
+            ai_multi_signal_.clear();
                             ai_epoch_.fetch_add(1);
                             ai_dirty_.store(true);
                         }
@@ -1623,6 +1625,7 @@ void VideoItem::runAiBridge(double fps, double aiHz, QString frameFile) {
                 ai_control_state_ = controlState;
                 ai_status_ = summary;
                 ai_traffic_ = traffic;
+                ai_multi_signal_ = status.value(QStringLiteral("multi_signal")).toObject().toVariantMap();
                 ai_display_view_ = displayView;
                 ai_navigation_ = navigationText;
                 ai_navigation_road_ = navigationRoad;
@@ -1712,6 +1715,7 @@ void VideoItem::requestInferenceMode(const QString &mode) {
         QMutexLocker locker(&ai_metrics_mutex_);
         tracks_.clear();
         ai_boxes_.clear();
+            ai_multi_signal_.clear();
         ai_hazard_latch_details_.clear();
         ai_hazard_latch_ns_ = 0;
         latest_ai_frame_id_.store(0);
@@ -1764,6 +1768,7 @@ void VideoItem::requestModelSwitch(const QString &profileId) {
             ai_model_message_ = QStringLiteral("正在请求板端切换");
             tracks_.clear();
             ai_boxes_.clear();
+            ai_multi_signal_.clear();
             ai_hazards_.clear();
             ai_hazard_details_.clear();
             ai_hazard_latch_details_.clear();
@@ -1777,6 +1782,49 @@ void VideoItem::requestModelSwitch(const QString &profileId) {
 
 void VideoItem::notifyAiModelChanged() {
     emit aiStatusChanged();
+}
+
+QVariantMap VideoItem::multiSignalDebug() const {
+    QMutexLocker locker(&ai_metrics_mutex_);
+    QVariantMap result = ai_multi_signal_;
+    const qint64 now = steadyNs();
+    const bool online = source_online_.load() && ai_online_.load() && !ai_model_switching_.load()
+        && now - last_ai_result_ns_.load() < 1500000000LL;
+    const QString offlineReason = !source_online_.load() ? QStringLiteral("SOURCE_OFFLINE")
+        : ai_model_switching_.load() ? QStringLiteral("MODEL_SWITCHING") : QStringLiteral("AI_OFFLINE");
+    QVariantList lampRows = result.value(QStringLiteral("signals")).toList();
+    for (QVariant &value : lampRows) {
+        QVariantMap signal = value.toMap();
+        const qint64 stamp = signal.value(QStringLiteral("timestamp_ns")).toLongLong();
+        const qint64 expiry = signal.value(QStringLiteral("expires_at_ns")).toLongLong();
+        signal[QStringLiteral("age_ms")] = (now - stamp) / 1.0e6;
+        if (!online || now < stamp || now >= expiry) {
+            signal[QStringLiteral("color")] = QStringLiteral("UNKNOWN");
+            signal[QStringLiteral("shape")] = QStringLiteral("UNKNOWN");
+            signal[QStringLiteral("valid")] = false;
+            signal[QStringLiteral("association")] = QStringLiteral("UNASSOCIATED");
+            signal[QStringLiteral("ego_relevant")] = QStringLiteral("UNKNOWN");
+            signal[QStringLiteral("reason")] = online ? QStringLiteral("EXPIRED") : offlineReason;
+        }
+        value = signal;
+    }
+    result[QStringLiteral("signals")] = lampRows;
+    for (const QString &collection : {QStringLiteral("directions"), QStringLiteral("observed_directions")}) {
+        QVariantMap directions = result.value(collection).toMap();
+        for (const QString &key : {QStringLiteral("left"), QStringLiteral("straight"), QStringLiteral("right")}) {
+            QVariantMap direction = directions.value(key).toMap();
+            const qint64 stamp = direction.value(QStringLiteral("timestamp_ns")).toLongLong();
+            const qint64 expiry = direction.value(QStringLiteral("expires_at_ns")).toLongLong();
+            if (!online || (direction.value(QStringLiteral("valid")).toBool() && (now < stamp || now >= expiry))) {
+                direction[QStringLiteral("color")] = QStringLiteral("UNKNOWN");
+                direction[QStringLiteral("valid")] = false;
+                direction[QStringLiteral("reason")] = online ? QStringLiteral("EXPIRED_OR_UNASSOCIATED") : offlineReason;
+            }
+            directions[key] = direction;
+        }
+        result[collection] = directions;
+    }
+    return result;
 }
 
 QString VideoItem::aiTraffic() const {
@@ -1927,6 +1975,7 @@ void VideoItem::setAiRoadQuadrant(int quadrant) {
     {
         QMutexLocker locker(&ai_metrics_mutex_);
         ai_boxes_.clear();
+            ai_multi_signal_.clear();
         tracks_.clear();
         next_track_id_ = 1;
         ai_hazards_.clear();
@@ -2055,6 +2104,7 @@ void VideoItem::updateMetrics() {
     if (ai_online_.load() && !aiOnlineNow) {
         QMutexLocker locker(&ai_metrics_mutex_);
         ai_boxes_.clear();
+            ai_multi_signal_.clear();
         tracks_.clear();
         next_track_id_ = 1;
         ai_hazards_.clear();

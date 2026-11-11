@@ -1,0 +1,18 @@
+{
+  "client_date": "2026-11-11",
+  "formal_hmi_instances": 1,
+  "formal_hmi_pid": 505334,
+  "launcher_pid": 2801,
+  "pcie_capture": {
+    "device": "/dev/pango_video0",
+    "error": "No such device",
+    "exit_status": 3,
+    "service_state": "auto-restart",
+    "lspci": "01:00.0 Memory controller: Device 0755:0755 (rev ff)",
+    "source_pgv_updating": false
+  },
+  "hardware_reset_attempted": false,
+  "control_registers_modified": false,
+  "formal_files_match_baseline": true,
+  "live_chain_acceptance": false
+}

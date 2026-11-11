@@ -1,0 +1,98 @@
+{
+  "source_video_sha256": "ce5578b70a18cf619eb086246d46019776a72a47fb85f1a89f6e8e03541bb75c",
+  "reviewer": "Codex visual review original contact and Q4 coordinate grid 2026-11-11",
+  "coordinate_space": "Q4_640x360",
+  "annotation_scope": "Two overhead vehicle heads only, road relevance unverified; not exhaustive",
+  "frames": [
+    {
+      "frame_id": 60,
+      "objects": [
+        {
+          "bbox": [
+            269,
+            189,
+            291,
+            197
+          ],
+          "color": "GREEN",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            320,
+            189,
+            339,
+            197
+          ],
+          "color": "GREEN",
+          "shape": "ROUND"
+        }
+      ],
+      "directions": {
+        "left": "UNKNOWN",
+        "straight": "UNKNOWN",
+        "right": "UNKNOWN"
+      }
+    },
+    {
+      "frame_id": 180,
+      "objects": [
+        {
+          "bbox": [
+            281,
+            182,
+            307,
+            193
+          ],
+          "color": "GREEN",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            340,
+            180,
+            365,
+            193
+          ],
+          "color": "GREEN",
+          "shape": "ROUND"
+        }
+      ],
+      "directions": {
+        "left": "UNKNOWN",
+        "straight": "UNKNOWN",
+        "right": "UNKNOWN"
+      }
+    },
+    {
+      "frame_id": 300,
+      "objects": [
+        {
+          "bbox": [
+            313,
+            125,
+            356,
+            143
+          ],
+          "color": "GREEN",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            414,
+            124,
+            458,
+            142
+          ],
+          "color": "GREEN",
+          "shape": "ROUND"
+        }
+      ],
+      "directions": {
+        "left": "UNKNOWN",
+        "straight": "UNKNOWN",
+        "right": "UNKNOWN"
+      }
+    }
+  ]
+}

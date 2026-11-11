@@ -219,6 +219,7 @@ public:
     bool aiOnline() const { return ai_online_.load(); }
     double aiFps() const { return ai_fps_.load(); }
     QString aiTraffic() const;
+    Q_INVOKABLE QVariantMap multiSignalDebug() const;
     QString aiDisplayView() const { return ai_display_view_; }
     QString aiNavigation() const;
     QString aiNavigationRoad() const;
@@ -413,6 +414,7 @@ private:
     QString pending_model_switch_id_;
     quint32 pending_model_switch_request_id_ = 0;
     quint32 next_model_switch_request_id_ = 0;
+    QVariantMap ai_multi_signal_;
     QString ai_traffic_ = QStringLiteral("UNKNOWN");
     QString ai_display_view_ = QStringLiteral("front");
     QString ai_navigation_ = QStringLiteral("等待导航识别");
