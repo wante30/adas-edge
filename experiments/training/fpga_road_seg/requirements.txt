@@ -1,0 +1,9 @@
+# Tested with Python 3.10; install an appropriate CUDA torch wheel separately.
+torch==2.5.1
+numpy>=1.24,<3
+Pillow>=9.5
+opencv-python>=4.7
+matplotlib>=3.7
+onnx==1.17.0
+onnxruntime==1.23.2
+pytest>=8,<9

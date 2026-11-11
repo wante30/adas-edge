@@ -1,0 +1,17 @@
+{
+  "checkpoint_sha256": "ffcf87cd0791d5c7ae23882e73f5dbee3be8b3e4639b45e0f26621815ec8f9b8",
+  "image_sha256": "b180c8fef16ea1ae4210992b8f61aa86a879d549cc78bdba1e14e50844c06794",
+  "evidence": "synthetic_smoke",
+  "geometry": {
+    "native_shape": [
+      720,
+      1280
+    ],
+    "resized_shape": [
+      180,
+      320
+    ],
+    "top": 6,
+    "left": 0
+  }
+}
