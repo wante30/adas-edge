@@ -1,4 +1,4 @@
-"""RK3566 same-video A/B in an isolated directory; restore live PIDs in finally.
+"""RK3566 same-video A/B in an isolated directory with no live-process control.
 
 Run only on the connected LubanCat. Uses private UDP ports and DRY_RUN. Never
 edits services, autostart, control registers, or formal deployment files.
@@ -7,7 +7,6 @@ import argparse
 import json
 import os
 from pathlib import Path
-import signal
 import socket
 import subprocess
 import sys
@@ -22,9 +21,19 @@ def cpu_sample():
     return sum(values), values[3]+values[4]
 
 
-def pid_identity(pid):
-    path = Path('/proc')/str(pid)
-    return (path/'stat').read_text().rsplit(') ', 1)[1].split()[19]
+def require_idle_bench(proc_root=Path('/proc')):
+    competing = []
+    for path in proc_root.glob('[0-9]*/cmdline'):
+        try:
+            argv = path.read_bytes().split(b'\0')
+            if ((argv and argv[0].endswith(b'/qt_gpu_probe'))
+                    or any(part.endswith((b'/tools/isolated_ai.py', b'/ai/b05p_ai_bridge_launcher.py')) for part in argv)):
+                competing.append(int(path.parent.name))
+        except OSError:
+            continue
+    if competing:
+        raise RuntimeError('Competing HMI/AI processes: '+str(competing)
+                           +'. Prepare an idle bench through the normal lifecycle workflow; this tool never pauses live services.')
 
 
 def stop_child(process):
@@ -94,6 +103,10 @@ def main():
     p.add_argument('--debug-smoke', action='store_true', help='One enabled run with Qt debug screenshot; no A/B claim')
     p.add_argument('--start-view', type=int, choices=(0, 1, 2), default=2)
     args = p.parse_args()
+    # SIGSTOP/SIGCONT is unsafe for shell-supervised Qt: wait() can report a
+    # stopped child as completed, causing duplicate launches after resume.
+    # Require an idle test bench and leave service lifecycle to its maintainer.
+    require_idle_bench()
     root = args.root.resolve()
     run = root/(args.label+'_'+str(time.monotonic_ns())); run.mkdir()
     raw = Path('/dev/shm')/(run.name+'.rgb')
@@ -105,27 +118,10 @@ def main():
     # Keep relative assets/components in the existing new development directory.
     replay_qml_path = root/'hmi'/('test_'+run.name+'.qml')
     replay_qml_path.write_text(replay_qml)
-    paused = []
     results = []
     ai = hmi = None
     streams = []
     try:
-        # Pause launcher before its children. No service state/config is changed.
-        processes = []
-        for path in Path('/proc').glob('[0-9]*/cmdline'):
-            try:
-                argv = path.read_bytes().split(b'\0'); pid = int(path.parent.name)
-                executable = argv[0] if argv else b''
-                if (len(argv) > 1 and argv[1] == b'/home/cat/.local/bin/start-pcie-hmi-gui.sh'):
-                    processes.insert(0, pid)
-                elif executable.endswith(b'/qt_gpu_probe') or any(part.endswith(b'/tools/isolated_ai.py') for part in argv):
-                    processes.append(pid)
-            except (OSError, ValueError):
-                continue
-        for pid in processes:
-            identity = pid_identity(pid)
-            os.kill(pid, signal.SIGSTOP); paused.append((pid, identity))
-        (run/'paused.json').write_text(json.dumps(dict(boot_id=Path('/proc/sys/kernel/random/boot_id').read_text().strip(), pids=paused)))
         for enabled in ((True,) if args.debug_smoke else (False, True)):
             label = 'B_on' if enabled else 'A_off'
             shared = Path('/dev/shm')/(run.name+'.mfr1')
@@ -203,17 +199,11 @@ def main():
         stop_child(hmi); stop_child(ai)
         for stream in streams:
             stream.close()
-        for pid, identity in reversed(paused):
-            try:
-                if pid_identity(pid) == identity:
-                    os.kill(pid, signal.SIGCONT)
-            except (OSError, ValueError):
-                pass
         # Remove only the temporary replay file created by this invocation.
         if raw.exists():
             raw.unlink()
-        (run/'restored.json').write_text(json.dumps(dict(resumed_pids=paused,
-            completed=time.monotonic_ns(), formal_services_modified=False)))
+        (run/'restored.json').write_text(json.dumps(dict(completed=time.monotonic_ns(),
+            live_processes_paused=False, formal_services_modified=False)))
         print('EVIDENCE_DIRECTORY '+str(run), flush=True)
 
 

@@ -32,7 +32,7 @@ Qt 已在 RK3566 编译并打开调试面板，Tesla 页面运行截图见 `evid
 
 ## 验证结果与限制
 
-截至本次提交，新增 41 项测试通过，其中 10 项使用真实照片裁剪。另有部署既有 61 项通过，1 项已知旧 fixture 失败按完整节点 deselect。RK3566 Python 3.8.10、OpenCV 4.10.0 上 9 个固定真实裁剪回归全部通过，详见 `evidence/arm_photo_regressions.json`。这些固定回归含应拒判样本，不是 100% 识别准确率。
+截至本次提交，新增 45 项测试通过，其中 10 项使用真实照片裁剪。另有部署既有 61 项通过，1 项已知旧 fixture 失败按完整节点 deselect。RK3566 Python 3.8.10、OpenCV 4.10.0 上 9 个固定真实裁剪回归全部通过，详见 `evidence/arm_photo_regressions.json`。这些固定回归含应拒判样本，不是 100% 识别准确率。
 
 真实照片来自 Wikimedia Commons，逐图 URL、下载字节 SHA-256、作者、许可保存在 `photo_sources.json`；人工原生坐标标签在 `photo_labels.json`。15 张照片、33 个 ROI 包括红/绿/黄、左右直行、掉头、圆灯、暗灯与模糊样本。03 为真实照片在不同时刻的拼图，不能当作红/绿掉头同时亮。22 是示意图，明确排除；18 视角倾斜，排除方向统计。仓库中的真实裁剪附有各自来源许可，派生结果延续原图许可，见 `tests/fixtures/real_signals/ATTRIBUTION.md`。
 
@@ -74,7 +74,7 @@ Qt 已在 RK3566 编译并打开调试面板，Tesla 页面运行截图见 `evid
 ## 复现
 
 ```powershell
-python -m pytest tests/test_multi_signal.py tests/test_signal_shape_association.py tests/test_signal_worker_backend.py tests/test_signal_protocol.py tests/test_real_signal_photos.py -q
+python -m pytest tests/test_multi_signal.py tests/test_signal_shape_association.py tests/test_signal_worker_backend.py tests/test_signal_protocol.py tests/test_real_signal_photos.py tests/test_signal_bench_lifecycle.py -q
 python tools/check_signal_backend.py --output outputs/native-regression.json
 python tools/collect_signal_photos.py --output outputs/photos --manifest docs/multi_signal/photo_sources.json --ids 00 01 02 03 04 08 09 10 11 12 13 14 18 19 20 21 22 23
 python tools/evaluate_signal_photos.py --images outputs/photos --output outputs/photo-check
@@ -87,3 +87,7 @@ python tools/evaluate_signal_photos.py --images outputs/photos --output outputs/
 不继续无限调整阈值，也未增加第二个神经网络。失败样本已有原生 ROI、原因、HSV 像素与模板分数：photo01/04 的绿色箭头亮芯分裂，photo23 的直箭头经模糊后模板间隔不足，比赛红片发光像素太少；photo20 是形态误判反例，已明确拒判。
 
 后续若授权训练轻量 ROI 分类器，可使用同一 AttributeBackend 契约，输入真实检测 ROI，输出颜色与形状以及质量/UNKNOWN，独立测试后替换 ARM 后端或经 FPGAAttributeBackend 注入。候选可为 48/64 像素的小型量化分类器，不能作为已有成果或当前准确率；先采集不同路口/距离/相机的带真值样本，以路口和视频分组划分训练与留出，重点增加圆灯、过曝、计时数字、行人灯和无法辨方向的负例。8×9 像素信息不足不能保证靠分类器解决，应先评估光学或采样分辨率。
+
+## 生命周期恢复补充核验
+
+最后进程清点发现旧版 A/B 的 SIGSTOP/SIGCONT 与 shell wait 交互会产生重复 Qt，不能只检查原 PID 恢复。已修复测试工具：现有 HMI/AI 未退出时拒绝运行，不再控制正式进程；4 项空闲台架前置条件测试通过。已清理本次积累的 6 个实例，由原启动器恢复单实例，正式 Qt/AI 文件哈希保持基线。旧恢复收据仅为历史记录，不是恢复成功证据；以 `evidence/lifecycle_recovery.json` 为准。最终现场 PCIe 采集服务报 No such device，lspci rev ff，实时 PGV 停止更新，未进行硬件重置或控制寄存器操作，实时链路恢复未验证。
