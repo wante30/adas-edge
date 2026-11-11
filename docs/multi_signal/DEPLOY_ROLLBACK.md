@@ -24,6 +24,8 @@ python3 tools/check_signal_backend.py --fixtures tests/fixtures/real_signals --o
 
 该检查只使用真实照片裁剪，既不加载检测模型，也不读取或写入硬件。报告中的通过率是回归测试结果，不是独立数据集准确率。文件以独占创建方式写出；再次运行时选择新的输出文件。
 
+本次交付的运行包额外包含实机已编译 Qt 和已有 C API 库，其 SHA-256 纳入 bundle_manifest.json；原机 RKNN Runtime、系统 Qt/Mali 库和 RKNN 模型仍为外部依赖。运行包中 Qt 可直接使用 `build/qt_gpu_probe`。重新制作相同类别运行包时，可给打包工具添加 `--qt-binary` 和 `--capi-library` 路径；工具检查为 AArch64 ELF。
+
 ## Qt 编译
 
 板上已有 Qt5、qmake、OpenCV、NumPy。Python 3.8.10 和 OpenCV 4.10.0 的真实 ROI 回归已运行。模型推理另需原机安装的 RKNN Runtime 和模型文件，包内不重新分发。

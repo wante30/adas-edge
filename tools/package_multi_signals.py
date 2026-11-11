@@ -18,6 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--qt-binary', type=Path, help='Optional verified AArch64 Qt executable')
+    parser.add_argument('--capi-library', type=Path, help='Optional existing AArch64 RKNN C API library')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
     files = {}
@@ -33,6 +35,13 @@ def main():
     for name in ('check_signal_backend.py', 'evaluate_signal_photos.py', 'collect_signal_photos.py',
                  'replay_multi_signals.py', 'board_multi_signal_ab.py'):
         files['tools/'+name] = ROOT/'tools'/name
+    for path, target in ((args.qt_binary, 'build/qt_gpu_probe'),
+                         (args.capi_library, 'fast_mosaic/capi/libp2capi_generic.so')):
+        if path:
+            header = path.read_bytes()[:20]
+            if header[:6] != b'\x7fELF\x02\x01' or int.from_bytes(header[18:20], 'little') != 183:
+                raise ValueError('Expected AArch64 ELF: '+str(path))
+            files[target] = path
     manifest = dict(schema_version=1, debug_only=True,
         git_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         dirty=bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).strip()),
@@ -44,7 +53,7 @@ def main():
             info = tar.gettarinfo(str(path), 'adas-multi-signals-debug/'+name)
             info.mtime = info.uid = info.gid = 0
             info.uname = info.gname = ''
-            info.mode = 0o755 if path.suffix == '.sh' else 0o644
+            info.mode = 0o755 if path.suffix == '.sh' or name == 'build/qt_gpu_probe' else 0o644
             with path.open('rb') as stream:
                 tar.addfile(info, stream)
         data = json.dumps(manifest, indent=2).encode('utf-8')
