@@ -25,7 +25,8 @@ def test_bdd_real_schema_missing_crosswalk_and_unknown_style(tmp_path):
     y,v=out['target'],out['valid']
     assert y[0,14,5] == y[1,14,5] == 1  # overlapping channels preserved
     assert y[2,10,15] == 1 and y[1,10,15] == 0
-    assert v[0,0,0] == 0 and v[3].sum() == y[3].sum() == 0
+    assert v[0,0,0] == 0 and v[3].sum() == y[3].sum() > 0
+    assert np.array_equal(v[3], y[3])  # weak positive-only curves, not dense labels
     assert v[1:3,10,25].sum() == 0 and out['lane'][10,25] == 1
     assert y[1:3,10,20].sum() == 0  # sparse crosswalk not a solid lane
     missing=bdd_targets(a.shape)
@@ -41,8 +42,10 @@ def test_bezier_not_control_polygon_and_width_sensitivity():
     assert len(pts)>4 and pts[:,1].min()>0
     thin=raster(curve,(24,24),2); thick=raster(curve,(24,24),6)
     assert thick.sum()>thin.sum()
+    leading_controls=poly([[2,10],[2,0],[18,0],[18,10]],types='CCCL')
+    assert len(poly_points(leading_controls)) > 4
     with pytest.raises(ValueError):
-        poly_points(poly([[0,0],[1,1]],types='LC'))
+        poly_points(poly([[0,0],[1,1]],types='LX'))
 
 
 def test_historical_bdd_objects_style_flat_bezier_and_positive_only_png(tmp_path):
@@ -56,6 +59,8 @@ def test_historical_bdd_objects_style_flat_bezier_and_positive_only_png(tmp_path
     out = bdd_targets((16, 16), drivable_frame=legacy, lane_frame=legacy, line_width=2)
     assert out['target'][0, 5, 5] == 1 and out['valid'][0].all()
     assert out['target'][1].sum() > 0 and out['target'][2].sum() > 0
+    missing = bdd_targets((16,16), drivable_frame={'objects':[]}, lane_frame={'objects':[]})
+    assert missing['valid'].sum() == missing['lane_valid'].sum() == 0
 
     # Historical PNG renderer used 255 as background; only encoded line pixels
     # are valid so unlabeled background can never become a negative example.
@@ -74,6 +79,11 @@ def test_historical_bdd_multiframe_json_is_matched_by_image_name():
     assert select_frame(rows, 'b.jpg') is rows[1]
     with pytest.raises(ValueError, match='expected one BDD frame'):
         select_frame(rows, 'missing.jpg')
+
+
+def test_official_single_image_json_wrapper_selects_its_frame():
+    data = {'name': 'video-frame', 'frames': [{'objects': []}]}
+    assert select_frame(data, 'video-frame.jpg') is data['frames'][0]
 
 
 def test_vistas_uses_config_names_void_and_missing_styles(tmp_path):
@@ -95,7 +105,7 @@ def test_letterbox_padding_is_ignored_and_restore_aligns():
     np.testing.assert_array_equal(restored,y)
 
 
-def test_group_leakage_and_duplicate_content_rejected(tmp_path):
+def test_group_leakage_and_cross_split_duplicate_content_rejected(tmp_path):
     rows=[dict(id='a',image='a.png',masks='a.npz',split='train',group_id='video1',license='terms'),
           dict(id='b',image='b.png',masks='b.npz',split='test',group_id='video1',license='terms')]
     with pytest.raises(ValueError,match='leakage'):
@@ -104,11 +114,14 @@ def test_group_leakage_and_duplicate_content_rejected(tmp_path):
         r['image']=str(tmp_path/(r['id']+'.png')); r['masks']=str(tmp_path/(r['id']+'.npz'))
         Image.new('RGB',(8,8)).save(r['image']); np.savez(r['masks'],a=[1])
     rows[1]['group_id']='video2'
+    rows[1]['split']='train'
+    validate_manifest(rows)
+    rows[1]['split']='test'
     with pytest.raises(ValueError,match='content'):
         validate_manifest(rows)
 
 
-def test_convert_and_load_native_bdd_masks(tmp_path):
+def test_convert_and_load_native_bdd_masks(tmp_path, monkeypatch):
     im=tmp_path/'frame.jpg'; Image.new('RGB',(30,20)).save(im)
     dp=tmp_path/'drivable.png'; Image.fromarray(np.zeros((20,30),np.uint8)).save(dp)
     lane=tmp_path/'lane.json'; lane.write_text(json.dumps({'labels':[]}),encoding='utf-8')
@@ -118,3 +131,12 @@ def test_convert_and_load_native_bdd_masks(tmp_path):
     x,y,v=RoadDataset(mp,'train',(32,32))[0]
     assert x.shape==(3,32,32) and y.shape==(4,32,32)
     assert v[3].sum()==0 and y[0].sum()>0
+    monkeypatch.setenv('BDD_SEG_CACHE', str(tmp_path/'tensor-cache'))
+    for baseline in (False, True):
+        ds=RoadDataset(mp,'train',(32,32),baseline,('crosswalk',))
+        first=ds[0]
+        cached=ds[0]
+        for a,b in zip(first,cached):
+            np.testing.assert_array_equal(a.numpy(), b.numpy())
+    with pytest.raises(ValueError, match='line width'):
+        convert_index(index,tmp_path/'converted',line_width=4,resume=True)

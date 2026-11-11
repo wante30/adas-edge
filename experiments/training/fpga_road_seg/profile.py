@@ -63,7 +63,7 @@ def main():
     p=argparse.ArgumentParser(); p.add_argument('--output',required=True)
     args=p.parse_args(); torch.set_num_threads(4)
     reports=[]
-    for name in ('twin-small','twin-nano','twin-four','candidate'):
+    for name in ('twin-small','twin-nano','twin-four','candidate','candidate-plus'):
         for w,h in ((320,192),(384,216),(512,288),(640,384)):
             try:
                 report=profile_model(build_model(name),(1,3,h,w))

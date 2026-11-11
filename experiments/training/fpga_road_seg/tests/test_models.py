@@ -17,7 +17,7 @@ def test_missing_channel_and_pixel_have_zero_gradient():
     assert masked_loss(x,y,z).item()==0
 
 
-@pytest.mark.parametrize('name,channels',[('twin-small',2),('twin-nano',2),('twin-four',4),('candidate',4)])
+@pytest.mark.parametrize('name,channels',[('twin-small',2),('twin-nano',2),('twin-four',4),('candidate',4),('candidate-plus',4)])
 def test_real_forward_backward(name,channels):
     model=build_model(name)
     y=model(torch.rand(2,3,192,320))
@@ -52,3 +52,10 @@ def test_metrics_ignore_unlabelled_channel_and_no_positive_recall():
 def test_profile_counts_tiny_conv_exactly():
     r=profile_model(torch.nn.Conv2d(3,4,3,bias=False),(1,3,8,8))
     assert r['parameters']==108 and r['macs']==4*6*6*3*3*3
+
+
+def test_candidate_parameter_targets():
+    small = build_model('candidate')
+    plus = build_model('candidate-plus')
+    assert sum(p.numel() for p in small.parameters()) == 8508
+    assert 30000 <= sum(p.numel() for p in plus.parameters()) <= 80000

@@ -72,6 +72,28 @@ class RoadCandidate(nn.Module):
         return F.interpolate(self.head(e), size=x.shape[-2:], mode='nearest')
 
 
+class RoadCandidatePlus(nn.Module):
+    """Wider FPGA-limited variant for the requested 30K-80K comparison."""
+    def __init__(self):
+        super().__init__()
+        self.stem = conv(3, 32, 2)
+        self.enc2 = ds(32, 56, 2)
+        self.enc3 = nn.Sequential(ds(56, 96, 2), ds(96, 96))
+        self.project = nn.Conv2d(96, 56, 1)
+        self.dec2 = ds(56, 56)
+        self.project2 = nn.Conv2d(56, 32, 1)
+        self.dec1 = ds(32, 32)
+        self.head = nn.Conv2d(32, 4, 1)
+
+    def forward(self, x):
+        a = self.stem(x)
+        b = self.enc2(a)
+        c = self.enc3(b)
+        d = self.dec2(F.interpolate(self.project(c), size=b.shape[-2:], mode='nearest') + b)
+        e = self.dec1(F.interpolate(self.project2(d), size=a.shape[-2:], mode='nearest') + a)
+        return F.interpolate(self.head(e), size=x.shape[-2:], mode='nearest')
+
+
 def build_model(name):
     if name in ('twin-small', 'twin-nano'):
         return TwinBinary(name.split('-')[1])
@@ -79,4 +101,6 @@ def build_model(name):
         return TwinFour()
     if name == 'candidate':
         return RoadCandidate()
+    if name == 'candidate-plus':
+        return RoadCandidatePlus()
     raise ValueError(f'unknown model {name}')

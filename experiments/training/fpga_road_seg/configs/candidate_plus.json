@@ -1,0 +1,12 @@
+{
+  "model": "candidate-plus",
+  "width": 320,
+  "height": 192,
+  "batch_size": 4,
+  "epochs": 40,
+  "lr": 0.001,
+  "seed": 15,
+  "pos_weight": [1.0, 5.0, 5.0, 3.0],
+  "dice_weight": 1.0,
+  "threshold": 0.5
+}
