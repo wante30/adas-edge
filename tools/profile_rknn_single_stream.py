@@ -114,14 +114,14 @@ def _nms(boxes: np.ndarray, scores: np.ndarray, iou_threshold: float) -> list[in
     return np.asarray(indices, dtype=np.int32).reshape(-1).tolist()
 
 
-def _as_nchw(output: np.ndarray) -> np.ndarray:
+def _as_nchw(output: np.ndarray, class_count: int = COCO_CLASSES) -> np.ndarray:
     # Keep the RKNN output dtype; cast only the small survivor subset below.
     array = np.asarray(output)
     if array.ndim != 4:
         raise ValueError(f"raw head output must be 4-D, got {array.shape}")
-    if array.shape[1] in (DFL_BINS * 4, COCO_CLASSES):
+    if array.shape[1] in (DFL_BINS * 4, class_count):
         return array
-    if array.shape[-1] in (DFL_BINS * 4, COCO_CLASSES):
+    if array.shape[-1] in (DFL_BINS * 4, class_count):
         return array.transpose(0, 3, 1, 2)
     raise ValueError(f"cannot identify channel dimension in {array.shape}")
 
@@ -134,8 +134,15 @@ def decode_yolo11_raw(
     scale: float,
     pad_x: int,
     pad_y: int,
+    class_count: int = COCO_CLASSES,
 ) -> list[list[float]]:
-    """CPU DFL/decode, sigmoid, filtering and class-wise NMS for six raw outputs."""
+    """CPU DFL/decode, sigmoid, filtering and class-wise NMS for raw outputs.
+
+    Existing YOLO11 callers keep the COCO-80 default. BDD/P2 raw-head models
+    pass their active ten-class profile explicitly.
+    """
+    if int(class_count) <= 0:
+        raise ValueError("class_count must be positive")
     if len(outputs) != 6:
         raise ValueError(f"expected six raw head outputs, got {len(outputs)}")
     model_width, model_height = normalize_input_shape(input_size)
@@ -143,10 +150,10 @@ def decode_yolo11_raw(
     dfl_weights = np.arange(DFL_BINS, dtype=np.float32)
     confidence_logit = math.log(confidence_threshold / (1.0 - confidence_threshold))
     for reg_raw, cls_raw in zip(outputs[0::2], outputs[1::2]):
-        reg, classes = _as_nchw(reg_raw), _as_nchw(cls_raw)
+        reg, classes = _as_nchw(reg_raw, class_count), _as_nchw(cls_raw, class_count)
         _, _, grid_h, grid_w = reg.shape
-        if classes.shape != (1, COCO_CLASSES, grid_h, grid_w):
-            raise ValueError(f"incompatible raw outputs: {reg.shape}, {classes.shape}")
+        if classes.shape != (1, class_count, grid_h, grid_w):
+            raise ValueError(f"incompatible raw outputs for {class_count} classes: {reg.shape}, {classes.shape}")
         if model_height % grid_h or model_width % grid_w:
             raise ValueError(f"grid {grid_w}x{grid_h} does not divide input {(model_width, model_height)}")
         stride_x, stride_y = model_width / grid_w, model_height / grid_h

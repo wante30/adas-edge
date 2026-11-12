@@ -89,6 +89,28 @@ def test_raw_decode_handles_filtered_candidate_vectors() -> None:
     assert result[0][5] == 2.0
 
 
+def test_raw_decode_supports_bdd_ten_class_heads() -> None:
+    profiler = _load_profiler_module()
+    regression = np.zeros((1, 64, 1, 1), dtype=np.float32)
+    classes = np.full((1, 10, 1, 1), -10.0, dtype=np.float32)
+    classes[0, 8, 0, 0] = 1.0  # BDD traffic light class
+    empty_classes = np.full((1, 10, 1, 1), -10.0, dtype=np.float32)
+
+    result = profiler.decode_yolo11_raw(
+        [regression, classes, regression, empty_classes, regression, empty_classes],
+        input_size=8,
+        confidence_threshold=0.25,
+        iou_threshold=0.45,
+        scale=1.0,
+        pad_x=0,
+        pad_y=0,
+        class_count=10,
+    )
+
+    assert len(result) == 1
+    assert result[0][5] == 8.0
+
+
 def test_normalize_input_shape_is_pure_about_square_and_rectangular() -> None:
     profiler = _load_profiler_module()
 

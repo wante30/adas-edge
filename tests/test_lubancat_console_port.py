@@ -181,3 +181,24 @@ def test_timing_summary_reports_empty_and_populated_windows():
     assert summary["median"] == 2.0
     assert summary["p95"] == pytest.approx(2.9)
     assert summary["max"] == 3.0
+
+
+def test_rknn_detector_can_expose_main_traffic_lights_without_changing_default(monkeypatch):
+    class FakeDetector:
+        def __init__(self, *args, **kwargs):
+            self.last_timing = {"rknn_call_ms": 3.0, "decode_nms_ms": 1.0}
+        def infer(self, frame, stream_id, frame_id, timestamp_ns):
+            item = SimpleNamespace(class_name="traffic light", confidence=.31,
+                                   x1=1., y1=2., x2=12., y2=20.)
+            return SimpleNamespace(inference_ms=4.0, detections=[item])
+        def close(self):
+            pass
+    monkeypatch.setattr("competition_ai.detector.CompetitionDetector", FakeDetector)
+    frame = np.zeros((32, 32, 3), np.uint8)
+    default = RknnConsoleDetector("main.rknn", (512, 288), class_profile="bdd10")
+    assert default.detect(frame)[0] == []
+    enabled = RknnConsoleDetector("main.rknn", (512, 288), class_profile="bdd10",
+                                   include_traffic_lights=True)
+    rows, _ = enabled.detect(frame)
+    assert rows[0]["class_name"] == "traffic light"
+    assert enabled.last_timing["rknn_call_ms"] == 3.0
