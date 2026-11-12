@@ -171,6 +171,7 @@ def metric_rows(reports, profile, timing):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output',required=True);p.add_argument('--manifest',required=True);p.add_argument('--baseline',required=True)
+    p.add_argument('--force-qat',action='store_true',help='bounded QAT in a new output; preserve previous PTQ result')
     a=p.parse_args();out=Path(a.output);torch.set_num_threads(4)
     from .refine_stage2 import maybe_refine
     refinement=maybe_refine(out,a.manifest)
@@ -198,7 +199,7 @@ def main():
         history=history+[dict(e,epoch=mixed_epochs+e['epoch']) for e in extra]
     curves(out,history);visuals(out,domains,before,after);video=real_video(out,before,after)
     print('completed real-road image and video artifacts',flush=True)
-    quant=quantize(load_checkpoint(best)[0],best,a.manifest,out/'exports',ck['config'])
+    quant=quantize(load_checkpoint(best)[0],best,a.manifest,out/'exports',ck['config'],force_qat=a.force_qat)
     if quant['failures']:
         write_json(out/'failures/quantization.json',quant['failures'])
     reports=dict(before_fp32=measured['before'],after_fp32=measured['after'],after_onnx_fp32=quant['comparison']['fp32'],after_int8=quant['comparison']['int8'])
@@ -233,6 +234,7 @@ RLMD 是 {audit['split_counts']['val']} 张独立分组验证，训练 {audit['s
 前模型 crosswalk 未训练，数值仅用于展示未训练输出，不是旧模型有效斑马线精度。
 RLMD 标注覆盖整个过街区域、含条纹间隙；未标 drivable 的 loss 始终屏蔽。
 BDD 旧曲线 crosswalk 在本轮屏蔽。数字文件名分组和近似图像排查减少邻帧泄漏，但原数据缺少完整录像 ID，仍不能证明场景完全独立。
+所有分割指标在 320×192 letterbox 网格上统计，padding 不计分；不是原始分辨率逐像素评分。
 
 ## 量化对照
 
@@ -241,6 +243,8 @@ BDD 旧曲线 crosswalk 在本轮屏蔽。数字文件名分组和近似图像�
 量化器选择使用内部验证，选择 `{quant['selected']}`。完整候选结果见 exports/search.json。
 PyTorch / ONNX 最大 logit 误差 {quant['torch_onnx_max_logit_error']:.6g}。
 PTQ 未通过内部逐项 2 点保护时，自动尝试最多 3 轮真实混合数据 QAT（冻结 BN/校准范围，FP32 logits 蒸馏正则），结果及异常均记录于 exports/。
+本轮显式要求 QAT：{a.force_qat}；实际 QAT 是否成功、是否被采用见 exports/search.json，不能把已请求等同于已成功。
+若本轮从之前已评估 PTQ 的结果继续，先前的留出集结果已经看过，后续同集合复评不能称为新的盲测；量化参数/候选选择仍只使用训练校准和内部验证。
 表中关键 IoU/F1/Recall 最大量化下降 {drop*100:.2f} 个百分点；2 点软件门槛：{'通过' if accepted else '未通过，仍需逐层误差定位或进一步 QAT，不能宣布 INT8 可用'}。
 ONNX 只有 Conv W8A8，Add / Resize / I/O 仍浮点，不能直接烧录 PG2L200H。
 如选用 unsigned asymmetric 激活，RTL 需明确支持零点修正。QDQ 文件不是队友硬件权重格式。

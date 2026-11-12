@@ -103,7 +103,10 @@ def run_qat(checkpoint, manifest, output, calibration, validation):
             logits=model(x)
             supervised=masked_loss(logits,y,v,ck['config']['pos_weight'])
             # FP32 logits regularize the quantized model, not new ground-truth labels.
-            loss=supervised+.2*F.mse_loss(logits,reference)
+            # Missing domain tasks stay masked for regularization as well:
+            # no RLMD drivable or BDD weak-crosswalk pseudo-supervision.
+            regularizer=((logits-reference).square()*v).sum()/v.sum().clamp_min(1)
+            loss=supervised+.2*regularizer
             if not torch.isfinite(loss):raise RuntimeError('nonfinite QAT loss')
             loss.backward();optimizer.step();total+=float(loss.detach())*len(x);n+=len(x)
         domains={s:evaluate(model,dl,'cuda',CLASSES) for s,dl in vals.items()}

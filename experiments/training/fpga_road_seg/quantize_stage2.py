@@ -53,7 +53,7 @@ def evaluate_onnx(path, datasets):
     return reports
 
 
-def quantize(model, checkpoint, manifest, output, cfg):
+def quantize(model, checkpoint, manifest, output, cfg, force_qat=False):
     out = Path(output); out.mkdir(parents=True, exist_ok=True)
     identity = dict(checkpoint_sha256=file_hash(checkpoint), manifest_sha256=file_hash(manifest))
     marker = out/'search.json'
@@ -61,6 +61,8 @@ def quantize(model, checkpoint, manifest, output, cfg):
         result = read_json(marker)
         if any(result[k] != v for k,v in identity.items()):
             raise ValueError('PTQ output identity mismatch')
+        if force_qat and not result.get('qat_requested'):
+            raise ValueError('completed PTQ-only output preserved; use an independent QAT output directory')
         return result
     model = model.cpu().eval()
     fp = out/'model.fp32.onnx'; prepared = out/'model.preprocessed.onnx'
@@ -125,8 +127,8 @@ def quantize(model, checkpoint, manifest, output, cfg):
         return (max(eligible,key=lambda r:r['score']) if eligible else
                 min(results,key=lambda r:(maximum_drop(fp_metrics,r['domains']),-r['score'])))
     selected = select()
-    if maximum_drop(fp_metrics, selected['domains']) > .02:
-        print('PTQ exceeds 2pp internal domain guard; starting bounded real-data QAT fallback',flush=True)
+    if force_qat or maximum_drop(fp_metrics, selected['domains']) > .02:
+        print('Starting bounded real-data QAT; selection remains on internal validation only',flush=True)
         try:
             from .qat_stage2 import run_qat
             results.append(run_qat(checkpoint,manifest,out,calibration,validation))
@@ -151,7 +153,7 @@ def quantize(model, checkpoint, manifest, output, cfg):
     report = dict(**identity, torch_onnx_max_logit_error=parity, calibration_samples=len(calibration),
                   calibration='96 BDD + up to 48 RLMD crosswalk positive/48 negative TRAIN samples, no validation/test calibration',
                   selection='Internal BDD 1024 + all independent RLMD validation. Prefer candidates with <=2pp loss per key task, then weighted score; otherwise minimize worst task loss. Held-out BDD never used for selection.',
-                  fp32_validation=fp_metrics, variants=results, failures=failures, selected=selected['name'],
+                  fp32_validation=fp_metrics, variants=results, failures=failures, selected=selected['name'],qat_requested=force_qat,
                   comparison=full_comparison, integer_scope='All Conv W8A8 QDQ. Add/Resize/IO float. Unsigned asymmetric activation may require zero-point correction hardware. Not a full-integer FPGA artifact.')
     write_json(marker, report)
     return report

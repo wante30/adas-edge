@@ -15,6 +15,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', default=str(ROOT/'outputs/fpga_road_seg_stage2'))
     parser.add_argument('--manifest', default=r'C:\Users\JingyuWang\datasets\rlmd_issue15\prepared_v1\mixed_manifest.jsonl')
+    parser.add_argument('--postprocess-only', action='store_true',help='use existing FP32 checkpoints without training')
+    parser.add_argument('--force-qat', action='store_true',help='request bounded QAT after real FP32 optimization')
     args = parser.parse_args()
     out = Path(args.output).resolve(); out.mkdir(parents=True, exist_ok=True)
     # OS-held lock is released automatically after a crash; file can remain.
@@ -38,7 +40,9 @@ def main():
             log.write('\nUTC '+datetime.datetime.now(datetime.timezone.utc).isoformat()+' '+repr(command)+'\n'); log.flush()
             return subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT).returncode
         done = out/'training_complete.json'
-        if not done.exists():
+        if args.postprocess_only and not (checkpoint_dir/'best.pt').exists():
+            raise ValueError('postprocess-only requires an existing FP32 best checkpoint')
+        if not done.exists() and not args.postprocess_only:
             for attempt in range(1, 6):
                 command = [sys.executable, '-u', '-m', 'experiments.training.fpga_road_seg.train',
                            '--manifest', args.manifest, '--config', str(config), '--output', str(checkpoint_dir),
@@ -60,8 +64,11 @@ def main():
                 state('failed_training', reason='five attempts failed; inspect run.log; rerun controller to resume')
                 raise SystemExit(1)
         state('evaluating_and_exporting')
-        code = run([sys.executable, '-u', '-m', 'experiments.training.fpga_road_seg.deliver_stage2',
-                    '--output', str(out), '--manifest', args.manifest, '--baseline', str(init)])
+        command = [sys.executable, '-u', '-m', 'experiments.training.fpga_road_seg.deliver_stage2',
+                    '--output', str(out), '--manifest', args.manifest, '--baseline', str(init)]
+        if args.force_qat:
+            command.append('--force-qat')
+        code = run(command)
         if code:
             state('failed_delivery', exit_code=code, reason='training preserved; rerun controller to retry delivery only')
             raise SystemExit(code)
