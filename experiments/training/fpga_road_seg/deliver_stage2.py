@@ -214,6 +214,15 @@ def main():
     floating_bias=sum(layer.get('bias_storage')=='float32' for layer in quantization_contract['layers'])
     from .inspect_quantization import inspect as inspect_quantized_predictions
     quant_timing=inspect_quantized_predictions(out,a.manifest)
+    qat_epochs=0;qat_best_epoch=None;qat_checkpoint_sha=None
+    if (out/'exports/qat-history.json').exists():
+        qat_history=read_json(out/'exports/qat-history.json');qat_epochs=len(qat_history)
+        qat_best_epoch=max(qat_history,key=lambda e:e['score'])['epoch']
+        weights=out/'checkpoints/candidate-plus-qat';weights.mkdir(exist_ok=True)
+        for name in ('qat.best.pt','qat.last.pt','qat.reference.torchscript.pt'):
+            if (out/'exports'/name).exists():shutil.copyfile(out/'exports'/name,weights/name)
+        qat_checkpoint_sha=file_hash(weights/'qat.best.pt')
+        (weights/'README.md').write_text('FX QAT checkpoint：使用 qat_stage2.py 的 prepare_qat_fx 配置恢复 transformed state_dict；不能直接 load_checkpoint 当作原始 FP32 模型。qat.reference.torchscript.pt 可用于参考推理。last 包含优化器，可中断续训；原 FP32 最佳权重保留在 ../candidate-plus/best.pt。\n',encoding='utf-8')
     if quant['failures']:
         write_json(out/'failures/quantization.json',quant['failures'])
     reports=dict(before_fp32=measured['before'],after_fp32=measured['after'],after_onnx_fp32=quant['comparison']['fp32'],after_int8=quant['comparison']['int8'])
@@ -258,6 +267,8 @@ BDD 旧曲线 crosswalk 在本轮屏蔽。数字文件名分组和近似图像�
 PyTorch / ONNX 最大 logit 误差 {quant['torch_onnx_max_logit_error']:.6g}。
 PTQ 未通过内部逐项 2 点保护时，自动尝试最多 3 轮真实混合数据 QAT（冻结 BN/校准范围，FP32 logits 蒸馏正则），结果及异常均记录于 exports/。
 本轮显式要求 QAT：{a.force_qat}；实际 QAT 是否成功、是否被采用见 exports/search.json，不能把已请求等同于已成功。
+实际完成 QAT {qat_epochs} 轮，内部验证最佳第 {qat_best_epoch} 轮；最终采用 `{quant['selected']}`。QAT 权重位于 checkpoints/candidate-plus-qat/，
+最佳 FX QAT checkpoint SHA-256：`{qat_checkpoint_sha}`。FX 权重键与原始 FP32 不同，恢复方法见该目录 README.md。
 若本轮从之前已评估 PTQ 的结果继续，先前的留出集结果已经看过，后续同集合复评不能称为新的盲测；量化参数/候选选择仍只使用训练校准和内部验证。
 表中关键 IoU/F1/Recall 最大量化下降 {drop*100:.2f} 个百分点；2 点软件门槛：{'通过' if accepted else '未通过，仍需逐层误差定位或进一步 QAT，不能宣布 INT8 可用'}。
 ONNX 只有 Conv W8A8，Add / Resize / I/O 仍浮点，不能直接烧录 PG2L200H。

@@ -69,7 +69,8 @@ def verify(output):
                 selected_quantizer=quant['selected'],onnx_shapes='fixed [1,3,192,320] -> [1,4,192,320]',
                 video_decoded_frames=[0,video['frames']//2,video['frames']-1],
                 missing_tasks='RLMD drivable and BDD crosswalk have zero valid pixels and null scores',
-                artifacts=[dict(path=name,bytes=(out/name).stat().st_size,sha256=file_hash(out/name)) for name in required])
+                mutable_logs=['run.log'],
+                artifacts=[dict(path=name,bytes=(out/name).stat().st_size,sha256=file_hash(out/name)) for name in required if name!='run.log'])
     write_json(out/'artifact_verification.json',record)
     return record
 
