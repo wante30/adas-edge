@@ -8,5 +8,6 @@
 - 量化器 qat，关键指标最大降 0.74 点；软件量化门槛通过。
 - 待确认：depthwise groups、各通道倍数、padding/stride、Add 跨支路 scale 对齐、nearest 坐标、INT32 累加溢出、舍入/饱和、非零 zero_point 修正、片上缓存/DDR/带宽、权重打包与 PCIe 协议。
 - 当前 Conv QDQ 外仍有浮点，必须确认完整整数图适配；没有板端资源、频率、FPS、功耗、准确率实测。
+- 14 层浮点 bias 仍需转换。quantization.json 中建议 INT32 bias / multiplier/shift 是待 RTL 对齐的合同，不是实测硬件权重格式。
 - crosswalk 定义为过街区域（含条纹间隙），不能解释为单条白纹；数据许可状态见结果报告。
 - 不涉及 FAST-Q4、PCIe、HUD、Tesla BEV、队友 FPGA 工程或队友模型权重修改。

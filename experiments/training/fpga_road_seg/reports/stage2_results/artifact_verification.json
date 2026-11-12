@@ -13,8 +13,8 @@
   "artifacts": [
     {
       "path": "README_RESULT.md",
-      "bytes": 4691,
-      "sha256": "afd238a561fe572547092064bf62969144f6621296c0031606087612ea8953bf"
+      "bytes": 4877,
+      "sha256": "88fee739f5df6cd4a2ca9f2718c6bd7c252231e22af66f0cf1ac039a1fd79033"
     },
     {
       "path": "metrics.csv",
@@ -28,8 +28,8 @@
     },
     {
       "path": "FPGA_HANDOFF.md",
-      "bytes": 1402,
-      "sha256": "a809d99a1939cd089758db2a6a63fe87052bf6d3abbbd7cf47ea02d8961b2a3d"
+      "bytes": 1559,
+      "sha256": "be4bb8a526c4867a6906584b2bd93e2a5fd84c107aa57130128532f5a1a13ec6"
     },
     {
       "path": "evaluation.json",
@@ -58,8 +58,8 @@
     },
     {
       "path": "exports/quantization.json",
-      "bytes": 53648,
-      "sha256": "f9145ed721e796d8dbb1499f55815483dd40c07414c8239619f35a45d9950497"
+      "bytes": 144339,
+      "sha256": "5023b5594cbe03b976470a0f5bb383df7ff7f57ea51f1dda5a7b9c85b85037e2"
     },
     {
       "path": "checkpoints/candidate-plus/best.pt",
@@ -83,8 +83,8 @@
     },
     {
       "path": "run.log",
-      "bytes": 6881,
-      "sha256": "69facae2e5cb216caa3bd0a5c40e6f2421a01cd3e46a716d6389886196c42de7"
+      "bytes": 5294,
+      "sha256": "8050443be22c47c7670979c1e8088abd51d5cc71b1e39c4d27ebb85cc0031fdb"
     }
   ]
 }

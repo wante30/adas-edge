@@ -81,12 +81,12 @@
   ],
   "cpu_ort_latency": {
     "fp32": {
-      "p50_ms": 1.20009999955073,
-      "p95_ms": 1.4614650026487652
+      "p50_ms": 1.2433500014594756,
+      "p95_ms": 1.693315002557938
     },
     "int8": {
-      "p50_ms": 7.3651000020618085,
-      "p95_ms": 7.933254999443307
+      "p50_ms": 7.321150002098875,
+      "p95_ms": 8.511695004926878
     }
   },
   "latency_scope": "ONNX Runtime CPUExecutionProvider, 4 intra-op threads, batch1, 20 warmups/100 runs, preprocessed real road input; excludes I/O/preprocessing; not GPU/FPGA speed",
