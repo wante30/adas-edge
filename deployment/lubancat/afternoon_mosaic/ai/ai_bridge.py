@@ -1216,8 +1216,17 @@ class AiReplayBridge:
 
     def _lite_result(self, snapshot, frame_id, timestamp_ns, input_fps, submitted_fps, ai_fps):
         boxes = self._detections_to_boxes(snapshot)
+        multi_signal_result = None
+        hud = {}
+        if self.multi_signals is not None:
+            multi_signal_result = self.multi_signals.current(time.monotonic_ns(),
+                context=getattr(self, "_signal_context", ()),
+                available=self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front"),
+                reason="" if self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front") else "NOT_PHYSICAL_Q4_OR_UNSUPPORTED_LAYOUT",
+                compact=True)
+            hud = build_hud_perception(None, snapshot, multi_signal=multi_signal_result)
         status = build_dynamic_status(source=self.args.source,frame_id=frame_id,timestamp_ns=timestamp_ns,
-            now_ns=time.monotonic_ns(),hud={},navigation={},hazard_timestamp_ns=None,hazards=(),
+            now_ns=time.monotonic_ns(),hud=hud.to_dict() if hud else {},navigation={},hazard_timestamp_ns=None,hazards=(),
             detections=list(self.modes.adapter.all_detections),signal_age_ms=None,
             main_age_ms=snapshot.main_age_ms,specialist_age_ms=None,
             input_fps=input_fps,submitted_fps=submitted_fps,ai_fps=ai_fps)
@@ -1228,10 +1237,7 @@ class AiReplayBridge:
                 authorized=self.auto_brake.authorized,inactive_reason="PURE_DETECTION_LITE",context_epoch=self.modes.status()["epoch"]),
             workload=dict(lite=True,ocr_pid=None,semantics_active=False,tesla_active=False,hud_active=False))
         if self.multi_signals is not None:
-            status["multi_signal"] = self.multi_signals.current(time.monotonic_ns(),
-                context=getattr(self, "_signal_context", ()),
-                available=self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front"), compact=True,
-                reason="" if self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front") else "NOT_PHYSICAL_Q4_OR_UNSUPPORTED_LAYOUT")
+            status["multi_signal"] = multi_signal_result
         self.latest_dynamic_status = status
         self._last_analysis_cpu_ms = 0.
         return encode_ai_result_packet(frame_id=frame_id,timestamp_ns=timestamp_ns,flags=0,
@@ -1597,6 +1603,7 @@ class AiReplayBridge:
         self.primary_tracks.update(detections,(mode["mode"],mode["epoch"],self.active_model_id,self.args.forward_quadrant),timestamp_ns)
         self._last_tracking_ms=(time.perf_counter_ns()-tracking_start)/1e6
         self._last_tracking_cpu_ms=(time.thread_time_ns()-tracking_cpu_start)/1e6
+        multi_signal_result = None
         if self.multi_signals is not None:
             # select_inference_frames returns native Q4, never the enlarged display.
             context = (mode["bridge_id"], mode["epoch"], mode["mode"],
@@ -1614,6 +1621,11 @@ class AiReplayBridge:
             if self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front") and snapshot.main_age_ms is not None and abs(snapshot.main_age_ms) < .001:
                 self.multi_signals.submit(road, fresh, frame_id=frame_id,
                     timestamp_ns=timestamp_ns, context=context)
+            multi_signal_result = self.multi_signals.current(time.monotonic_ns(),
+                context=context,
+                available=self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front"),
+                reason="" if self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front") else "NOT_PHYSICAL_Q4_OR_UNSUPPORTED_LAYOUT",
+                compact=True)
         if self.lite:
             return self._lite_result(snapshot,frame_id,timestamp_ns,input_fps,submitted_fps,ai_fps)
         self.stage_timings.setdefault("risk_fast",deque(maxlen=3600))
@@ -1635,7 +1647,7 @@ class AiReplayBridge:
             source_id="Q%d" % (self.args.forward_quadrant + 1)))
         self.auto_brake.update(snapshot.hazards,context=mode)
         nav = self.navigation.current(int(timestamp_ns)).to_dict() if self.navigation else {}
-        hud = build_hud_perception(road, snapshot)
+        hud = build_hud_perception(road, snapshot, multi_signal=multi_signal_result)
         flags = 0
         if hud.traffic == TrafficCode.RED:
             flags |= FLAG_RED
@@ -1704,10 +1716,7 @@ class AiReplayBridge:
             (time.perf_counter_ns() - status_started) / 1e6
         )
         if self.multi_signals is not None:
-            status["multi_signal"] = self.multi_signals.current(time.monotonic_ns(),
-                context=getattr(self, "_signal_context", ()),
-                available=self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front"), compact=True,
-                reason="" if self.args.forward_quadrant == 3 and self.args.layout in ("quad", "front") else "NOT_PHYSICAL_Q4_OR_UNSUPPORTED_LAYOUT")
+            status["multi_signal"] = multi_signal_result
         self.latest_dynamic_status = status
         hmi_started = time.perf_counter_ns()
         self._write_dynamic_hmi(status)

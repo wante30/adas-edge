@@ -231,7 +231,7 @@ class HudV2Sender:
             time0, time1 = encode_time_words(timestamp)
             ext_request |= 1 << 11
         else:
-            time0, time1 = 0, 0
+            time0 = time1 = None
             ext_request &= ~(1 << 11)
         deadline = self._deadline(self.clock(), timeout_ms)
 
@@ -243,13 +243,19 @@ class HudV2Sender:
                 raise MailboxUnavailable("HUD V2 mailbox did not become ready before timeout")
 
             last_sequence = self.bus.read32(EXT_APPLIED_SEQ)
+            if not time_enable:
+                # TIME0/TIME1 are shadow registers.  The FPGA keeps the last
+                # values when a scene commit does not update the time fields.
+                time0 = self.bus.read32(TIME0)
+                time1 = self.bus.read32(TIME1)
             sequence = _next_sequence(last_sequence)
             request = CommitResult("PENDING", sequence, ext_request, time0, time1)
             self.pending = request
             try:
                 self.bus.write32(EXT_REQUEST, ext_request)
-                self.bus.write32(TIME0, time0)
-                self.bus.write32(TIME1, time1)
+                if time_enable:
+                    self.bus.write32(TIME0, time0)
+                    self.bus.write32(TIME1, time1)
                 self.bus.write32(EXT_COMMIT, sequence)
                 return self._poll_commit(request, deadline)
             except OSError as exc:

@@ -117,3 +117,55 @@ def test_distinct_confident_red_and_green_signals_remain_off():
 
     assert result.traffic.name == "OFF"
     assert result.traffic_evidence == "CONFLICTING_CONFIRMED_SIGNAL_COLORS"
+
+
+def test_confirmed_multi_signal_red_maps_to_traffic_without_using_arrow_as_lane_state():
+    snapshot = type("Snapshot", (), {"main": [], "specialist": []})()
+    multi_signal = {
+        "signals": [{
+            "track_id": 7,
+            "valid": True,
+            "color": "RED",
+            "shape": "LEFT_ARROW",
+            "confidence": 0.91,
+        }],
+        "directions": {"left": {"color": "RED", "valid": True}},
+    }
+
+    result = build_hud_perception(None, snapshot, multi_signal=multi_signal)
+
+    assert result.traffic.name == "RED"
+    assert result.traffic_evidence == "MULTI_SIGNAL_RED"
+    assert result.ext_request() == 3
+    assert result.lane_left.name == "NONE"
+    assert result.lane_right.name == "NONE"
+
+
+def test_multi_signal_green_is_mapped_but_yellow_and_unknown_are_released():
+    snapshot = type("Snapshot", (), {"main": [], "specialist": []})()
+    green = {"signals": [{"valid": True, "color": "GREEN", "shape": "ROUND"}]}
+    yellow = {"signals": [{"valid": True, "color": "YELLOW", "shape": "ROUND"}]}
+    unknown = {"signals": [{"valid": False, "color": "RED", "shape": "LEFT_ARROW"}]}
+
+    assert build_hud_perception(None, snapshot, multi_signal=green).traffic.name == "GREEN"
+    yellow_result = build_hud_perception(None, snapshot, multi_signal=yellow)
+    assert yellow_result.traffic.name == "OFF"
+    assert yellow_result.traffic_evidence == "MULTI_SIGNAL_YELLOW_UNSUPPORTED_BY_HUD_PROTOCOL"
+    unknown_result = build_hud_perception(None, snapshot, multi_signal=unknown)
+    assert unknown_result.traffic.name == "OFF"
+    assert unknown_result.traffic_evidence == "MULTI_SIGNAL_NO_VALID_SIGNAL"
+
+
+def test_multi_signal_conflicting_confirmed_colors_remain_off():
+    snapshot = type("Snapshot", (), {"main": [], "specialist": []})()
+    multi_signal = {
+        "signals": [
+            {"valid": True, "color": "RED", "shape": "ROUND"},
+            {"valid": True, "color": "GREEN", "shape": "STRAIGHT_ARROW"},
+        ]
+    }
+
+    result = build_hud_perception(None, snapshot, multi_signal=multi_signal)
+
+    assert result.traffic.name == "OFF"
+    assert result.traffic_evidence == "MULTI_SIGNAL_CONFLICTING_CONFIRMED_SIGNAL_COLORS"
