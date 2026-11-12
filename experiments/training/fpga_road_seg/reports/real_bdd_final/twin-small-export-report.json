@@ -1,0 +1,167 @@
+{
+  "evidence": "real_manifest",
+  "model": "twin-small",
+  "checkpoint_sha256": "477f9f0e8d5a7b43070376ba514ca31980aeb86c0608be46ea97539de0391758",
+  "excluded_channels": [
+    "crosswalk"
+  ],
+  "deployment_note": "Excluded output channels are untrained/invalid and must be suppressed by consumers, even though the fixed graph retains their logits.",
+  "dataset_manifest_sha256": "9ecf5ed9951eb1f3d298360ec5e0fefbc369f4f123d6d10408fa5a3a5d13197f",
+  "ort_version": "1.23.2",
+  "onnx_version": "1.17.0",
+  "input": {
+    "name": "rgb",
+    "shape": [
+      1,
+      3,
+      192,
+      320
+    ],
+    "dtype": "float32",
+    "color": "RGB",
+    "normalization": "uint8 / 255; letterbox fill=114"
+  },
+  "output": {
+    "name": "logits",
+    "shape": [
+      1,
+      2,
+      192,
+      320
+    ],
+    "class_names": [
+      "drivable_area",
+      "lane"
+    ],
+    "sigmoid": "software; binary channel threshold 0.5"
+  },
+  "fp32_sha256": "b0aff14b950218dd686377a5f25da3f4de27fc827c44f5a2dab24972838d1824",
+  "int8_sha256": "ba7061d041efb458d12c68b571374212485e15fcac462227830137e30ff90aaf",
+  "calibration_samples": 256,
+  "calibration_selection": "uniformly spaced over sorted TRAIN IDs; no validation/test calibration",
+  "comparison": {
+    "split": "test",
+    "samples": 10000,
+    "torch_onnx_max_logit_error": 0.0002346038818359375,
+    "fp32_int8_max_logit_error": 12.347894668579102,
+    "mean_probability_absolute_error": 0.00929452730868943,
+    "threshold_mask_agreement_valid_pixels": 0.9925341769566205,
+    "fp32": {
+      "drivable_area": {
+        "iou": 0.6741956589268934,
+        "f1": 0.805396496319948,
+        "recall": 0.8520085354142756,
+        "precision": 0.7636200513577028,
+        "binary_miou": 0.8040558066686807,
+        "tp": 66146193,
+        "fp": 20475672,
+        "fn": 11489406,
+        "tn": 451738329,
+        "valid_pixels": 549849600
+      },
+      "lane": {
+        "iou": 0.49290726463051343,
+        "f1": 0.6603320598784886,
+        "recall": 0.6494146263545518,
+        "precision": 0.6716228399295141,
+        "binary_miou": 0.7410149647896661,
+        "tp": 5740711,
+        "fp": 2806811,
+        "fn": 3099113,
+        "tn": 537050965,
+        "valid_pixels": 548697600
+      }
+    },
+    "int8": {
+      "drivable_area": {
+        "iou": 0.6616344755795862,
+        "f1": 0.796365849774277,
+        "recall": 0.8351200201340625,
+        "precision": 0.7610489836319936,
+        "binary_miou": 0.7966355884748839,
+        "tp": 64835043,
+        "fp": 20356639,
+        "fn": 12800556,
+        "tn": 451857362,
+        "valid_pixels": 549849600
+      },
+      "lane": {
+        "iou": 0.48695752183337754,
+        "f1": 0.654971664870389,
+        "recall": 0.6413413886973315,
+        "precision": 0.6691938834986524,
+        "binary_miou": 0.7379790139468004,
+        "tp": 5669345,
+        "fp": 2802557,
+        "fn": 3170479,
+        "tn": 537055219,
+        "valid_pixels": 548697600
+      }
+    },
+    "threshold": 0.5,
+    "note": "Synthetic data metrics are software smoke only; real quantization acceptance requires labelled held-out road data."
+  },
+  "fp32_operators": {
+    "Constant": 17,
+    "Conv": 91,
+    "PRelu": 31,
+    "AveragePool": 3,
+    "Concat": 15,
+    "Add": 31,
+    "BatchNormalization": 13,
+    "Sigmoid": 1,
+    "Reshape": 10,
+    "Transpose": 6,
+    "Unsqueeze": 3,
+    "Softmax": 2,
+    "MatMul": 7,
+    "Mul": 1,
+    "ConstantOfShape": 1,
+    "Expand": 1,
+    "Tile": 1,
+    "ConvTranspose": 6,
+    "Gather": 4,
+    "Sub": 2
+  },
+  "int8_operators": {
+    "DequantizeLinear": 226,
+    "QuantizeLinear": 117,
+    "AveragePool": 3,
+    "Conv": 91,
+    "PRelu": 31,
+    "Concat": 15,
+    "Add": 28,
+    "BatchNormalization": 13,
+    "Reshape": 13,
+    "Transpose": 6,
+    "Gemm": 3,
+    "Sigmoid": 1,
+    "Softmax": 2,
+    "Unsqueeze": 3,
+    "MatMul": 4,
+    "Mul": 1,
+    "Tile": 1,
+    "ConvTranspose": 6,
+    "Gather": 4,
+    "Sub": 2
+  },
+  "hypothetical_profile": "Conv/Depthwise/Pointwise/ReLU/Add/nearest Resize; NOT confirmed FPGA capabilities",
+  "operators_outside_candidate_profile": [
+    "AveragePool",
+    "BatchNormalization",
+    "ConstantOfShape",
+    "ConvTranspose",
+    "Expand",
+    "MatMul",
+    "Mul",
+    "PRelu",
+    "Reshape",
+    "Sigmoid",
+    "Softmax",
+    "Sub",
+    "Tile",
+    "Transpose"
+  ],
+  "hardware_status": "awaiting teammate; no board measurements",
+  "integer_scope": "float32 outside Conv QDQ boundaries; not a fully integer graph"
+}
