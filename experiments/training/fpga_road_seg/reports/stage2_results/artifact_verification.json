@@ -10,11 +10,14 @@
     391
   ],
   "missing_tasks": "RLMD drivable and BDD crosswalk have zero valid pixels and null scores",
+  "mutable_logs": [
+    "run.log"
+  ],
   "artifacts": [
     {
       "path": "README_RESULT.md",
-      "bytes": 4877,
-      "sha256": "88fee739f5df6cd4a2ca9f2718c6bd7c252231e22af66f0cf1ac039a1fd79033"
+      "bytes": 5185,
+      "sha256": "c0cc1528e55b33659dddc12a1cbf6982da51f41217a88dce0c817e56fca4b959"
     },
     {
       "path": "metrics.csv",
@@ -80,11 +83,6 @@
       "path": "failures/crosswalk_errors.json",
       "bytes": 56650,
       "sha256": "7da17b0e17e2b5162db8f4073cf675f207b38292b964acc7913a0d039ad23447"
-    },
-    {
-      "path": "run.log",
-      "bytes": 5294,
-      "sha256": "8050443be22c47c7670979c1e8088abd51d5cc71b1e39c4d27ebb85cc0031fdb"
     }
   ]
 }

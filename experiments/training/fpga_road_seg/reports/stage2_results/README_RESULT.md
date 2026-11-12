@@ -28,6 +28,8 @@ BDD 旧曲线 crosswalk 在本轮屏蔽。数字文件名分组和近似图像�
 PyTorch / ONNX 最大 logit 误差 7.34329e-05。
 PTQ 未通过内部逐项 2 点保护时，自动尝试最多 3 轮真实混合数据 QAT（冻结 BN/校准范围，FP32 logits 蒸馏正则），结果及异常均记录于 exports/。
 本轮显式要求 QAT：True；实际 QAT 是否成功、是否被采用见 exports/search.json，不能把已请求等同于已成功。
+实际完成 QAT 3 轮，内部验证最佳第 1 轮；最终采用 `qat`。QAT 权重位于 checkpoints/candidate-plus-qat/，
+最佳 FX QAT checkpoint SHA-256：`48e6a2dccf1dc98095b41e895cd9c99f7ab044b3c8a343cb4a364275c6fceffc`。FX 权重键与原始 FP32 不同，恢复方法见该目录 README.md。
 若本轮从之前已评估 PTQ 的结果继续，先前的留出集结果已经看过，后续同集合复评不能称为新的盲测；量化参数/候选选择仍只使用训练校准和内部验证。
 表中关键 IoU/F1/Recall 最大量化下降 0.74 个百分点；2 点软件门槛：通过。
 ONNX 只有 Conv W8A8，Add / Resize / I/O 仍浮点，不能直接烧录 PG2L200H。
@@ -39,8 +41,8 @@ ONNX 只有 Conv W8A8，Add / Resize / I/O 仍浮点，不能直接烧录 PG2L20
 comparisons/ 包含真实道路 GT、微调前后对照、原始连续视频预测；failures/ 按真实 RLMD crosswalk IoU 排序并记录 FP/FN。
 本地原始视频已生成连续预测，详情见 comparisons/video.json，没有逐像素视频真值，不报告视频精度。
 RTX 4060 FP32 batch1 前向 p50/p95：1.324/2.733 ms；不含预处理/传输/绘图，不是 FPGA 延迟。
-CPU ONNX Runtime（4 线程，真实道路输入、20 次预热/100 次测量）前向 p50：FP32 1.243 ms，
-INT8 7.321 ms。这是该 CPU/运行时的实测，不能推断 INT8 必然更快或推断 FPGA 吞吐；
+CPU ONNX Runtime（4 线程，真实道路输入、20 次预热/100 次测量）前向 p50：FP32 1.097 ms，
+INT8 7.172 ms。这是该 CPU/运行时的实测，不能推断 INT8 必然更快或推断 FPGA 吞吐；
 comparisons/quantization/ 提供 FP32/INT8/GT 和阈值分歧图，quantization_comparison.png 为内部验证候选对照。
 
 ## 交接与限制
