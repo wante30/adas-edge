@@ -39,6 +39,21 @@ def test_fusion_does_not_promote_color_only_round_on_small_roi() -> None:
     assert fused.shape == "UNKNOWN"
 
 
+def test_fusion_keeps_legacy_arrow_against_color_only_cnn() -> None:
+    class Legacy:
+        def classify(self, roi, *, request=None):
+            return Attributes(color="RED", shape="LEFT_ARROW", shape_confidence=.9,
+                              reason="GLOW_CONTOUR_TEMPLATE")
+
+    class Learned:
+        def classify(self, roi, *, request=None):
+            return Attributes(color="RED", shape="ROUND", reason="AUTOWARE_COLOR_ONLY")
+
+    fused = ConservativeFusionBackend(Legacy(), Learned()).classify(np.zeros((8, 8, 3), np.uint8))
+    assert fused.color == "RED"
+    assert fused.shape == "LEFT_ARROW"
+
+
 def test_diagnostic_nms_trace_preserves_suppressed_candidate() -> None:
     boxes = np.array([[[50., 50.], [70., 70.], [20., 20.], [20., 20.]]], dtype=np.float32)
     scores = np.array([[[.9, .8], [.1, .1]]], dtype=np.float32)

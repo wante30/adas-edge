@@ -179,7 +179,11 @@ class ConservativeFusionBackend:
             if not (learned.shape == "ROUND" and learned.reason == "AUTOWARE_COLOR_ONLY"):
                 shape = learned.shape
         elif shape != "UNKNOWN" and learned.shape not in ("UNKNOWN", shape):
-            shape = "UNKNOWN"
+            # A color-only CNN label has no geometry and therefore cannot
+            # contradict a confirmed legacy arrow/shape.  Only explicit
+            # learned geometry participates in the conservative conflict rule.
+            if learned.reason != "AUTOWARE_COLOR_ONLY":
+                shape = "UNKNOWN"
         return Attributes(
             color=color,
             shape=shape,
