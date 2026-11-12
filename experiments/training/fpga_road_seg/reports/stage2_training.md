@@ -54,3 +54,21 @@ python -u -m experiments.training.fpga_road_seg.run_stage2
 训练失败自动从 last.pt 重试，重新启动控制器也会继续而非从零训练。
 睡眠抑制只持续到控制器退出，允许关闭屏幕。当前阶段的实际指标以 report.json / 最终结果报告为准，
 此文不预填训练或量化成功结论。
+
+## 训练后的自动阶段
+
+完成 10–12 轮后，若最近三个轮次间隔的混合分数提升 <0.004 且 crosswalk IoU <0.5，
+切换到最多 3 轮轻量蒸馏：使用现有真实训练 Twin Small 的 drivable logits，
+只在 BDD 有效 drivable 像素计算蒸馏，RLMD 缺失通道仍不监督。
+推理架构、参数量、MACs 不变；仅在内部混合分数改善且继续满足原始 BDD 保护时采用该分支。
+蒸馏前最佳权重单独保存在 mixed_pre_distillation，失败和未被采用的分支都记录。
+
+FP32 阶段后进行分域 train 校准：96 张 BDD、48 张 RLMD crosswalk 正样本、48 张 RLMD 负样本。
+比较 signed MinMax、signed/unsigned Percentile、Entropy，共 5 种全 Conv PTQ。
+按内部验证逐项精度下降保护选择，若所有方案仍超过 2 点下降，再尝试最多 3 轮真实数据 QAT，
+冻结 BN/范围并加入 FP32 logits 正则；最终只用真实 ONNX 分域验证选择。
+QAT / PyTorch / ONNX 的量化舍入可能不同，额外记录真实 logit、概率和阈值差异。
+
+持久化控制器继续生成全部域指标、曲线、GT/预测对照、实际连续原始道路视频、失败案例、
+FPGA_HANDOFF.md；仅轻量报告进入 PR #16，数据/权重/视频留在本地。
+这些是已接入的执行步骤，不表示其训练和量化结果已经完成。

@@ -1,6 +1,5 @@
 """Train real manifests, or explicitly labelled synthetic smoke fixtures."""
 import argparse
-import copy
 from collections import Counter
 import os
 import random
@@ -62,6 +61,7 @@ def main():
     p.add_argument('--synthetic-smoke', action='store_true', help='Label results as synthetic; never a real-data metric')
     p.add_argument('--resume', help='resume from a training checkpoint')
     p.add_argument('--init', help='transfer model weights only; fresh optimizer and manifest, distinct from resume')
+    p.add_argument('--teacher', help='optional trained two-head teacher; drivable distillation only on genuinely supervised pixels')
     p.add_argument('--workers', type=int, default=4)
     p.add_argument('--amp', action='store_true', help='use CUDA mixed precision')
     p.add_argument('--train-limit', type=int, default=0, help='deterministic stage-one subset; zero uses all train samples')
@@ -161,6 +161,14 @@ def main():
     else:
         vloader = DataLoader(val, shuffle=False, **loader_args)
     model = build_model(cfg['model']).to(args.device)
+    teacher = None
+    teacher_identity = None
+    if args.teacher:
+        teacher, teacher_ck = load_checkpoint(args.teacher,args.device)
+        if names_for(teacher_ck['config']['model']) != ('drivable_area','lane'):
+            p.error('drivable teacher must be the existing two-head reference model')
+        teacher.eval().requires_grad_(False)
+        teacher_identity = dict(path=str(Path(args.teacher).resolve()),sha256=file_hash(args.teacher))
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg['lr'], weight_decay=1e-4)
     amp_enabled = bool(args.amp and args.device.startswith('cuda'))
     scaler = torch.amp.GradScaler('cuda', enabled=amp_enabled)
@@ -177,6 +185,8 @@ def main():
         checkpoint = torch.load(args.resume, map_location=args.device, weights_only=False)
         if checkpoint.get('manifest_sha256') != file_hash(args.manifest) or checkpoint.get('config', {}).get('model') != cfg['model']:
             p.error('resume checkpoint manifest/model mismatch')
+        if checkpoint.get('teacher') != teacher_identity:
+            p.error('resume teacher mismatch')
         model.load_state_dict(checkpoint['state_dict'], strict=True)
         if checkpoint.get('optimizer_state'):
             optimizer.load_state_dict(checkpoint['optimizer_state'])
@@ -217,6 +227,13 @@ def main():
             with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=amp_enabled):
                 logits = model(x)
                 loss = masked_loss(logits,y,v,cfg.get('pos_weight'),cfg.get('dice_weight',1))
+                if teacher is not None:
+                    with torch.no_grad():
+                        soft = (teacher(x)[:,0:1]/2).sigmoid()
+                    known = v[:,0:1]
+                    distillation = torch.nn.functional.binary_cross_entropy_with_logits(logits[:,0:1]/2,soft,reduction='none')
+                    # RLMD drivable remains absent: valid=0 also masks KD.
+                    loss = loss + cfg.get('distillation_weight',.2)*4*(distillation*known).sum()/known.sum().clamp_min(1)
             if not torch.isfinite(loss):
                 raise RuntimeError('non-finite loss')
             scaler.scale(loss).backward(); scaler.step(optimizer); scaler.update()
@@ -251,6 +268,7 @@ def main():
                           scaler_state=scaler.state_dict(),history=history,best_validation_loss=best,
                           amp=amp_enabled, excluded_channels=args.exclude_channel, val_samples=len(val), train_samples=len(train),
                           initialization=initialization, baseline_domains=baseline_domains,
+                          teacher=teacher_identity,
                           best_score=best_score if domains else None, stale_epochs=stale,
                           random_state=random.getstate(), numpy_state=np.random.get_state(), torch_rng=torch.get_rng_state(),
                           cuda_rng=torch.cuda.get_rng_state_all() if args.device.startswith('cuda') else None)
@@ -263,6 +281,7 @@ def main():
         if domains:
             print(f'domains={domains} score={score:.6f} bdd_guard={eligible} stale={stale}', flush=True)
         write_json(out/'report.tmp.json',dict(config=cfg,evidence=checkpoint['evidence'],device=args.device,
+            initialization=initialization,teacher=teacher_identity,
             torch_version=torch.__version__,gpu=torch.cuda.get_device_name() if args.device.startswith('cuda') else None,
             amp=amp_enabled,workers=args.workers,stage_train_limit=args.train_limit or None,
             excluded_channels=args.exclude_channel, cache=os.environ.get('BDD_SEG_CACHE'),

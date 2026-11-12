@@ -5,6 +5,7 @@ from PIL import Image
 
 from experiments.training.fpga_road_seg.dataset_adapter import RoadDataset
 from experiments.training.fpga_road_seg.train import selection_score
+from experiments.training.fpga_road_seg.quantize_stage2 import balanced_calibration, maximum_drop
 
 
 def test_row_channel_disable_applies_to_native_and_shared_cache(tmp_path, monkeypatch):
@@ -38,3 +39,25 @@ def test_high_crosswalk_score_cannot_hide_bdd_task_regression():
     assert selection_score(current, baseline, .025)[1] is False
     current['bdd100k']['classes']['dashed_lane']['f1'] = .44
     assert selection_score(current, baseline, .025)[1] is True
+
+
+def test_calibration_uses_balanced_train_domains_and_crosswalk_negatives():
+    rows=[]
+    for source in ('bdd100k','rlmd'):
+        for split in ('train','val','test'):
+            for i in range(10):
+                rows.append(dict(id=f'{source}-{split}-{i}',source=source,split=split,positive_pixels=[0,0,0,i%2]))
+    selected=balanced_calibration(rows,per_domain=8)
+    assert len(selected)==16 and all(r['split']=='train' for r in selected)
+    assert sum(r['source']=='bdd100k' for r in selected)==8
+    rlmd=[r for r in selected if r['source']=='rlmd']
+    assert sum(r['positive_pixels'][3]>0 for r in rlmd)==4
+
+
+def test_quantized_crosswalk_gain_cannot_hide_drivable_loss():
+    original=dict(bdd100k=dict(classes=dict(drivable_area=dict(iou=.55),solid_lane=dict(f1=.56),dashed_lane=dict(f1=.45))),
+                  rlmd=dict(classes=dict(crosswalk=dict(iou=.4,f1=.57,recall=.6))))
+    candidate=json.loads(json.dumps(original))
+    candidate['bdd100k']['classes']['drivable_area']['iou']=.45
+    candidate['rlmd']['classes']['crosswalk']['iou']=.7
+    assert maximum_drop(original,candidate)>.09
