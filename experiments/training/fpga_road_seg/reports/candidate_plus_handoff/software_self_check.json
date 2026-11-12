@@ -1,0 +1,60 @@
+{
+  "status": "PASS",
+  "checksum_files": 0,
+  "parsed_arrays": 476,
+  "model_sha256": "c7a21a9a3f1621ac5cbcbbb9030587251a340cb435413b3c086ff1c1a6d137a6",
+  "checkpoint_status": "strict QAT FX/FP32 state_dict loaded; both and exported QAT TorchScript execute finite [1,4,192,320]",
+  "samples": [
+    {
+      "sample": "000_crosswalk_front",
+      "integer_seconds": 0.3700087999968673,
+      "integer_stage_outputs": 20,
+      "integer_accumulators": 14,
+      "ort_stages": 20,
+      "status": "bit-exact to stored respective reference"
+    },
+    {
+      "sample": "001_dashed_white_car",
+      "integer_seconds": 0.3593246000018553,
+      "integer_stage_outputs": 20,
+      "integer_accumulators": 14,
+      "ort_stages": 20,
+      "status": "bit-exact to stored respective reference"
+    },
+    {
+      "sample": "002_solid_arrows",
+      "integer_seconds": 0.3695609999995213,
+      "integer_stage_outputs": 20,
+      "integer_accumulators": 14,
+      "ort_stages": 20,
+      "status": "bit-exact to stored respective reference"
+    },
+    {
+      "sample": "003_normal_bus_truck",
+      "integer_seconds": 0.3632445999974152,
+      "integer_stage_outputs": 20,
+      "integer_accumulators": 14,
+      "ort_stages": 20,
+      "status": "bit-exact to stored respective reference"
+    },
+    {
+      "sample": "004_crosswalk_turn",
+      "integer_seconds": 0.3706409000005806,
+      "integer_stage_outputs": 20,
+      "integer_accumulators": 14,
+      "ort_stages": 20,
+      "status": "bit-exact to stored respective reference"
+    },
+    {
+      "sample": "005_hard_glare_background",
+      "integer_seconds": 0.3636091000007582,
+      "integer_stage_outputs": 20,
+      "integer_accumulators": 14,
+      "ort_stages": 20,
+      "status": "bit-exact to stored respective reference"
+    }
+  ],
+  "comparator_negative_control": "one altered output byte correctly rejected",
+  "seconds": 6.268648400000529,
+  "limitation": "software self-check only; no RTL simulation, FPGA resource, timing or hardware accuracy measurements"
+}

@@ -1,0 +1,193 @@
+{
+  "version": "CandidatePlus-PG2L200H-Handoff-v1.0.0",
+  "zip": {
+    "path": "C:\\Users\\JingyuWang\\adas-edge-issue15\\outputs\\CandidatePlus_PG2L200H_v1.0.0_20261112.zip",
+    "bytes": 175124101,
+    "sha256": "8575fd5232dd8d91aeb6fe21753755f8410defa8a570000f849960a37f3e559f"
+  },
+  "software_self_check": {
+    "status": "PASS",
+    "checksum_files": 0,
+    "parsed_arrays": 476,
+    "model_sha256": "c7a21a9a3f1621ac5cbcbbb9030587251a340cb435413b3c086ff1c1a6d137a6",
+    "checkpoint_status": "strict QAT FX/FP32 state_dict loaded; both and exported QAT TorchScript execute finite [1,4,192,320]",
+    "samples": [
+      {
+        "sample": "000_crosswalk_front",
+        "integer_seconds": 0.3700087999968673,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      },
+      {
+        "sample": "001_dashed_white_car",
+        "integer_seconds": 0.3593246000018553,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      },
+      {
+        "sample": "002_solid_arrows",
+        "integer_seconds": 0.3695609999995213,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      },
+      {
+        "sample": "003_normal_bus_truck",
+        "integer_seconds": 0.3632445999974152,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      },
+      {
+        "sample": "004_crosswalk_turn",
+        "integer_seconds": 0.3706409000005806,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      },
+      {
+        "sample": "005_hard_glare_background",
+        "integer_seconds": 0.3636091000007582,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      }
+    ],
+    "comparator_negative_control": "one altered output byte correctly rejected",
+    "seconds": 6.268648400000529,
+    "limitation": "software self-check only; no RTL simulation, FPGA resource, timing or hardware accuracy measurements"
+  },
+  "zip_extracted_self_check": {
+    "status": "PASS",
+    "checksum_files": 1138,
+    "parsed_arrays": 476,
+    "model_sha256": "c7a21a9a3f1621ac5cbcbbb9030587251a340cb435413b3c086ff1c1a6d137a6",
+    "checkpoint_status": "strict QAT FX/FP32 state_dict loaded; both and exported QAT TorchScript execute finite [1,4,192,320]",
+    "samples": [
+      {
+        "sample": "000_crosswalk_front",
+        "integer_seconds": 0.41932939999969676,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      },
+      {
+        "sample": "001_dashed_white_car",
+        "integer_seconds": 0.42165879999811295,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      },
+      {
+        "sample": "002_solid_arrows",
+        "integer_seconds": 0.4130351999992854,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      },
+      {
+        "sample": "003_normal_bus_truck",
+        "integer_seconds": 0.4105487999986508,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      },
+      {
+        "sample": "004_crosswalk_turn",
+        "integer_seconds": 0.38765370000328403,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      },
+      {
+        "sample": "005_hard_glare_background",
+        "integer_seconds": 0.41699289999814937,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      }
+    ],
+    "comparator_negative_control": "one altered output byte correctly rejected",
+    "seconds": 19.930875800004287,
+    "limitation": "software self-check only; no RTL simulation, FPGA resource, timing or hardware accuracy measurements"
+  },
+  "rar": {
+    "path": "C:\\Users\\JingyuWang\\adas-edge-issue15\\outputs\\CandidatePlus_PG2L200H_v1.0.0_20261112.rar",
+    "bytes": 154496221,
+    "sha256": "3dc77c4768017f21be7a36172bbf26742fe8cea5301ad34267bf19eb7957467c"
+  },
+  "rar_extracted_self_check": {
+    "status": "PASS",
+    "checksum_files": 1138,
+    "parsed_arrays": 476,
+    "model_sha256": "c7a21a9a3f1621ac5cbcbbb9030587251a340cb435413b3c086ff1c1a6d137a6",
+    "checkpoint_status": "strict QAT FX/FP32 state_dict loaded; both and exported QAT TorchScript execute finite [1,4,192,320]",
+    "samples": [
+      {
+        "sample": "000_crosswalk_front",
+        "integer_seconds": 0.4129543000017293,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      },
+      {
+        "sample": "001_dashed_white_car",
+        "integer_seconds": 0.3961718999998993,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      },
+      {
+        "sample": "002_solid_arrows",
+        "integer_seconds": 0.40206530000432394,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      },
+      {
+        "sample": "003_normal_bus_truck",
+        "integer_seconds": 0.4155620000019553,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      },
+      {
+        "sample": "004_crosswalk_turn",
+        "integer_seconds": 0.38936430000467226,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      },
+      {
+        "sample": "005_hard_glare_background",
+        "integer_seconds": 0.4098965000011958,
+        "integer_stage_outputs": 20,
+        "integer_accumulators": 14,
+        "ort_stages": 20,
+        "status": "bit-exact to stored respective reference"
+      }
+    ],
+    "comparator_negative_control": "one altered output byte correctly rejected",
+    "seconds": 5.229313699994236,
+    "limitation": "software self-check only; no RTL simulation, FPGA resource, timing or hardware accuracy measurements"
+  }
+}
