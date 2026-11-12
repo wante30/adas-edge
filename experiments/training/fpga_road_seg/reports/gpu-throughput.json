@@ -1,0 +1,70 @@
+[
+  {
+    "model": "candidate",
+    "size": [
+      320,
+      192
+    ],
+    "batch": 8,
+    "warmup_steps": 10,
+    "timed_steps": 50,
+    "seconds": 0.38995129999966593,
+    "training_images_per_second": 1025.7691152724524,
+    "peak_allocated_bytes": 152215040,
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "torch_version": "2.5.1+cu121",
+    "illustrative_70000_images_50_epochs_hours": 0.9477982986102992,
+    "evidence": "synthetic GPU training-step benchmark; excludes real image decode, IO, augmentation, validation and checkpoints; NOT real-data training or deployment FPS"
+  },
+  {
+    "model": "twin-small",
+    "size": [
+      320,
+      192
+    ],
+    "batch": 8,
+    "warmup_steps": 10,
+    "timed_steps": 50,
+    "seconds": 1.5744275999986712,
+    "training_images_per_second": 254.06058684460154,
+    "peak_allocated_bytes": 359280128,
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "torch_version": "2.5.1+cu121",
+    "illustrative_70000_images_50_epochs_hours": 3.8267337499967704,
+    "evidence": "synthetic GPU training-step benchmark; excludes real image decode, IO, augmentation, validation and checkpoints; NOT real-data training or deployment FPS"
+  },
+  {
+    "model": "candidate",
+    "size": [
+      512,
+      288
+    ],
+    "batch": 8,
+    "warmup_steps": 10,
+    "timed_steps": 50,
+    "seconds": 0.7689785000002303,
+    "training_images_per_second": 520.1705899448167,
+    "peak_allocated_bytes": 383163904,
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "torch_version": "2.5.1+cu121",
+    "illustrative_70000_images_50_epochs_hours": 1.8690449652783374,
+    "evidence": "synthetic GPU training-step benchmark; excludes real image decode, IO, augmentation, validation and checkpoints; NOT real-data training or deployment FPS"
+  },
+  {
+    "model": "twin-small",
+    "size": [
+      512,
+      288
+    ],
+    "batch": 8,
+    "warmup_steps": 10,
+    "timed_steps": 50,
+    "seconds": 2.6139386000013474,
+    "training_images_per_second": 153.02578262541968,
+    "peak_allocated_bytes": 826871296,
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "torch_version": "2.5.1+cu121",
+    "illustrative_70000_images_50_epochs_hours": 6.353322986114386,
+    "evidence": "synthetic GPU training-step benchmark; excludes real image decode, IO, augmentation, validation and checkpoints; NOT real-data training or deployment FPS"
+  }
+]

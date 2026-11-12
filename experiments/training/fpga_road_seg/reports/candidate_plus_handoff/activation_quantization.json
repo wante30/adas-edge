@@ -1,0 +1,282 @@
+[
+  {
+    "id": "s00",
+    "qdq_tensor": "/QuantizeLinear_output_0",
+    "op": "Input",
+    "shape": [
+      1,
+      3,
+      192,
+      320
+    ],
+    "scale": 0.003919930662959814,
+    "zero_point": 0,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s01",
+    "qdq_tensor": "/QuantizeLinear_1_output_0",
+    "op": "Conv",
+    "shape": [
+      1,
+      32,
+      96,
+      160
+    ],
+    "scale": 0.05817542225122452,
+    "zero_point": 0,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s02",
+    "qdq_tensor": "/QuantizeLinear_2_output_0",
+    "op": "Conv",
+    "shape": [
+      1,
+      32,
+      48,
+      80
+    ],
+    "scale": 0.049465078860521317,
+    "zero_point": 0,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s03",
+    "qdq_tensor": "/QuantizeLinear_3_output_0",
+    "op": "Conv",
+    "shape": [
+      1,
+      56,
+      48,
+      80
+    ],
+    "scale": 0.04602218419313431,
+    "zero_point": 0,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s04",
+    "qdq_tensor": "/QuantizeLinear_4_output_0",
+    "op": "Conv",
+    "shape": [
+      1,
+      56,
+      24,
+      40
+    ],
+    "scale": 0.04500779137015343,
+    "zero_point": 0,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s05",
+    "qdq_tensor": "/QuantizeLinear_5_output_0",
+    "op": "Conv",
+    "shape": [
+      1,
+      96,
+      24,
+      40
+    ],
+    "scale": 0.041316043585538864,
+    "zero_point": 0,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s06",
+    "qdq_tensor": "/QuantizeLinear_6_output_0",
+    "op": "Conv",
+    "shape": [
+      1,
+      96,
+      24,
+      40
+    ],
+    "scale": 0.049491144716739655,
+    "zero_point": 0,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s07",
+    "qdq_tensor": "/QuantizeLinear_7_output_0",
+    "op": "Conv",
+    "shape": [
+      1,
+      96,
+      24,
+      40
+    ],
+    "scale": 0.02418089099228382,
+    "zero_point": 0,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s08",
+    "qdq_tensor": "/QuantizeLinear_8_output_0",
+    "op": "Conv",
+    "shape": [
+      1,
+      56,
+      24,
+      40
+    ],
+    "scale": 0.07654448598623276,
+    "zero_point": 126,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s09",
+    "qdq_tensor": "/QuantizeLinear_9_output_0",
+    "op": "Resize",
+    "shape": [
+      1,
+      56,
+      48,
+      80
+    ],
+    "scale": 0.07654448598623276,
+    "zero_point": 126,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s10",
+    "qdq_tensor": "/QuantizeLinear_10_output_0",
+    "op": "Add",
+    "shape": [
+      1,
+      56,
+      48,
+      80
+    ],
+    "scale": 0.08587224781513214,
+    "zero_point": 110,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s11",
+    "qdq_tensor": "/QuantizeLinear_11_output_0",
+    "op": "Conv",
+    "shape": [
+      1,
+      56,
+      48,
+      80
+    ],
+    "scale": 0.03256414085626602,
+    "zero_point": 0,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s12",
+    "qdq_tensor": "/QuantizeLinear_12_output_0",
+    "op": "Conv",
+    "shape": [
+      1,
+      56,
+      48,
+      80
+    ],
+    "scale": 0.02894447185099125,
+    "zero_point": 0,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s13",
+    "qdq_tensor": "/QuantizeLinear_13_output_0",
+    "op": "Conv",
+    "shape": [
+      1,
+      32,
+      48,
+      80
+    ],
+    "scale": 0.087901771068573,
+    "zero_point": 119,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s14",
+    "qdq_tensor": "/QuantizeLinear_14_output_0",
+    "op": "Resize",
+    "shape": [
+      1,
+      32,
+      96,
+      160
+    ],
+    "scale": 0.087901771068573,
+    "zero_point": 119,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s15",
+    "qdq_tensor": "/QuantizeLinear_15_output_0",
+    "op": "Add",
+    "shape": [
+      1,
+      32,
+      96,
+      160
+    ],
+    "scale": 0.1049434021115303,
+    "zero_point": 98,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s16",
+    "qdq_tensor": "/QuantizeLinear_16_output_0",
+    "op": "Conv",
+    "shape": [
+      1,
+      32,
+      96,
+      160
+    ],
+    "scale": 0.026961620897054672,
+    "zero_point": 0,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s17",
+    "qdq_tensor": "/QuantizeLinear_17_output_0",
+    "op": "Conv",
+    "shape": [
+      1,
+      32,
+      96,
+      160
+    ],
+    "scale": 0.04521414637565613,
+    "zero_point": 0,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s18",
+    "qdq_tensor": "/QuantizeLinear_18_output_0",
+    "op": "Conv",
+    "shape": [
+      1,
+      4,
+      96,
+      160
+    ],
+    "scale": 0.16102714836597443,
+    "zero_point": 208,
+    "dtype": "uint8"
+  },
+  {
+    "id": "s19",
+    "qdq_tensor": "/QuantizeLinear_19_output_0",
+    "op": "Resize",
+    "shape": [
+      1,
+      4,
+      192,
+      320
+    ],
+    "scale": 0.16102714836597443,
+    "zero_point": 208,
+    "dtype": "uint8"
+  }
+]

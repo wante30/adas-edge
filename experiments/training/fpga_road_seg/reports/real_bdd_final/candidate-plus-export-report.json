@@ -1,0 +1,176 @@
+{
+  "evidence": "real_manifest",
+  "model": "candidate-plus",
+  "checkpoint_sha256": "40aecc70bbc5d9f7a1e16712e2e6c5d4dc56d6b41f8145253c3ec5e5757d4308",
+  "excluded_channels": [
+    "crosswalk"
+  ],
+  "deployment_note": "Excluded output channels are untrained/invalid and must be suppressed by consumers, even though the fixed graph retains their logits.",
+  "dataset_manifest_sha256": "9ecf5ed9951eb1f3d298360ec5e0fefbc369f4f123d6d10408fa5a3a5d13197f",
+  "ort_version": "1.23.2",
+  "onnx_version": "1.17.0",
+  "input": {
+    "name": "rgb",
+    "shape": [
+      1,
+      3,
+      192,
+      320
+    ],
+    "dtype": "float32",
+    "color": "RGB",
+    "normalization": "uint8 / 255; letterbox fill=114"
+  },
+  "output": {
+    "name": "logits",
+    "shape": [
+      1,
+      4,
+      192,
+      320
+    ],
+    "class_names": [
+      "drivable_area",
+      "solid_lane",
+      "dashed_lane",
+      "crosswalk"
+    ],
+    "sigmoid": "software; binary channel threshold 0.5"
+  },
+  "fp32_sha256": "874f62f8285cacec92076585d979c07fa86b9af6c9105c31c67fd76d97d59cf3",
+  "int8_sha256": "0c17953868d3b3052053aeb275c81beb919cd570cecfbfb5135875b3cb1133f8",
+  "calibration_samples": 256,
+  "calibration_selection": "uniformly spaced over sorted TRAIN IDs; no validation/test calibration",
+  "comparison": {
+    "split": "test",
+    "samples": 10000,
+    "torch_onnx_max_logit_error": 9.72747802734375e-05,
+    "fp32_int8_max_logit_error": 22.57240104675293,
+    "mean_probability_absolute_error": 0.03133217389257625,
+    "threshold_mask_agreement_valid_pixels": 0.9768833242029357,
+    "fp32": {
+      "drivable_area": {
+        "iou": 0.5541379233890775,
+        "f1": 0.7131129291030748,
+        "recall": 0.771982824528732,
+        "precision": 0.662585461894101,
+        "binary_miou": 0.7278537489907658,
+        "tp": 59933349,
+        "fp": 30520415,
+        "fn": 17702250,
+        "tn": 441693586,
+        "valid_pixels": 549849600
+      },
+      "solid_lane": {
+        "iou": 0.3936090974499956,
+        "f1": 0.5648773363638562,
+        "recall": 0.5640684885836263,
+        "precision": 0.5656885071748312,
+        "binary_miou": 0.6926830497100405,
+        "tp": 2920204,
+        "fp": 2242008,
+        "fn": 2256834,
+        "tn": 541278554,
+        "valid_pixels": 548697600
+      },
+      "dashed_lane": {
+        "iou": 0.29076367156041466,
+        "f1": 0.45052967939345256,
+        "recall": 0.4193063812813576,
+        "precision": 0.48677713025673336,
+        "binary_miou": 0.6419374000893683,
+        "tp": 1545274,
+        "fp": 1629226,
+        "fn": 2140036,
+        "tn": 543383064,
+        "valid_pixels": 548697600
+      },
+      "crosswalk": {
+        "iou": null,
+        "f1": null,
+        "recall": null,
+        "precision": null,
+        "binary_miou": null,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "valid_pixels": 0
+      }
+    },
+    "int8": {
+      "drivable_area": {
+        "iou": 0.4505280924306811,
+        "f1": 0.6211918194231199,
+        "recall": 0.6033856195274542,
+        "precision": 0.6400809151450213,
+        "binary_miou": 0.6684733960013217,
+        "tp": 46844204,
+        "fp": 26340612,
+        "fn": 30791395,
+        "tn": 445873389,
+        "valid_pixels": 549849600
+      },
+      "solid_lane": {
+        "iou": 0.3521112600143275,
+        "f1": 0.5208317842284612,
+        "recall": 0.46407501741343216,
+        "precision": 0.5934058171471477,
+        "binary_miou": 0.6720095656409152,
+        "tp": 2402534,
+        "fp": 1646186,
+        "fn": 2774504,
+        "tn": 541874376,
+        "valid_pixels": 548697600
+      },
+      "dashed_lane": {
+        "iou": 0.22085297612183816,
+        "f1": 0.3618011020842162,
+        "recall": 0.2925927533911665,
+        "precision": 0.47389333548973456,
+        "binary_miou": 0.6069531663890324,
+        "tp": 1078295,
+        "fp": 1197101,
+        "fn": 2607015,
+        "tn": 543815189,
+        "valid_pixels": 548697600
+      },
+      "crosswalk": {
+        "iou": null,
+        "f1": null,
+        "recall": null,
+        "precision": null,
+        "binary_miou": null,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "valid_pixels": 0
+      }
+    },
+    "threshold": 0.5,
+    "note": "Synthetic data metrics are software smoke only; real quantization acceptance requires labelled held-out road data."
+  },
+  "fp32_operators": {
+    "Conv": 14,
+    "Relu": 11,
+    "Shape": 3,
+    "Constant": 12,
+    "Slice": 3,
+    "Concat": 3,
+    "Resize": 3,
+    "Add": 2
+  },
+  "int8_operators": {
+    "DequantizeLinear": 56,
+    "QuantizeLinear": 28,
+    "Conv": 14,
+    "Relu": 11,
+    "Resize": 3,
+    "Add": 2
+  },
+  "hypothetical_profile": "Conv/Depthwise/Pointwise/ReLU/Add/nearest Resize; NOT confirmed FPGA capabilities",
+  "operators_outside_candidate_profile": [],
+  "hardware_status": "awaiting teammate; no board measurements",
+  "integer_scope": "float32 outside Conv QDQ boundaries; not a fully integer graph"
+}

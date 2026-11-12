@@ -1,0 +1,1282 @@
+{
+  "selected": "qat",
+  "variants": [
+    {
+      "name": "s8_minmax",
+      "domains": {
+        "bdd100k": {
+          "samples": 1024,
+          "classes": {
+            "drivable_area": {
+              "iou": 0.4241180689754564,
+              "f1": 0.5956220600172242,
+              "recall": 0.5426438381715424,
+              "precision": 0.6600639905504382,
+              "binary_miou": 0.6548688731373024,
+              "tp": 4331897,
+              "fp": 2230947,
+              "fn": 3651050,
+              "tn": 45542906,
+              "valid_pixels": 55756800
+            },
+            "solid_lane": {
+              "iou": 0.31863062362320815,
+              "f1": 0.4832750247339246,
+              "recall": 0.4288733453523372,
+              "precision": 0.5534832015810277,
+              "binary_miou": 0.6551142630136289,
+              "tp": 219569,
+              "fp": 177135,
+              "fn": 292398,
+              "tn": 55413298,
+              "valid_pixels": 56102400
+            },
+            "dashed_lane": {
+              "iou": 0.20854198839528015,
+              "f1": 0.34511335211809274,
+              "recall": 0.2734134852829521,
+              "precision": 0.4677851953992063,
+              "binary_miou": 0.6004998341708023,
+              "tp": 111273,
+              "fp": 126599,
+              "fn": 295704,
+              "tn": 55568824,
+              "valid_pixels": 56102400
+            },
+            "crosswalk": {
+              "iou": null,
+              "f1": null,
+              "recall": null,
+              "precision": null,
+              "binary_miou": null,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "tn": 0,
+              "valid_pixels": 0
+            }
+          }
+        },
+        "rlmd": {
+          "samples": 439,
+          "classes": {
+            "drivable_area": {
+              "iou": null,
+              "f1": null,
+              "recall": null,
+              "precision": null,
+              "binary_miou": null,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "tn": 0,
+              "valid_pixels": 0
+            },
+            "solid_lane": {
+              "iou": 0.22574591664499416,
+              "f1": 0.36834047510088613,
+              "recall": 0.3858671966250022,
+              "precision": 0.35233676100729044,
+              "binary_miou": 0.6098654467934586,
+              "tp": 44269,
+              "fp": 81375,
+              "fn": 70457,
+              "tn": 25090299,
+              "valid_pixels": 25286400
+            },
+            "dashed_lane": {
+              "iou": 0.15063960292159315,
+              "f1": 0.26183629094479904,
+              "recall": 0.3100755876733948,
+              "precision": 0.2265857359635812,
+              "binary_miou": 0.573654049396057,
+              "tp": 14932,
+              "fp": 50968,
+              "fn": 33224,
+              "tn": 25187276,
+              "valid_pixels": 25286400
+            },
+            "crosswalk": {
+              "iou": 0.33722420301099265,
+              "f1": 0.5043644921347875,
+              "recall": 0.4729037542328333,
+              "precision": 0.5403095144980167,
+              "binary_miou": 0.6671064405577892,
+              "tp": 38684,
+              "fp": 32912,
+              "fn": 43117,
+              "tn": 25171687,
+              "valid_pixels": 25286400
+            }
+          }
+        }
+      },
+      "score": 0.3853909703698918,
+      "sha256": "0cb30a649d38d9d4c9684927073ccbf30c35145a48566a45af4e03f5cbd5a15e",
+      "activation": "QInt8",
+      "method": "CalibrationMethod.MinMax",
+      "activation_symmetric": true
+    },
+    {
+      "name": "s8_percentile9999",
+      "domains": {
+        "bdd100k": {
+          "samples": 1024,
+          "classes": {
+            "drivable_area": {
+              "iou": 0.46795140530367224,
+              "f1": 0.6375570793596782,
+              "recall": 0.591463904244886,
+              "precision": 0.6914415812864236,
+              "binary_miou": 0.6813809481516311,
+              "tp": 4721625,
+              "fp": 2107043,
+              "fn": 3261322,
+              "tn": 45666810,
+              "valid_pixels": 55756800
+            },
+            "solid_lane": {
+              "iou": 0.345811185042648,
+              "f1": 0.513907432017203,
+              "recall": 0.4875704879416056,
+              "precision": 0.5432521132032767,
+              "binary_miou": 0.6686782380369098,
+              "tp": 249620,
+              "fp": 209872,
+              "fn": 262347,
+              "tn": 55380561,
+              "valid_pixels": 56102400
+            },
+            "dashed_lane": {
+              "iou": 0.25479831339354087,
+              "f1": 0.4061183549162594,
+              "recall": 0.3360140745054389,
+              "precision": 0.5131871266024197,
+              "binary_miou": 0.6238259917286159,
+              "tp": 136750,
+              "fp": 129722,
+              "fn": 270227,
+              "tn": 55565701,
+              "valid_pixels": 56102400
+            },
+            "crosswalk": {
+              "iou": null,
+              "f1": null,
+              "recall": null,
+              "precision": null,
+              "binary_miou": null,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "tn": 0,
+              "valid_pixels": 0
+            }
+          }
+        },
+        "rlmd": {
+          "samples": 439,
+          "classes": {
+            "drivable_area": {
+              "iou": null,
+              "f1": null,
+              "recall": null,
+              "precision": null,
+              "binary_miou": null,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "tn": 0,
+              "valid_pixels": 0
+            },
+            "solid_lane": {
+              "iou": 0.23407319673101978,
+              "f1": 0.379350588524351,
+              "recall": 0.4306521625438,
+              "precision": 0.33897060841406185,
+              "binary_miou": 0.6138336018753972,
+              "tp": 49407,
+              "fp": 96349,
+              "fn": 65319,
+              "tn": 25075325,
+              "valid_pixels": 25286400
+            },
+            "dashed_lane": {
+              "iou": 0.17035264807363396,
+              "f1": 0.29111336374387564,
+              "recall": 0.3578162638092865,
+              "precision": 0.2453719526087947,
+              "binary_miou": 0.5835158420478762,
+              "tp": 17231,
+              "fp": 52993,
+              "fn": 30925,
+              "tn": 25185251,
+              "valid_pixels": 25286400
+            },
+            "crosswalk": {
+              "iou": 0.37422780095618385,
+              "f1": 0.5446372147264045,
+              "recall": 0.5109839733010599,
+              "precision": 0.5830357641019919,
+              "binary_miou": 0.6857295450668102,
+              "tp": 41799,
+              "fp": 29893,
+              "fn": 40002,
+              "tn": 25174706,
+              "valid_pixels": 25286400
+            }
+          }
+        }
+      },
+      "score": 0.4272865588299005,
+      "sha256": "ed8fa438ed21bdcfee46d534214df62d07ec3a0f7c458f9f5b71973406deb910",
+      "activation": "QInt8",
+      "method": "CalibrationMethod.Percentile",
+      "activation_symmetric": true
+    },
+    {
+      "name": "u8_percentile9999",
+      "domains": {
+        "bdd100k": {
+          "samples": 1024,
+          "classes": {
+            "drivable_area": {
+              "iou": 0.5126934910612561,
+              "f1": 0.6778550897334359,
+              "recall": 0.677959405217146,
+              "precision": 0.6777508063461786,
+              "binary_miou": 0.7052577090432419,
+              "tp": 5412114,
+              "fp": 2573290,
+              "fn": 2570833,
+              "tn": 45200563,
+              "valid_pixels": 55756800
+            },
+            "solid_lane": {
+              "iou": 0.3514071415350196,
+              "f1": 0.520061098886702,
+              "recall": 0.5117380612422285,
+              "precision": 0.5286593486419953,
+              "binary_miou": 0.6713737223120715,
+              "tp": 261993,
+              "fp": 233587,
+              "fn": 249974,
+              "tn": 55356846,
+              "valid_pixels": 56102400
+            },
+            "dashed_lane": {
+              "iou": 0.2668257713248639,
+              "f1": 0.4212509365764067,
+              "recall": 0.3612513729277084,
+              "precision": 0.5051504239908743,
+              "binary_miou": 0.6298030539785111,
+              "tp": 147021,
+              "fp": 144023,
+              "fn": 259956,
+              "tn": 55551400,
+              "valid_pixels": 56102400
+            },
+            "crosswalk": {
+              "iou": null,
+              "f1": null,
+              "recall": null,
+              "precision": null,
+              "binary_miou": null,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "tn": 0,
+              "valid_pixels": 0
+            }
+          }
+        },
+        "rlmd": {
+          "samples": 439,
+          "classes": {
+            "drivable_area": {
+              "iou": null,
+              "f1": null,
+              "recall": null,
+              "precision": null,
+              "binary_miou": null,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "tn": 0,
+              "valid_pixels": 0
+            },
+            "solid_lane": {
+              "iou": 0.23912016330649785,
+              "f1": 0.3859515330110098,
+              "recall": 0.45436082492198804,
+              "precision": 0.3354462148317846,
+              "binary_miou": 0.6162735197618087,
+              "tp": 52127,
+              "fp": 103269,
+              "fn": 62599,
+              "tn": 25068405,
+              "valid_pixels": 25286400
+            },
+            "dashed_lane": {
+              "iou": 0.17398421231052352,
+              "f1": 0.2963995775856379,
+              "recall": 0.37301686186560346,
+              "precision": 0.24589333625362755,
+              "binary_miou": 0.5853045858705683,
+              "tp": 17963,
+              "fp": 55089,
+              "fn": 30193,
+              "tn": 25183155,
+              "valid_pixels": 25286400
+            },
+            "crosswalk": {
+              "iou": 0.38802571543525344,
+              "f1": 0.5591045052268032,
+              "recall": 0.5541252551924793,
+              "precision": 0.5641740515782137,
+              "binary_miou": 0.6925967332360674,
+              "tp": 45328,
+              "fp": 35016,
+              "fn": 36473,
+              "tn": 25169583,
+              "valid_pixels": 25286400
+            }
+          }
+        }
+      },
+      "score": 0.4460113914789744,
+      "sha256": "b2b2982e93254f47cf273ace3d8ad429e7393a12433dec5d18a70ebd18e39792",
+      "activation": "QUInt8",
+      "method": "CalibrationMethod.Percentile",
+      "activation_symmetric": false
+    },
+    {
+      "name": "u8_percentile999",
+      "domains": {
+        "bdd100k": {
+          "samples": 1024,
+          "classes": {
+            "drivable_area": {
+              "iou": 0.5348923062799583,
+              "f1": 0.6969769854099407,
+              "recall": 0.7181955485862552,
+              "precision": 0.6769762172854247,
+              "binary_miou": 0.7176163462071032,
+              "tp": 5733317,
+              "fp": 2735691,
+              "fn": 2249630,
+              "tn": 45038162,
+              "valid_pixels": 55756800
+            },
+            "solid_lane": {
+              "iou": 0.3529441060001992,
+              "f1": 0.5217423313127575,
+              "recall": 0.5121755894422882,
+              "precision": 0.5316732631510649,
+              "binary_miou": 0.6721675810752852,
+              "tp": 262217,
+              "fp": 230975,
+              "fn": 249750,
+              "tn": 55359458,
+              "valid_pixels": 56102400
+            },
+            "dashed_lane": {
+              "iou": 0.2750117671190979,
+              "f1": 0.431387025926027,
+              "recall": 0.36896433950812946,
+              "precision": 0.5192326311567241,
+              "binary_miou": 0.6339684648610304,
+              "tp": 150160,
+              "fp": 139036,
+              "fn": 256817,
+              "tn": 55556387,
+              "valid_pixels": 56102400
+            },
+            "crosswalk": {
+              "iou": null,
+              "f1": null,
+              "recall": null,
+              "precision": null,
+              "binary_miou": null,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "tn": 0,
+              "valid_pixels": 0
+            }
+          }
+        },
+        "rlmd": {
+          "samples": 439,
+          "classes": {
+            "drivable_area": {
+              "iou": null,
+              "f1": null,
+              "recall": null,
+              "precision": null,
+              "binary_miou": null,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "tn": 0,
+              "valid_pixels": 0
+            },
+            "solid_lane": {
+              "iou": 0.24010997897460779,
+              "f1": 0.38723981428347853,
+              "recall": 0.4529138992033192,
+              "precision": 0.33819968758135904,
+              "binary_miou": 0.6167966646242071,
+              "tp": 51961,
+              "fp": 101679,
+              "fn": 62765,
+              "tn": 25069995,
+              "valid_pixels": 25286400
+            },
+            "dashed_lane": {
+              "iou": 0.17872978014249458,
+              "f1": 0.30325827539690775,
+              "recall": 0.36412908048841264,
+              "precision": 0.25982396870554764,
+              "binary_miou": 0.5877705564911676,
+              "tp": 17535,
+              "fp": 49953,
+              "fn": 30621,
+              "tn": 25188291,
+              "valid_pixels": 25286400
+            },
+            "crosswalk": {
+              "iou": 0.3869778236204229,
+              "f1": 0.5580158774425047,
+              "recall": 0.5503722448380827,
+              "precision": 0.5658748114630467,
+              "binary_miou": 0.6920761720387434,
+              "tp": 45021,
+              "fp": 34539,
+              "fn": 36780,
+              "tn": 25170060,
+              "valid_pixels": 25286400
+            }
+          }
+        }
+      },
+      "score": 0.4523954621519177,
+      "sha256": "627610f290f9ccd2ba5f94b8bd1802fb70423e0c52d088e47df17862392ce21f",
+      "activation": "QUInt8",
+      "method": "CalibrationMethod.Percentile",
+      "activation_symmetric": false
+    },
+    {
+      "name": "s8_entropy",
+      "domains": {
+        "bdd100k": {
+          "samples": 1024,
+          "classes": {
+            "drivable_area": {
+              "iou": 0.4241180689754564,
+              "f1": 0.5956220600172242,
+              "recall": 0.5426438381715424,
+              "precision": 0.6600639905504382,
+              "binary_miou": 0.6548688731373024,
+              "tp": 4331897,
+              "fp": 2230947,
+              "fn": 3651050,
+              "tn": 45542906,
+              "valid_pixels": 55756800
+            },
+            "solid_lane": {
+              "iou": 0.31863062362320815,
+              "f1": 0.4832750247339246,
+              "recall": 0.4288733453523372,
+              "precision": 0.5534832015810277,
+              "binary_miou": 0.6551142630136289,
+              "tp": 219569,
+              "fp": 177135,
+              "fn": 292398,
+              "tn": 55413298,
+              "valid_pixels": 56102400
+            },
+            "dashed_lane": {
+              "iou": 0.20854198839528015,
+              "f1": 0.34511335211809274,
+              "recall": 0.2734134852829521,
+              "precision": 0.4677851953992063,
+              "binary_miou": 0.6004998341708023,
+              "tp": 111273,
+              "fp": 126599,
+              "fn": 295704,
+              "tn": 55568824,
+              "valid_pixels": 56102400
+            },
+            "crosswalk": {
+              "iou": null,
+              "f1": null,
+              "recall": null,
+              "precision": null,
+              "binary_miou": null,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "tn": 0,
+              "valid_pixels": 0
+            }
+          }
+        },
+        "rlmd": {
+          "samples": 439,
+          "classes": {
+            "drivable_area": {
+              "iou": null,
+              "f1": null,
+              "recall": null,
+              "precision": null,
+              "binary_miou": null,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "tn": 0,
+              "valid_pixels": 0
+            },
+            "solid_lane": {
+              "iou": 0.22574591664499416,
+              "f1": 0.36834047510088613,
+              "recall": 0.3858671966250022,
+              "precision": 0.35233676100729044,
+              "binary_miou": 0.6098654467934586,
+              "tp": 44269,
+              "fp": 81375,
+              "fn": 70457,
+              "tn": 25090299,
+              "valid_pixels": 25286400
+            },
+            "dashed_lane": {
+              "iou": 0.15063960292159315,
+              "f1": 0.26183629094479904,
+              "recall": 0.3100755876733948,
+              "precision": 0.2265857359635812,
+              "binary_miou": 0.573654049396057,
+              "tp": 14932,
+              "fp": 50968,
+              "fn": 33224,
+              "tn": 25187276,
+              "valid_pixels": 25286400
+            },
+            "crosswalk": {
+              "iou": 0.33722420301099265,
+              "f1": 0.5043644921347875,
+              "recall": 0.4729037542328333,
+              "precision": 0.5403095144980167,
+              "binary_miou": 0.6671064405577892,
+              "tp": 38684,
+              "fp": 32912,
+              "fn": 43117,
+              "tn": 25171687,
+              "valid_pixels": 25286400
+            }
+          }
+        }
+      },
+      "score": 0.3853909703698918,
+      "sha256": "0cb30a649d38d9d4c9684927073ccbf30c35145a48566a45af4e03f5cbd5a15e",
+      "activation": "QInt8",
+      "method": "CalibrationMethod.Entropy",
+      "activation_symmetric": true
+    },
+    {
+      "name": "qat",
+      "domains": {
+        "bdd100k": {
+          "samples": 1024,
+          "classes": {
+            "drivable_area": {
+              "iou": 0.5458944659037055,
+              "f1": 0.7062506244041493,
+              "recall": 0.762010069714856,
+              "precision": 0.658095071594279,
+              "binary_miou": 0.7220123360766161,
+              "tp": 6083086,
+              "fp": 3160390,
+              "fn": 1899861,
+              "tn": 44613463,
+              "valid_pixels": 55756800
+            },
+            "solid_lane": {
+              "iou": 0.3544977625900879,
+              "f1": 0.523437944869267,
+              "recall": 0.5296669511902135,
+              "precision": 0.5173537447152734,
+              "binary_miou": 0.67282684887978,
+              "tp": 271172,
+              "fp": 252980,
+              "fn": 240795,
+              "tn": 55337453,
+              "valid_pixels": 56102400
+            },
+            "dashed_lane": {
+              "iou": 0.28073083063623683,
+              "f1": 0.4383916181619152,
+              "recall": 0.39705929327701567,
+              "precision": 0.4893288436148694,
+              "binary_miou": 0.6366648519047131,
+              "tp": 161594,
+              "fp": 168642,
+              "fn": 245383,
+              "tn": 55526781,
+              "valid_pixels": 56102400
+            },
+            "crosswalk": {
+              "iou": null,
+              "f1": null,
+              "recall": null,
+              "precision": null,
+              "binary_miou": null,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "tn": 0,
+              "valid_pixels": 0
+            }
+          }
+        },
+        "rlmd": {
+          "samples": 439,
+          "classes": {
+            "drivable_area": {
+              "iou": null,
+              "f1": null,
+              "recall": null,
+              "precision": null,
+              "binary_miou": null,
+              "tp": 0,
+              "fp": 0,
+              "fn": 0,
+              "tn": 0,
+              "valid_pixels": 0
+            },
+            "solid_lane": {
+              "iou": 0.24034745135007743,
+              "f1": 0.38754858743566917,
+              "recall": 0.466685842790649,
+              "precision": 0.3313590790939473,
+              "binary_miou": 0.6168204790215382,
+              "tp": 53541,
+              "fp": 108039,
+              "fn": 61185,
+              "tn": 25063635,
+              "valid_pixels": 25286400
+            },
+            "dashed_lane": {
+              "iou": 0.18190498014054385,
+              "f1": 0.3078165896532782,
+              "recall": 0.39563086635102584,
+              "precision": 0.2519039559974614,
+              "binary_miou": 0.5892569421243616,
+              "tp": 19052,
+              "fp": 56580,
+              "fn": 29104,
+              "tn": 25181664,
+              "valid_pixels": 25286400
+            },
+            "crosswalk": {
+              "iou": 0.3870573767015818,
+              "f1": 0.5580985807840235,
+              "recall": 0.557890490336304,
+              "precision": 0.5583068265231221,
+              "binary_miou": 0.6920970953926697,
+              "tp": 45636,
+              "fp": 36104,
+              "fn": 36165,
+              "tn": 25168495,
+              "valid_pixels": 25286400
+            }
+          }
+        }
+      },
+      "score": 0.4563677564676103,
+      "sha256": "c7a21a9a3f1621ac5cbcbbb9030587251a340cb435413b3c086ff1c1a6d137a6",
+      "export_revision": 2,
+      "activation": "QUInt8",
+      "method": "3 epochs real mixed QAT + FP32 logit regularizer; frozen BN/ranges",
+      "activation_symmetric": false,
+      "history": [
+        {
+          "epoch": 1,
+          "loss": 0.7673111649155617,
+          "seconds": 121.16101189999608,
+          "domains": {
+            "bdd100k": {
+              "loss": 0.5760638993233442,
+              "samples": 1024,
+              "classes": {
+                "drivable_area": {
+                  "iou": 0.5458776714531741,
+                  "f1": 0.7062365690812156,
+                  "recall": 0.7616723498226908,
+                  "precision": 0.6583227445447167,
+                  "binary_miou": 0.7220258269161678,
+                  "tp": 6080390,
+                  "fp": 3155794,
+                  "fn": 1902557,
+                  "tn": 44618059,
+                  "valid_pixels": 55756800
+                },
+                "solid_lane": {
+                  "iou": 0.35443104153623556,
+                  "f1": 0.5233652074811124,
+                  "recall": 0.5296669511902135,
+                  "precision": 0.5172116514335413,
+                  "binary_miou": 0.6727921987519873,
+                  "tp": 271172,
+                  "fp": 253124,
+                  "fn": 240795,
+                  "tn": 55337309,
+                  "valid_pixels": 56102400
+                },
+                "dashed_lane": {
+                  "iou": 0.28074366467332196,
+                  "f1": 0.43840726667959895,
+                  "recall": 0.3970519218530777,
+                  "precision": 0.48937903548195616,
+                  "binary_miou": 0.6366715730143476,
+                  "tp": 161591,
+                  "fp": 168605,
+                  "fn": 245386,
+                  "tn": 55526818,
+                  "valid_pixels": 56102400
+                },
+                "crosswalk": {
+                  "iou": null,
+                  "f1": null,
+                  "recall": null,
+                  "precision": null,
+                  "binary_miou": null,
+                  "tp": 0,
+                  "fp": 0,
+                  "fn": 0,
+                  "tn": 0,
+                  "valid_pixels": 0
+                }
+              },
+              "threshold": 0.5
+            },
+            "rlmd": {
+              "loss": 0.6524144629682658,
+              "samples": 439,
+              "classes": {
+                "drivable_area": {
+                  "iou": null,
+                  "f1": null,
+                  "recall": null,
+                  "precision": null,
+                  "binary_miou": null,
+                  "tp": 0,
+                  "fp": 0,
+                  "fn": 0,
+                  "tn": 0,
+                  "valid_pixels": 0
+                },
+                "solid_lane": {
+                  "iou": 0.24027085682960914,
+                  "f1": 0.3874490084267424,
+                  "recall": 0.4660931262311943,
+                  "precision": 0.33151270923744575,
+                  "binary_miou": 0.6167850442124487,
+                  "tp": 53473,
+                  "fp": 107827,
+                  "fn": 61253,
+                  "tn": 25063847,
+                  "valid_pixels": 25286400
+                },
+                "dashed_lane": {
+                  "iou": 0.18206651511967756,
+                  "f1": 0.30804783451842277,
+                  "recall": 0.39583852479441817,
+                  "precision": 0.25212951695677477,
+                  "binary_miou": 0.5893386587857218,
+                  "tp": 19062,
+                  "fp": 56542,
+                  "fn": 29094,
+                  "tn": 25181702,
+                  "valid_pixels": 25286400
+                },
+                "crosswalk": {
+                  "iou": 0.38774836399346446,
+                  "f1": 0.5588165319505871,
+                  "recall": 0.5599198053813523,
+                  "precision": 0.5577175977789683,
+                  "binary_miou": 0.692441549536915,
+                  "tp": 45802,
+                  "fp": 36322,
+                  "fn": 35999,
+                  "tn": 25168277,
+                  "valid_pixels": 25286400
+                }
+              },
+              "threshold": 0.5
+            }
+          },
+          "score": 0.4566293747201629
+        },
+        {
+          "epoch": 2,
+          "loss": 0.7586780802607537,
+          "seconds": 87.32329459999892,
+          "domains": {
+            "bdd100k": {
+              "loss": 0.5757948867976665,
+              "samples": 1024,
+              "classes": {
+                "drivable_area": {
+                  "iou": 0.5462593101124527,
+                  "f1": 0.706555888187636,
+                  "recall": 0.7611635151780414,
+                  "precision": 0.6592591178122285,
+                  "binary_miou": 0.7223330865373121,
+                  "tp": 6076328,
+                  "fp": 3140576,
+                  "fn": 1906619,
+                  "tn": 44633277,
+                  "valid_pixels": 55756800
+                },
+                "solid_lane": {
+                  "iou": 0.35471961462612017,
+                  "f1": 0.5236797501068393,
+                  "recall": 0.5301591704152807,
+                  "precision": 0.5173567959499539,
+                  "binary_miou": 0.6729379340504469,
+                  "tp": 271424,
+                  "fp": 253212,
+                  "fn": 240543,
+                  "tn": 55337221,
+                  "valid_pixels": 56102400
+                },
+                "dashed_lane": {
+                  "iou": 0.28104840575091367,
+                  "f1": 0.4387787447987513,
+                  "recall": 0.40303997523201557,
+                  "precision": 0.48147234941880945,
+                  "binary_miou": 0.6367736378786779,
+                  "tp": 164028,
+                  "fp": 176652,
+                  "fn": 242949,
+                  "tn": 55518771,
+                  "valid_pixels": 56102400
+                },
+                "crosswalk": {
+                  "iou": null,
+                  "f1": null,
+                  "recall": null,
+                  "precision": null,
+                  "binary_miou": null,
+                  "tp": 0,
+                  "fp": 0,
+                  "fn": 0,
+                  "tn": 0,
+                  "valid_pixels": 0
+                }
+              },
+              "threshold": 0.5
+            },
+            "rlmd": {
+              "loss": 0.6532758094183676,
+              "samples": 439,
+              "classes": {
+                "drivable_area": {
+                  "iou": null,
+                  "f1": null,
+                  "recall": null,
+                  "precision": null,
+                  "binary_miou": null,
+                  "tp": 0,
+                  "fp": 0,
+                  "fn": 0,
+                  "tn": 0,
+                  "valid_pixels": 0
+                },
+                "solid_lane": {
+                  "iou": 0.2410408572191038,
+                  "f1": 0.38844951125819127,
+                  "recall": 0.4645067377926538,
+                  "precision": 0.3337947535890562,
+                  "binary_miou": 0.6171955113351882,
+                  "tp": 53291,
+                  "fp": 106361,
+                  "fn": 61435,
+                  "tn": 25065313,
+                  "valid_pixels": 25286400
+                },
+                "dashed_lane": {
+                  "iou": 0.1804758769867394,
+                  "f1": 0.30576800509878904,
+                  "recall": 0.3984965528698397,
+                  "precision": 0.24804818778760146,
+                  "binary_miou": 0.5885135692416794,
+                  "tp": 19190,
+                  "fp": 58174,
+                  "fn": 28966,
+                  "tn": 25180070,
+                  "valid_pixels": 25286400
+                },
+                "crosswalk": {
+                  "iou": 0.3832584527317972,
+                  "f1": 0.5541386021894897,
+                  "recall": 0.5516558477280229,
+                  "precision": 0.5566438052005723,
+                  "binary_miou": 0.690190768861733,
+                  "tp": 45126,
+                  "fp": 35942,
+                  "fn": 36675,
+                  "tn": 25168657,
+                  "valid_pixels": 25286400
+                }
+              },
+              "threshold": 0.5
+            }
+          },
+          "score": 0.45504694209632757
+        },
+        {
+          "epoch": 3,
+          "loss": 0.7513841779232026,
+          "seconds": 97.52029360000597,
+          "domains": {
+            "bdd100k": {
+              "loss": 0.5765467779710889,
+              "samples": 1024,
+              "classes": {
+                "drivable_area": {
+                  "iou": 0.547061457677941,
+                  "f1": 0.7072265357822977,
+                  "recall": 0.7677640851179395,
+                  "precision": 0.655537924386958,
+                  "binary_miou": 0.7224050186016799,
+                  "tp": 6129020,
+                  "fp": 3220584,
+                  "fn": 1853927,
+                  "tn": 44553269,
+                  "valid_pixels": 55756800
+                },
+                "solid_lane": {
+                  "iou": 0.35339595619865,
+                  "f1": 0.522235868342995,
+                  "recall": 0.5311455621163083,
+                  "precision": 0.513620154277382,
+                  "binary_miou": 0.6722421228012387,
+                  "tp": 271929,
+                  "fp": 257507,
+                  "fn": 240038,
+                  "tn": 55332926,
+                  "valid_pixels": 56102400
+                },
+                "dashed_lane": {
+                  "iou": 0.279969978650711,
+                  "f1": 0.43746335198555714,
+                  "recall": 0.395046894541952,
+                  "precision": 0.49008401004706514,
+                  "binary_miou": 0.6362893244246666,
+                  "tp": 160775,
+                  "fp": 167281,
+                  "fn": 246202,
+                  "tn": 55528142,
+                  "valid_pixels": 56102400
+                },
+                "crosswalk": {
+                  "iou": null,
+                  "f1": null,
+                  "recall": null,
+                  "precision": null,
+                  "binary_miou": null,
+                  "tp": 0,
+                  "fp": 0,
+                  "fn": 0,
+                  "tn": 0,
+                  "valid_pixels": 0
+                }
+              },
+              "threshold": 0.5
+            },
+            "rlmd": {
+              "loss": 0.6520739167860808,
+              "samples": 439,
+              "classes": {
+                "drivable_area": {
+                  "iou": null,
+                  "f1": null,
+                  "recall": null,
+                  "precision": null,
+                  "binary_miou": null,
+                  "tp": 0,
+                  "fp": 0,
+                  "fn": 0,
+                  "tn": 0,
+                  "valid_pixels": 0
+                },
+                "solid_lane": {
+                  "iou": 0.24181524521646805,
+                  "f1": 0.38945446377462667,
+                  "recall": 0.46849885814898107,
+                  "precision": 0.3332320702311279,
+                  "binary_miou": 0.6175682192296512,
+                  "tp": 53749,
+                  "fp": 107547,
+                  "fn": 60977,
+                  "tn": 25064127,
+                  "valid_pixels": 25286400
+                },
+                "dashed_lane": {
+                  "iou": 0.1821125913859639,
+                  "f1": 0.3081137832606057,
+                  "recall": 0.39002408837943353,
+                  "precision": 0.25463665943600866,
+                  "binary_miou": 0.5893871237116737,
+                  "tp": 18782,
+                  "fp": 54978,
+                  "fn": 29374,
+                  "tn": 25183266,
+                  "valid_pixels": 25286400
+                },
+                "crosswalk": {
+                  "iou": 0.38566643084240404,
+                  "f1": 0.5566511856795743,
+                  "recall": 0.5531228224593832,
+                  "precision": 0.5602248526571245,
+                  "binary_miou": 0.6914055271308805,
+                  "tp": 45246,
+                  "fp": 35518,
+                  "fn": 36555,
+                  "tn": 25169081,
+                  "valid_pixels": 25286400
+                }
+              },
+              "threshold": 0.5
+            }
+          },
+          "score": 0.45561870793826026
+        }
+      ],
+      "reference_onnx_max_logit_error": 1.6102714538574219,
+      "reference_onnx_probability_mae": 0.0011199084801774006,
+      "reference_onnx_mask_agreement": 0.9990753196179867,
+      "note": "QAT FX checkpoint uses transformed names; restore via prepare_qat_fx or use exported reference TorchScript. Original FP32 best.pt remains intact."
+    }
+  ],
+  "comparison": {
+    "fp32": {
+      "bdd100k": {
+        "samples": 10000,
+        "classes": {
+          "drivable_area": {
+            "iou": 0.5544621026030419,
+            "f1": 0.7133813062081875,
+            "recall": 0.7726459095137528,
+            "precision": 0.6625606236148704,
+            "binary_miou": 0.7280329891473394,
+            "tp": 59984828,
+            "fp": 30550024,
+            "fn": 17650771,
+            "tn": 441663977,
+            "valid_pixels": 549849600
+          },
+          "solid_lane": {
+            "iou": 0.3805716442568105,
+            "f1": 0.5513247296364396,
+            "recall": 0.5601253071737159,
+            "precision": 0.5427964201293971,
+            "binary_miou": 0.6859620836363068,
+            "tp": 2899790,
+            "fp": 2442526,
+            "fn": 2277248,
+            "tn": 541078036,
+            "valid_pixels": 548697600
+          },
+          "dashed_lane": {
+            "iou": 0.2888286418192803,
+            "f1": 0.4482033257913582,
+            "recall": 0.4152342679448947,
+            "precision": 0.48685931902492413,
+            "binary_miou": 0.6409712096594296,
+            "tp": 1530267,
+            "fp": 1612873,
+            "fn": 2155043,
+            "tn": 543399417,
+            "valid_pixels": 548697600
+          },
+          "crosswalk": {
+            "iou": null,
+            "f1": null,
+            "recall": null,
+            "precision": null,
+            "binary_miou": null,
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "valid_pixels": 0
+          }
+        }
+      },
+      "rlmd": {
+        "samples": 439,
+        "classes": {
+          "drivable_area": {
+            "iou": null,
+            "f1": null,
+            "recall": null,
+            "precision": null,
+            "binary_miou": null,
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "valid_pixels": 0
+          },
+          "solid_lane": {
+            "iou": 0.2427036382484165,
+            "f1": 0.3906058223029038,
+            "recall": 0.46325157331380856,
+            "precision": 0.3376556543837357,
+            "binary_miou": 0.6180658377249808,
+            "tp": 53147,
+            "fp": 104253,
+            "fn": 61579,
+            "tn": 25067421,
+            "valid_pixels": 25286400
+          },
+          "dashed_lane": {
+            "iou": 0.18378336497113856,
+            "f1": 0.3105016853748732,
+            "recall": 0.3940526621812443,
+            "precision": 0.2561831731288476,
+            "binary_miou": 0.5902240016012813,
+            "tp": 18976,
+            "fp": 55096,
+            "fn": 29180,
+            "tn": 25183148,
+            "valid_pixels": 25286400
+          },
+          "crosswalk": {
+            "iou": 0.38938075785803405,
+            "f1": 0.5605097892075754,
+            "recall": 0.5569980807080598,
+            "precision": 0.5640660592255126,
+            "binary_miou": 0.6932749940113141,
+            "tp": 45563,
+            "fp": 35213,
+            "fn": 36238,
+            "tn": 25169386,
+            "valid_pixels": 25286400
+          }
+        }
+      }
+    },
+    "int8": {
+      "bdd100k": {
+        "samples": 10000,
+        "classes": {
+          "drivable_area": {
+            "iou": 0.5470871488766242,
+            "f1": 0.7072480038036343,
+            "recall": 0.7658559187519117,
+            "precision": 0.6569725045519162,
+            "binary_miou": 0.7233563922136099,
+            "tp": 59457683,
+            "fp": 31044861,
+            "fn": 18177916,
+            "tn": 441169140,
+            "valid_pixels": 549849600
+          },
+          "solid_lane": {
+            "iou": 0.37816119485412364,
+            "f1": 0.5487909487890514,
+            "recall": 0.5586936004719301,
+            "precision": 0.5392332255504978,
+            "binary_miou": 0.6847235907438242,
+            "tp": 2892378,
+            "fp": 2471494,
+            "fn": 2284660,
+            "tn": 541049068,
+            "valid_pixels": 548697600
+          },
+          "dashed_lane": {
+            "iou": 0.284228661802312,
+            "f1": 0.44264494362463436,
+            "recall": 0.4070951968762465,
+            "precision": 0.4849975431246282,
+            "binary_miou": 0.6386620790290489,
+            "tp": 1500272,
+            "fp": 1593088,
+            "fn": 2185038,
+            "tn": 543419202,
+            "valid_pixels": 548697600
+          },
+          "crosswalk": {
+            "iou": null,
+            "f1": null,
+            "recall": null,
+            "precision": null,
+            "binary_miou": null,
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "valid_pixels": 0
+          }
+        }
+      },
+      "rlmd": {
+        "samples": 439,
+        "classes": {
+          "drivable_area": {
+            "iou": null,
+            "f1": null,
+            "recall": null,
+            "precision": null,
+            "binary_miou": null,
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "valid_pixels": 0
+          },
+          "solid_lane": {
+            "iou": 0.24034745135007743,
+            "f1": 0.38754858743566917,
+            "recall": 0.466685842790649,
+            "precision": 0.3313590790939473,
+            "binary_miou": 0.6168204790215382,
+            "tp": 53541,
+            "fp": 108039,
+            "fn": 61185,
+            "tn": 25063635,
+            "valid_pixels": 25286400
+          },
+          "dashed_lane": {
+            "iou": 0.18190498014054385,
+            "f1": 0.3078165896532782,
+            "recall": 0.39563086635102584,
+            "precision": 0.2519039559974614,
+            "binary_miou": 0.5892569421243616,
+            "tp": 19052,
+            "fp": 56580,
+            "fn": 29104,
+            "tn": 25181664,
+            "valid_pixels": 25286400
+          },
+          "crosswalk": {
+            "iou": 0.3870573767015818,
+            "f1": 0.5580985807840235,
+            "recall": 0.557890490336304,
+            "precision": 0.5583068265231221,
+            "binary_miou": 0.6920970953926697,
+            "tp": 45636,
+            "fp": 36104,
+            "fn": 36165,
+            "tn": 25168495,
+            "valid_pixels": 25286400
+          }
+        }
+      }
+    }
+  },
+  "torch_onnx_max_logit_error": 7.343292236328125e-05,
+  "quantization_accepted": true
+}

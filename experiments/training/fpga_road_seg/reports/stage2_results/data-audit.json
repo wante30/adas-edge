@@ -1,0 +1,68 @@
+{
+  "original_counts": {
+    "train": 1737,
+    "val": 400
+  },
+  "samples": 2137,
+  "split_counts": {
+    "train": 1698,
+    "val": 439
+  },
+  "mapping": {
+    "1": [
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "2": [
+      9,
+      10
+    ],
+    "3": [
+      2
+    ]
+  },
+  "drivable_valid_pixels": 0,
+  "unknown_pixels": 0,
+  "split_rule": "Numeric contiguous runs separated by >500 frame index; named day sequences grouped. Deterministic 20% group holdout; unknown true recording IDs, no claim of complete scene independence.",
+  "excluded": [],
+  "official_classes_sha256": "ba307c9196a0512c576410b25aca83422902081c539d0515624b38c13deea037",
+  "validation_groups": [
+    "rlmd-day_3",
+    "rlmd-numeric-run-1",
+    "rlmd-numeric-run-4",
+    "rlmd-numeric-run-5"
+  ],
+  "counts": {
+    "train": {
+      "positive_pixels": [
+        0,
+        19784175,
+        7243754,
+        18398692
+      ],
+      "valid_pixels": [
+        0,
+        3520972800,
+        3520972800,
+        3520972800
+      ]
+    },
+    "val": {
+      "positive_pixels": [
+        0,
+        4123600,
+        1734662,
+        2950993
+      ],
+      "valid_pixels": [
+        0,
+        910310400,
+        910310400,
+        910310400
+      ]
+    }
+  }
+}

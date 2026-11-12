@@ -1,0 +1,240 @@
+{
+  "version": "CandidatePlus-PG2L200H-Handoff-v1.0.0",
+  "training_parameters": 32524,
+  "conv_layers": 14,
+  "depthwise_layers": 5,
+  "pointwise_layers": 8,
+  "onnx_operators": {
+    "QuantizeLinear": 20,
+    "DequantizeLinear": 34,
+    "Conv": 14,
+    "Relu": 11,
+    "Shape": 3,
+    "Slice": 3,
+    "Concat": 3,
+    "Resize": 3,
+    "Add": 2
+  },
+  "onnx_nodes": 93,
+  "macs": 84718080,
+  "folded_weight_elements": 31152,
+  "folded_bias_elements": 732,
+  "folded_bias_int32_bytes": 2928,
+  "raw_weight_blob_bytes": 31152,
+  "qdq_onnx_bytes": 56219,
+  "fp32_onnx_bytes": 135239,
+  "peak_live_uint8_features_bytes": 1474560,
+  "peak_features_plus_full_int32_accumulator_bytes": 2949120,
+  "activation_memory_timeline": [
+    {
+      "stage": "s00",
+      "live_tensors": [
+        "s00"
+      ],
+      "live_feature_bytes": 184320,
+      "full_int32_accumulator_bytes": 0
+    },
+    {
+      "stage": "s01",
+      "live_tensors": [
+        "s00",
+        "s01"
+      ],
+      "live_feature_bytes": 675840,
+      "full_int32_accumulator_bytes": 1966080
+    },
+    {
+      "stage": "s02",
+      "live_tensors": [
+        "s01",
+        "s02"
+      ],
+      "live_feature_bytes": 614400,
+      "full_int32_accumulator_bytes": 491520
+    },
+    {
+      "stage": "s03",
+      "live_tensors": [
+        "s01",
+        "s02",
+        "s03"
+      ],
+      "live_feature_bytes": 829440,
+      "full_int32_accumulator_bytes": 860160
+    },
+    {
+      "stage": "s04",
+      "live_tensors": [
+        "s01",
+        "s03",
+        "s04"
+      ],
+      "live_feature_bytes": 760320,
+      "full_int32_accumulator_bytes": 215040
+    },
+    {
+      "stage": "s05",
+      "live_tensors": [
+        "s01",
+        "s03",
+        "s04",
+        "s05"
+      ],
+      "live_feature_bytes": 852480,
+      "full_int32_accumulator_bytes": 368640
+    },
+    {
+      "stage": "s06",
+      "live_tensors": [
+        "s01",
+        "s03",
+        "s05",
+        "s06"
+      ],
+      "live_feature_bytes": 890880,
+      "full_int32_accumulator_bytes": 368640
+    },
+    {
+      "stage": "s07",
+      "live_tensors": [
+        "s01",
+        "s03",
+        "s06",
+        "s07"
+      ],
+      "live_feature_bytes": 890880,
+      "full_int32_accumulator_bytes": 368640
+    },
+    {
+      "stage": "s08",
+      "live_tensors": [
+        "s01",
+        "s03",
+        "s07",
+        "s08"
+      ],
+      "live_feature_bytes": 852480,
+      "full_int32_accumulator_bytes": 215040
+    },
+    {
+      "stage": "s09",
+      "live_tensors": [
+        "s01",
+        "s03",
+        "s08",
+        "s09"
+      ],
+      "live_feature_bytes": 975360,
+      "full_int32_accumulator_bytes": 0
+    },
+    {
+      "stage": "s10",
+      "live_tensors": [
+        "s01",
+        "s03",
+        "s09",
+        "s10"
+      ],
+      "live_feature_bytes": 1136640,
+      "full_int32_accumulator_bytes": 0
+    },
+    {
+      "stage": "s11",
+      "live_tensors": [
+        "s01",
+        "s10",
+        "s11"
+      ],
+      "live_feature_bytes": 921600,
+      "full_int32_accumulator_bytes": 860160
+    },
+    {
+      "stage": "s12",
+      "live_tensors": [
+        "s01",
+        "s11",
+        "s12"
+      ],
+      "live_feature_bytes": 921600,
+      "full_int32_accumulator_bytes": 860160
+    },
+    {
+      "stage": "s13",
+      "live_tensors": [
+        "s01",
+        "s12",
+        "s13"
+      ],
+      "live_feature_bytes": 829440,
+      "full_int32_accumulator_bytes": 491520
+    },
+    {
+      "stage": "s14",
+      "live_tensors": [
+        "s01",
+        "s13",
+        "s14"
+      ],
+      "live_feature_bytes": 1105920,
+      "full_int32_accumulator_bytes": 0
+    },
+    {
+      "stage": "s15",
+      "live_tensors": [
+        "s01",
+        "s14",
+        "s15"
+      ],
+      "live_feature_bytes": 1474560,
+      "full_int32_accumulator_bytes": 0
+    },
+    {
+      "stage": "s16",
+      "live_tensors": [
+        "s15",
+        "s16"
+      ],
+      "live_feature_bytes": 983040,
+      "full_int32_accumulator_bytes": 1966080
+    },
+    {
+      "stage": "s17",
+      "live_tensors": [
+        "s16",
+        "s17"
+      ],
+      "live_feature_bytes": 983040,
+      "full_int32_accumulator_bytes": 1966080
+    },
+    {
+      "stage": "s18",
+      "live_tensors": [
+        "s17",
+        "s18"
+      ],
+      "live_feature_bytes": 552960,
+      "full_int32_accumulator_bytes": 245760
+    },
+    {
+      "stage": "s19",
+      "live_tensors": [
+        "s18",
+        "s19"
+      ],
+      "live_feature_bytes": 307200,
+      "full_int32_accumulator_bytes": 0
+    }
+  ],
+  "logical_unfused_io_bytes_per_frame": 9803040,
+  "memory_scope": "Batch1 logical tensors, distinct buffers, output allocated before freeing consumed inputs; excludes alignment, DMA, banks, line buffers, implementation caches; full accumulator optional in RTL",
+  "largest_uint8_feature_bytes": 491520,
+  "checkpoint_parameter_explanation": "32,524 trainable parameters include 11 BN gamma/beta; final QAT Conv has BN folded into weights and bias",
+  "runtime_versions": {
+    "python": "3.10.20 | packaged by Anaconda, Inc. | (main, Jun 11 2026, 15:13:20) [MSC v.1942 64 bit (AMD64)]",
+    "numpy": "2.2.6",
+    "onnx": "1.17.0",
+    "onnxruntime": "1.23.2",
+    "torch": "2.5.1+cu121",
+    "opencv": "4.13.0"
+  }
+}
