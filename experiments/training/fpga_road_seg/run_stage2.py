@@ -44,6 +44,10 @@ def main():
                            '--manifest', args.manifest, '--config', str(config), '--output', str(checkpoint_dir),
                            '--amp', '--workers', '4', '--device', 'cuda']
                 last = checkpoint_dir/'last.pt'
+                if not last.exists() and checkpoint_dir.exists() and any(checkpoint_dir.iterdir()):
+                    # A crash during initial evaluation can leave provenance but
+                    # no resumable epoch. Preserve that attempt, then retry init.
+                    checkpoint_dir.rename(checkpoint_dir.with_name(checkpoint_dir.name+f'.precheckpoint-{time.time_ns()}'))
                 command.extend(['--resume', str(last)] if last.exists() else ['--init', str(init)])
                 state('training', attempt=attempt, command=command)
                 code = run(command)
