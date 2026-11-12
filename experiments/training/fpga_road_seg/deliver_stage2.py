@@ -262,6 +262,8 @@ best checkpoint SHA-256：`{checkpoint_sha}`。训练/优化器/AMP/随机状态
 权重、原数据、视频不进普通 Git。详细算子及接口合同见 FPGA_HANDOFF.md。
 本轮仅形成待硬件验收的软件候选；是否满足道路实际可用性需结合错误图及场景验证，不能由 loss 单独断言。
 中间真实图发现 RLMD 仪表台区域 drivable 误检和斑马线碎片；RLMD 无 drivable 真值，不能为消除误检而伪造背景监督。未提供这类场景的可行驶区域实测精度。
+最终失败图 rlmd-28180 的雨天过街区域完全漏检（对应样本 crosswalk IoU=0）；视频只做抽帧定性检查，不能把保存预测视频等同于验证连续稳定性。
+给 PG2L200H 的建议：保留 Candidate-plus FP32 为当前四通道软件基线，先确认算子和量化合同，再做板端逐层对齐；现有斑马线质量不足以宣布模型已满足实际道路使用要求。
 '''
     (out/'README_RESULT.md').write_text(content,encoding='utf-8')
     handoff=f'''# PG2L200H 第二阶段交接
@@ -284,6 +286,9 @@ best checkpoint SHA-256：`{checkpoint_sha}`。训练/优化器/AMP/随机状态
     write_json(publish/'data-audit.json',audit)
     write_json(publish/'refinement.json',refinement)
     write_json(publish/'quantization_summary.json',dict(selected=quant['selected'],variants=quant['variants'],comparison=quant['comparison'],torch_onnx_max_logit_error=quant['torch_onnx_max_logit_error'],quantization_accepted=accepted))
+    from .verify_delivery import verify
+    verify(out)
+    shutil.copyfile(out/'artifact_verification.json',publish/'artifact_verification.json')
     from .publish_stage2 import publish as publish_results
     publish_results(out)
     print('delivery_complete '+str(out/'README_RESULT.md'),flush=True)
