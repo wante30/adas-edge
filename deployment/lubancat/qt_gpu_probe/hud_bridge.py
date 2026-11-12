@@ -232,13 +232,16 @@ class Bridge:
             ext |= 1 << 10
 
         time_enable = flag("time_enable")
-        time0 = int(request.get("time0", 0)) & 0xFFFFFFFF
-        time1 = int(request.get("time1", 0)) & 0xFFFFFFFF
         if time_enable:
+            time0 = int(request.get("time0", 0)) & 0xFFFFFFFF
+            time1 = int(request.get("time1", 0)) & 0xFFFFFFFF
             ext |= 1 << 11
         else:
-            time0 = 0
-            time1 = 0
+            # TIME0/TIME1 are shadow registers.  Omitting a time update must
+            # preserve the FPGA's previously written timestamp until a later
+            # commit explicitly replaces it.
+            time0 = self.rd(OFF_TIME0)
+            time1 = self.rd(OFF_TIME1)
 
         status = self._wait_ready()
         if status & 1:
@@ -246,8 +249,9 @@ class Bridge:
 
         self.ext_seq = self.ext_seq % 0xFFFF + 1
         self.wr(OFF_EXT_REQUEST, ext)
-        self.wr(OFF_TIME0, time0)
-        self.wr(OFF_TIME1, time1)
+        if time_enable:
+            self.wr(OFF_TIME0, time0)
+            self.wr(OFF_TIME1, time1)
         self.wr(OFF_EXT_COMMIT, self.ext_seq)
 
         deadline = time.monotonic() + 0.15

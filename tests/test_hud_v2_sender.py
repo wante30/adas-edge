@@ -44,6 +44,8 @@ class FakeHudV2Bus:
         self.writes = []
         self.closed = False
         self.magic = MAGIC
+        self.time0 = 0x18102026
+        self.time1 = 0x00183014
 
     def read32(self, offset):
         if offset == MAGIC_OFFSET:
@@ -61,10 +63,18 @@ class FakeHudV2Bus:
             return self.status
         if offset == EXT_APPLIED_SEQ:
             return self.sequence
+        if offset == TIME0:
+            return self.time0
+        if offset == TIME1:
+            return self.time1
         raise AssertionError(f"unexpected read {offset:#x}")
 
     def write32(self, offset, value):
         self.writes.append((offset, value))
+        if offset == TIME0:
+            self.time0 = value
+        elif offset == TIME1:
+            self.time1 = value
         if offset == EXT_COMMIT:
             self.status = STATUS_PENDING
             if self.complete_after is not None:
@@ -132,18 +142,16 @@ def test_sender_does_not_write_when_mailbox_never_becomes_ready():
     assert bus.writes == []
 
 
-def test_time_is_off_and_zeroed_by_default_until_explicitly_enabled():
+def test_time_is_off_and_previous_words_are_preserved_until_explicitly_enabled():
     bus = FakeHudV2Bus()
     clock = FakeClock()
     sender = HudV2Sender(bus, clock=clock, sleep=clock.sleep)
     result = sender.commit(0xA45 | (1 << 11), timestamp=datetime(2026, 10, 18, 14, 30, 18))
 
     assert result.committed and not result.ext_request & (1 << 11)
-    assert result.time0 == result.time1 == 0
+    assert result.time0 == 0x18102026 and result.time1 == 0x00183014
     assert bus.writes == [
         (EXT_REQUEST, 0x245),
-        (TIME0, 0),
-        (TIME1, 0),
         (EXT_COMMIT, 1),
     ]
 

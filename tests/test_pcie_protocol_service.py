@@ -55,6 +55,21 @@ def test_scene_vector_bcd_and_clear():
     assert b.scene_read()["shadow"] == "0x00000000"
 
 
+def test_scene_commit_keeps_time_words_between_shadow_and_sequence():
+    b = backend()
+    r = b.scene_apply({"sequence": 44, "traffic": 1, "valid": True,
+                       "time0": 0x10242026, "time1": 0x00053014})
+
+    assert r["ok"]
+    assert r["time0"] == "0x10242026"
+    assert r["time1"] == "0x00053014"
+    assert r["commit"] == "0x0000002c"
+    scene = b.scene_read()
+    assert scene["time0"] == "0x10242026"
+    assert scene["time1"] == "0x00053014"
+    assert scene["commit"] == "0x0000002c"
+
+
 def test_nav_vector_and_clear():
     b = backend()
     r = b.nav_apply({"enable": 1, "direction": 1, "distance": 120, "sequence": 1})

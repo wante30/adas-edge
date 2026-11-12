@@ -70,7 +70,10 @@ class CompetitionDetector:
                 row[0], row[2] = (row[0] - px) / scale, (row[2] - px) / scale
                 row[1], row[3] = (row[1] - py) / scale, (row[3] - py) / scale
         else:
-            detections = decode_yolo11_raw(outputs, self.input_size, self.conf_threshold, self.nms_threshold, scale, px, py)
+            detections = decode_yolo11_raw(
+                outputs, self.input_size, self.conf_threshold, self.nms_threshold,
+                scale, px, py, len(getattr(self, "class_names", COCO_NAMES)),
+            )
         postprocess_ms = (time.perf_counter_ns() - postprocess_started) / 1e6
         inference_ms = rknn_call_ms + postprocess_ms
         elapsed = preprocess_ms + inference_ms

@@ -55,7 +55,7 @@ class HudPerception:
         return values
 
 
-def build_hud_perception(frame, snapshot) -> HudPerception:
+def build_hud_perception(frame, snapshot, *, multi_signal=None) -> HudPerception:
     bound = getattr(snapshot, "signal", None)
     if (bound is not None and getattr(bound, "associated", False)
             and getattr(bound, "timestamp_ns", None) is not None):
@@ -68,6 +68,19 @@ def build_hud_perception(frame, snapshot) -> HudPerception:
             traffic, evidence = TrafficCode.OFF, "USER_BOUND_YELLOW_UNSUPPORTED_BY_HUD_PROTOCOL"
         else:
             traffic, evidence = TrafficCode.OFF, "USER_BOUND_SIGNAL_COLOR_UNCONFIRMED"
+        return HudPerception(
+            traffic=traffic,
+            pedestrian=any(item.get("class_name") == "person" for item in snapshot.main),
+            static_target=False,
+            overspeed=False,
+            lane_left=LaneCode.NONE,
+            lane_right=LaneCode.NONE,
+            lka_warning=False,
+            traffic_evidence=evidence,
+        )
+
+    if multi_signal is not None:
+        traffic, evidence = _multi_signal_traffic(multi_signal)
         return HudPerception(
             traffic=traffic,
             pedestrian=any(item.get("class_name") == "person" for item in snapshot.main),
@@ -140,6 +153,38 @@ def build_hud_perception(frame, snapshot) -> HudPerception:
         lka_warning=False,
         traffic_evidence=evidence,
     )
+
+
+def _multi_signal_traffic(result):
+    """Map confirmed multi-lamp colors to the FPGA's three-value traffic field.
+
+    Arrow shapes and the direction-association result stay in the JSONL signal
+    payload.  The FPGA scene field only represents a conservative aggregate
+    color, so yellow, unknown, and conflicting colors release the field.
+    """
+    rows = result.get("signals") if isinstance(result, dict) else None
+    if not isinstance(rows, list):
+        return TrafficCode.OFF, "MULTI_SIGNAL_NO_VALID_SIGNAL"
+
+    valid_rows = [row for row in rows if isinstance(row, dict) and row.get("valid") is True]
+    colors = {
+        str(row.get("color", "UNKNOWN")).upper()
+        for row in valid_rows
+    }
+    confirmed = colors & {"RED", "YELLOW", "GREEN"}
+    if not valid_rows:
+        return TrafficCode.OFF, "MULTI_SIGNAL_NO_VALID_SIGNAL"
+    if "RED" in confirmed and "GREEN" in confirmed:
+        return TrafficCode.OFF, "MULTI_SIGNAL_CONFLICTING_CONFIRMED_SIGNAL_COLORS"
+    if "YELLOW" in confirmed and len(confirmed) > 1:
+        return TrafficCode.OFF, "MULTI_SIGNAL_CONFLICTING_CONFIRMED_SIGNAL_COLORS"
+    if "YELLOW" in confirmed:
+        return TrafficCode.OFF, "MULTI_SIGNAL_YELLOW_UNSUPPORTED_BY_HUD_PROTOCOL"
+    if "RED" in confirmed:
+        return TrafficCode.RED, "MULTI_SIGNAL_RED"
+    if "GREEN" in confirmed:
+        return TrafficCode.GREEN, "MULTI_SIGNAL_GREEN"
+    return TrafficCode.OFF, "MULTI_SIGNAL_COLOR_UNCONFIRMED"
 
 
 def _deduplicate_signals(candidates):
