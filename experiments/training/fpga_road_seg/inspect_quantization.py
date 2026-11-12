@@ -77,6 +77,15 @@ def inspect(output, manifest):
     ax.set_xticks(indices,labels);ax.set_ylabel('Internal validation (%)');ax.set_ylim(0,75)
     ax.legend(fontsize=8);ax.grid(axis='y',alpha=.2);fig.tight_layout()
     fig.savefig(out/'quantization_comparison.png',dpi=150);plt.close(fig)
+    history_file=out/'exports/qat-history.json'
+    if history_file.exists():
+        history=read_json(history_file);fig,axes=plt.subplots(1,2,figsize=(11,4))
+        epochs=[e['epoch'] for e in history]
+        axes[0].plot(epochs,[e['loss'] for e in history],marker='o',label='QAT supervised + masked FP32 regularizer')
+        for source,cls,metric in keys:
+            axes[1].plot(epochs,[e['domains'][source]['classes'][cls][metric] for e in history],marker='o',label=source+' '+cls+' '+metric)
+        for ax in axes:ax.set_xlabel('QAT epoch');ax.grid(alpha=.2);ax.legend(fontsize=7)
+        fig.tight_layout();fig.savefig(out/'qat_training_curves.png',dpi=150);plt.close(fig)
     return timing
 
 

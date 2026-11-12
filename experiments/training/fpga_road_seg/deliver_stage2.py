@@ -180,13 +180,17 @@ def main():
     if not best.exists():
         (out/'README_RESULT.md').write_text('# 第二阶段未通过内部验证选择\n\n没有 checkpoint 同时改善混合分数且通过 BDD 三项退化保护。保留第一阶段模型。真实历史见 checkpoints/candidate-plus/report.json；不得将最后权重冒充有效最终模型。下一步需分析类别冲突并尝试轻量蒸馏。\n',encoding='utf-8')
         raise RuntimeError('No eligible improved checkpoint; FP32/INT8 acceptance not reached')
-    before,old=load_checkpoint(a.baseline,'cuda');after,ck=load_checkpoint(best,'cuda')
-    before.eval();after.eval();domains=domain_datasets(a.manifest)
+    if a.report_only:
+        before=None;after,ck=load_checkpoint(best,'cpu');after.eval();domains=None
+    else:
+        before,old=load_checkpoint(a.baseline,'cuda');after,ck=load_checkpoint(best,'cuda')
+        before.eval();after.eval();domains=domain_datasets(a.manifest)
     evaluation=out/'evaluation.json'
     if evaluation.exists():
         measured=read_json(evaluation)
         if measured['checkpoint_sha256']!=file_hash(best):raise ValueError('stale evaluation')
     else:
+        if a.report_only:raise ValueError('report-only requires existing real domain evaluation')
         measured=dict(checkpoint_sha256=file_hash(best),baseline_sha256=file_hash(a.baseline),manifest_sha256=file_hash(a.manifest),
                       before=measured_eval(before,domains),after=measured_eval(after,domains))
         write_json(evaluation,measured)
@@ -206,6 +210,8 @@ def main():
         curves(out,history);visuals(out,domains,before,after);video=real_video(out,before,after)
     print('completed real-road image and video artifacts',flush=True)
     quant=quantize(load_checkpoint(best)[0],best,a.manifest,out/'exports',ck['config'],force_qat=a.force_qat)
+    quantization_contract=read_json(out/'exports/quantization.json')
+    floating_bias=sum(layer.get('bias_storage')=='float32' for layer in quantization_contract['layers'])
     from .inspect_quantization import inspect as inspect_quantized_predictions
     quant_timing=inspect_quantized_predictions(out,a.manifest)
     if quant['failures']:
@@ -255,6 +261,7 @@ PTQ 未通过内部逐项 2 点保护时，自动尝试最多 3 轮真实混合�
 若本轮从之前已评估 PTQ 的结果继续，先前的留出集结果已经看过，后续同集合复评不能称为新的盲测；量化参数/候选选择仍只使用训练校准和内部验证。
 表中关键 IoU/F1/Recall 最大量化下降 {drop*100:.2f} 个百分点；2 点软件门槛：{'通过' if accepted else '未通过，仍需逐层误差定位或进一步 QAT，不能宣布 INT8 可用'}。
 ONNX 只有 Conv W8A8，Add / Resize / I/O 仍浮点，不能直接烧录 PG2L200H。
+当前导出有 {floating_bias} 层 Conv 使用浮点 bias，须按 input_scale×weight_scale 转为 INT32 并逐层验证；quantization.json 不会把参考图 bias 存储误写成板端格式。
 如选用 unsigned asymmetric 激活，RTL 需明确支持零点修正。QDQ 文件不是队友硬件权重格式。
 
 ## 真实道路检查与性能
@@ -287,6 +294,7 @@ best checkpoint SHA-256：`{checkpoint_sha}`。训练/优化器/AMP/随机状态
 - 量化器 {quant['selected']}，关键指标最大降 {drop*100:.2f} 点；{'软件量化门槛通过' if accepted else '软件量化门槛未通过，需继续 QAT/误差定位'}。
 - 待确认：depthwise groups、各通道倍数、padding/stride、Add 跨支路 scale 对齐、nearest 坐标、INT32 累加溢出、舍入/饱和、非零 zero_point 修正、片上缓存/DDR/带宽、权重打包与 PCIe 协议。
 - 当前 Conv QDQ 外仍有浮点，必须确认完整整数图适配；没有板端资源、频率、FPS、功耗、准确率实测。
+- {floating_bias} 层浮点 bias 仍需转换。quantization.json 中建议 INT32 bias / multiplier/shift 是待 RTL 对齐的合同，不是实测硬件权重格式。
 - crosswalk 定义为过街区域（含条纹间隙），不能解释为单条白纹；数据许可状态见结果报告。
 - 不涉及 FAST-Q4、PCIe、HUD、Tesla BEV、队友 FPGA 工程或队友模型权重修改。
 '''
@@ -297,6 +305,8 @@ best checkpoint SHA-256：`{checkpoint_sha}`。训练/优化器/AMP/随机状态
         shutil.copyfile(out/name,publish/name)
     write_json(publish/'data-audit.json',audit)
     write_json(publish/'refinement.json',refinement)
+    if (out/'qat_training_curves.png').exists():
+        shutil.copyfile(out/'qat_training_curves.png',publish/'qat_training_curves.png')
     write_json(publish/'quantization_summary.json',dict(selected=quant['selected'],variants=quant['variants'],comparison=quant['comparison'],torch_onnx_max_logit_error=quant['torch_onnx_max_logit_error'],quantization_accepted=accepted))
     from .verify_delivery import verify
     verify(out)
