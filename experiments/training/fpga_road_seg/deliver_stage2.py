@@ -172,6 +172,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output',required=True);p.add_argument('--manifest',required=True);p.add_argument('--baseline',required=True)
     p.add_argument('--force-qat',action='store_true',help='bounded QAT in a new output; preserve previous PTQ result')
+    p.add_argument('--report-only',action='store_true',help='reuse verified evaluation/visuals/export; refresh reports without retraining')
     a=p.parse_args();out=Path(a.output);torch.set_num_threads(4)
     from .refine_stage2 import maybe_refine
     refinement=maybe_refine(out,a.manifest)
@@ -190,16 +191,23 @@ def main():
                       before=measured_eval(before,domains),after=measured_eval(after,domains))
         write_json(evaluation,measured)
     print('completed before/after real domain evaluation',flush=True)
-    timing=latency(after);write_json(out/'latency.json',timing)
+    timing=read_json(out/'latency.json') if a.report_only else latency(after)
+    write_json(out/'latency.json',timing)
     profile=profile_model(load_checkpoint(best)[0],(1,3,192,320));write_json(out/'profile.json',profile)
     history=read_json(out/'checkpoints/candidate-plus/report.json')['history']
     mixed_epochs=len(history)
     if refinement.get('triggered') and (out/'checkpoints/candidate-plus-distillation/report.json').exists():
         extra=read_json(out/'checkpoints/candidate-plus-distillation/report.json')['history']
         history=history+[dict(e,epoch=mixed_epochs+e['epoch']) for e in extra]
-    curves(out,history);visuals(out,domains,before,after);video=real_video(out,before,after)
+    if a.report_only:
+        curves(out,history)
+        video=read_json(out/'comparisons/video.json') if (out/'comparisons/video.json').exists() else None
+    else:
+        curves(out,history);visuals(out,domains,before,after);video=real_video(out,before,after)
     print('completed real-road image and video artifacts',flush=True)
     quant=quantize(load_checkpoint(best)[0],best,a.manifest,out/'exports',ck['config'],force_qat=a.force_qat)
+    from .inspect_quantization import inspect as inspect_quantized_predictions
+    quant_timing=inspect_quantized_predictions(out,a.manifest)
     if quant['failures']:
         write_json(out/'failures/quantization.json',quant['failures'])
     reports=dict(before_fp32=measured['before'],after_fp32=measured['after'],after_onnx_fp32=quant['comparison']['fp32'],after_int8=quant['comparison']['int8'])
@@ -254,6 +262,9 @@ ONNX 只有 Conv W8A8，Add / Resize / I/O 仍浮点，不能直接烧录 PG2L20
 comparisons/ 包含真实道路 GT、微调前后对照、原始连续视频预测；failures/ 按真实 RLMD crosswalk IoU 排序并记录 FP/FN。
 本地原始视频{'已生成连续预测，详情见 comparisons/video.json' if video else '不可用，原因见 failures/video.json'}，没有逐像素视频真值，不报告视频精度。
 RTX 4060 FP32 batch1 前向 p50/p95：{timing['p50_ms']:.3f}/{timing['p95_ms']:.3f} ms；不含预处理/传输/绘图，不是 FPGA 延迟。
+CPU ONNX Runtime（4 线程，真实道路输入、20 次预热/100 次测量）前向 p50：FP32 {quant_timing['fp32']['p50_ms']:.3f} ms，
+INT8 {quant_timing['int8']['p50_ms']:.3f} ms。这是该 CPU/运行时的实测，不能推断 INT8 必然更快或推断 FPGA 吞吐；
+comparisons/quantization/ 提供 FP32/INT8/GT 和阈值分歧图，quantization_comparison.png 为内部验证候选对照。
 
 ## 交接与限制
 
@@ -281,7 +292,8 @@ best checkpoint SHA-256：`{checkpoint_sha}`。训练/优化器/AMP/随机状态
 '''
     (out/'FPGA_HANDOFF.md').write_text(handoff,encoding='utf-8')
     publish=ROOT/'experiments/training/fpga_road_seg/reports/stage2_results';publish.mkdir(parents=True,exist_ok=True)
-    for name in ('README_RESULT.md','metrics.csv','metrics.json','training_curves.png','FPGA_HANDOFF.md','latency.json'):
+    for name in ('README_RESULT.md','metrics.csv','metrics.json','training_curves.png','FPGA_HANDOFF.md','latency.json',
+                 'quantization_comparison.png','quantization_inspection.json'):
         shutil.copyfile(out/name,publish/name)
     write_json(publish/'data-audit.json',audit)
     write_json(publish/'refinement.json',refinement)
