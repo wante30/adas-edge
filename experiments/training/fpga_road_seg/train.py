@@ -1,5 +1,7 @@
 """Train real manifests, or explicitly labelled synthetic smoke fixtures."""
 import argparse
+import copy
+from collections import Counter
 import os
 import random
 import time
@@ -8,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from PIL import Image
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler, Subset
 
 from . import CLASSES
 from .dataset_adapter import RoadDataset, read_json, write_json, file_hash, drivable_color_ids
@@ -27,6 +29,29 @@ def load_checkpoint(path, device='cpu'):
     return model, checkpoint
 
 
+class AugmentedRoadDataset(RoadDataset):
+    """Image-only photometric changes and shared horizontal geometry."""
+    def __getitem__(self, i):
+        x, y, v = super().__getitem__(i)
+        if random.random() < .5:
+            x, y, v = x.flip(-1), y.flip(-1), v.flip(-1)
+        gain, bias = random.uniform(.85, 1.15), random.uniform(-.04, .04)
+        return (x * gain + bias).clamp(0, 1), y, v
+
+
+def selection_score(domains, baseline, tolerance):
+    """Select only improvements which respect each original BDD task."""
+    b = domains['bdd100k']['classes']
+    keys = [('drivable_area', 'iou'), ('solid_lane', 'f1'), ('dashed_lane', 'f1')]
+    values = [b[c][m] for c, m in keys]
+    old = baseline['bdd100k']['classes']
+    eligible = all(value is not None and value >= old[c][m] - tolerance
+                   for value, (c, m) in zip(values, keys))
+    crosswalk = domains['rlmd']['classes']['crosswalk']['iou']
+    score = .4 * (crosswalk or 0) + .2 * sum(v or 0 for v in values)
+    return score, eligible
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--manifest', required=True)
@@ -36,6 +61,7 @@ def main():
     p.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
     p.add_argument('--synthetic-smoke', action='store_true', help='Label results as synthetic; never a real-data metric')
     p.add_argument('--resume', help='resume from a training checkpoint')
+    p.add_argument('--init', help='transfer model weights only; fresh optimizer and manifest, distinct from resume')
     p.add_argument('--workers', type=int, default=4)
     p.add_argument('--amp', action='store_true', help='use CUDA mixed precision')
     p.add_argument('--train-limit', type=int, default=0, help='deterministic stage-one subset; zero uses all train samples')
@@ -44,6 +70,8 @@ def main():
     p.add_argument('--exclude-channel', action='append', choices=CLASSES, default=[],
                    help='disable a task loss when labels are weak or unavailable; repeat as needed')
     args = p.parse_args()
+    if args.init and args.resume:
+        p.error('--init and --resume are mutually exclusive')
     cfg = read_json(args.config)
     if args.epochs is not None:
         cfg['epochs'] = args.epochs
@@ -59,7 +87,8 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     size = cfg['width'], cfg['height']
     baseline = cfg['model'] in ('twin-small', 'twin-nano')
-    train = RoadDataset(args.manifest, 'train', size, baseline, args.exclude_channel)
+    train_class = AugmentedRoadDataset if cfg.get('augment') else RoadDataset
+    train = train_class(args.manifest, 'train', size, baseline, args.exclude_channel)
     val = RoadDataset(args.manifest, 'val', size, baseline, args.exclude_channel)
     if args.train_limit:
         if args.train_limit < 1:
@@ -84,7 +113,7 @@ def main():
         if not baseline and 'valid_pixels' in row and 'positive_pixels' in row:
             available = np.array(row['valid_pixels'], dtype=np.int64)
             positive = np.array(row['positive_pixels'], dtype=np.int64)
-            for channel in args.exclude_channel:
+            for channel in set(args.exclude_channel) | set(row.get('disabled_channels', ())):
                 available[CLASSES.index(channel)] = 0
                 positive[CLASSES.index(channel)] = 0
             coverage += available
@@ -98,7 +127,7 @@ def main():
                 else:
                     y, v = masks['target'], masks['valid']
                 output_names = names_for(cfg['model'])
-                for channel in args.exclude_channel:
+                for channel in set(args.exclude_channel) | set(row.get('disabled_channels', ())):
                     if channel in output_names:
                         v[output_names.index(channel)] = 0
                 coverage += v.sum((1,2)).astype(np.int64)
@@ -114,13 +143,36 @@ def main():
                        pin_memory=args.device.startswith('cuda'))
     if args.workers > 0:
         loader_args.update(persistent_workers=True, prefetch_factor=2)
-    loader = DataLoader(train, shuffle=True, **loader_args)
-    vloader = DataLoader(val, shuffle=False, **loader_args)
+    sampler = None
+    if cfg.get('source_probabilities'):
+        counts = Counter(r['source'] for r in train.rows)
+        probabilities = cfg['source_probabilities']
+        if counts.keys() != probabilities.keys() or abs(sum(probabilities.values()) - 1) > 1e-6:
+            p.error('source probabilities must cover each training source and sum to one')
+        sampler = WeightedRandomSampler([probabilities[r['source']] / counts[r['source']] for r in train.rows],
+                                       cfg.get('epoch_samples', len(train)), replacement=True)
+    loader = DataLoader(train, shuffle=sampler is None, sampler=sampler, **loader_args)
+    domain_loaders = {}
+    if cfg.get('domain_validation'):
+        for source in sorted({r['source'] for r in val.rows}):
+            subset = Subset(val, [i for i, row in enumerate(val.rows) if row['source'] == source])
+            domain_loaders[source] = DataLoader(subset, shuffle=False, **{**loader_args, 'num_workers': min(2, args.workers)})
+        vloader = None
+    else:
+        vloader = DataLoader(val, shuffle=False, **loader_args)
     model = build_model(cfg['model']).to(args.device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg['lr'], weight_decay=1e-4)
     amp_enabled = bool(args.amp and args.device.startswith('cuda'))
     scaler = torch.amp.GradScaler('cuda', enabled=amp_enabled)
     history, best, start_epoch = [], float('inf'), 0
+    baseline_domains, best_score, stale = None, -float('inf'), 0
+    initialization = None
+    if args.init:
+        initial = torch.load(args.init, map_location=args.device, weights_only=False)
+        if initial['config']['model'] != cfg['model']:
+            p.error('initial checkpoint model mismatch')
+        model.load_state_dict(initial['state_dict'], strict=True)
+        initialization = dict(path=str(Path(args.init).resolve()), sha256=file_hash(args.init), epoch=initial['epoch'])
     if args.resume:
         checkpoint = torch.load(args.resume, map_location=args.device, weights_only=False)
         if checkpoint.get('manifest_sha256') != file_hash(args.manifest) or checkpoint.get('config', {}).get('model') != cfg['model']:
@@ -135,6 +187,21 @@ def main():
         if checkpoint.get('val_samples') != len(val) or checkpoint.get('excluded_channels', []) != args.exclude_channel:
             best = float('inf')
         start_epoch = checkpoint['epoch']
+        baseline_domains = checkpoint.get('baseline_domains')
+        best_score, stale = checkpoint.get('best_score', best_score), checkpoint.get('stale_epochs', 0)
+        initialization = checkpoint.get('initialization')
+        if checkpoint.get('random_state'):
+            random.setstate(checkpoint['random_state'])
+            np.random.set_state(checkpoint['numpy_state'])
+            torch.set_rng_state(checkpoint['torch_rng'].cpu())
+            if checkpoint.get('cuda_rng') is not None and args.device.startswith('cuda'):
+                torch.cuda.set_rng_state_all(checkpoint['cuda_rng'])
+    if domain_loaders and baseline_domains is None:
+        baseline_domains = {source: evaluate(model, dl, args.device, names_for(cfg['model']), cfg.get('threshold', .5))
+                            for source, dl in domain_loaders.items()}
+        best_score, _ = selection_score(baseline_domains, baseline_domains, cfg.get('bdd_regression_tolerance', .025))
+        write_json(out/'before_finetune.json', dict(initialization=initialization, domains=baseline_domains))
+        print(f'initial_domains={baseline_domains}', flush=True)
     if args.device.startswith('cuda'):
         torch.cuda.reset_peak_memory_stats()
     start = time.perf_counter()
@@ -157,23 +224,44 @@ def main():
         if args.device.startswith('cuda'):
             torch.cuda.synchronize()
         seconds = time.perf_counter()-t0
-        report = evaluate(model,vloader,args.device,names_for(cfg['model']),cfg.get('threshold',.5))
+        domains = {source: evaluate(model, dl, args.device, names_for(cfg['model']), cfg.get('threshold', .5))
+                   for source, dl in domain_loaders.items()}
+        report = (dict(loss=sum(d['loss'] for d in domains.values())/len(domains),
+                       samples=sum(d['samples'] for d in domains.values()), domains=domains)
+                  if domains else evaluate(model,vloader,args.device,names_for(cfg['model']),cfg.get('threshold',.5)))
         entry = dict(epoch=epoch+1,train_loss=loss_sum/n,train_seconds=seconds,train_images_per_second=n/seconds,
                      train_samples=n, val_samples=len(val), validation=report)
         history.append(entry)
         improved = report['loss'] < best
+        if domains:
+            score, eligible = selection_score(domains, baseline_domains, cfg.get('bdd_regression_tolerance', .025))
+            improved = eligible and score > best_score + cfg.get('min_delta', .001)
+            if improved:
+                best_score = score
+            stale = 0 if improved else stale + 1
+            entry.update(selection_score=score, bdd_guard_passed=eligible, learning_rate=optimizer.param_groups[0]['lr'])
+            # Lower LR on a plateau; no architectural change during this run.
+            if stale and stale % 2 == 0:
+                for group in optimizer.param_groups:
+                    group['lr'] = max(cfg['lr'] * .0625, group['lr'] * .5)
         best = min(best, report['loss'])
         checkpoint = dict(state_dict=model.state_dict(),config=cfg,epoch=epoch+1,
                           evidence='synthetic_smoke' if args.synthetic_smoke else 'real_manifest',
                           manifest_sha256=file_hash(args.manifest),optimizer_state=optimizer.state_dict(),
                           scaler_state=scaler.state_dict(),history=history,best_validation_loss=best,
-                          amp=amp_enabled, excluded_channels=args.exclude_channel, val_samples=len(val), train_samples=len(train))
+                          amp=amp_enabled, excluded_channels=args.exclude_channel, val_samples=len(val), train_samples=len(train),
+                          initialization=initialization, baseline_domains=baseline_domains,
+                          best_score=best_score if domains else None, stale_epochs=stale,
+                          random_state=random.getstate(), numpy_state=np.random.get_state(), torch_rng=torch.get_rng_state(),
+                          cuda_rng=torch.cuda.get_rng_state_all() if args.device.startswith('cuda') else None)
         torch.save(checkpoint,out/'last.tmp.pt'); os.replace(out/'last.tmp.pt',out/'last.pt')
         if (epoch+1) % 5 == 0:
             torch.save(checkpoint,out/f'epoch-{epoch+1:03d}.pt')
         if improved:
             torch.save(checkpoint,out/'best.tmp.pt'); os.replace(out/'best.tmp.pt',out/'best.pt')
         print(f"epoch={epoch+1} train={loss_sum/n:.5f} val={report['loss']:.5f} train_img_s={n/seconds:.2f}",flush=True)
+        if domains:
+            print(f'domains={domains} score={score:.6f} bdd_guard={eligible} stale={stale}', flush=True)
         write_json(out/'report.tmp.json',dict(config=cfg,evidence=checkpoint['evidence'],device=args.device,
             torch_version=torch.__version__,gpu=torch.cuda.get_device_name() if args.device.startswith('cuda') else None,
             amp=amp_enabled,workers=args.workers,stage_train_limit=args.train_limit or None,
@@ -183,6 +271,12 @@ def main():
             valid_train_pixels=coverage.tolist(),positive_train_pixels=positives.tolist(),
             total_seconds=time.perf_counter()-start,history=history))
         os.replace(out/'report.tmp.json',out/'report.json')
+        if domains and epoch + 1 >= cfg.get('min_epochs', 10) and stale >= cfg.get('patience', 4):
+            print(f'early_stop epoch={epoch+1} stale={stale}', flush=True)
+            break
+    if domains and not (out/'best.pt').exists():
+        write_json(out/'no_eligible_checkpoint.json', dict(reason='No mixed checkpoint improved constrained internal validation; retain stage-one model',
+                                                        initialization=initialization))
 
 
 if __name__ == '__main__':

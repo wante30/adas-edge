@@ -372,6 +372,7 @@ class RoadDataset(Dataset):
 
     def __getitem__(self, i):
         row = self.rows[i]
+        disabled = self.disabled_channels | set(row.get('disabled_channels', ()))
         cache_path = None
         if getattr(self, 'cache', None) and row.get('masks'):
             identity = [(str(Path(row[k]).resolve()), Path(row[k]).stat().st_size,
@@ -384,7 +385,7 @@ class RoadDataset(Dataset):
                     masks = np.unpackbits(m['bits'], axis=-1, count=self.size[0], bitorder='little')
                 y, v = (masks[[0, 8]], masks[[4, 9]]) if self.baseline else (masks[:4], masks[4:8])
                 names = ('drivable_area', 'lane') if self.baseline else CLASSES
-                for channel in self.disabled_channels:
+                for channel in disabled:
                     if channel in names:
                         v[names.index(channel)] = 0
                 return x, torch.from_numpy(y.astype(np.float32)), torch.from_numpy(v.astype(np.float32))
@@ -412,7 +413,7 @@ class RoadDataset(Dataset):
         if not row.get('masks'):
             self.validate_masks(image, y, v)
         output_names = ('drivable_area', 'lane') if self.baseline else CLASSES
-        for channel in self.disabled_channels:
+        for channel in disabled:
             if channel in output_names:
                 v[output_names.index(channel)] = 0
         x, y, v, _ = letterbox(image, y, v, self.size)
