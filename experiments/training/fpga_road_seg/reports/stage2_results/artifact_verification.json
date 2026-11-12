@@ -1,0 +1,90 @@
+{
+  "status": "verified",
+  "metric_rows": 32,
+  "checkpoint_sha256": "f12fac988aa29d7ba68d94af2bd0261a6eacf35b111b4c58141119d40bef6498",
+  "selected_quantizer": "qat",
+  "onnx_shapes": "fixed [1,3,192,320] -> [1,4,192,320]",
+  "video_decoded_frames": [
+    0,
+    196,
+    391
+  ],
+  "missing_tasks": "RLMD drivable and BDD crosswalk have zero valid pixels and null scores",
+  "artifacts": [
+    {
+      "path": "README_RESULT.md",
+      "bytes": 4691,
+      "sha256": "afd238a561fe572547092064bf62969144f6621296c0031606087612ea8953bf"
+    },
+    {
+      "path": "metrics.csv",
+      "bytes": 7574,
+      "sha256": "11f47b42c6c1155932ddcedd80f36190043166073c8c21823c8e5f8275676dad"
+    },
+    {
+      "path": "training_curves.png",
+      "bytes": 156365,
+      "sha256": "5e71b349e529b46d4de58629609e009b702ab26c13ffcedbba7552261662420f"
+    },
+    {
+      "path": "FPGA_HANDOFF.md",
+      "bytes": 1402,
+      "sha256": "a809d99a1939cd089758db2a6a63fe87052bf6d3abbbd7cf47ea02d8961b2a3d"
+    },
+    {
+      "path": "evaluation.json",
+      "bytes": 6620,
+      "sha256": "cbe0f8b0650ccb153f664628117f978e18e43c585f8d96a73d11e6cd0a9523b3"
+    },
+    {
+      "path": "exports/search.json",
+      "bytes": 45973,
+      "sha256": "0e59d214ecdb0935a1cf3a01b0684c9bea5a700a4196b44facd3ea3a0ca92f53"
+    },
+    {
+      "path": "exports/comparison.json",
+      "bytes": 6086,
+      "sha256": "60eb2f62551e3028e2c5b39b673e447a87757e1384dcbada632766f84a90257a"
+    },
+    {
+      "path": "exports/model.fp32.onnx",
+      "bytes": 135239,
+      "sha256": "4f3999e6f450cac7ac6d7d1c8c9569cc4d1855eebe865f2d9cee219d8ee3923b"
+    },
+    {
+      "path": "exports/model.int8.qdq.onnx",
+      "bytes": 56219,
+      "sha256": "c7a21a9a3f1621ac5cbcbbb9030587251a340cb435413b3c086ff1c1a6d137a6"
+    },
+    {
+      "path": "exports/quantization.json",
+      "bytes": 53648,
+      "sha256": "f9145ed721e796d8dbb1499f55815483dd40c07414c8239619f35a45d9950497"
+    },
+    {
+      "path": "checkpoints/candidate-plus/best.pt",
+      "bytes": 486455,
+      "sha256": "f12fac988aa29d7ba68d94af2bd0261a6eacf35b111b4c58141119d40bef6498"
+    },
+    {
+      "path": "comparisons/video.json",
+      "bytes": 367,
+      "sha256": "08d8396c0ca5ec3e28d01dbd316c5d5b4d717eb71c177b3f7b08e953cdd5f9dd"
+    },
+    {
+      "path": "comparisons/real_video_before_after.mp4",
+      "bytes": 42367810,
+      "sha256": "82f4c188a24441276c58daedc7d973ac9e417dc5c7d8725d165496c8125e5174"
+    },
+    {
+      "path": "failures/crosswalk_errors.json",
+      "bytes": 56650,
+      "sha256": "7da17b0e17e2b5162db8f4073cf675f207b38292b964acc7913a0d039ad23447"
+    },
+    {
+      "path": "run.log",
+      "bytes": 6881,
+      "sha256": "69facae2e5cb216caa3bd0a5c40e6f2421a01cd3e46a716d6389886196c42de7"
+    }
+  ]
+}

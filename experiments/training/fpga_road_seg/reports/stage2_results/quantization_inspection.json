@@ -1,0 +1,94 @@
+{
+  "selected": "qat",
+  "gallery": [
+    {
+      "id": "b473c236-79848d60",
+      "source": "bdd100k",
+      "split": "test",
+      "threshold_disagreement_pixels_native_per_channel": [
+        20242,
+        231,
+        16,
+        1865
+      ]
+    },
+    {
+      "id": "b23c9e00-5506ddfb",
+      "source": "bdd100k",
+      "split": "test",
+      "threshold_disagreement_pixels_native_per_channel": [
+        12799,
+        2124,
+        420,
+        167
+      ]
+    },
+    {
+      "id": "b857eb06-3c8b7034",
+      "source": "bdd100k",
+      "split": "test",
+      "threshold_disagreement_pixels_native_per_channel": [
+        5229,
+        369,
+        3853,
+        231
+      ]
+    },
+    {
+      "id": "rlmd-14620",
+      "source": "rlmd",
+      "split": "val",
+      "threshold_disagreement_pixels_native_per_channel": [
+        14719,
+        359,
+        0,
+        95
+      ]
+    },
+    {
+      "id": "rlmd-14930",
+      "source": "rlmd",
+      "split": "val",
+      "threshold_disagreement_pixels_native_per_channel": [
+        39937,
+        1572,
+        942,
+        1019
+      ]
+    },
+    {
+      "id": "rlmd-14050",
+      "source": "rlmd",
+      "split": "val",
+      "threshold_disagreement_pixels_native_per_channel": [
+        29095,
+        511,
+        1394,
+        801
+      ]
+    },
+    {
+      "id": "rlmd-16705",
+      "source": "rlmd",
+      "split": "val",
+      "threshold_disagreement_pixels_native_per_channel": [
+        28261,
+        487,
+        1314,
+        973
+      ]
+    }
+  ],
+  "cpu_ort_latency": {
+    "fp32": {
+      "p50_ms": 1.20009999955073,
+      "p95_ms": 1.4614650026487652
+    },
+    "int8": {
+      "p50_ms": 7.3651000020618085,
+      "p95_ms": 7.933254999443307
+    }
+  },
+  "latency_scope": "ONNX Runtime CPUExecutionProvider, 4 intra-op threads, batch1, 20 warmups/100 runs, preprocessed real road input; excludes I/O/preprocessing; not GPU/FPGA speed",
+  "full_comparison_maximum_key_metric_drop": 0.00737495372641761
+}
