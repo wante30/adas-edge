@@ -107,15 +107,30 @@ def quantization_metadata(path):
         activation=describe(node.input[0]); weight=describe(node.input[1])
         bias=describe(node.input[2]) if len(node.input)>2 else None
         outputs=[n for n in consumers.get(node.output[0],[]) if n.op_type=='QuantizeLinear']
+        fused_activation=None
+        if not outputs:
+            relus=[n for n in consumers.get(node.output[0],[]) if n.op_type=='Relu']
+            if len(relus)==1:
+                outputs=[n for n in consumers.get(relus[0].output[0],[]) if n.op_type=='QuantizeLinear']
+                if outputs:fused_activation='Relu'
         output=None
         if outputs:
             q=outputs[0]
             output=dict(scale=init[q.input[1]].tolist(),zero_point=init[q.input[2]].tolist(),storage_dtype=str(init[q.input[2]].dtype))
         rec=dict(name=node.name,activation=activation,weight=weight,bias=bias,output=output)
+        if fused_activation:rec['output_quantization_after']=fused_activation
         if len(node.input)>2 and bias is None:
             raw_bias=init.get(node.input[2])
             rec['bias_storage']=str(raw_bias.dtype) if raw_bias is not None else 'unresolved'
             rec['bias_contract']='FP32 bias in reference graph; conversion to int32 input_scale*weight_scale remains a hardware adaptation'
+            if raw_bias is not None and activation and weight:
+                scale=np.asarray(activation['scale'])*np.asarray(weight['scale'])
+                integer=np.rint(raw_bias/scale)
+                limits=np.iinfo(np.int32)
+                in_range=bool(np.all((integer>=limits.min)&(integer<=limits.max)))
+                rec['suggested_int32_bias']=dict(scale=scale.tolist(),zero_point=0,in_int32_range=in_range,
+                    values=integer.astype(np.int64).tolist(),
+                    note='Suggested nearest-rounded conversion only; ONNX graph still uses FP32 bias, must verify bit accuracy on hardware')
         if activation and weight and output:
             s=np.asarray(activation['scale'])*np.asarray(weight['scale'])/np.asarray(output['scale'])
             rec['requantization']=dict(real_multiplier=s.tolist(),**multiplier_shift(s))
