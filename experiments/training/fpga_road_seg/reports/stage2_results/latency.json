@@ -1,0 +1,16 @@
+{
+  "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "batch": 1,
+  "input": [
+    1,
+    3,
+    192,
+    320
+  ],
+  "precision": "FP32",
+  "warmup": 30,
+  "runs": 200,
+  "p50_ms": 1.4653599858283997,
+  "p95_ms": 2.6722272753715512,
+  "scope": "GPU model forward only, excludes preprocessing/H2D/display; not FPGA latency"
+}
