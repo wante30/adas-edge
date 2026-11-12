@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import onnx
 import pytest
-from experiments.training.fpga_road_seg.export import export, multiplier_shift, session
+from experiments.training.fpga_road_seg.export import export, multiplier_shift, session, quantization_metadata
 from experiments.training.fpga_road_seg.models import build_model
 from experiments.training.fpga_road_seg.smoke_data import generate
 from experiments.training.fpga_road_seg.dataset_adapter import read_json
@@ -37,6 +37,14 @@ def test_fp32_int8_execute_with_train_only_calibration_and_bias_contract(tmp_pat
         onnx.checker.check_model(onnx.load(out/name))
         logits=session(out/name).run(None,{'rgb':np.zeros((1,3,192,320),np.float32)})[0]
         assert logits.shape==(1,4,192,320) and np.isfinite(logits).all()
+    # Real QAT export aliases shared zero-points. Metadata must resolve the
+    # alias without changing the measured graph or assuming direct initializers.
+    graph=onnx.load(out/'model.int8.qdq.onnx')
+    node=next(n for n in graph.graph.node if n.op_type=='DequantizeLinear')
+    original=node.input[2];alias='shared_zero_point_alias';node.input[2]=alias
+    graph.graph.node.insert(0,onnx.helper.make_node('Identity',[original],[alias]))
+    aliased=out/'aliased.int8.qdq.onnx';onnx.save(graph,aliased)
+    assert quantization_metadata(aliased)==quantization_metadata(out/'model.int8.qdq.onnx')
 
 
 def test_integer_multiplier_shift_reconstructs_fraction_and_gain():

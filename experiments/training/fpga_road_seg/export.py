@@ -72,6 +72,18 @@ def multiplier_shift(value):
 
 def quantization_metadata(path):
     model=onnx.load(str(path)); init={i.name:numpy_helper.to_array(i) for i in model.graph.initializer}
+    # QAT exporter aliases shared scalar constants through Identity nodes.
+    pending=list(model.graph.node)
+    for _ in range(len(pending)):
+        changed=False
+        for node in pending:
+            if node.output[0] in init:continue
+            if node.op_type=='Identity' and node.input[0] in init:
+                init[node.output[0]]=init[node.input[0]];changed=True
+            elif node.op_type=='Constant':
+                tensor=next((a.t for a in node.attribute if a.name=='value'),None)
+                if tensor is not None:init[node.output[0]]=numpy_helper.to_array(tensor);changed=True
+        if not changed:break
     producers={o:n for n in model.graph.node for o in n.output}
     consumers={}
     for n in model.graph.node:
@@ -100,12 +112,17 @@ def quantization_metadata(path):
             q=outputs[0]
             output=dict(scale=init[q.input[1]].tolist(),zero_point=init[q.input[2]].tolist(),storage_dtype=str(init[q.input[2]].dtype))
         rec=dict(name=node.name,activation=activation,weight=weight,bias=bias,output=output)
+        if len(node.input)>2 and bias is None:
+            raw_bias=init.get(node.input[2])
+            rec['bias_storage']=str(raw_bias.dtype) if raw_bias is not None else 'unresolved'
+            rec['bias_contract']='FP32 bias in reference graph; conversion to int32 input_scale*weight_scale remains a hardware adaptation'
         if activation and weight and output:
             s=np.asarray(activation['scale'])*np.asarray(weight['scale'])/np.asarray(output['scale'])
             rec['requantization']=dict(real_multiplier=s.tolist(),**multiplier_shift(s))
-            rec['bias_contract']='int32 bias with scale=input_scale*weight_scale, zero_point=0; accumulator/rounding/saturation require RTL confirmation'
+            if bias:
+                rec['bias_contract']='int32 bias with scale=input_scale*weight_scale, zero_point=0; accumulator/rounding/saturation require RTL confirmation'
         records.append(rec)
-    return dict(format='ONNX QDQ static Conv PTQ',weight_bits=8,conv_activation_bits=8,
+    return dict(format='ONNX QDQ Conv quantization',weight_bits=8,conv_activation_bits=8,
                 residual_resize_io='float32 outside Conv QDQ boundaries; not a fully integer graph',
                 shift_contract='illustrative Q30 multiplier/right shift approximation; not validated on FPGA',layers=records)
 

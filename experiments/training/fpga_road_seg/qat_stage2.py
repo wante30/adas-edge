@@ -58,7 +58,13 @@ def run_qat(checkpoint, manifest, output, calibration, validation):
     from .quantize_stage2 import evaluate_onnx, domain_score
     from .export import session, inventory
     out=Path(output);report_file=out/'qat.json'
-    if report_file.exists():return read_json(report_file)
+    if report_file.exists():
+        prior=read_json(report_file)
+        if prior.get('export_revision')==2:return prior
+        import shutil
+        backup=out/'qat-export-v1';backup.mkdir(exist_ok=True)
+        for name in ('qat.json','qat.int8.qdq.onnx','qat.reference.torchscript.pt'):
+            if (out/name).exists() and not (backup/name).exists():shutil.copyfile(out/name,backup/name)
     random.seed(151);np.random.seed(151);torch.manual_seed(151)
     teacher,ck=load_checkpoint(checkpoint,'cuda');teacher.eval()
     qconfig=QConfig(
@@ -137,6 +143,18 @@ def run_qat(checkpoint, manifest, output, calibration, validation):
             tensor=copy.deepcopy(node.attribute[0].t);tensor.name=node.output[0]
             graph.graph.initializer.append(tensor);removed.append(node)
     for node in removed:graph.graph.node.remove(node)
+    # Resolve static Identity aliases before converting weight Q nodes. This
+    # also prevents shared zero-points from remaining unresolved in metadata.
+    known={i.name:i for i in graph.graph.initializer}
+    resolved=[]
+    for _ in range(len(graph.graph.node)):
+        changed=False
+        for node in graph.graph.node:
+            if node.op_type=='Identity' and node.input[0] in known and node.output[0] not in known:
+                tensor=copy.deepcopy(known[node.input[0]]);tensor.name=node.output[0]
+                graph.graph.initializer.append(tensor);known[tensor.name]=tensor;resolved.append(node);changed=True
+        if not changed:break
+    for node in resolved:graph.graph.node.remove(node)
     from onnx import numpy_helper
     initializers={i.name:i for i in graph.graph.initializer}
     quant_params={i for node in graph.graph.node if node.op_type in ('QuantizeLinear','DequantizeLinear')
@@ -161,6 +179,9 @@ def run_qat(checkpoint, manifest, output, calibration, validation):
         quantized=np.clip(np.rint(weight/scale)+zp,limits.min,limits.max).astype(zp.dtype)
         graph.graph.initializer.append(numpy_helper.from_array(quantized,node.output[0]));folded.append(node)
     for node in folded:graph.graph.node.remove(node)
+    used={i for node in graph.graph.node for i in node.input}|{v.name for v in graph.graph.output}
+    unused=[i for i in graph.graph.initializer if i.name not in used]
+    for tensor in unused:graph.graph.initializer.remove(tensor)
     onnx.checker.check_model(graph);onnx.save(graph,str(path))
     inv=inventory(path)
     if set(inv['operators'])-{'Conv','Relu','Add','Resize','Constant','Identity','Shape','Slice','Concat',
@@ -181,7 +202,7 @@ def run_qat(checkpoint, manifest, output, calibration, validation):
         raise RuntimeError(f'QAT ONNX/reference drift: max_logit={parity}, probability_MAE={np.mean(probability_error)}, mask_agreement={np.mean(agreements)}')
     torch.jit.trace(reference,example).save(str(out/'qat.reference.torchscript.pt'))
     domains=evaluate_onnx(path,validation)
-    result=dict(name='qat',domains=domains,score=domain_score(domains),sha256=file_hash(path),
+    result=dict(name='qat',domains=domains,score=domain_score(domains),sha256=file_hash(path),export_revision=2,
         activation='QUInt8',method='3 epochs real mixed QAT + FP32 logit regularizer; frozen BN/ranges',
         activation_symmetric=False,history=history,reference_onnx_max_logit_error=parity,
         reference_onnx_probability_mae=float(np.mean(probability_error)),reference_onnx_mask_agreement=float(np.mean(agreements)),

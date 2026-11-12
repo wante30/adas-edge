@@ -17,6 +17,7 @@ def main():
     parser.add_argument('--manifest', default=r'C:\Users\JingyuWang\datasets\rlmd_issue15\prepared_v1\mixed_manifest.jsonl')
     parser.add_argument('--postprocess-only', action='store_true',help='use existing FP32 checkpoints without training')
     parser.add_argument('--force-qat', action='store_true',help='request bounded QAT after real FP32 optimization')
+    parser.add_argument('--report-only', action='store_true',help='reuse existing evaluation and visuals when recovering delivery')
     args = parser.parse_args()
     out = Path(args.output).resolve(); out.mkdir(parents=True, exist_ok=True)
     # OS-held lock is released automatically after a crash; file can remain.
@@ -68,6 +69,8 @@ def main():
                     '--output', str(out), '--manifest', args.manifest, '--baseline', str(init)]
         if args.force_qat:
             command.append('--force-qat')
+        if args.report_only:
+            command.append('--report-only')
         code = run(command)
         if code:
             state('failed_delivery', exit_code=code, reason='training preserved; rerun controller to retry delivery only')
