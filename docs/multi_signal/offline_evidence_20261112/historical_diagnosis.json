@@ -1,0 +1,302 @@
+{
+  "112454": {
+    "scope": "HISTORICAL_CACHE_RESCORING_ONLY_NOT_NEW_DETECTOR_EVIDENCE",
+    "counts": {
+      "old_head_iou50": 5,
+      "manual_lamp_coverage50": 5,
+      "total": 6
+    },
+    "details": [
+      {
+        "frame": 30,
+        "accepted": [
+          {
+            "class_name": "traffic light",
+            "confidence": 0.6116264462471008,
+            "bbox": [
+              273.5980987548828,
+              72.66968727111816,
+              321.2055969238281,
+              93.00484657287598
+            ],
+            "source": "MAIN_ONNX_PC",
+            "raw_color": "UNKNOWN"
+          },
+          {
+            "class_name": "traffic light",
+            "confidence": 0.3436378836631775,
+            "bbox": [
+              170.6890869140625,
+              75.92487335205078,
+              214.53689575195312,
+              95.33353805541992
+            ],
+            "source": "MAIN_ONNX_PC",
+            "raw_color": "UNKNOWN"
+          },
+          {
+            "class_name": "traffic light",
+            "confidence": 0.38581299781799316,
+            "bbox": [
+              274.44480895996094,
+              74.18800354003906,
+              290.6771469116211,
+              92.72464752197266
+            ],
+            "source": "TRAFFIC_LIGHT_SPECIALIST_PC",
+            "raw_color": "UNKNOWN"
+          },
+          {
+            "class_name": "traffic light",
+            "confidence": 0.2652101516723633,
+            "bbox": [
+              522.4358749389648,
+              163.24371337890625,
+              532.6206588745117,
+              188.22372436523438
+            ],
+            "source": "TRAFFIC_LIGHT_SPECIALIST_PC",
+            "raw_color": "UNKNOWN"
+          }
+        ]
+      },
+      {
+        "frame": 60,
+        "accepted": [
+          {
+            "class_name": "traffic light",
+            "confidence": 0.529163122177124,
+            "bbox": [
+              280.87779998779297,
+              71.68621063232422,
+              326.6579818725586,
+              92.21742630004883
+            ],
+            "source": "MAIN_ONNX_PC",
+            "raw_color": "UNKNOWN"
+          },
+          {
+            "class_name": "traffic light",
+            "confidence": 0.42143648862838745,
+            "bbox": [
+              176.1502456665039,
+              73.77642154693604,
+              222.16060638427734,
+              93.82238388061523
+            ],
+            "source": "MAIN_ONNX_PC",
+            "raw_color": "RED"
+          },
+          {
+            "class_name": "traffic light",
+            "confidence": 0.40251606702804565,
+            "bbox": [
+              282.69248962402344,
+              72.79434204101562,
+              303.47511291503906,
+              91.69815063476562
+            ],
+            "source": "TRAFFIC_LIGHT_SPECIALIST_PC",
+            "raw_color": "UNKNOWN"
+          }
+        ]
+      },
+      {
+        "frame": 90,
+        "accepted": [
+          {
+            "class_name": "traffic light",
+            "confidence": 0.5701265931129456,
+            "bbox": [
+              282.68932342529297,
+              70.11092185974121,
+              330.03772735595703,
+              90.70353507995605
+            ],
+            "source": "MAIN_ONNX_PC",
+            "raw_color": "UNKNOWN"
+          },
+          {
+            "class_name": "traffic light",
+            "confidence": 0.25270557403564453,
+            "bbox": [
+              283.89421463012695,
+              72.67194747924805,
+              302.00754165649414,
+              91.21343612670898
+            ],
+            "source": "TRAFFIC_LIGHT_SPECIALIST_PC",
+            "raw_color": "UNKNOWN"
+          }
+        ]
+      }
+    ],
+    "provenance": {
+      "evidence": "PC_STATIC_ONNX_CPU_NOT_RK3566",
+      "video": "D:\\BaiduNetdiskDownload\\\u7d2b\u5149\u540c\u521b\u676f\u8d5b\u9898\u4e09\u53c2\u8003\u7d20\u6750\\video_20260929_112454.mp4",
+      "video_sha256": "deafab569a9bf1362601f2043ce84cbf9b33532ecda7e0a47f7daf48535b8708",
+      "main_model": "D:\\Datasets\\adas_edge_training\\rect_models\\yolo11n_512x288_split.onnx",
+      "main_sha256": "967f5382c65ac39396c0c129a6702f98848e541e4923ae2e9f31d17e0af12fde",
+      "specialist_model": "D:\\Datasets\\adas_edge_training\\tl_specialist\\tl_specialist_512x192_split.onnx",
+      "specialist_sha256": "e67bff26a5a91c51c58731b7477b3ac74aff7fe8634b6406f8f7f67a29e3d459",
+      "frames": 106,
+      "source_fps": 30.0,
+      "stride": 1,
+      "wall_seconds": 4.791351400082931,
+      "latency": {
+        "main_ms": {
+          "mean": 17.966396226415092,
+          "p95": 20.086000000000002
+        },
+        "specialist_ms": {
+          "mean": 11.470150943396227,
+          "p95": 13.723500000000001
+        }
+      }
+    }
+  },
+  "113421": {
+    "scope": "HISTORICAL_CACHE_RESCORING_ONLY_NOT_NEW_DETECTOR_EVIDENCE",
+    "counts": {
+      "old_head_iou50": 1,
+      "manual_lamp_coverage50": 5,
+      "total": 6
+    },
+    "details": [
+      {
+        "frame": 60,
+        "accepted": [
+          {
+            "class_name": "traffic light",
+            "confidence": 0.30514127016067505,
+            "bbox": [
+              283.0032157897949,
+              183.5188102722168,
+              289.5160484313965,
+              197.6810646057129
+            ],
+            "source": "TRAFFIC_LIGHT_SPECIALIST_PC",
+            "raw_color": "GREEN"
+          }
+        ]
+      },
+      {
+        "frame": 180,
+        "accepted": [
+          {
+            "class_name": "traffic light",
+            "confidence": 0.4560203552246094,
+            "bbox": [
+              526.7138671875,
+              186.90887451171875,
+              537.4252319335938,
+              212.2119903564453
+            ],
+            "source": "TRAFFIC_LIGHT_SPECIALIST_PC",
+            "raw_color": "GREEN"
+          },
+          {
+            "class_name": "traffic light",
+            "confidence": 0.3089866638183594,
+            "bbox": [
+              354.77134704589844,
+              175.26535034179688,
+              363.50830078125,
+              192.9650115966797
+            ],
+            "source": "TRAFFIC_LIGHT_SPECIALIST_PC",
+            "raw_color": "GREEN"
+          },
+          {
+            "class_name": "traffic light",
+            "confidence": 0.292641282081604,
+            "bbox": [
+              296.7318916320801,
+              180.6206512451172,
+              305.0145149230957,
+              192.79766082763672
+            ],
+            "source": "TRAFFIC_LIGHT_SPECIALIST_PC",
+            "raw_color": "GREEN"
+          },
+          {
+            "class_name": "traffic light",
+            "confidence": 0.29221707582473755,
+            "bbox": [
+              294.9119186401367,
+              181.57474517822266,
+              303.4012985229492,
+              193.3898162841797
+            ],
+            "source": "TRAFFIC_LIGHT_SPECIALIST_PC",
+            "raw_color": "GREEN"
+          }
+        ]
+      },
+      {
+        "frame": 300,
+        "accepted": [
+          {
+            "class_name": "traffic light",
+            "confidence": 0.46182140707969666,
+            "bbox": [
+              413.44482421875,
+              129.01739120483398,
+              459.5195007324219,
+              148.5969352722168
+            ],
+            "source": "MAIN_ONNX_PC",
+            "raw_color": "GREEN"
+          },
+          {
+            "class_name": "traffic light",
+            "confidence": 0.4095120429992676,
+            "bbox": [
+              311.57806396484375,
+              131.07345581054688,
+              354.4256591796875,
+              149.09584045410156
+            ],
+            "source": "MAIN_ONNX_PC",
+            "raw_color": "GREEN"
+          },
+          {
+            "class_name": "traffic light",
+            "confidence": 0.40366464853286743,
+            "bbox": [
+              362.2502136230469,
+              202.16053009033203,
+              376.19712829589844,
+              230.306396484375
+            ],
+            "source": "MAIN_ONNX_PC",
+            "raw_color": "RED"
+          }
+        ]
+      }
+    ],
+    "provenance": {
+      "evidence": "PC_STATIC_ONNX_CPU_NOT_RK3566",
+      "video": "D:\\BaiduNetdiskDownload\\\u7d2b\u5149\u540c\u521b\u676f\u8d5b\u9898\u4e09\u53c2\u8003\u7d20\u6750\\video_20260929_113421.mp4",
+      "video_sha256": "ce5578b70a18cf619eb086246d46019776a72a47fb85f1a89f6e8e03541bb75c",
+      "main_model": "D:\\Datasets\\adas_edge_training\\rect_models\\yolo11n_512x288_split.onnx",
+      "main_sha256": "967f5382c65ac39396c0c129a6702f98848e541e4923ae2e9f31d17e0af12fde",
+      "specialist_model": "D:\\Datasets\\adas_edge_training\\tl_specialist\\tl_specialist_512x192_split.onnx",
+      "specialist_sha256": "e67bff26a5a91c51c58731b7477b3ac74aff7fe8634b6406f8f7f67a29e3d459",
+      "frames": 392,
+      "source_fps": 30.0,
+      "stride": 1,
+      "wall_seconds": 18.422932100016624,
+      "latency": {
+        "main_ms": {
+          "mean": 19.313089285714284,
+          "p95": 21.95
+        },
+        "specialist_ms": {
+          "mean": 10.874790816326529,
+          "p95": 12.746500000000001
+        }
+      }
+    }
+  }
+}

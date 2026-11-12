@@ -1,0 +1,399 @@
+{
+  "scope": "Real same-exposure mixed-color heads; round lamps have no implied straight relevance. No composited scenes.",
+  "images": [
+    {
+      "id": "montreal",
+      "path": "outputs/mixed_new_photos/2.jpg",
+      "sha256": "785e593d75b2e5ab7a46cfdf6e7dfda3d682d909c0db49210b24ff69e4b2473d",
+      "split": "NEW_SCENE_REVIEWED_BEFORE_MODEL_RUN",
+      "source": {
+        "id": "2",
+        "title": "Montreal Double Red Traffic Light Left Arrow.jpg",
+        "info": {
+          "thumburl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b3/Montreal_Double_Red_Traffic_Light_Left_Arrow.jpg/1920px-Montreal_Double_Red_Traffic_Light_Left_Arrow.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+          "thumbwidth": 1920,
+          "thumbheight": 950,
+          "responsiveUrls": {
+            "2": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Montreal_Double_Red_Traffic_Light_Left_Arrow.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled"
+          },
+          "thumbattribs": {
+            "src": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b3/Montreal_Double_Red_Traffic_Light_Left_Arrow.jpg/1920px-Montreal_Double_Red_Traffic_Light_Left_Arrow.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+            "decoding": "async",
+            "loading": "lazy",
+            "width": 1920,
+            "height": 950,
+            "srcset": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Montreal_Double_Red_Traffic_Light_Left_Arrow.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled 2x"
+          },
+          "url": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Montreal_Double_Red_Traffic_Light_Left_Arrow.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+          "descriptionurl": "https://commons.wikimedia.org/wiki/File:Montreal_Double_Red_Traffic_Light_Left_Arrow.jpg",
+          "descriptionshorturl": "https://commons.wikimedia.org/w/index.php?curid=198742770",
+          "extmetadata": {
+            "DateTime": {
+              "value": "2026-09-03 01:43:35",
+              "source": "mediawiki-metadata",
+              "hidden": ""
+            },
+            "ObjectName": {
+              "value": "Montreal Double Red Traffic Light Left Arrow",
+              "source": "mediawiki-metadata"
+            },
+            "CommonsMetadataExtension": {
+              "value": 1.2,
+              "source": "extension",
+              "hidden": ""
+            },
+            "Categories": {
+              "value": "Self-published work|Creative Commons Attribution 4.0 missing SDC copyright license|Creative Commons Attribution missing SDC copyright status|Self-published work missing SDC copyright license|Traffic lights at red state in Quebec|Traffic lights at green state in Quebec|Unidentified locations in Montreal",
+              "source": "commons-categories",
+              "hidden": ""
+            },
+            "Assessments": {
+              "value": "",
+              "source": "commons-categories",
+              "hidden": ""
+            },
+            "ImageDescription": {
+              "value": "Double Red protected left light in Montreal Quebec",
+              "source": "commons-desc-page"
+            },
+            "DateTimeOriginal": {
+              "value": "2026-09-02 10:27:24",
+              "source": "commons-desc-page"
+            },
+            "Credit": {
+              "value": "<span class=\"int-own-work\" lang=\"en\">Own work</span>",
+              "source": "commons-desc-page"
+            },
+            "Artist": {
+              "value": "<a href=\"//commons.wikimedia.org/wiki/User:Emma0mb\" title=\"User:Emma0mb\">Emma0mb</a>",
+              "source": "commons-desc-page"
+            },
+            "LicenseShortName": {
+              "value": "CC BY 4.0",
+              "source": "commons-desc-page",
+              "hidden": ""
+            },
+            "UsageTerms": {
+              "value": "Creative Commons Attribution 4.0",
+              "source": "commons-desc-page"
+            },
+            "AttributionRequired": {
+              "value": "true",
+              "source": "commons-desc-page",
+              "hidden": ""
+            },
+            "LicenseUrl": {
+              "value": "https://creativecommons.org/licenses/by/4.0",
+              "source": "commons-desc-page"
+            },
+            "Copyrighted": {
+              "value": "True",
+              "source": "commons-desc-page",
+              "hidden": ""
+            },
+            "Restrictions": {
+              "value": "",
+              "source": "commons-desc-page",
+              "hidden": ""
+            },
+            "License": {
+              "value": "cc-by-4.0",
+              "source": "commons-templates",
+              "hidden": ""
+            }
+          }
+        }
+      },
+      "objects": [
+        {
+          "bbox": [
+            545,
+            421,
+            678,
+            545
+          ],
+          "color": "RED",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            798,
+            416,
+            928,
+            545
+          ],
+          "color": "GREEN",
+          "shape": "LEFT_ARROW"
+        },
+        {
+          "bbox": [
+            1172,
+            416,
+            1299,
+            542
+          ],
+          "color": "RED",
+          "shape": "ROUND"
+        }
+      ]
+    },
+    {
+      "id": "niujie",
+      "path": "outputs/real_signal_photos_extra/15.jpg",
+      "sha256": "8679684453a13863527a5a102ab9bdaaeb25bdde3346508561b402839563b54c",
+      "split": "NEW_SCENE_REVIEWED_BEFORE_MODEL_RUN",
+      "source": {
+        "id": "15",
+        "title": "North start of Niujie St (20201125145623).jpg",
+        "page": "https://commons.wikimedia.org/wiki/File:North_start_of_Niujie_St_(20201125145623).jpg",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/3/35/North_start_of_Niujie_St_%2820201125145623%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+        "download_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/North_start_of_Niujie_St_%2820201125145623%29.jpg/1920px-North_start_of_Niujie_St_%2820201125145623%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "sha256": "8679684453a13863527a5a102ab9bdaaeb25bdde3346508561b402839563b54c",
+        "metadata": {
+          "DateTime": {
+            "value": "2020-11-25 17:34:55",
+            "source": "mediawiki-metadata",
+            "hidden": ""
+          },
+          "ObjectName": {
+            "value": "North start of Niujie St (20201125145623)",
+            "source": "mediawiki-metadata"
+          },
+          "CommonsMetadataExtension": {
+            "value": 1.2,
+            "source": "extension",
+            "hidden": ""
+          },
+          "Categories": {
+            "value": "Niu Jie|Self-published work|Files with coordinates missing SDC location of creation|November 2020 in Beijing|Beijing photographs taken on 2020-11-25|Traffic signals in Beijing|Traffic signals with red arrows|Cycling signals in China",
+            "source": "commons-categories",
+            "hidden": ""
+          },
+          "Assessments": {
+            "value": "",
+            "source": "commons-categories",
+            "hidden": ""
+          },
+          "GPSLatitude": {
+            "value": "39.887783",
+            "source": "commons-desc-page"
+          },
+          "GPSLongitude": {
+            "value": "116.357222",
+            "source": "commons-desc-page"
+          },
+          "GPSMapDatum": {
+            "value": "WGS-84",
+            "source": "commons-desc-page",
+            "hidden": ""
+          },
+          "ImageDescription": {
+            "value": "The north section has more business...",
+            "source": "commons-desc-page"
+          },
+          "DateTimeOriginal": {
+            "value": "2020-11-25 14:56:23",
+            "source": "commons-desc-page"
+          },
+          "Credit": {
+            "value": "<span class=\"int-own-work\" lang=\"en\">Own work</span>",
+            "source": "commons-desc-page"
+          },
+          "Artist": {
+            "value": "<a href=\"//commons.wikimedia.org/wiki/User:N509FZ\" title=\"User:N509FZ\">N509FZ</a>",
+            "source": "commons-desc-page"
+          },
+          "LicenseShortName": {
+            "value": "CC BY-SA 4.0",
+            "source": "commons-desc-page",
+            "hidden": ""
+          },
+          "UsageTerms": {
+            "value": "Creative Commons Attribution-Share Alike 4.0",
+            "source": "commons-desc-page"
+          },
+          "AttributionRequired": {
+            "value": "true",
+            "source": "commons-desc-page",
+            "hidden": ""
+          },
+          "LicenseUrl": {
+            "value": "https://creativecommons.org/licenses/by-sa/4.0",
+            "source": "commons-desc-page"
+          },
+          "Copyrighted": {
+            "value": "True",
+            "source": "commons-desc-page",
+            "hidden": ""
+          },
+          "Restrictions": {
+            "value": "",
+            "source": "commons-desc-page",
+            "hidden": ""
+          },
+          "License": {
+            "value": "cc-by-sa-4.0",
+            "source": "commons-templates",
+            "hidden": ""
+          }
+        }
+      },
+      "objects": [
+        {
+          "bbox": [
+            873,
+            151,
+            930,
+            275
+          ],
+          "color": "RED",
+          "shape": "LEFT_ARROW"
+        },
+        {
+          "bbox": [
+            1032,
+            150,
+            1089,
+            276
+          ],
+          "color": "GREEN",
+          "shape": "ROUND"
+        }
+      ]
+    },
+    {
+      "id": "jeffrey",
+      "path": "outputs/real_signal_photos_extra/16.jpg",
+      "sha256": "df454757d29ab0b0c92570f6809ff33c1a4c4dc75da3f5d7317df40ef80d39b2",
+      "split": "NEW_SCENE_REVIEWED_BEFORE_MODEL_RUN",
+      "source": {
+        "id": "16",
+        "title": "Traffic light at Jeffrey Road and Smoketree.jpg",
+        "page": "https://commons.wikimedia.org/wiki/File:Traffic_light_at_Jeffrey_Road_and_Smoketree.jpg",
+        "original_url": "https://upload.wikimedia.org/wikipedia/commons/d/d9/Traffic_light_at_Jeffrey_Road_and_Smoketree.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+        "download_url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Traffic_light_at_Jeffrey_Road_and_Smoketree.jpg/1920px-Traffic_light_at_Jeffrey_Road_and_Smoketree.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+        "sha256": "df454757d29ab0b0c92570f6809ff33c1a4c4dc75da3f5d7317df40ef80d39b2",
+        "metadata": {
+          "DateTime": {
+            "value": "2022-02-25 03:24:25",
+            "source": "mediawiki-metadata",
+            "hidden": ""
+          },
+          "ObjectName": {
+            "value": "Traffic light at Jeffrey Road and Smoketree",
+            "source": "mediawiki-metadata"
+          },
+          "CommonsMetadataExtension": {
+            "value": 1.2,
+            "source": "extension",
+            "hidden": ""
+          },
+          "Categories": {
+            "value": "Taken with Nexus One|T junctions|Self-published work|Traffic signals in Irvine, California|Files with coordinates missing SDC location of creation|August 2010 in Irvine, California|Files uploaded by aismallard|Photographs by aismallard|Jeffrey Road (Irvine, California)|Traffic signals with red arrows",
+            "source": "commons-categories",
+            "hidden": ""
+          },
+          "Assessments": {
+            "value": "",
+            "source": "commons-categories",
+            "hidden": ""
+          },
+          "GPSLatitude": {
+            "value": "33.682423",
+            "source": "commons-desc-page"
+          },
+          "GPSLongitude": {
+            "value": "-117.775794",
+            "source": "commons-desc-page"
+          },
+          "GPSMapDatum": {
+            "value": "WGS-84",
+            "source": "commons-desc-page",
+            "hidden": ""
+          },
+          "ImageDescription": {
+            "value": "Photograph of the intersection at Jeffrey Road and Smoketree in Irvine, CA, facing north. The traffic light is visible, which is currently green for going straight and red for turning left. To the right is a field.",
+            "source": "commons-desc-page"
+          },
+          "DateTimeOriginal": {
+            "value": "2010-08-27 16:03:01",
+            "source": "commons-desc-page"
+          },
+          "Credit": {
+            "value": "<span class=\"int-own-work\" lang=\"en\">Own work</span>",
+            "source": "commons-desc-page"
+          },
+          "Artist": {
+            "value": "<a href=\"//commons.wikimedia.org/wiki/User:Aismallard\" title=\"User:Aismallard\">aismallard</a>",
+            "source": "commons-desc-page"
+          },
+          "LicenseShortName": {
+            "value": "CC BY-SA 3.0",
+            "source": "commons-desc-page",
+            "hidden": ""
+          },
+          "UsageTerms": {
+            "value": "Creative Commons Attribution-Share Alike 3.0",
+            "source": "commons-desc-page"
+          },
+          "AttributionRequired": {
+            "value": "true",
+            "source": "commons-desc-page",
+            "hidden": ""
+          },
+          "LicenseUrl": {
+            "value": "https://creativecommons.org/licenses/by-sa/3.0",
+            "source": "commons-desc-page"
+          },
+          "Copyrighted": {
+            "value": "True",
+            "source": "commons-desc-page",
+            "hidden": ""
+          },
+          "Restrictions": {
+            "value": "",
+            "source": "commons-desc-page",
+            "hidden": ""
+          },
+          "License": {
+            "value": "cc-by-sa-3.0",
+            "source": "commons-templates",
+            "hidden": ""
+          }
+        }
+      },
+      "objects": [
+        {
+          "bbox": [
+            441,
+            758,
+            489,
+            848
+          ],
+          "color": "RED",
+          "shape": "LEFT_ARROW"
+        },
+        {
+          "bbox": [
+            769,
+            780,
+            818,
+            864
+          ],
+          "color": "GREEN",
+          "shape": "ROUND"
+        },
+        {
+          "bbox": [
+            979,
+            815,
+            1029,
+            908
+          ],
+          "color": "GREEN",
+          "shape": "ROUND"
+        }
+      ]
+    }
+  ]
+}

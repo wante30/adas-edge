@@ -43,20 +43,21 @@ class HSVBackend:
         native_size = [roi.shape[1], roi.shape[0]]
         roi = bounded_roi(roi)
         h, w = roi.shape[:2]
-        result = classify_traffic_light(roi, {"bbox": [0, 0, w, h], "confidence": 1.0},
-                                        min_saturation=90, min_value=130)
-        color = result.value
         hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
         hue, sat, val = cv2.split(hsv)
         valid = (sat >= 90) & (val >= 130)
         masks = {
-            "RED": valid & ((hue <= 10) | (hue >= 170)),
+            # Camera/LED spectra in the original road video put genuine red
+            # arrows at H=160..169. Keep this backend's mask consistent with
+            # its shape extractor, independently of the legacy HUD classifier.
+            "RED": valid & ((hue <= 10) | (hue >= 160)),
             "YELLOW": valid & (hue >= 14) & (hue < 40),
             "GREEN": valid & (hue >= 40) & (hue <= 95),
         }
         counts = {key: int(mask.sum()) for key, mask in masks.items()}
         total = sum(counts.values())
         dominant = max(counts, key=counts.get)
+        color = dominant
         ratio = counts[dominant] / max(1, total)
         evidence = dict(glow_pixels=total, native_roi_size=native_size,
                         analysis_roi_size=[w, h], color_counts=counts)
@@ -79,7 +80,7 @@ class HSVBackend:
                     color = dominant = 'YELLOW'
                     ratio = yellow_core/core_total
                     evidence['color_method'] = 'COINCIDENT_AMBER_BRIGHT_CORE'
-        if total < 4 or ratio < .8 or color != dominant:
+        if total < 4 or ratio < .8:
             return Attributes(reason="MIXED_OR_DIM_GLOW", evidence=evidence)
         return Attributes(color=color, color_confidence=ratio,
                           reason="COLOR_ONLY", evidence=evidence)

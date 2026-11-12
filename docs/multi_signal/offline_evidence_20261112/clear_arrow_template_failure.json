@@ -1,0 +1,57 @@
+{
+  "truth": {
+    "bbox": [
+      873,
+      151,
+      930,
+      275
+    ],
+    "color": "RED",
+    "shape": "LEFT_ARROW"
+  },
+  "predicted": {
+    "color": "RED",
+    "shape": "UNKNOWN",
+    "color_confidence": 1.0,
+    "shape_confidence": 0.0,
+    "reason": "AMBIGUOUS_SHAPE_TEMPLATE",
+    "backend": "arm_hsv_contour_v1",
+    "evidence": {
+      "glow_pixels": 303,
+      "native_roi_size": [
+        57,
+        124
+      ],
+      "analysis_roi_size": [
+        57,
+        124
+      ],
+      "color_counts": {
+        "RED": 303,
+        "YELLOW": 0,
+        "GREEN": 0
+      },
+      "shape_value_floor": 130,
+      "glow_bbox": [
+        19,
+        22,
+        41,
+        47
+      ],
+      "glow_area": 278.0,
+      "edge_variance": 9056.998046875,
+      "edge_contrast": 2.2869547526041667,
+      "template_scores": {
+        "STRAIGHT_ARROW": 0.639,
+        "LEFT_ARROW": 0.643,
+        "RIGHT_ARROW": 0.516,
+        "UTURN_ARROW": 0.542,
+        "ROUND": 0.751
+      },
+      "circularity": 0.434,
+      "solidity": 0.781,
+      "concavity_depth": 0.261
+    }
+  },
+  "path": "C:\\Users\\JingyuWang\\adas-edge-multi-signals\\outputs\\real_signal_photos_extra\\15.jpg"
+}

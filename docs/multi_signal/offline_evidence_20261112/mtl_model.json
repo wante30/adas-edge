@@ -1,0 +1,17 @@
+{
+  "mtl": {
+    "path": "D:\\Datasets\\adas_edge_training\\b05n_mtl_rknn_b2a_seg256_20261031\\b05n_p2_mtl_b2a_seg256.onnx",
+    "sha256": "9d1e95ffb691c3a17f8ec3b93dfac30fa7005e378da9f6a06b19eea765a7a2cd",
+    "input_size": [
+      512,
+      288
+    ],
+    "traffic_light_id": 8,
+    "class_names": {},
+    "precision": "ONNX_FLOAT_PC_NOT_RKNN_INT8",
+    "provider": "CPUExecutionProvider",
+    "scores_are_logits": false,
+    "nms_iou": 0.45,
+    "diagnostic_score_floor": 0.001
+  }
+}

@@ -1,0 +1,210 @@
+{
+  "splits": {
+    "NEW_SCENE_REVIEWED_BEFORE_MODEL_RUN": {
+      "counts": {
+        "original_observed_positive_total": 3,
+        "original_observed_positive_correct": 2,
+        "original_ego_unknown_total": 9,
+        "original_ego_unknown_correct": 9,
+        "original_observed_unsupported_total": 6,
+        "original_observed_unsupported_correct": 6,
+        "original_color_total": 8,
+        "original_color_correct": 8,
+        "original_color_unknown": 0,
+        "original_color_wrong_known": 0,
+        "original_shape_total": 8,
+        "original_shape_correct": 5,
+        "original_shape_unknown": 3,
+        "original_shape_wrong_known": 0,
+        "original_arrow_total": 3,
+        "original_arrow_correct": 2,
+        "original_arrow_unknown": 1,
+        "original_arrow_wrong_known": 0,
+        "q4_observed_positive_total": 3,
+        "q4_observed_positive_correct": 1,
+        "q4_ego_unknown_total": 9,
+        "q4_ego_unknown_correct": 9,
+        "q4_observed_unsupported_total": 6,
+        "q4_observed_unsupported_correct": 6,
+        "q4_color_total": 8,
+        "q4_color_correct": 8,
+        "q4_color_unknown": 0,
+        "q4_color_wrong_known": 0,
+        "q4_shape_total": 8,
+        "q4_shape_correct": 3,
+        "q4_shape_unknown": 5,
+        "q4_shape_wrong_known": 0,
+        "q4_arrow_total": 3,
+        "q4_arrow_correct": 1,
+        "q4_arrow_unknown": 2,
+        "q4_arrow_wrong_known": 0
+      },
+      "accuracy": {
+        "original_observed_positive": {
+          "correct": 2,
+          "total": 3,
+          "accuracy": 0.6666666666666666
+        },
+        "original_ego_unknown": {
+          "correct": 9,
+          "total": 9,
+          "accuracy": 1.0
+        },
+        "original_observed_unsupported": {
+          "correct": 6,
+          "total": 6,
+          "accuracy": 1.0
+        },
+        "original_color": {
+          "correct": 8,
+          "total": 8,
+          "accuracy": 1.0
+        },
+        "original_shape": {
+          "correct": 5,
+          "total": 8,
+          "accuracy": 0.625
+        },
+        "original_arrow": {
+          "correct": 2,
+          "total": 3,
+          "accuracy": 0.6666666666666666
+        },
+        "q4_observed_positive": {
+          "correct": 1,
+          "total": 3,
+          "accuracy": 0.3333333333333333
+        },
+        "q4_ego_unknown": {
+          "correct": 9,
+          "total": 9,
+          "accuracy": 1.0
+        },
+        "q4_observed_unsupported": {
+          "correct": 6,
+          "total": 6,
+          "accuracy": 1.0
+        },
+        "q4_color": {
+          "correct": 8,
+          "total": 8,
+          "accuracy": 1.0
+        },
+        "q4_shape": {
+          "correct": 3,
+          "total": 8,
+          "accuracy": 0.375
+        },
+        "q4_arrow": {
+          "correct": 1,
+          "total": 3,
+          "accuracy": 0.3333333333333333
+        }
+      }
+    },
+    "PREVIOUSLY_REVIEWED": {
+      "counts": {
+        "original_observed_positive_total": 13,
+        "original_observed_positive_correct": 6,
+        "original_ego_unknown_total": 45,
+        "original_ego_unknown_correct": 45,
+        "original_observed_unsupported_total": 32,
+        "original_observed_unsupported_correct": 32,
+        "original_color_total": 32,
+        "original_color_correct": 25,
+        "original_color_unknown": 7,
+        "original_color_wrong_known": 0,
+        "original_shape_total": 31,
+        "original_shape_correct": 11,
+        "original_shape_unknown": 20,
+        "original_shape_wrong_known": 0,
+        "original_arrow_total": 16,
+        "original_arrow_correct": 7,
+        "original_arrow_unknown": 9,
+        "original_arrow_wrong_known": 0,
+        "q4_observed_positive_total": 13,
+        "q4_observed_positive_correct": 3,
+        "q4_ego_unknown_total": 45,
+        "q4_ego_unknown_correct": 45,
+        "q4_observed_unsupported_total": 32,
+        "q4_observed_unsupported_correct": 32,
+        "q4_color_total": 32,
+        "q4_color_correct": 25,
+        "q4_color_unknown": 6,
+        "q4_color_wrong_known": 1,
+        "q4_shape_total": 31,
+        "q4_shape_correct": 3,
+        "q4_shape_unknown": 28,
+        "q4_shape_wrong_known": 0,
+        "q4_arrow_total": 16,
+        "q4_arrow_correct": 3,
+        "q4_arrow_unknown": 13,
+        "q4_arrow_wrong_known": 0
+      },
+      "accuracy": {
+        "original_observed_positive": {
+          "correct": 6,
+          "total": 13,
+          "accuracy": 0.46153846153846156
+        },
+        "original_ego_unknown": {
+          "correct": 45,
+          "total": 45,
+          "accuracy": 1.0
+        },
+        "original_observed_unsupported": {
+          "correct": 32,
+          "total": 32,
+          "accuracy": 1.0
+        },
+        "original_color": {
+          "correct": 25,
+          "total": 32,
+          "accuracy": 0.78125
+        },
+        "original_shape": {
+          "correct": 11,
+          "total": 31,
+          "accuracy": 0.3548387096774194
+        },
+        "original_arrow": {
+          "correct": 7,
+          "total": 16,
+          "accuracy": 0.4375
+        },
+        "q4_observed_positive": {
+          "correct": 3,
+          "total": 13,
+          "accuracy": 0.23076923076923078
+        },
+        "q4_ego_unknown": {
+          "correct": 45,
+          "total": 45,
+          "accuracy": 1.0
+        },
+        "q4_observed_unsupported": {
+          "correct": 32,
+          "total": 32,
+          "accuracy": 1.0
+        },
+        "q4_color": {
+          "correct": 25,
+          "total": 32,
+          "accuracy": 0.78125
+        },
+        "q4_shape": {
+          "correct": 3,
+          "total": 31,
+          "accuracy": 0.0967741935483871
+        },
+        "q4_arrow": {
+          "correct": 3,
+          "total": 16,
+          "accuracy": 0.1875
+        }
+      }
+    }
+  },
+  "images": 18,
+  "scope": "MANUAL_ROI_ATTRIBUTES_SEPARATE_FROM_FRESH_DETECTION; partial labels do not establish detector precision or ego-road accuracy"
+}

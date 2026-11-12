@@ -1,0 +1,45 @@
+{
+  "bdd": {
+    "evaluation_graph": "b03c_rknn_validation_20261021/bdd_yolov8n_512x288_split.onnx",
+    "rknn_export_graph": "rknn_b05o/bdd_yolov8n_512x288_raw_heads.onnx",
+    "common_initializers": 12,
+    "equal": 12,
+    "different": [],
+    "scope": "Common named initializer equality; does not assert quantized RKNN parity",
+    "convolution_tensor_hashes": {
+      "evaluation_total": 63,
+      "export_total": 63,
+      "equal_multiset": false,
+      "shared": 61
+    }
+  },
+  "p2": {
+    "evaluation_graph": "b05n_final/b05n_p2_multiclass.onnx",
+    "rknn_export_graph": "rknn_b05o/b05n_p2_multiclass_512x288_raw_heads_20261026.onnx",
+    "common_initializers": 16,
+    "equal": 16,
+    "different": [],
+    "scope": "Common named initializer equality; does not assert quantized RKNN parity",
+    "convolution_tensor_hashes": {
+      "evaluation_total": 78,
+      "export_total": 78,
+      "equal_multiset": true,
+      "shared": 78
+    }
+  },
+  "specialist": {
+    "evaluation_graph": "rknn_b05o/b05l_p2_specialist_512x192_split_logits.onnx",
+    "rknn_export_graph": "rknn_b05o/b05l_v8n_p2_512x192_raw_heads_20261026.onnx",
+    "common_initializers": 15,
+    "equal": 15,
+    "different": [],
+    "scope": "Common named initializer equality; does not assert quantized RKNN parity",
+    "convolution_tensor_hashes": {
+      "evaluation_total": 74,
+      "export_total": 74,
+      "equal_multiset": true,
+      "shared": 74
+    }
+  },
+  "note": "Final evaluation reran all three raw-head RKNN export graphs directly; earlier BDD split discarded for final detector metrics because 2 convolution tensors differ."
+}

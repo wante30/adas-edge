@@ -107,8 +107,8 @@ class ContourTemplateBackend(HSVBackend):
         small = bounded_roi(roi)
         h, s, v = cv2.split(cv2.cvtColor(small, cv2.COLOR_BGR2HSV))
         valid = (s >= 70) & (v >= 130)
-        masks = [valid & ((h <= 10) | (h >= 170)),
-                 valid & (h >= 14) & (h < 40), valid & (h >= 40) & (h <= 105)]
+        masks = [valid & ((h <= 10) | (h >= 160)),
+                 valid & (h >= 14) & (h < 40), valid & (h >= 40) & (h <= 95)]
         regions = []
         for color, mask in enumerate(masks):
             clean = cv2.morphologyEx(mask.astype(np.uint8)*255, cv2.MORPH_CLOSE,
@@ -150,17 +150,34 @@ class ContourTemplateBackend(HSVBackend):
         attr = super().classify(roi)
         if attr.color == 'UNKNOWN':
             return attr
+        result = self._classify_glow(roi, attr)
+        if attr.color == 'GREEN' and result.shape == 'UNKNOWN':
+            core = self._classify_glow(roi, attr, bright_core=True)
+            # Brightness thresholding can destroy a thin arrow stem. It is
+            # only a round-lamp rescue, never an alternative arrow decision.
+            if core.shape == 'ROUND':
+                return core
+        return result
+
+    def _classify_glow(self, roi, attr, bright_core=False):
         roi = bounded_roi(roi)
         hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
         hue, sat, val = cv2.split(hsv)
-        chroma = {'RED': (hue <= 10) | (hue >= 170),
+        chroma = {'RED': (hue <= 10) | (hue >= 160),
                   'YELLOW': (hue >= 14) & (hue < 40),
-                  'GREEN': (hue >= 40) & (hue <= 105)}[attr.color]
+                  'GREEN': (hue >= 40) & (hue <= (95 if bright_core else 105))}[attr.color]
         seed = ((sat >= 90) & (val >= 130) & chroma).astype(np.uint8)*255
+        # Sunlit foliage and reflections can have the same hue as a green
+        # lamp. Extract the bright LED core relative to this ROI's measured
+        # seed brightness before contour analysis; keep colour voting intact.
+        floor = 130
+        if bright_core and np.any(seed):
+            floor = max(floor, round(.8*float(np.percentile(val[seed > 0], 95))))
+            seed[val < floor] = 0
         near_seed = cv2.dilate(seed, np.ones((5, 5), np.uint8)) > 0
         # Desaturated bright LED cores belong to a glow only when adjacent
         # to measured chromatic pixels. White background is not a colour cue.
-        support = ((sat >= 35) & (val >= 130) & chroma) | ((val >= 180) & near_seed)
+        support = ((sat >= 35) & (val >= floor) & chroma) | ((val >= max(180, floor)) & near_seed)
         mask = support.astype(np.uint8)*255
         # Closing joins one-pixel LED gaps; no resizing is used to pass the
         # native-pixel quality gates. Raw contour is retained for comparison.
@@ -169,11 +186,12 @@ class ContourTemplateBackend(HSVBackend):
         contours, _ = cv2.findContours(clean, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         contours = sorted(contours, key=cv2.contourArea, reverse=True)
         evidence = dict(attr.evidence)
+        evidence['shape_value_floor'] = floor
         if not contours:
             return replace(attr, reason='NO_GLOW_CONTOUR')
         contour = contours[0]
         area = cv2.contourArea(contour)
-        significant = [c for c in contours if cv2.contourArea(c) >= max(3, .04*area)]
+        significant = [c for c in contours if cv2.contourArea(c) >= max(4 if bright_core else 3, (.10 if bright_core else .04)*area)]
         multiple = len(significant) > 1 and cv2.contourArea(significant[1]) > max(4, .10*area)
         # A disconnected arrow stem can be a legitimate part of one symbol.
         # Keep those islands for template comparison; two round lamps are
@@ -183,6 +201,8 @@ class ContourTemplateBackend(HSVBackend):
         component = cv2.bitwise_and(component, clean)
         component = cv2.morphologyEx(component, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
         points = cv2.findNonZero(component)
+        if points is None:
+            return replace(attr, reason='INSUFFICIENT_SHAPE_PIXELS', evidence=evidence)
         x, y, w, h = cv2.boundingRect(points)
         evidence['glow_bbox'] = [x, y, x+w, y+h]
         evidence['glow_area'] = area
@@ -223,7 +243,10 @@ class ContourTemplateBackend(HSVBackend):
         circularity = 4*np.pi*area/max(1., perimeter*perimeter)
         hull = cv2.convexHull(contour)
         solidity = area/max(1., cv2.contourArea(hull))
-        defects = cv2.convexityDefects(contour, cv2.convexHull(contour, returnPoints=False)) if len(contour) >= 4 else None
+        try:
+            defects = cv2.convexityDefects(contour, cv2.convexHull(contour, returnPoints=False)) if len(contour) >= 4 else None
+        except cv2.error:
+            return replace(attr, reason='INVALID_GLOW_CONTOUR', evidence=evidence)
         depth = float(np.max(defects.reshape(-1, 4)[:, 3]))/256/max(w, h) if defects is not None else 0.
         evidence.update(template_scores={k: round(v, 3) for k, v in scores.items()},
                         circularity=round(circularity, 3), solidity=round(solidity, 3),

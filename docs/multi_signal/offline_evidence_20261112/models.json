@@ -1,0 +1,47 @@
+{
+  "bdd": {
+    "path": "D:\\Datasets\\adas_edge_training\\rknn_b05o\\bdd_yolov8n_512x288_raw_heads.onnx",
+    "sha256": "d6ea1651a1bdcef1868bcb1651191e53d4568668df9e7f50cd5f2e9abe528adb",
+    "input_size": [
+      512,
+      288
+    ],
+    "traffic_light_id": 8,
+    "class_names": {},
+    "precision": "ONNX_FLOAT_PC_NOT_RKNN_INT8",
+    "provider": "CPUExecutionProvider",
+    "scores_are_logits": false,
+    "nms_iou": 0.45,
+    "diagnostic_score_floor": 0.001
+  },
+  "p2": {
+    "path": "D:\\Datasets\\adas_edge_training\\rknn_b05o\\b05n_p2_multiclass_512x288_raw_heads_20261026.onnx",
+    "sha256": "a1f3c20c3d4cd30e1690d75df4bf56be03059c874906c2536fecd1c6ad55cdd6",
+    "input_size": [
+      512,
+      288
+    ],
+    "traffic_light_id": 8,
+    "class_names": {},
+    "precision": "ONNX_FLOAT_PC_NOT_RKNN_INT8",
+    "provider": "CPUExecutionProvider",
+    "scores_are_logits": false,
+    "nms_iou": 0.45,
+    "diagnostic_score_floor": 0.001
+  },
+  "specialist": {
+    "path": "D:\\Datasets\\adas_edge_training\\rknn_b05o\\b05l_v8n_p2_512x192_raw_heads_20261026.onnx",
+    "sha256": "74b7776606c07195ae6d3cc86369dff08a13b46728089859f798c140bf20897c",
+    "input_size": [
+      512,
+      192
+    ],
+    "traffic_light_id": 0,
+    "class_names": {},
+    "precision": "ONNX_FLOAT_PC_NOT_RKNN_INT8",
+    "provider": "CPUExecutionProvider",
+    "scores_are_logits": false,
+    "nms_iou": 0.45,
+    "diagnostic_score_floor": 0.001
+  }
+}
