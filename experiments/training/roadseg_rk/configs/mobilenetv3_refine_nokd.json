@@ -1,0 +1,21 @@
+{
+  "model": "mobilenetv3-lraspp-refine",
+  "pretrained": false,
+  "width": 416,
+  "height": 256,
+  "batch_size": 16,
+  "epochs": 8,
+  "lr": 0.0002,
+  "weight_decay": 0.0001,
+  "seed": 15,
+  "pos_weight": [1.0, 1.0, 8.0, 10.0, 8.0],
+  "dice_weight": 1.0,
+  "boundary_weight": 1.5,
+  "threshold": 0.5,
+  "source_probabilities": {"bdd100k": 0.8, "rlmd": 0.2},
+  "epoch_samples": 12000,
+  "min_epochs": 4,
+  "patience": 3,
+  "min_delta": 0.002,
+  "distill_weight": 0.0
+}

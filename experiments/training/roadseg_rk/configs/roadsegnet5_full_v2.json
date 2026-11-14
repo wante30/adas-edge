@@ -1,0 +1,30 @@
+{
+  "model": "roadsegnet-5",
+  "width": 416,
+  "height": 256,
+  "width_mult": 0.85,
+  "batch_size": 16,
+  "epochs": 12,
+  "lr": 0.001,
+  "weight_decay": 0.0001,
+  "seed": 15,
+  "pos_weight": [
+    1.0,
+    1.0,
+    4.0,
+    6.0,
+    10.0
+  ],
+  "dice_weight": 1.0,
+  "boundary_weight": 1.0,
+  "threshold": 0.5,
+  "source_probabilities": {
+    "bdd100k": 0.75,
+    "rlmd": 0.25
+  },
+  "epoch_samples": 12000,
+  "min_epochs": 6,
+  "patience": 4,
+  "min_delta": 0.002,
+  "distill_weight": 0.15
+}
